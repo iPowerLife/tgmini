@@ -23,21 +23,7 @@ export default function Home() {
 
   useEffect(() => {
     const initTelegram = () => {
-      // Check if we're in development mode
-      const isDevelopment = process.env.NODE_ENV === "development"
-
       if (typeof window !== "undefined") {
-        // In development, create a mock Telegram WebApp object
-        if (isDevelopment && !window.Telegram) {
-          window.Telegram = {
-            WebApp: {
-              ready: () => console.log("Mock: Telegram WebApp ready"),
-              expand: () => console.log("Mock: Telegram WebApp expanded"),
-              showAlert: (message) => alert(message),
-            },
-          }
-        }
-
         if (window.Telegram?.WebApp) {
           const telegram = window.Telegram.WebApp
           setTg(telegram)
@@ -48,14 +34,12 @@ export default function Home() {
       setIsLoading(false)
     }
 
-    // Wait for Telegram script to load
     setTimeout(initTelegram, 1000)
   }, [])
 
-  // Show loading state
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4 flex justify-center items-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">Loading...</div>
       </div>
     )
