@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 export function DailyBonus({ onClose, onClaim, lastClaim, streak = 0 }) {
   const [timeLeft, setTimeLeft] = useState("")
   const [canClaim, setCanClaim] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   // Проверяем, можно ли получить бонус
   useEffect(() => {
@@ -16,7 +17,9 @@ export function DailyBonus({ onClose, onClaim, lastClaim, streak = 0 }) {
       nextClaim.setHours(0, 0, 0, 0)
 
       const diff = nextClaim - now
-      setCanClaim(diff <= 0)
+      const canClaimNow = diff <= 0
+      setCanClaim(canClaimNow)
+      console.log("Can claim bonus:", canClaimNow, "Time diff:", diff)
 
       if (diff > 0) {
         const hours = Math.floor(diff / (1000 * 60 * 60))
@@ -37,6 +40,19 @@ export function DailyBonus({ onClose, onClaim, lastClaim, streak = 0 }) {
     const baseBonus = 100
     const multiplier = Math.min(2, 1 + streak * 0.1) // Максимальный множитель 2x
     return Math.floor(baseBonus * multiplier)
+  }
+
+  // Обработчик получения бонуса
+  const handleClaim = async () => {
+    try {
+      setIsLoading(true)
+      console.log("Claiming bonus with amount:", calculateBonus())
+      await onClaim(calculateBonus())
+    } catch (error) {
+      console.error("Error claiming bonus:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -98,25 +114,27 @@ export function DailyBonus({ onClose, onClaim, lastClaim, streak = 0 }) {
             Серия: {streak} {streak > 0 ? "🔥" : ""}
           </div>
           <div style={{ color: "#4ade80" }}>Бонус: {calculateBonus()} 💎</div>
-          {!canClaim && <div style={{ color: "#666", marginTop: "10px" }}>Следующий бонус через: {timeLeft}</div>}
+          {!canClaim && timeLeft && (
+            <div style={{ color: "#666", marginTop: "10px" }}>Следующий бонус через: {timeLeft}</div>
+          )}
         </div>
 
         <button
-          onClick={() => onClaim(calculateBonus())}
-          disabled={!canClaim}
+          onClick={handleClaim}
+          disabled={!canClaim || isLoading}
           style={{
             width: "100%",
             padding: "15px",
-            backgroundColor: canClaim ? "#3b82f6" : "#1f2937",
+            backgroundColor: canClaim && !isLoading ? "#3b82f6" : "#1f2937",
             color: "white",
             border: "none",
             borderRadius: "8px",
-            cursor: canClaim ? "pointer" : "not-allowed",
+            cursor: canClaim && !isLoading ? "pointer" : "not-allowed",
             fontSize: "16px",
             fontWeight: "bold",
           }}
         >
-          {canClaim ? "Получить бонус" : "Приходите завтра"}
+          {isLoading ? "Получение бонуса..." : canClaim ? "Получить бонус" : "Приходите завтра"}
         </button>
       </div>
     </div>
