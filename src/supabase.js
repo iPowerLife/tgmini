@@ -1,38 +1,19 @@
 import { createClient } from "@supabase/supabase-js"
 
-// Используем переменные окружения
+// Получаем URL и ключ из переменных окружения
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error("Missing Supabase environment variables")
-}
+// Добавляем проверку и логирование
+console.log("Environment variables check:")
+console.log("VITE_SUPABASE_URL:", supabaseUrl || "Not set")
+console.log("VITE_SUPABASE_ANON_KEY:", supabaseKey ? "Present" : "Not set")
 
-console.log("Supabase URL:", supabaseUrl)
-console.log("Initializing Supabase client...")
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Missing Supabase environment variables")
+}
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
-
-// Функция для инициализации базы данных
-async function initializeDatabase() {
-  try {
-    console.log("Initializing database...")
-
-    // Создаем таблицу пользователей
-    const { error: usersError } = await supabase.rpc("initialize_database")
-
-    if (usersError) {
-      console.error("Error initializing database:", usersError)
-      return false
-    }
-
-    console.log("Database initialized successfully")
-    return true
-  } catch (error) {
-    console.error("Error in initializeDatabase:", error)
-    return false
-  }
-}
 
 // Функция для тестирования подключения
 export async function testConnection() {
@@ -44,21 +25,17 @@ export async function testConnection() {
   }
 
   try {
-    console.log("Testing connection...")
-    console.log("Supabase URL:", supabaseUrl)
-
-    // Инициализируем базу данных при первом подключении
-    await initializeDatabase()
-
     // Шаг 1: Проверка базового подключения
     console.log("Step 1: Testing basic connection...")
+    console.log("Using Supabase URL:", supabaseUrl)
+
     const { data: connectionTest, error: connectionError } = await supabase
       .from("users")
       .select("count(*)", { count: "exact", head: true })
 
     if (connectionError) {
       console.error("Connection error:", connectionError)
-      return { success: false, steps, error: "Ошибка подключения к базе данных" }
+      return { success: false, steps, error: `Ошибка подключения к базе данных: ${connectionError.message}` }
     }
     steps.connection = true
     console.log("Basic connection successful")
@@ -69,7 +46,7 @@ export async function testConnection() {
 
     if (usersError) {
       console.error("Users table error:", usersError)
-      return { success: false, steps, error: "Ошибка доступа к таблице users" }
+      return { success: false, steps, error: `Ошибка доступа к таблице users: ${usersError.message}` }
     }
     steps.usersTable = true
     console.log("Users table accessible")
@@ -80,7 +57,7 @@ export async function testConnection() {
 
     if (levelsError) {
       console.error("Levels table error:", levelsError)
-      return { success: false, steps, error: "Ошибка доступа к таблице levels" }
+      return { success: false, steps, error: `Ошибка доступа к таблице levels: ${levelsError.message}` }
     }
     steps.levelsTable = true
     console.log("Levels table accessible")
@@ -94,7 +71,7 @@ export async function testConnection() {
 
     if (transactionsError) {
       console.error("Transactions table error:", transactionsError)
-      return { success: false, steps, error: "Ошибка доступа к таблице transactions" }
+      return { success: false, steps, error: `Ошибка доступа к таблице transactions: ${transactionsError.message}` }
     }
     steps.transactionsTable = true
     console.log("Transactions table accessible")
