@@ -8,10 +8,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Устанавливаем зависимости
-RUN npm install
+RUN npm install --production=false
 
 # Копируем все файлы проекта
 COPY . .
+
+# Проверяем структуру проекта
+RUN ls -la
 
 # Собираем приложение
 RUN npm run build

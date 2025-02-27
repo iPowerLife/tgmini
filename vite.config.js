@@ -10,6 +10,10 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: true,
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       output: {
         manualChunks: {
@@ -19,9 +23,8 @@ export default defineConfig({
       },
     },
   },
-  preview: {
-    port: process.env.PORT || 3000,
-    host: true,
+  optimizeDeps: {
+    include: ["react", "react-dom", "@supabase/supabase-js"],
   },
 })
 
