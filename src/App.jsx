@@ -12,34 +12,46 @@ function App() {
   const [isMining, setIsMining] = React.useState(false)
   const [cooldown, setCooldown] = React.useState(0)
   const [error, setError] = React.useState(null)
+  const [debug, setDebug] = React.useState({})
 
   // Инициализация пользователя
   React.useEffect(() => {
     async function initUser() {
       try {
+        console.log("Starting initialization...")
+
         // Инициализируем Telegram Web App
-        initTelegram()
+        const tgInitialized = initTelegram()
+        setDebug((prev) => ({ ...prev, tgInitialized }))
 
         // Получаем данные пользователя из Telegram
         const telegramUser = getTelegramUser()
+        setDebug((prev) => ({ ...prev, telegramUser }))
+
         if (!telegramUser?.id) {
           throw new Error("Не удалось получить ID пользователя Telegram")
         }
 
         // Получаем или создаем пользователя в базе данных
         let userData = await getUser(telegramUser.id)
+        setDebug((prev) => ({ ...prev, existingUser: userData }))
+
         if (!userData) {
+          console.log("User not found, creating new user...")
           userData = await createUser(telegramUser.id, telegramUser.username)
+          setDebug((prev) => ({ ...prev, newUser: userData }))
         }
 
         if (!userData) {
-          throw new Error("Не удалось загрузить данные пользователя")
+          throw new Error("Не удалось загрузить или создать пользователя")
         }
 
         setUser(userData)
+        console.log("Initialization completed successfully")
       } catch (err) {
         console.error("Initialization error:", err)
         setError(err.message)
+        setDebug((prev) => ({ ...prev, error: err }))
       } finally {
         setLoading(false)
       }
@@ -56,6 +68,7 @@ function App() {
     setCooldown(3)
 
     try {
+      console.log("Starting mining process...")
       const minedAmount = user.mining_power
       const expGained = Math.floor(minedAmount * 0.1)
 
@@ -68,9 +81,12 @@ function App() {
 
       if (updatedUser) {
         setUser(updatedUser)
+        console.log("User data updated successfully")
 
         // Логируем транзакцию
         await logTransaction(user.id, minedAmount, "mining", "Майнинг криптовалюты")
+      } else {
+        throw new Error("Не удалось обновить данные пользователя")
       }
     } catch (error) {
       console.error("Mining error:", error)
@@ -132,6 +148,22 @@ function App() {
         >
           Попробовать снова
         </button>
+
+        {/* Отладочная информация */}
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "10px",
+            background: "rgba(0,0,0,0.3)",
+            borderRadius: "8px",
+            fontSize: "12px",
+            fontFamily: "monospace",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          <p>Debug Info:</p>
+          {JSON.stringify(debug, null, 2)}
+        </div>
       </div>
     )
   }
@@ -149,6 +181,22 @@ function App() {
       >
         <h2>Ошибка</h2>
         <p>Не удалось загрузить данные пользователя</p>
+
+        {/* Отладочная информация */}
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "10px",
+            background: "rgba(0,0,0,0.3)",
+            borderRadius: "8px",
+            fontSize: "12px",
+            fontFamily: "monospace",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          <p>Debug Info:</p>
+          {JSON.stringify(debug, null, 2)}
+        </div>
       </div>
     )
   }
@@ -172,6 +220,22 @@ function App() {
       />
 
       <MiningButton onMine={mine} cooldown={cooldown} isCooldown={cooldown > 0} />
+
+      {/* Отладочная информация */}
+      <div
+        style={{
+          marginTop: "20px",
+          padding: "10px",
+          background: "rgba(0,0,0,0.3)",
+          borderRadius: "8px",
+          fontSize: "12px",
+          fontFamily: "monospace",
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        <p>Debug Info:</p>
+        {JSON.stringify(debug, null, 2)}
+      </div>
     </div>
   )
 }
