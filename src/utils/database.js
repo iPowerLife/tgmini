@@ -8,7 +8,7 @@ export async function getUser(telegramId) {
 
     if (error) {
       console.error("Error fetching user:", error)
-      throw error
+      return null
     }
 
     console.log("Fetched user data:", data)
@@ -23,13 +23,6 @@ export async function createUser(telegramId, username) {
   console.log("Creating new user:", { telegramId, username })
 
   try {
-    // Проверяем, не существует ли уже пользователь
-    const existingUser = await getUser(telegramId)
-    if (existingUser) {
-      console.log("User already exists:", existingUser)
-      return existingUser
-    }
-
     const { data, error } = await supabase
       .from("users")
       .insert([
@@ -60,29 +53,24 @@ export async function createUser(telegramId, username) {
   }
 }
 
-export async function updateUser(userId, updates) {
-  console.log("Updating user:", { userId, updates })
+export async function updateUserBalance(userId, amount) {
+  console.log("Updating user balance:", { userId, amount })
 
   try {
-    const { data, error } = await supabase
-      .from("users")
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", userId)
-      .select()
-      .single()
+    const { data, error } = await supabase.rpc("update_user_balance", {
+      user_id_param: userId,
+      amount_param: amount,
+    })
 
     if (error) {
-      console.error("Error updating user:", error)
+      console.error("Error updating balance:", error)
       throw error
     }
 
-    console.log("Updated user:", data)
+    console.log("Balance updated:", data)
     return data
   } catch (error) {
-    console.error("Error in updateUser:", error)
+    console.error("Error in updateUserBalance:", error)
     throw error
   }
 }

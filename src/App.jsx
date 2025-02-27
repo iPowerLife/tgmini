@@ -33,95 +33,72 @@ export default function App() {
     const initialize = async () => {
       console.log("Initializing app...")
       await initTelegram()
-      const user = getTelegramUser()
+      const telegramUser = getTelegramUser()
 
-      if (user) {
+      if (telegramUser) {
         try {
-          const { data, error } = await supabase.from("users").select("*").eq("telegram_id", user.id).single()
+          console.log("Telegram user:", telegramUser)
 
-          if (error) {
-            console.error("Ошибка при запросе данных:", error)
+          // Сначала пытаемся получить существующего пользователя
+          let user = await getUser(telegramUser.id)
+
+          // Если пользователь не найден, создаем нового
+          if (!user) {
+            console.log("User not found, creating new user...")
+            try {
+              user = await createUser(telegramUser.id, telegramUser.username)
+              console.log("New user created:", user)
+            } catch (createError) {
+              console.error("Error creating user:", createError)
+              return
+            }
           }
 
-          if (data) {
-            console.log("User data loaded:", data)
-            setUserData(data)
+          // Устанавливаем данные пользователя
+          setUserData(user)
 
-            // Получаем информацию о бонусе сразу после получения данных пользователя
-            const bonusData = await getDailyBonusInfo(data.id)
-            console.log("Initial bonus info:", bonusData)
+          // Получаем информацию о бонусе
+          try {
+            const bonusData = await getDailyBonusInfo(user.id)
+            console.log("Bonus info loaded:", bonusData)
             setBonusInfo(bonusData)
-          } else {
-            // Если пользователя нет в базе, создаем его
-            const newUser = {
-              telegram_id: user.id,
-              username: user.username,
-              first_name: user.first_name,
-              last_name: user.last_name,
-            }
-
-            const { data: newUserData, error: newUserError } = await supabase
-              .from("users")
-              .insert([newUser])
-              .select("*")
-              .single()
-
-            if (newUserError) {
-              console.error("Ошибка при создании пользователя:", newUserError)
-            }
-
-            if (newUserData) {
-              console.log("New user created:", newUserData)
-              setUserData(newUserData)
-
-              // Получаем информацию о бонусе для нового пользователя
-              const bonusData = await getDailyBonusInfo(newUserData.id)
-              console.log("New user bonus info:", bonusData)
-              setBonusInfo(bonusData)
-            }
+          } catch (bonusError) {
+            console.error("Error loading bonus info:", bonusError)
           }
         } catch (error) {
-          console.error("Произошла ошибка:", error)
+          console.error("Error in initialization:", error)
         }
+      } else {
+        console.error("No Telegram user data available")
       }
     }
 
     initialize()
   }, [])
 
-  // Функция для запуска майнинга
   const handleMining = async () => {
-    if (isMining || cooldown > 0) return
+    if (isMining || cooldown > 0 || !userData?.id) return
 
     setIsMining(true)
-    setCooldown(60) // 60 секунд кулдаун
+    setCooldown(60)
 
     try {
       // Симулируем процесс майнинга
-      await new Promise((resolve) => setTimeout(resolve, 5000)) // 5 секунд майнинга
+      await new Promise((resolve) => setTimeout(resolve, 5000))
 
-      // Увеличиваем баланс пользователя
-      const miningReward = userData.mining_power // Награда равна мощности майнинга
-      const newBalance = userData.balance + miningReward
+      const miningReward = userData.mining_power
 
-      // Отправляем обновление баланса в Supabase
-      const { data, error } = await supabase
-        .from("users")
-        .update({ balance: newBalance })
-        .eq("id", userData.id)
-        .select("*")
-        .single()
+      // Обновляем баланс через функцию updateUserBalance
+      const updatedUser = await updateUserBalance(userData.id, miningReward, userData)
 
-      if (error) {
-        console.error("Ошибка при обновлении баланса:", error)
-        // Обработка ошибки обновления баланса
-      } else if (data) {
-        // Обновляем состояние баланса локально
-        setUserData((prev) => ({ ...prev, balance: newBalance }))
+      if (updatedUser) {
+        setUserData(updatedUser)
+
+        // Логируем транзакцию
+        await logTransaction(userData.id, miningReward, "mining", "Майнинг криптовалюты")
       }
     } catch (error) {
-      console.error("Ошибка во время майнинга:", error)
-      // Обработка ошибок в процессе майнинга
+      console.error("Error during mining:", error)
     } finally {
       setIsMining(false)
     }
@@ -373,5 +350,86 @@ export default function App() {
       </style>
     </div>
   )
+}
+
+async function getUser(telegramId) {
+  try {
+    const { data, error } = await supabase.from("users").select("*").eq("telegram_id", telegramId).single()
+
+    if (error) {
+      console.error("Error fetching user:", error)
+      return null
+    }
+
+    return data
+  } catch (error) {
+    console.error("Error in getUser function:", error)
+    return null
+  }
+}
+
+async function createUser(telegramId, username) {
+  try {
+    const newUser = {
+      telegram_id: telegramId,
+      username: username,
+    }
+
+    const { data, error } = await supabase.from("users").insert([newUser]).select("*").single()
+
+    if (error) {
+      console.error("Error creating user:", error)
+      return null
+    }
+
+    return data
+  } catch (error) {
+    console.error("Error in createUser function:", error)
+    return null
+  }
+}
+
+async function updateUserBalance(userId, amount, userData) {
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .update({ balance: userData.balance + amount })
+      .eq("id", userId)
+      .select("*")
+      .single()
+
+    if (error) {
+      console.error("Error updating user balance:", error)
+      return null
+    }
+
+    return data
+  } catch (error) {
+    console.error("Error in updateUserBalance function:", error)
+    return null
+  }
+}
+
+async function logTransaction(userId, amount, type, description) {
+  try {
+    const newTransaction = {
+      user_id: userId,
+      amount: amount,
+      type: type,
+      description: description,
+    }
+
+    const { data, error } = await supabase.from("transactions").insert([newTransaction]).select("*").single()
+
+    if (error) {
+      console.error("Error logging transaction:", error)
+      return null
+    }
+
+    return data
+  } catch (error) {
+    console.error("Error in logTransaction function:", error)
+    return null
+  }
 }
 
