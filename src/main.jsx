@@ -1,14 +1,15 @@
-import React from "react"
 import { createRoot } from "react-dom/client"
 import App from "./App.jsx"
 
-// Простая инициализация без лишней логики
-const container = document.getElementById("app")
-const root = createRoot(container)
+console.log("main.jsx executing")
 
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+const container = document.getElementById("app")
+console.log("Container found:", !!container)
+
+const root = createRoot(container)
+console.log("Root created")
+
+root.render(<App />)
+
+console.log("Render called")
 
