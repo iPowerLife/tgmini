@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "./supabase"
 import { initTelegram, getTelegramUser } from "./utils/telegram"
 import { getDailyBonusInfo, claimDailyBonus } from "./utils/daily-bonus"
+import DailyBonus from "./components/DailyBonus"
 
 export default function App() {
   const [userData, setUserData] = useState({
@@ -27,6 +28,7 @@ export default function App() {
   const [bonusError, setBonusError] = useState(null)
   const [showBonusAnimation, setShowBonusAnimation] = useState(false)
   const [claimedBonus, setClaimedBonus] = useState(null)
+  const [showBonusModal, setShowBonusModal] = useState(false)
 
   // Инициализация и другие эффекты остаются без изменений...
   useEffect(() => {
@@ -247,63 +249,41 @@ export default function App() {
             overflow: "hidden",
           }}
         >
-          <div style={{ marginBottom: "10px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>Ежедневный бонус:</span>
-              {bonusInfo?.streak > 0 && <span style={{ color: "#fbbf24" }}>Серия: {bonusInfo.streak} 🔥</span>}
-            </div>
-          </div>
-
-          {showBonusAnimation && claimedBonus ? (
-            <div
-              style={{
-                textAlign: "center",
-                color: "#4ade80",
-                animation: "fadeIn 0.5s ease-out",
-              }}
-            >
-              <div style={{ fontSize: "20px", marginBottom: "5px" }}>+{claimedBonus.amount} 💎</div>
-              <div>{claimedBonus.type === "weekend" ? "Выходной x2!" : `Серия: ${claimedBonus.streak} 🔥`}</div>
-            </div>
-          ) : (
-            <button
-              onClick={handleClaimBonus}
-              disabled={isClaimingBonus}
-              style={{
-                width: "100%",
-                padding: "12px",
-                backgroundColor: isClaimingBonus ? "#1f2937" : "#3b82f6",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                cursor: isClaimingBonus ? "not-allowed" : "pointer",
-                fontSize: "16px",
-                fontWeight: "bold",
-                transition: "all 0.2s ease",
-              }}
-            >
-              {isClaimingBonus
-                ? "Получение бонуса..."
-                : bonusTimeLeft
-                  ? `Следующий бонус через: ${bonusTimeLeft}`
-                  : "Получить ежедневный бонус 🎁"}
-            </button>
-          )}
-
-          {bonusError && (
-            <div
-              style={{
-                marginTop: "10px",
-                color: "#ff4444",
-                fontSize: "14px",
-                textAlign: "center",
-                animation: "fadeIn 0.3s ease-out",
-              }}
-            >
-              {bonusError}
-            </div>
-          )}
+          <button
+            onClick={() => setShowBonusModal(true)}
+            disabled={isClaimingBonus}
+            style={{
+              width: "100%",
+              padding: "12px",
+              backgroundColor: isClaimingBonus ? "#1f2937" : "#3b82f6",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: isClaimingBonus ? "not-allowed" : "pointer",
+              fontSize: "16px",
+              fontWeight: "bold",
+              transition: "all 0.2s ease",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "10px",
+            }}
+          >
+            <span>Ежедневный бонус</span>
+            {bonusInfo?.streak > 0 && <span style={{ color: "#fbbf24" }}>🔥 {bonusInfo.streak}</span>}
+          </button>
         </div>
+
+        {/* Модальное окно бонуса */}
+        {showBonusModal && (
+          <DailyBonus
+            onClose={() => setShowBonusModal(false)}
+            onClaim={handleClaimBonus}
+            lastClaim={bonusInfo.lastClaim}
+            streak={bonusInfo.streak}
+            isWeekend={bonusInfo.isWeekend}
+          />
+        )}
 
         {/* Кнопка майнинга */}
         <button
