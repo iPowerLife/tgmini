@@ -12,14 +12,7 @@ export default defineConfig({
     host: true,
   },
   build: {
-    // Включаем source maps для отладки
     sourcemap: true,
-    // Добавляем информацию об ошибках
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
-      },
-    },
   },
 })
 

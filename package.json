@@ -70,8 +70,8 @@
     "tsx": "latest",
     "yaml": "latest",
     "vite": "latest",
-    "@supabase/supabase-js": "latest",
     "telegraf": "latest",
+    "@supabase/supabase-js": "latest",
     "dotenv": "latest",
     "@vitejs/plugin-react": "latest"
   },

@@ -1,7 +1,7 @@
 "use client"
 
-import { Progress } from "../src/components/Progress"
+import  from "../src/main"
 
 export default function SyntheticV0PageForDeployment() {
-  return <Progress />
+  return < />
 }
