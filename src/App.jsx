@@ -28,7 +28,7 @@ const Progress = ({ value, className = "" }) => (
   </div>
 )
 
-function App() {
+export default function App() {
   const [user, setUser] = useState(null)
   const [transactions, setTransactions] = useState([])
   const [miners, setMiners] = useState([])
@@ -224,6 +224,4 @@ function App() {
     </div>
   )
 }
-
-export default App
 
