@@ -1,65 +1,90 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { LoadingScreen } from "./components/LoadingScreen"
 import { supabase } from "./supabase"
 
 export default function App() {
-  const [isLoading, setIsLoading] = useState(true)
+  const [status, setStatus] = useState("initializing")
   const [error, setError] = useState(null)
   const [user, setUser] = useState(null)
 
   useEffect(() => {
-    async function initializeApp() {
+    let mounted = true
+
+    async function initialize() {
       try {
-        // Получаем данные пользователя из Telegram
+        // 1. Проверяем Telegram WebApp
         const tg = window.Telegram?.WebApp
-        const telegramUser = tg?.initDataUnsafe?.user
+        if (!tg) {
+          throw new Error("Telegram WebApp не доступен")
+        }
 
+        if (!mounted) return
+        setStatus("connecting")
+
+        // 2. Получаем данные пользователя
+        const telegramUser = tg.initDataUnsafe?.user
         if (!telegramUser) {
-          throw new Error("Не удалось получить данные пользователя Telegram")
+          throw new Error("Не удалось получить данные пользователя")
         }
 
-        // Проверяем подключение к Supabase
-        const { data, error } = await supabase.from("users").select("*").eq("telegram_id", telegramUser.id).single()
+        // 3. Проверяем подключение к базе данных
+        const { data: userData, error: dbError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("telegram_id", telegramUser.id)
+          .single()
 
-        if (error && error.code !== "PGRST116") {
-          throw new Error(`Ошибка базы данных: ${error.message}`)
+        if (dbError && dbError.code !== "PGRST116") {
+          throw new Error(`Ошибка базы данных: ${dbError.message}`)
         }
 
-        setUser(data || { telegram_id: telegramUser.id })
-        setIsLoading(false)
+        if (!mounted) return
+
+        // 4. Устанавливаем данные пользователя
+        setUser(
+          userData || {
+            telegram_id: telegramUser.id,
+            username: telegramUser.username,
+            balance: 0,
+            mining_power: 1,
+          },
+        )
+
+        setStatus("ready")
+
+        // 5. Инициализируем Telegram WebApp
+        tg.ready()
+        tg.expand()
       } catch (err) {
-        console.error("Ошибка инициализации:", err)
-        setError(err.message)
-        setIsLoading(false)
+        console.error("Initialization error:", err)
+        if (mounted) {
+          setError(err.message)
+          setStatus("error")
+        }
       }
     }
 
-    initializeApp()
+    initialize()
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
-  if (isLoading) {
+  // Показываем экран загрузки
+  if (status === "initializing" || status === "connecting") {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: "20px",
-          padding: "20px",
-          backgroundColor: "#1a1b1e",
-          color: "white",
-        }}
-      >
-        <div>Загрузка игры...</div>
-        <div style={{ color: "#666", fontSize: "14px" }}>Подключение к серверу</div>
-      </div>
+      <LoadingScreen
+        message={status === "initializing" ? "Загрузка приложения..." : "Подключение к серверу..."}
+        subMessage={status === "initializing" ? "Подождите, игра запускается" : "Получение данных пользователя"}
+      />
     )
   }
 
-  if (error) {
+  // Показываем ошибку
+  if (status === "error") {
     return (
       <div
         style={{
@@ -72,9 +97,11 @@ export default function App() {
           padding: "20px",
           backgroundColor: "#1a1b1e",
           color: "white",
+          textAlign: "center",
         }}
       >
-        <div style={{ color: "#ff4444" }}>{error}</div>
+        <div style={{ color: "#ff4444", marginBottom: "10px" }}>Произошла ошибка</div>
+        <div style={{ color: "#666", fontSize: "14px" }}>{error}</div>
         <button
           onClick={() => window.location.reload()}
           style={{
@@ -84,6 +111,7 @@ export default function App() {
             border: "none",
             borderRadius: "4px",
             cursor: "pointer",
+            marginTop: "20px",
           }}
         >
           Попробовать снова
@@ -92,6 +120,7 @@ export default function App() {
     )
   }
 
+  // Основной интерфейс
   return (
     <div
       style={{
@@ -121,7 +150,10 @@ export default function App() {
       )}
 
       <button
-        onClick={() => window.location.reload()}
+        onClick={() => {
+          // Здесь будет логика майнинга
+          console.log("Mining started")
+        }}
         style={{
           padding: "15px",
           backgroundColor: "#3b82f6",
