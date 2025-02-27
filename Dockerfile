@@ -1,17 +1,17 @@
-# Используем Node.js 20
+# Используем официальный образ Node.js
 FROM node:20-alpine as builder
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Обновляем npm до последней версии
-RUN npm install -g npm@latest
+# Копируем конфигурационные файлы
+COPY package*.json .npmrc ./
 
-# Копируем файлы package.json и package-lock.json
-COPY package*.json ./
-
-# Устанавливаем зависимости и исправляем уязвимости
-RUN npm install && npm audit fix --force
+# Устанавливаем зависимости с дополнительными проверками безопасности
+RUN npm install -g npm@latest && \
+    npm install && \
+    npm audit fix --force && \
+    npm prune --production
 
 # Копируем исходный код
 COPY . .
@@ -24,7 +24,7 @@ FROM node:20-alpine as runner
 
 WORKDIR /app
 
-# Копируем собранные файлы и зависимости
+# Копируем собранные файлы и production зависимости
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules

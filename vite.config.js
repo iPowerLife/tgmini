@@ -12,6 +12,10 @@ export default defineConfig({
   server: {
     port: process.env.PORT || 3000,
     host: true,
+    hmr: {
+      protocol: "ws",
+      host: "localhost",
+    },
   },
   build: {
     outDir: "dist",
@@ -27,15 +31,14 @@ export default defineConfig({
         },
       },
     },
+    target: "esnext",
+    minify: "esbuild",
   },
   optimizeDeps: {
     include: ["react", "react-dom", "@supabase/supabase-js"],
     esbuildOptions: {
-      target: "es2020",
+      target: "esnext",
     },
-  },
-  esbuild: {
-    target: "es2020",
   },
 })
 
