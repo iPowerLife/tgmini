@@ -1,10 +1,79 @@
 import { supabase } from "../supabase"
 
+export async function claimDailyBonus(userId, amount) {
+  try {
+    console.log("Starting daily bonus claim:", { userId, amount })
+
+    // Начинаем транзакцию
+    const { error: beginError } = await supabase.rpc("begin_transaction")
+    if (beginError) throw beginError
+
+    try {
+      // Обновляем баланс пользователя
+      const { data: user, error: userError } = await supabase
+        .from("users")
+        .update({
+          balance: supabase.raw(`balance + ${amount}`),
+        })
+        .eq("id", userId)
+        .select()
+        .single()
+
+      if (userError) throw userError
+      console.log("Updated user balance:", user)
+
+      // Записываем бонус
+      const { data: bonus, error: bonusError } = await supabase
+        .from("daily_bonuses")
+        .insert([
+          {
+            user_id: userId,
+            amount: amount,
+            streak: 1, // Начинаем новую серию
+            claimed_at: new Date().toISOString(),
+          },
+        ])
+        .select()
+        .single()
+
+      if (bonusError) throw bonusError
+      console.log("Recorded bonus:", bonus)
+
+      // Записываем транзакцию
+      const { error: transactionError } = await supabase.from("transactions").insert([
+        {
+          user_id: userId,
+          amount: amount,
+          type: "daily_bonus",
+          description: "Ежедневный бонус",
+        },
+      ])
+
+      if (transactionError) throw transactionError
+      console.log("Recorded transaction")
+
+      // Завершаем транзакцию
+      const { error: commitError } = await supabase.rpc("commit_transaction")
+      if (commitError) throw commitError
+
+      console.log("Daily bonus claimed successfully")
+      return { success: true, user }
+    } catch (error) {
+      // Откатываем транзакцию в случае ошибки
+      const { error: rollbackError } = await supabase.rpc("rollback_transaction")
+      if (rollbackError) console.error("Rollback error:", rollbackError)
+      throw error
+    }
+  } catch (error) {
+    console.error("Error in claimDailyBonus:", error)
+    return { success: false, error: error.message }
+  }
+}
+
 export async function getDailyBonusInfo(userId) {
   try {
     console.log("Getting daily bonus info for user:", userId)
 
-    // Получаем последний полученный бонус
     const { data: lastBonus, error: bonusError } = await supabase
       .from("daily_bonuses")
       .select("*")
@@ -18,103 +87,28 @@ export async function getDailyBonusInfo(userId) {
       throw bonusError
     }
 
-    console.log("Last bonus data:", lastBonus)
-
     if (!lastBonus) {
-      console.log("No previous bonus found, can claim")
       return { canClaim: true, streak: 0, lastClaim: null }
     }
 
     const now = new Date()
     const lastClaim = new Date(lastBonus.claimed_at)
-    const daysSinceLastClaim = Math.floor((now - lastClaim) / (1000 * 60 * 60 * 24))
 
+    // Сбрасываем время до начала дня для корректного сравнения
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const lastClaimDay = new Date(lastClaim.getFullYear(), lastClaim.getMonth(), lastClaim.getDate())
+
+    const daysSinceLastClaim = Math.floor((today - lastClaimDay) / (1000 * 60 * 60 * 24))
     console.log("Days since last claim:", daysSinceLastClaim)
 
-    // Проверяем, можно ли получить бонус
-    const canClaim = daysSinceLastClaim >= 1
-
-    // Проверяем, не прервалась ли серия
-    const streak = daysSinceLastClaim === 1 ? lastBonus.streak : 0
-
-    console.log("Bonus info:", { canClaim, streak, lastClaim: lastBonus.claimed_at })
-    return { canClaim, streak, lastClaim: lastBonus.claimed_at }
+    return {
+      canClaim: daysSinceLastClaim >= 1,
+      streak: daysSinceLastClaim === 1 ? lastBonus.streak : 0,
+      lastClaim: lastBonus.claimed_at,
+    }
   } catch (error) {
     console.error("Error in getDailyBonusInfo:", error)
-    return { canClaim: false, streak: 0, lastClaim: null }
-  }
-}
-
-export async function claimDailyBonus(userId, amount) {
-  try {
-    console.log("Claiming daily bonus:", { userId, amount })
-
-    // Проверяем, можно ли получить бонус
-    const bonusInfo = await getDailyBonusInfo(userId)
-    console.log("Current bonus info:", bonusInfo)
-
-    if (!bonusInfo.canClaim) {
-      console.log("Cannot claim bonus yet")
-      return { success: false, error: "Бонус уже получен сегодня" }
-    }
-
-    // Начинаем транзакцию
-    const { data: bonus, error: bonusError } = await supabase
-      .from("daily_bonuses")
-      .insert([
-        {
-          user_id: userId,
-          amount: amount,
-          streak: bonusInfo.streak + 1,
-        },
-      ])
-      .select()
-      .single()
-
-    if (bonusError) {
-      console.error("Error inserting bonus:", bonusError)
-      throw bonusError
-    }
-
-    console.log("Bonus recorded:", bonus)
-
-    // Обновляем баланс пользователя
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .update({
-        balance: supabase.raw(`balance + ${amount}`),
-      })
-      .eq("id", userId)
-      .select()
-      .single()
-
-    if (userError) {
-      console.error("Error updating user balance:", userError)
-      throw userError
-    }
-
-    console.log("User balance updated:", user)
-
-    // Логируем транзакцию
-    const { error: transactionError } = await supabase.from("transactions").insert([
-      {
-        user_id: userId,
-        amount: amount,
-        type: "daily_bonus",
-        description: `Ежедневный бонус (День ${bonusInfo.streak + 1})`,
-      },
-    ])
-
-    if (transactionError) {
-      console.error("Error logging transaction:", transactionError)
-      throw transactionError
-    }
-
-    console.log("Daily bonus claimed successfully")
-    return { success: true, user, bonus }
-  } catch (error) {
-    console.error("Error in claimDailyBonus:", error)
-    return { success: false, error: error.message }
+    return { canClaim: true, streak: 0, lastClaim: null }
   }
 }
 
