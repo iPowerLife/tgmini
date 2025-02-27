@@ -1,8 +1,14 @@
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
+import { resolve } from "path"
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "./src"),
+    },
+  },
   server: {
     port: process.env.PORT || 3000,
     host: true,
@@ -10,21 +16,26 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: true,
-    commonjsOptions: {
-      include: [/node_modules/],
-      transformMixedEsModules: true,
-    },
     rollupOptions: {
+      input: {
+        main: resolve(__dirname, "index.html"),
+      },
       output: {
         manualChunks: {
-          "react-vendor": ["react", "react-dom"],
-          "supabase-vendor": ["@supabase/supabase-js"],
+          vendor: ["react", "react-dom"],
+          supabase: ["@supabase/supabase-js"],
         },
       },
     },
   },
   optimizeDeps: {
     include: ["react", "react-dom", "@supabase/supabase-js"],
+    esbuildOptions: {
+      target: "es2020",
+    },
+  },
+  esbuild: {
+    target: "es2020",
   },
 })
 
