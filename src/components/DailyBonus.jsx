@@ -9,6 +9,41 @@ export function DailyBonus({ onClose, onClaim, lastClaim, streak = 0, isWeekend 
   const [showAnimation, setShowAnimation] = useState(false)
   const [claimedBonus, setClaimedBonus] = useState(null)
 
+  const handleClaim = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const result = await onClaim()
+      console.log("Claim result:", result) // Отладочный лог
+
+      // Проверяем наличие результата
+      if (!result) {
+        throw new Error("Не удалось получить бонус")
+      }
+
+      // Проверяем успешность операции
+      if (!result.success) {
+        throw new Error(result.error || "Ошибка получения бонуса")
+      }
+
+      // Если бонус успешно получен
+      if (result.bonus) {
+        setClaimedBonus(result.bonus)
+        setShowAnimation(true)
+        setTimeout(() => {
+          setShowAnimation(false)
+          onClose()
+        }, 3000)
+      }
+    } catch (err) {
+      console.error("Error in handleClaim:", err)
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Обновляем таймер
   useEffect(() => {
     if (!lastClaim) return
@@ -36,27 +71,6 @@ export function DailyBonus({ onClose, onClaim, lastClaim, streak = 0, isWeekend 
     return () => clearInterval(timer)
   }, [lastClaim])
 
-  const handleClaim = async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      const result = await onClaim()
-
-      if (result.success) {
-        setClaimedBonus(result.bonus)
-        setShowAnimation(true)
-        setTimeout(() => {
-          setShowAnimation(false)
-          onClose()
-        }, 3000)
-      }
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   return (
     <div
       style={{
@@ -83,31 +97,6 @@ export function DailyBonus({ onClose, onClaim, lastClaim, streak = 0, isWeekend 
           overflow: "hidden",
         }}
       >
-        {/* Анимация получения бонуса */}
-        {showAnimation && claimedBonus && (
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(74, 222, 128, 0.1)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              animation: "fadeIn 0.5s ease-out",
-              zIndex: 2,
-            }}
-          >
-            <div style={{ fontSize: "24px", marginBottom: "10px" }}>+{claimedBonus.amount} 💎</div>
-            <div style={{ color: "#4ade80" }}>
-              {claimedBonus.type === "weekend" ? "Выходной x2!" : `Серия: ${claimedBonus.streak} 🔥`}
-            </div>
-          </div>
-        )}
-
         <div
           style={{
             display: "flex",
@@ -165,11 +154,35 @@ export function DailyBonus({ onClose, onClaim, lastClaim, streak = 0, isWeekend 
             fontSize: "16px",
             fontWeight: "bold",
             transition: "all 0.2s ease",
-            transform: showAnimation ? "scale(0.95)" : "scale(1)",
           }}
         >
           {isLoading ? "Получение бонуса..." : timeLeft ? "Приходите позже" : "Получить бонус"}
         </button>
+
+        {/* Анимация получения бонуса */}
+        {showAnimation && claimedBonus && (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(74, 222, 128, 0.1)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              animation: "fadeIn 0.5s ease-out",
+              zIndex: 2,
+            }}
+          >
+            <div style={{ fontSize: "24px", marginBottom: "10px" }}>+{claimedBonus.amount} 💎</div>
+            <div style={{ color: "#4ade80" }}>
+              {claimedBonus.type === "weekend" ? "Выходной x2!" : `Серия: ${claimedBonus.streak} 🔥`}
+            </div>
+          </div>
+        )}
       </div>
 
       <style>

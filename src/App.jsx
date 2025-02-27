@@ -87,30 +87,31 @@ export default function App() {
   }, [userData?.id])
 
   // Добавьте функцию для получения бонуса
-  const handleClaimBonus = async (amount) => {
+  const handleClaimBonus = async () => {
     if (!userData?.id) {
       console.error("No user data available")
-      return
+      return { success: false, error: "Пользователь не найден" }
     }
 
-    console.log("Claiming bonus:", { userId: userData.id, amount })
-    const result = await claimDailyBonus(userData.id, amount)
+    try {
+      console.log("Claiming bonus for user:", userData.id)
+      const result = await claimDailyBonus(userData.id)
 
-    if (result.success) {
-      console.log("Bonus claimed successfully:", result)
-      // Обновляем данные пользователя
-      setUserData(result.user)
-      // Обновляем информацию о бонусе
-      setBonusInfo({
-        canClaim: false,
-        lastClaim: new Date().toISOString(),
-        streak: 1,
-      })
-      // Закрываем окно
-      setShowDailyBonus(false)
-    } else {
-      console.error("Failed to claim bonus:", result.error)
-      alert("Не удалось получить бонус: " + result.error)
+      if (result.success) {
+        // Обновляем данные пользователя
+        setUserData(result.user)
+        // Обновляем информацию о бонусе
+        const newBonusInfo = await getDailyBonusInfo(userData.id)
+        setBonusInfo(newBonusInfo)
+      }
+
+      return result
+    } catch (error) {
+      console.error("Failed to claim bonus:", error)
+      return {
+        success: false,
+        error: error.message || "Не удалось получить бонус",
+      }
     }
   }
 
