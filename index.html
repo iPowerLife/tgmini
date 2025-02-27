@@ -3,40 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test App</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Добавляем базовые стили -->
+    <title>Debug Test</title>
+    <!-- Добавляем скрипт Telegram перед всем остальным -->
+    <script>
+        // Отлавливаем ошибки загрузки скрипта Telegram
+        window.telegramLoaded = false;
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('Global error:', { msg, url, line, col, error });
+            showError('Global: ' + msg);
+        };
+    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js" 
+            onload="window.telegramLoaded = true; console.log('Telegram script loaded')"
+            onerror="console.error('Failed to load Telegram script'); showError('Failed to load Telegram script')">
+    </script>
     <style>
         body {
             margin: 0;
-            padding: 0;
+            padding: 20px;
             background: #1a1b1e;
             color: white;
-            font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        #error-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            z-index: 9999;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        #debug-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            z-index: 9999;
+        }
+        #app {
+            margin-top: 60px;
+            margin-bottom: 60px;
         }
     </style>
 </head>
 <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.jsx"></script>
-    <!-- Добавляем скрипт для отладки -->
+    <!-- Контейнер для отладочной информации -->
+    <div id="debug-container">Загрузка...</div>
+    
+    <!-- Контейнер для приложения -->
+    <div id="app">
+        <!-- Fallback контент -->
+        <h1>Загрузка приложения...</h1>
+        <p>Если вы видите это сообщение дольше 5 секунд, возможно произошла ошибка.</p>
+    </div>
+    
+    <!-- Контейнер для ошибок -->
+    <div id="error-container"></div>
+
     <script>
-        window.onerror = function(msg, url, line, col, error) {
-            // Создаем элемент для отображения ошибки
-            var errorDiv = document.createElement('div');
-            errorDiv.style.position = 'fixed';
-            errorDiv.style.bottom = '0';
-            errorDiv.style.left = '0';
-            errorDiv.style.right = '0';
-            errorDiv.style.padding = '10px';
-            errorDiv.style.background = 'rgba(255,0,0,0.8)';
-            errorDiv.style.color = 'white';
-            errorDiv.style.fontSize = '12px';
-            errorDiv.textContent = 'Error: ' + msg + ' at ' + line + ':' + col;
-            document.body.appendChild(errorDiv);
-            return false;
-        };
+        // Функция для отображения ошибок
+        function showError(error) {
+            const container = document.getElementById('error-container');
+            const timestamp = new Date().toISOString();
+            container.innerHTML += `[${timestamp}] ${error}\n`;
+        }
+
+        // Функция для отображения отладочной информации
+        function updateDebugInfo() {
+            const container = document.getElementById('debug-container');
+            const info = {
+                timestamp: new Date().toISOString(),
+                url: window.location.href,
+                telegramLoaded: window.telegramLoaded,
+                telegramWebApp: Boolean(window.Telegram?.WebApp),
+                initData: window.Telegram?.WebApp?.initData || 'нет',
+                initDataUnsafe: JSON.stringify(window.Telegram?.WebApp?.initDataUnsafe || {}, null, 2),
+                platform: window.Telegram?.WebApp?.platform || 'неизвестно',
+                viewportHeight: window.Telegram?.WebApp?.viewportHeight,
+                viewportStableHeight: window.Telegram?.WebApp?.viewportStableHeight
+            };
+            container.textContent = JSON.stringify(info, null, 2);
+        }
+
+        // Обновляем отладочную информацию каждую секунду
+        setInterval(updateDebugInfo, 1000);
+
+        // Проверяем загрузку React
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                if (!document.getElementById('app').children.length > 1) {
+                    showError('React приложение не загрузилось за 5 секунд');
+                }
+            }, 5000);
+        });
     </script>
+
+    <!-- Загружаем React приложение -->
+    <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
 
