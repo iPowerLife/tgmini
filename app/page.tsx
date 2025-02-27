@@ -1,7 +1,7 @@
 "use client"
 
-import { getDailyBonus } from "../daily-bonus"
+import Home from "../pages/index"
 
 export default function SyntheticV0PageForDeployment() {
-  return <getDailyBonus />
+  return <Home />
 }

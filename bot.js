@@ -20,6 +20,9 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 // Инициализация бота
 const bot = new Telegraf(process.env.BOT_TOKEN)
 
+// Добавляем URL для веб-приложения
+const WEBAPP_URL = process.env.WEBAPP_URL || "https://your-railway-app-url.up.railway.app"
+
 // Функции для работы с базой данных
 async function registerUser(telegramId, username) {
   try {
@@ -104,7 +107,7 @@ async function mineCoins(userId) {
   }
 }
 
-// Команды бота
+// Модифицируем команду start для добавления кнопки веб-приложения
 bot.command("start", async (ctx) => {
   try {
     const user = await registerUser(ctx.from.id, ctx.from.username)
@@ -112,14 +115,17 @@ bot.command("start", async (ctx) => {
       return ctx.reply("Произошла ошибка при регистрации. Пожалуйста, попробуйте позже.")
     }
 
-    return ctx.reply(
-      `Добро пожаловать в игру Майнинг, ${ctx.from.first_name}!`,
-      Markup.keyboard([
-        ["⛏️ Майнить", "💰 Баланс"],
-        ["🛒 Магазин", "🎒 Инвентарь"],
-        ["📊 Статистика", "❓ Помощь"],
-      ]).resize(),
-    )
+    return ctx.reply(`Добро пожаловать в игру Майнинг, ${ctx.from.first_name}!`, {
+      reply_markup: {
+        keyboard: [
+          ["⛏️ Майнить", "💰 Баланс"],
+          ["🛒 Магазин", "🎒 Инвентарь"],
+          ["📊 Статистика", "❓ Помощь"],
+        ],
+        resize_keyboard: true,
+      },
+      ...Markup.inlineKeyboard([[{ text: "🎮 Открыть игру", web_app: { url: WEBAPP_URL } }]]),
+    })
   } catch (error) {
     console.error("Error in start command:", error)
     return ctx.reply("Произошла ошибка. Пожалуйста, попробуйте позже.")
