@@ -8,12 +8,14 @@ function App() {
     initDataReceived: false,
     userId: null,
     error: null,
+    host: window.location.host,
   })
 
   React.useEffect(() => {
     try {
       const tgWebAppAvailable = Boolean(window.Telegram?.WebApp)
       console.log("Telegram WebApp available:", tgWebAppAvailable)
+      console.log("Current host:", window.location.host)
 
       setDebugInfo((prev) => ({
         ...prev,
@@ -75,6 +77,7 @@ function App() {
           fontFamily: "monospace",
         }}
       >
+        <div>Текущий хост: {debugInfo.host}</div>
         <div>Telegram WebApp доступен: {debugInfo.telegramWebAppAvailable ? "Да" : "Нет"}</div>
         <div>Данные получены: {debugInfo.initDataReceived ? "Да" : "Нет"}</div>
         <div>ID пользователя: {debugInfo.userId || "Нет"}</div>
