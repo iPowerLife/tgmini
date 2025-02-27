@@ -10,8 +10,8 @@ export default defineConfig({
       origin: "*",
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
-      credentials: true,
-    },
+      credentials: true
+    }
   },
   preview: {
     port: process.env.PORT || 3000,
@@ -20,13 +20,19 @@ export default defineConfig({
       origin: "*",
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
-      credentials: true,
+      credentials: true
     },
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization"
     },
-  },
+    allowedHosts: [
+      "tgmini-production.up.railway.app",
+      "tgmini-production.up.railway.app:3000",
+      ".railway.app",
+      "telegram.org",
+      "telegram.me"
+    ]
+  }
 })
-
