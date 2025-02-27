@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { supabase, checkDatabaseConnection, createUser, getUserData } from "./supabase"
+import { supabase, checkDatabaseConnection, initializeDatabase, createUser, getUserData } from "./supabase"
 
 function App() {
   const [user, setUser] = React.useState(null)
@@ -14,6 +14,7 @@ function App() {
     userId: null,
     host: window.location.host,
     databaseConnected: false,
+    databaseInitialized: false,
   })
 
   React.useEffect(() => {
@@ -33,6 +34,17 @@ function App() {
 
       if (!isConnected) {
         throw new Error("Нет подключения к базе данных")
+      }
+
+      // Инициализируем базу данных
+      const isInitialized = await initializeDatabase()
+      setDebugInfo((prev) => ({
+        ...prev,
+        databaseInitialized: isInitialized,
+      }))
+
+      if (!isInitialized) {
+        throw new Error("Ошибка инициализации базы данных")
       }
 
       const tgWebAppAvailable = Boolean(window.Telegram?.WebApp)
@@ -252,6 +264,7 @@ function App() {
           <div>База данных: {debugInfo.databaseConnected ? "Подключена" : "Ошибка подключения"}</div>
           <div>Telegram WebApp: {debugInfo.telegramWebAppAvailable ? "Доступен" : "Недоступен"}</div>
           <div>ID пользователя: {debugInfo.userId || "Нет"}</div>
+          <div>База данных инициализирована: {debugInfo.databaseInitialized ? "Да" : "Нет"}</div>
         </div>
       </div>
     )
@@ -368,6 +381,7 @@ function App() {
         <div>База данных: {debugInfo.databaseConnected ? "Подключена" : "Ошибка подключения"}</div>
         <div>Telegram WebApp: {debugInfo.telegramWebAppAvailable ? "Доступен" : "Недоступен"}</div>
         <div>ID пользователя: {debugInfo.userId || "Нет"}</div>
+        <div>База данных инициализирована: {debugInfo.databaseInitialized ? "Да" : "Нет"}</div>
       </div>
     </div>
   )
