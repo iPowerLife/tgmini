@@ -1,0 +1,9 @@
+telegram-mining-game/
+├── index.html
+├── package.json
+├── vite.config.js
+├── railway.json
+└── src/
+    ├── main.jsx
+    └── App.jsx
+
