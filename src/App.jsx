@@ -4,6 +4,10 @@ import { useState, useEffect } from "react"
 import { supabase } from "./supabase"
 import { initTelegram, getTelegramUser } from "./utils/telegram"
 
+// Добавьте импорт компонента и функций
+import { DailyBonus } from "./components/DailyBonus"
+import { getDailyBonusInfo, claimDailyBonus } from "./utils/daily-bonus"
+
 export default function App() {
   const [userData, setUserData] = useState({
     balance: 0,
@@ -14,6 +18,10 @@ export default function App() {
   })
   const [isMining, setIsMining] = useState(false)
   const [cooldown, setCooldown] = useState(0)
+
+  // В компоненте App добавьте новое состояние
+  const [showDailyBonus, setShowDailyBonus] = useState(false)
+  const [bonusInfo, setBonusInfo] = useState(null)
 
   // Инициализация приложения
   useEffect(() => {
@@ -65,6 +73,35 @@ export default function App() {
 
     init()
   }, [])
+
+  // Добавьте эффект для проверки бонуса
+  useEffect(() => {
+    const checkBonus = async () => {
+      if (userData?.id) {
+        const info = await getDailyBonusInfo(userData.id)
+        setBonusInfo(info)
+      }
+    }
+
+    checkBonus()
+  }, [userData?.id])
+
+  // Добавьте функцию для получения бонуса
+  const handleClaimBonus = async (amount) => {
+    if (!userData?.id) return
+
+    const result = await claimDailyBonus(userData.id, amount)
+    if (result.success) {
+      setUserData(result.user)
+      setBonusInfo({
+        ...bonusInfo,
+        canClaim: false,
+        lastClaim: new Date().toISOString(),
+        streak: (bonusInfo?.streak || 0) + 1,
+      })
+      setShowDailyBonus(false)
+    }
+  }
 
   const handleMining = async () => {
     if (isMining || cooldown > 0) return
@@ -195,6 +232,30 @@ export default function App() {
             />
           )}
         </button>
+
+        <button
+          onClick={() => setShowDailyBonus(true)}
+          style={{
+            padding: "10px",
+            backgroundColor: bonusInfo?.canClaim ? "#4ade80" : "#1f2937",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            cursor: bonusInfo?.canClaim ? "pointer" : "not-allowed",
+            fontSize: "14px",
+          }}
+        >
+          Ежедневный бонус 🎁
+        </button>
+
+        {showDailyBonus && (
+          <DailyBonus
+            onClose={() => setShowDailyBonus(false)}
+            onClaim={handleClaimBonus}
+            lastClaim={bonusInfo?.lastClaim}
+            streak={bonusInfo?.streak || 0}
+          />
+        )}
       </div>
     </div>
   )
