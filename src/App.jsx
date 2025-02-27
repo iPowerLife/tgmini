@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "./supabase"
+import { initTelegram, getTelegramUser } from "./utils/telegram"
 
 export default function App() {
   const [userData, setUserData] = useState({
@@ -14,24 +15,19 @@ export default function App() {
   const [isMining, setIsMining] = useState(false)
   const [cooldown, setCooldown] = useState(0)
 
-  // Быстрая инициализация Telegram
+  // Инициализация приложения
   useEffect(() => {
-    const tg = window.Telegram?.WebApp
-    if (tg) {
-      tg.ready()
-      tg.expand()
-    }
-  }, [])
-
-  // Загрузка данных пользователя в фоновом режиме
-  useEffect(() => {
-    const loadUserData = async () => {
+    const init = async () => {
       try {
-        const tg = window.Telegram?.WebApp
-        if (!tg?.initDataUnsafe?.user) return
+        // Инициализируем Telegram WebApp
+        const tg = initTelegram()
+        if (!tg) return
 
-        const telegramUser = tg.initDataUnsafe.user
+        // Получаем данные пользователя
+        const telegramUser = getTelegramUser()
+        if (!telegramUser) return
 
+        // Загружаем данные из базы
         const { data: existingUser } = await supabase
           .from("users")
           .select("*")
@@ -43,6 +39,7 @@ export default function App() {
           return
         }
 
+        // Создаем нового пользователя
         const { data: newUser } = await supabase
           .from("users")
           .insert([
@@ -62,11 +59,11 @@ export default function App() {
 
         if (newUser) setUserData(newUser)
       } catch (error) {
-        console.error("Error loading user data:", error)
+        console.error("Initialization error:", error)
       }
     }
 
-    loadUserData()
+    init()
   }, [])
 
   const handleMining = async () => {
