@@ -1,49 +1,86 @@
-import { createRoot } from "react-dom/client"
-import App from "./App.jsx"
+"use client"
 
-console.log("main.jsx: Starting initialization")
+import { useEffect } from "react"
+
+import { useState } from "react"
+
+import { createRoot } from "react-dom/client"
+import { StrictMode } from "react"
+import App from "./App"
+
+const container = document.getElementById("root")
+
+if (!container) {
+  throw new Error("Root element not found!")
+}
+
+const root = createRoot(container)
 
 try {
-  const container = document.getElementById("app")
-  console.log("main.jsx: Container found:", !!container)
-
-  if (!container) {
-    throw new Error("Root element #app not found")
-  }
-
-  console.log("main.jsx: Creating root")
-  const root = createRoot(container)
-
-  console.log("main.jsx: Rendering app")
-  root.render(<App />)
-
-  console.log("main.jsx: Initial render complete")
+  root.render(
+    <StrictMode>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </StrictMode>,
+  )
 } catch (error) {
-  console.error("main.jsx: Initialization error:", error)
-
-  // Показываем ошибку на странице
-  document.body.innerHTML = `
+  console.error("Rendering error:", error)
+  container.innerHTML = `
     <div style="
       min-height: 100vh;
-      background-color: #1a1b1e;
-      color: white;
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       padding: 20px;
       text-align: center;
+      color: white;
     ">
-      <div style="color: #ff4444; margin-bottom: 20px;">
-        Ошибка инициализации React
-      </div>
-      <div style="color: #666; font-size: 14px;">
-        ${error.message}
-      </div>
-      <div style="margin-top: 20px; font-size: 12px; color: #666;">
-        Проверьте консоль для дополнительной информации
-      </div>
+      <h1 style="color: #ef4444; margin-bottom: 20px;">Ошибка</h1>
+      <p>${error.message}</p>
     </div>
   `
+}
+
+// Error Boundary Component
+function ErrorBoundary({ children }) {
+  const [hasError, setHasError] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    window.onerror = (message, source, lineno, colno, error) => {
+      console.error("Global error:", { message, source, lineno, colno, error })
+      setHasError(true)
+      setError(error)
+      return false
+    }
+
+    return () => {
+      window.onerror = null
+    }
+  }, [])
+
+  if (hasError) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "20px",
+          textAlign: "center",
+          color: "white",
+        }}
+      >
+        <h1 style={{ color: "#ef4444", marginBottom: "20px" }}>Что-то пошло не так</h1>
+        <p>{error?.message || "Произошла неизвестная ошибка"}</p>
+      </div>
+    )
+  }
+
+  return children
 }
 
