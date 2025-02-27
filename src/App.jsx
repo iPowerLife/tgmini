@@ -32,6 +32,15 @@ function Progress({ value, className = "" }) {
   )
 }
 
+// Компонент отладочной информации
+function DebugInfo({ data }) {
+  return (
+    <div className="debug-info">
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </div>
+  )
+}
+
 // Основной компонент приложения
 function App() {
   const [user, setUser] = React.useState(null)
@@ -39,56 +48,79 @@ function App() {
   const [miners, setMiners] = React.useState([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState(null)
-  const [telegramWebApp, setTelegramWebApp] = React.useState(null)
+  const [debugData, setDebugData] = React.useState({
+    telegramWebApp: null,
+    initData: null,
+    supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+    stage: "initial",
+  })
 
   React.useEffect(() => {
     // Подключаем Telegram WebApp
-    if (window.Telegram?.WebApp) {
-      console.log("Telegram WebApp already available")
-      const tg = window.Telegram.WebApp
-      setTelegramWebApp(tg)
-      tg.ready()
-      tg.expand()
-      loadData(tg.initDataUnsafe)
-    } else {
-      console.log("Loading Telegram WebApp script...")
-      const script = document.createElement("script")
-      script.src = "https://telegram.org/js/telegram-web-app.js"
-      script.async = true
-      script.onload = () => {
-        console.log("Telegram WebApp script loaded")
-        if (window.Telegram?.WebApp) {
-          const tg = window.Telegram.WebApp
-          setTelegramWebApp(tg)
-          tg.ready()
-          tg.expand()
-          loadData(tg.initDataUnsafe)
-        } else {
-          console.error("Telegram WebApp not available after script load")
-          setError("Не удалось инициализировать Telegram WebApp")
-          setLoading(false)
-        }
-      }
-      script.onerror = () => {
-        console.error("Failed to load Telegram WebApp script")
-        setError("Не удалось загрузить Telegram WebApp")
-        setLoading(false)
-      }
-      document.head.appendChild(script)
+    try {
+      setDebugData((prev) => ({ ...prev, stage: "loading-script" }))
 
-      return () => {
-        document.head.removeChild(script)
+      if (window.Telegram?.WebApp) {
+        const tg = window.Telegram.WebApp
+        setDebugData((prev) => ({
+          ...prev,
+          stage: "webapp-ready",
+          telegramWebApp: {
+            version: tg.version,
+            platform: tg.platform,
+            colorScheme: tg.colorScheme,
+            themeParams: tg.themeParams,
+          },
+        }))
+
+        tg.ready()
+        tg.expand()
+
+        // Принудительно устанавливаем тёмную тему
+        document.documentElement.style.setProperty("--tg-theme-bg-color", "#1a1b1e")
+        document.documentElement.style.setProperty("--tg-theme-text-color", "#ffffff")
+
+        loadData(tg.initDataUnsafe)
+      } else {
+        const script = document.createElement("script")
+        script.src = "https://telegram.org/js/telegram-web-app.js"
+        script.async = true
+        script.onload = () => {
+          if (window.Telegram?.WebApp) {
+            const tg = window.Telegram.WebApp
+            setDebugData((prev) => ({
+              ...prev,
+              stage: "webapp-loaded",
+              telegramWebApp: {
+                version: tg.version,
+                platform: tg.platform,
+                colorScheme: tg.colorScheme,
+                themeParams: tg.themeParams,
+              },
+            }))
+
+            tg.ready()
+            tg.expand()
+            loadData(tg.initDataUnsafe)
+          } else {
+            setError("Telegram WebApp не доступен после загрузки скрипта")
+            setDebugData((prev) => ({ ...prev, stage: "webapp-load-failed" }))
+          }
+        }
+        document.head.appendChild(script)
       }
+    } catch (err) {
+      setError(err.message)
+      setDebugData((prev) => ({ ...prev, stage: "error", error: err.message }))
     }
   }, [])
 
   // Загрузка данных пользователя
   async function loadData(initDataUnsafe) {
     try {
-      console.log("Loading data with initDataUnsafe:", initDataUnsafe)
+      setDebugData((prev) => ({ ...prev, stage: "loading-data", initData: initDataUnsafe }))
 
       if (!initDataUnsafe?.user?.id) {
-        console.error("No user ID in initDataUnsafe:", initDataUnsafe)
         throw new Error("Не найден ID пользователя Telegram")
       }
 
@@ -98,13 +130,9 @@ function App() {
         .eq("telegram_id", initDataUnsafe.user.id)
         .single()
 
-      if (userError) {
-        console.error("Supabase user error:", userError)
-        throw userError
-      }
-
-      console.log("User data loaded:", userData)
+      if (userError) throw userError
       setUser(userData)
+      setDebugData((prev) => ({ ...prev, stage: "user-loaded", userData }))
 
       const { data: txData, error: txError } = await supabase
         .from("transactions")
@@ -113,13 +141,9 @@ function App() {
         .order("created_at", { ascending: false })
         .limit(10)
 
-      if (txError) {
-        console.error("Supabase transactions error:", txError)
-        throw txError
-      }
-
-      console.log("Transactions loaded:", txData)
+      if (txError) throw txError
       setTransactions(txData)
+      setDebugData((prev) => ({ ...prev, stage: "transactions-loaded" }))
 
       const { data: minersData, error: minersError } = await supabase
         .from("user_miners")
@@ -134,38 +158,26 @@ function App() {
         `)
         .eq("user_id", userData.id)
 
-      if (minersError) {
-        console.error("Supabase miners error:", minersError)
-        throw minersError
-      }
-
-      console.log("Miners loaded:", minersData)
+      if (minersError) throw minersError
       setMiners(minersData || [])
+      setDebugData((prev) => ({ ...prev, stage: "miners-loaded" }))
     } catch (err) {
-      console.error("Error in loadData:", err)
       setError(err.message)
+      setDebugData((prev) => ({ ...prev, stage: "error", error: err.message }))
     } finally {
       setLoading(false)
+      setDebugData((prev) => ({ ...prev, stage: "completed" }))
     }
-  }
-
-  // Добавляем отладочную информацию в UI
-  if (!telegramWebApp) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white p-4">
-        <div className="max-w-md mx-auto bg-red-500/10 border border-red-500 rounded-lg p-4">
-          <h1 className="text-xl font-bold mb-2">Ошибка инициализации</h1>
-          <p className="text-red-500">Telegram WebApp не доступен</p>
-          <p className="text-sm text-gray-400 mt-2">Пожалуйста, убедитесь что вы открыли приложение через Telegram</p>
-        </div>
-      </div>
-    )
   }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+          <p>Загрузка...</p>
+        </div>
+        <DebugInfo data={debugData} />
       </div>
     )
   }
@@ -176,13 +188,8 @@ function App() {
         <div className="bg-red-500/10 border border-red-500 rounded-lg p-4 max-w-md">
           <h1 className="text-xl font-bold mb-2">Ошибка</h1>
           <p className="text-red-500">{error}</p>
-          <div className="mt-4 p-2 bg-gray-800 rounded text-xs">
-            <p className="text-gray-400">Отладочная информация:</p>
-            <pre className="whitespace-pre-wrap break-words">
-              {JSON.stringify(telegramWebApp?.initDataUnsafe, null, 2)}
-            </pre>
-          </div>
         </div>
+        <DebugInfo data={debugData} />
       </div>
     )
   }
@@ -287,25 +294,8 @@ function App() {
           <h2 className="text-xl font-bold mb-4">История майнинга</h2>
           <Line data={chartData} options={chartOptions} />
         </div>
-
-        {/* Отладочная информация */}
-        <div className="mt-8 p-4 bg-gray-800 rounded-lg text-xs">
-          <p className="text-gray-400 mb-2">Отладочная информация:</p>
-          <pre className="whitespace-pre-wrap break-words">
-            {JSON.stringify(
-              {
-                initData: telegramWebApp?.initData,
-                initDataUnsafe: telegramWebApp?.initDataUnsafe,
-                version: telegramWebApp?.version,
-                platform: telegramWebApp?.platform,
-                colorScheme: telegramWebApp?.colorScheme,
-              },
-              null,
-              2,
-            )}
-          </pre>
-        </div>
       </div>
+      <DebugInfo data={debugData} />
     </div>
   )
 }
