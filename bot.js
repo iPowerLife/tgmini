@@ -5,10 +5,19 @@ const dotenv = require("dotenv")
 // Загрузка переменных окружения
 dotenv.config()
 
-// Инициализация Supabase с существующими учетными данными
+// Проверка наличия необходимых переменных окружения
+const requiredEnvVars = ["BOT_TOKEN", "SUPABASE_URL", "SUPABASE_KEY"]
+for (const varName of requiredEnvVars) {
+  if (!process.env[varName]) {
+    console.error(`Missing required environment variable: ${varName}`)
+    process.exit(1)
+  }
+}
+
+// Инициализация Supabase
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
 
-// Инициализация бота с существующим токеном
+// Инициализация бота
 const bot = new Telegraf(process.env.BOT_TOKEN)
 
 // Функции для работы с базой данных
