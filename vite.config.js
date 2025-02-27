@@ -11,8 +11,5 @@ export default defineConfig({
     port: process.env.PORT || 3000,
     host: true,
   },
-  build: {
-    sourcemap: true,
-  },
 })
 
