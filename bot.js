@@ -1,23 +1,20 @@
-import { Telegraf, Markup } from "telegraf"
+import { Telegraf } from "telegraf"
 import { createClient } from "@supabase/supabase-js"
 import * as dotenv from "dotenv"
 
-// Загрузка переменных окружения
+// Базовая настройка
 dotenv.config()
-
-// Вывод версии Node.js и статуса запуска
-console.log(`Node.js version: ${process.version}`)
-console.log("Starting Telegram bot...")
+console.log("Starting bot application...")
 
 // Проверка переменных окружения
-const requiredEnvVars = ["SUPABASE_URL", "SUPABASE_KEY", "BOT_TOKEN"]
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    console.error(`Error: ${envVar} is not set in environment variables`)
+const requiredEnvVars = ["BOT_TOKEN", "SUPABASE_URL", "SUPABASE_KEY"]
+requiredEnvVars.forEach((varName) => {
+  if (!process.env[varName]) {
+    console.error(`Missing required environment variable: ${varName}`)
     process.exit(1)
   }
-  console.log(`${envVar} is set`)
-}
+  console.log(`Found ${varName}`)
+})
 
 // Инициализация Supabase
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
@@ -25,22 +22,15 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 // Инициализация бота
 const bot = new Telegraf(process.env.BOT_TOKEN)
 
-// Простая команда для проверки работы бота
+// Простой обработчик для тестирования
 bot.command("start", async (ctx) => {
   console.log("Received /start command")
   try {
-    await ctx.reply("Бот запущен и работает! 🚀", Markup.keyboard([["⛏️ Майнить", "💰 Баланс"], ["❓ Помощь"]]).resize())
-    console.log("Start command processed successfully")
+    await ctx.reply("Тестовое сообщение: бот работает! 🤖")
+    console.log("Sent test message")
   } catch (error) {
-    console.error("Error in start command:", error)
-    await ctx.reply("Произошла ошибка. Пожалуйста, попробуйте позже.")
+    console.error("Error sending message:", error)
   }
-})
-
-// Обработчик ошибок
-bot.catch((err, ctx) => {
-  console.error("Bot error:", err)
-  ctx.reply("Произошла ошибка. Пожалуйста, попробуйте позже.")
 })
 
 // Запуск бота
@@ -48,20 +38,20 @@ console.log("Launching bot...")
 bot
   .launch()
   .then(() => {
-    console.log("Bot successfully started")
+    console.log("Bot successfully started!")
   })
   .catch((error) => {
     console.error("Failed to start bot:", error)
     process.exit(1)
   })
 
-// Graceful stop
+// Graceful shutdown
 process.once("SIGINT", () => {
-  console.log("SIGINT received. Stopping bot...")
+  console.log("SIGINT received")
   bot.stop("SIGINT")
 })
 process.once("SIGTERM", () => {
-  console.log("SIGTERM received. Stopping bot...")
+  console.log("SIGTERM received")
   bot.stop("SIGTERM")
 })
 
