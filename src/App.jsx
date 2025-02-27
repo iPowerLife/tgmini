@@ -4,11 +4,15 @@ import { useState, useEffect } from "react"
 import { supabase } from "./supabase"
 import { initTelegram, getTelegramUser } from "./utils/telegram"
 import { getDailyBonusInfo, claimDailyBonus } from "./utils/daily-bonus"
-import DailyBonus from "./components/DailyBonus"
+import { LoadingScreen } from "./components/LoadingScreen"
 import { DebugPanel } from "./components/DebugPanel"
+import DailyBonus from "./components/DailyBonus"
 
 export default function App() {
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [userData, setUserData] = useState({
+    id: null,
     balance: 0,
     mining_power: 1,
     level: 1,
@@ -24,55 +28,65 @@ export default function App() {
     nextBonus: null,
     isWeekend: false,
   })
-  const [bonusTimeLeft, setBonusTimeLeft] = useState("")
-  const [isClaimingBonus, setIsClaimingBonus] = useState(false)
-  const [bonusError, setBonusError] = useState(null)
-  const [showBonusAnimation, setShowBonusAnimation] = useState(false)
-  const [claimedBonus, setClaimedBonus] = useState(null)
   const [showBonusModal, setShowBonusModal] = useState(false)
+  const [isClaimingBonus, setIsClaimingBonus] = useState(false)
 
-  // Инициализация и другие эффекты остаются без изменений...
   useEffect(() => {
     const initialize = async () => {
-      console.log("Initializing app...")
-      await initTelegram()
-      const telegramUser = getTelegramUser()
+      try {
+        console.log("Initializing app...")
+        await initTelegram()
+        const telegramUser = getTelegramUser()
 
-      if (telegramUser) {
-        try {
-          console.log("Telegram user:", telegramUser)
-
-          // Сначала пытаемся получить существующего пользователя
-          let user = await getUser(telegramUser.id)
-
-          // Если пользователь не найден, создаем нового
-          if (!user) {
-            console.log("User not found, creating new user...")
-            try {
-              user = await createUser(telegramUser.id, telegramUser.username)
-              console.log("New user created:", user)
-            } catch (createError) {
-              console.error("Error creating user:", createError)
-              return
-            }
-          }
-
-          // Устанавливаем данные пользователя
-          setUserData(user)
-
-          // Получаем информацию о бонусе
-          try {
-            const bonusData = await getDailyBonusInfo(user.id)
-            console.log("Bonus info loaded:", bonusData)
-            setBonusInfo(bonusData)
-          } catch (bonusError) {
-            console.error("Error loading bonus info:", bonusError)
-          }
-        } catch (error) {
-          console.error("Error in initialization:", error)
+        if (!telegramUser) {
+          throw new Error("No Telegram user data available")
         }
-      } else {
-        console.error("No Telegram user data available")
+
+        console.log("Telegram user:", telegramUser)
+
+        // Получаем или создаем пользователя
+        const { data: existingUser, error: userError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("telegram_id", telegramUser.id)
+          .single()
+
+        if (userError && userError.code !== "PGRST116") {
+          throw userError
+        }
+
+        let user = existingUser
+
+        if (!user) {
+          console.log("Creating new user...")
+          const { data: newUser, error: createError } = await supabase
+            .from("users")
+            .insert([
+              {
+                telegram_id: telegramUser.id,
+                username: telegramUser.username,
+              },
+            ])
+            .select()
+            .single()
+
+          if (createError) throw createError
+          user = newUser
+        }
+
+        console.log("User data:", user)
+        setUserData(user)
+
+        // Получаем информацию о бонусе
+        const bonusData = await getDailyBonusInfo(user.id)
+        console.log("Bonus info:", bonusData)
+        setBonusInfo(bonusData)
+
+        setIsLoading(false)
+      } catch (error) {
+        console.error("Initialization error:", error)
+        setError(error.message)
+        setIsLoading(false)
       }
     }
 
@@ -86,28 +100,35 @@ export default function App() {
     setCooldown(60)
 
     try {
-      // Симулируем процесс майнинга
-      await new Promise((resolve) => setTimeout(resolve, 5000))
-
       const miningReward = userData.mining_power
 
-      // Обновляем баланс через функцию updateUserBalance
-      const updatedUser = await updateUserBalance(userData.id, miningReward, userData)
+      const { data: updatedUser, error } = await supabase
+        .from("users")
+        .update({ balance: userData.balance + miningReward })
+        .eq("id", userData.id)
+        .select()
+        .single()
 
-      if (updatedUser) {
-        setUserData(updatedUser)
+      if (error) throw error
 
-        // Логируем транзакцию
-        await logTransaction(userData.id, miningReward, "mining", "Майнинг криптовалюты")
-      }
+      setUserData(updatedUser)
+
+      // Логируем транзакцию
+      await supabase.from("transactions").insert([
+        {
+          user_id: userData.id,
+          amount: miningReward,
+          type: "mining",
+          description: "Майнинг криптовалюты",
+        },
+      ])
     } catch (error) {
-      console.error("Error during mining:", error)
+      console.error("Mining error:", error)
     } finally {
       setIsMining(false)
     }
   }
 
-  // Обновляем состояние кулдауна каждую секунду
   useEffect(() => {
     if (cooldown > 0) {
       const timer = setInterval(() => {
@@ -117,46 +138,18 @@ export default function App() {
     }
   }, [cooldown])
 
-  // Обновляем таймер бонуса
-  useEffect(() => {
-    if (!bonusInfo?.lastClaim) return
-
-    const updateBonusTimer = () => {
-      const now = new Date()
-      const lastClaimDate = new Date(bonusInfo.lastClaim)
-      const nextClaim = new Date(lastClaimDate)
-      nextClaim.setDate(nextClaim.getDate() + 1)
-      nextClaim.setHours(0, 0, 0, 0)
-
-      const diff = nextClaim - now
-      if (diff <= 0) {
-        setBonusTimeLeft("")
-        return
-      }
-
-      const hours = Math.floor(diff / (1000 * 60 * 60))
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-      setBonusTimeLeft(`${hours}ч ${minutes}м`)
-    }
-
-    updateBonusTimer()
-    const timer = setInterval(updateBonusTimer, 60000)
-    return () => clearInterval(timer)
-  }, [bonusInfo?.lastClaim])
-
   const handleClaimBonus = async () => {
     if (!userData?.id || isClaimingBonus) return
 
     try {
       setIsClaimingBonus(true)
-      setBonusError(null)
+      console.log("Claiming bonus for user:", userData.id)
 
-      console.log("Calling claimDailyBonus...")
       const result = await claimDailyBonus(userData.id)
       console.log("Claim result:", result)
 
       if (!result.success) {
-        setBonusError(result.error)
+        alert(result.error)
         return
       }
 
@@ -170,24 +163,18 @@ export default function App() {
       const newBonusInfo = await getDailyBonusInfo(userData.id)
       setBonusInfo(newBonusInfo)
 
-      // Показываем анимацию
-      setClaimedBonus(result.bonus)
-      setShowBonusAnimation(true)
-
-      setTimeout(() => {
-        setShowBonusAnimation(false)
-        setClaimedBonus(null)
-        setShowBonusModal(false)
-      }, 3000)
+      setShowBonusModal(false)
     } catch (error) {
-      console.error("Error in handleClaimBonus:", error)
-      setBonusError("Произошла ошибка при получении бонуса")
+      console.error("Error claiming bonus:", error)
+      alert("Произошла ошибка при получении бонуса")
     } finally {
       setIsClaimingBonus(false)
     }
   }
 
-  // handleMining остается без изменений...
+  if (isLoading || error) {
+    return <LoadingScreen message={isLoading ? "Загрузка..." : undefined} error={error} />
+  }
 
   return (
     <div
@@ -325,97 +312,7 @@ export default function App() {
           }}
         />
       </div>
-
-      <style>
-        {`
-          @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-          }
-        `}
-      </style>
     </div>
   )
-}
-
-async function getUser(telegramId) {
-  try {
-    const { data, error } = await supabase.from("users").select("*").eq("telegram_id", telegramId).single()
-
-    if (error) {
-      console.error("Error fetching user:", error)
-      return null
-    }
-
-    return data
-  } catch (error) {
-    console.error("Error in getUser function:", error)
-    return null
-  }
-}
-
-async function createUser(telegramId, username) {
-  try {
-    const newUser = {
-      telegram_id: telegramId,
-      username: username,
-    }
-
-    const { data, error } = await supabase.from("users").insert([newUser]).select("*").single()
-
-    if (error) {
-      console.error("Error creating user:", error)
-      return null
-    }
-
-    return data
-  } catch (error) {
-    console.error("Error in createUser function:", error)
-    return null
-  }
-}
-
-async function updateUserBalance(userId, amount, userData) {
-  try {
-    const { data, error } = await supabase
-      .from("users")
-      .update({ balance: userData.balance + amount })
-      .eq("id", userId)
-      .select("*")
-      .single()
-
-    if (error) {
-      console.error("Error updating user balance:", error)
-      return null
-    }
-
-    return data
-  } catch (error) {
-    console.error("Error in updateUserBalance function:", error)
-    return null
-  }
-}
-
-async function logTransaction(userId, amount, type, description) {
-  try {
-    const newTransaction = {
-      user_id: userId,
-      amount: amount,
-      type: type,
-      description: description,
-    }
-
-    const { data, error } = await supabase.from("transactions").insert([newTransaction]).select("*").single()
-
-    if (error) {
-      console.error("Error logging transaction:", error)
-      return null
-    }
-
-    return data
-  } catch (error) {
-    console.error("Error in logTransaction function:", error)
-    return null
-  }
 }
 

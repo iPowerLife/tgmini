@@ -1,4 +1,4 @@
-export function LoadingScreen({ message, subMessage }) {
+export function LoadingScreen({ message = "Загрузка...", error = null }) {
   return (
     <div
       style={{
@@ -7,36 +7,32 @@ export function LoadingScreen({ message, subMessage }) {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        gap: "20px",
-        padding: "20px",
         backgroundColor: "#1a1b1e",
         color: "white",
+        padding: "20px",
         textAlign: "center",
       }}
     >
-      <div style={{ fontSize: "18px" }}>{message || "Загрузка приложения..."}</div>
-
-      {/* Индикатор загрузки */}
-      <div
-        style={{
-          width: "40px",
-          height: "40px",
-          border: "3px solid #3b82f6",
-          borderTop: "3px solid transparent",
-          borderRadius: "50%",
-          animation: "spin 1s linear infinite",
-        }}
-      />
-
-      <div
-        style={{
-          color: "#666",
-          fontSize: "14px",
-        }}
-      >
-        {subMessage || "Подождите, игра запускается"}
-      </div>
-
+      {error ? (
+        <div style={{ color: "#ef4444" }}>
+          <div style={{ fontSize: "18px", marginBottom: "10px" }}>Ошибка</div>
+          <div style={{ fontSize: "14px" }}>{error}</div>
+        </div>
+      ) : (
+        <>
+          <div style={{ fontSize: "18px", marginBottom: "20px" }}>{message}</div>
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              border: "3px solid #3b82f6",
+              borderTop: "3px solid transparent",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+            }}
+          />
+        </>
+      )}
       <style>
         {`
           @keyframes spin {

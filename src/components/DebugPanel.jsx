@@ -1,7 +1,12 @@
-import { supabase } from "../supabaseClient"
+import { supabase } from "../supabase" // Исправленный путь импорта
 
 export function DebugPanel({ userId, onTestBonus }) {
   const resetDailyBonus = async () => {
+    if (!userId) {
+      alert("User ID is not available")
+      return
+    }
+
     try {
       const { data, error } = await supabase
         .from("daily_bonuses")
@@ -36,7 +41,7 @@ export function DebugPanel({ userId, onTestBonus }) {
         maxWidth: "300px",
       }}
     >
-      <div style={{ marginBottom: 10, fontSize: 12, color: "#666" }}>User ID: {userId}</div>
+      <div style={{ marginBottom: 10, fontSize: 12, color: "#666" }}>User ID: {userId || "Not available"}</div>
       <div style={{ display: "flex", gap: 8 }}>
         <button
           onClick={onTestBonus}
