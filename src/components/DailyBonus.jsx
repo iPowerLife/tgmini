@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 
-export function DailyBonus({ onClose, onClaim, lastClaim, streak = 0, isWeekend = false }) {
+export default function DailyBonus({ onClose, onClaim, lastClaim, streak = 0, isWeekend = false }) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [timeLeft, setTimeLeft] = useState("")
