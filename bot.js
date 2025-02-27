@@ -5,47 +5,32 @@ import * as dotenv from "dotenv"
 // Загрузка переменных окружения
 dotenv.config()
 
-// Вывод всех переменных окружения для отладки (без значений)
-console.log("Environment variables:", Object.keys(process.env))
-
 // Проверка наличия необходимых переменных окружения
-const requiredEnvVars = {
-  SUPABASE_URL: process.env.SUPABASE_URL || process.env.SUPABASE_URL,
-  SUPABASE_KEY: process.env.SUPABASE_KEY,
-  BOT_TOKEN: process.env.BOT_TOKEN,
+if (!process.env.SUPABASE_URL) {
+  console.error("SUPABASE_URL is not set")
+  process.exit(1)
 }
 
-// Проверяем каждую переменную
-Object.entries(requiredEnvVars).forEach(([name, value]) => {
-  if (!value) {
-    console.error(`Error: ${name} is not set in environment variables`)
-    process.exit(1)
-  } else {
-    console.log(`${name} is set`)
-  }
-})
+if (!process.env.SUPABASE_KEY) {
+  console.error("SUPABASE_KEY is not set")
+  process.exit(1)
+}
+
+if (!process.env.BOT_TOKEN) {
+  console.error("BOT_TOKEN is not set")
+  process.exit(1)
+}
 
 // Инициализация Supabase
-const supabaseUrl = process.env.SUPABASE_URL || process.env.SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_KEY
-
-console.log("Initializing Supabase with URL:", supabaseUrl ? "URL is set" : "URL is missing")
-
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
 
 // Инициализация бота
 const bot = new Telegraf(process.env.BOT_TOKEN)
 
-// Добавим обработку ошибок
-bot.catch((err, ctx) => {
-  console.error(`Ошибка для ${ctx.updateType}`, err)
-  ctx.reply("Произошла ошибка при обработке команды. Попробуйте позже.")
-})
-
 // Базовые команды бота
 bot.command("start", async (ctx) => {
   try {
-    ctx.reply(
+    await ctx.reply(
       "Добро пожаловать в игру Майнинг!",
       Markup.keyboard([
         ["⛏️ Майнить", "💰 Баланс"],
@@ -55,7 +40,7 @@ bot.command("start", async (ctx) => {
     )
   } catch (error) {
     console.error("Error in start command:", error)
-    ctx.reply("Произошла ошибка при запуске бота. Пожалуйста, попробуйте позже.")
+    await ctx.reply("Произошла ошибка при запуске бота. Пожалуйста, попробуйте позже.")
   }
 })
 
@@ -80,6 +65,7 @@ bot
   })
   .catch((err) => {
     console.error("Error starting bot:", err)
+    process.exit(1)
   })
 
 // Включаем graceful stop
