@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import { supabase } from "./supabase"
 
 function App() {
   const [user, setUser] = React.useState(null)
@@ -41,15 +42,7 @@ function App() {
         }))
 
         if (userId) {
-          // Здесь будет инициализация пользователя через Supabase
-          setUser({
-            id: userId,
-            balance: 0,
-            mining_power: 1,
-            level: 1,
-            experience: 0,
-            next_level_exp: 100,
-          })
+          await loadUserData(userId)
         }
       }
     } catch (err) {
@@ -60,26 +53,134 @@ function App() {
     }
   }
 
+  async function loadUserData(telegramId) {
+    try {
+      // Получаем данные пользователя
+      let { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("telegram_id", telegramId)
+        .single()
+
+      if (userError) throw userError
+
+      // Если пользователя нет, создаем его
+      if (!userData) {
+        const { data: newUser, error: createError } = await supabase
+          .from("users")
+          .insert([
+            {
+              telegram_id: telegramId,
+              balance: 0,
+              mining_power: 1,
+              level: 1,
+              experience: 0,
+              next_level_exp: 100,
+            },
+          ])
+          .select()
+          .single()
+
+        if (createError) throw createError
+        userData = newUser
+      }
+
+      setUser(userData)
+    } catch (err) {
+      console.error("Error loading user data:", err)
+      setError("Ошибка загрузки данных пользователя")
+    }
+  }
+
   async function mine() {
     if (miningCooldown || !user) return
 
     setMiningCooldown(true)
     try {
-      // Здесь будет логика майнинга через Supabase
       const minedAmount = user.mining_power
-      setUser((prev) => ({
-        ...prev,
-        balance: prev.balance + minedAmount,
-        experience: prev.experience + Math.floor(minedAmount * 0.1),
-      }))
+      const expGained = Math.floor(minedAmount * 0.1)
+
+      // Обновляем данные в базе
+      const { data: updatedUser, error: updateError } = await supabase
+        .from("users")
+        .update({
+          balance: user.balance + minedAmount,
+          experience: user.experience + expGained,
+          last_mining: new Date().toISOString(),
+        })
+        .eq("id", user.id)
+        .select()
+        .single()
+
+      if (updateError) throw updateError
+
+      // Записываем транзакцию
+      const { error: transactionError } = await supabase.from("transactions").insert([
+        {
+          user_id: user.id,
+          amount: minedAmount,
+          type: "mining",
+          description: "Майнинг криптовалюты",
+        },
+      ])
+
+      if (transactionError) throw transactionError
+
+      setUser(updatedUser)
+
+      // Проверяем повышение уровня
+      if (updatedUser.experience >= updatedUser.next_level_exp) {
+        await levelUp()
+      }
 
       setTimeout(() => {
         setMiningCooldown(false)
       }, 3000)
     } catch (err) {
       console.error("Mining error:", err)
-      setError(err.message)
+      setError("Ошибка при майнинге")
       setMiningCooldown(false)
+    }
+  }
+
+  async function levelUp() {
+    try {
+      const { data: levelData, error: levelError } = await supabase
+        .from("levels")
+        .select("*")
+        .eq("level", user.level + 1)
+        .single()
+
+      if (levelError) throw levelError
+
+      const { data: updatedUser, error: updateError } = await supabase
+        .from("users")
+        .update({
+          level: user.level + 1,
+          experience: 0,
+          next_level_exp: levelData.exp_required,
+          balance: user.balance + levelData.reward,
+        })
+        .eq("id", user.id)
+        .select()
+        .single()
+
+      if (updateError) throw updateError
+
+      setUser(updatedUser)
+
+      // Записываем транзакцию награды за уровень
+      await supabase.from("transactions").insert([
+        {
+          user_id: user.id,
+          amount: levelData.reward,
+          type: "level_up",
+          description: `Награда за достижение ${updatedUser.level} уровня`,
+        },
+      ])
+    } catch (err) {
+      console.error("Level up error:", err)
+      setError("Ошибка при повышении уровня")
     }
   }
 
