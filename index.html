@@ -21,13 +21,16 @@
 
     #app {
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
     }
 
-    #app:empty::before {
+    #app:empty {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    #app:empty::after {
       content: 'Загрузка приложения...';
       color: white;
       font-size: 16px;
@@ -37,9 +40,20 @@
 <body>
   <div id="app"></div>
   <script>
+    // Отладочная информация
+    console.log('index.html: Document loaded')
+    console.log('index.html: Telegram WebApp available:', !!window.Telegram?.WebApp)
+    
     // Проверяем загрузку скриптов
-    console.log('Document ready')
-    console.log('Telegram WebApp:', !!window.Telegram?.WebApp)
+    window.addEventListener('load', () => {
+      console.log('index.html: Window loaded')
+      console.log('index.html: App element exists:', !!document.getElementById('app'))
+    })
+
+    // Отлавливаем ошибки
+    window.addEventListener('error', (event) => {
+      console.error('index.html: Error caught:', event.error)
+    })
   </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>

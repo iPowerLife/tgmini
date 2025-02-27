@@ -1,9 +1,27 @@
 import { createRoot } from "react-dom/client"
 import App from "./App.jsx"
 
-// Отлавливаем глобальные ошибки
-window.onerror = (message, source, lineno, colno, error) => {
-  console.error("Global error:", { message, source, lineno, colno, error })
+console.log("main.jsx: Starting initialization")
+
+try {
+  const container = document.getElementById("app")
+  console.log("main.jsx: Container found:", !!container)
+
+  if (!container) {
+    throw new Error("Root element #app not found")
+  }
+
+  console.log("main.jsx: Creating root")
+  const root = createRoot(container)
+
+  console.log("main.jsx: Rendering app")
+  root.render(<App />)
+
+  console.log("main.jsx: Initial render complete")
+} catch (error) {
+  console.error("main.jsx: Initialization error:", error)
+
+  // Показываем ошибку на странице
   document.body.innerHTML = `
     <div style="
       min-height: 100vh;
@@ -16,29 +34,16 @@ window.onerror = (message, source, lineno, colno, error) => {
       padding: 20px;
       text-align: center;
     ">
-      <h1 style="color: #ff4444; margin-bottom: 20px;">Ошибка</h1>
-      <div style="color: #666;">${message}</div>
+      <div style="color: #ff4444; margin-bottom: 20px;">
+        Ошибка инициализации React
+      </div>
+      <div style="color: #666; font-size: 14px;">
+        ${error.message}
+      </div>
+      <div style="margin-top: 20px; font-size: 12px; color: #666;">
+        Проверьте консоль для дополнительной информации
+      </div>
     </div>
   `
-}
-
-try {
-  console.log("Initializing app...")
-  const container = document.getElementById("app")
-
-  if (!container) {
-    throw new Error("Root element #app not found")
-  }
-
-  console.log("Creating root...")
-  const root = createRoot(container)
-
-  console.log("Rendering app...")
-  root.render(<App />)
-
-  console.log("App rendered successfully")
-} catch (error) {
-  console.error("Failed to initialize app:", error)
-  throw error
 }
 
