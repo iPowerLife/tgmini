@@ -2,21 +2,13 @@ import { supabase } from "../supabase"
 
 export async function claimDailyBonus(userId, amount) {
   try {
-    console.log("Claiming daily bonus:", { userId, amount })
+    console.log("Начинаем получение бонуса:", { userId, amount })
 
-    // Проверяем, существует ли пользователь
-    const { data: user, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()
-
-    if (userError) {
-      console.error("Error checking user:", userError)
-      throw new Error("Пользователь не найден")
-    }
-
-    // Проверяем, не получал ли пользователь бонус сегодня
+    // Проверяем, получал ли пользователь бонус сегодня
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const { data: existingBonus, error: checkError } = await supabase
+    const { data: todayBonus, error: checkError } = await supabase
       .from("daily_bonuses")
       .select("*")
       .eq("user_id", userId)
@@ -24,48 +16,48 @@ export async function claimDailyBonus(userId, amount) {
       .limit(1)
 
     if (checkError) {
-      console.error("Error checking existing bonus:", checkError)
-      throw new Error("Ошибка проверки бонуса")
+      console.error("Ошибка проверки бонуса:", checkError)
+      throw new Error("Не удалось проверить бонус")
     }
 
-    if (existingBonus?.length > 0) {
+    if (todayBonus && todayBonus.length > 0) {
       throw new Error("Бонус уже получен сегодня")
     }
 
     // Обновляем баланс пользователя
     const { data: updatedUser, error: updateError } = await supabase
       .from("users")
-      .update({ balance: user.balance + amount })
+      .update({ balance: supabase.raw(`balance + ${amount}`) })
       .eq("id", userId)
       .select()
       .single()
 
     if (updateError) {
-      console.error("Error updating balance:", updateError)
-      throw new Error("Ошибка обновления баланса")
+      console.error("Ошибка обновления баланса:", updateError)
+      throw new Error("Не удалось обновить баланс")
     }
 
-    // Записываем информацию о бонусе
+    // Записываем бонус
     const { error: bonusError } = await supabase.from("daily_bonuses").insert([
       {
         user_id: userId,
         amount: amount,
-        streak: 1,
-        claimed_at: new Date().toISOString(),
       },
     ])
 
     if (bonusError) {
-      console.error("Error recording bonus:", bonusError)
+      console.error("Ошибка записи бонуса:", bonusError)
       // Откатываем изменение баланса
-      await supabase.from("users").update({ balance: user.balance }).eq("id", userId)
-      throw new Error("Ошибка записи бонуса")
+      await supabase
+        .from("users")
+        .update({ balance: supabase.raw(`balance - ${amount}`) })
+        .eq("id", userId)
+      throw new Error("Не удалось записать бонус")
     }
 
-    console.log("Daily bonus claimed successfully")
     return { success: true, user: updatedUser }
   } catch (error) {
-    console.error("Error in claimDailyBonus:", error)
+    console.error("Ошибка в claimDailyBonus:", error)
     return {
       success: false,
       error: error.message || "Неизвестная ошибка",
@@ -75,41 +67,40 @@ export async function claimDailyBonus(userId, amount) {
 
 export async function getDailyBonusInfo(userId) {
   try {
-    console.log("Getting bonus info for user:", userId)
-
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const { data, error } = await supabase
+    const { data: bonuses, error } = await supabase
       .from("daily_bonuses")
       .select("*")
       .eq("user_id", userId)
       .order("claimed_at", { ascending: false })
-      .limit(1)
+      .limit(2)
 
     if (error) {
-      console.error("Error fetching bonus info:", error)
-      throw error
-    }
-
-    const lastBonus = data?.[0]
-    if (!lastBonus) {
+      console.error("Ошибка получения информации о бонусах:", error)
       return { canClaim: true, streak: 0, lastClaim: null }
     }
 
+    // Если нет бонусов, можно получить
+    if (!bonuses || bonuses.length === 0) {
+      return { canClaim: true, streak: 0, lastClaim: null }
+    }
+
+    const lastBonus = bonuses[0]
     const lastClaimDate = new Date(lastBonus.claimed_at)
     lastClaimDate.setHours(0, 0, 0, 0)
 
+    // Проверяем, можно ли получить сегодня
     const canClaim = today.getTime() > lastClaimDate.getTime()
-    const daysDiff = Math.floor((today - lastClaimDate) / (1000 * 60 * 60 * 24))
 
     return {
       canClaim,
-      streak: daysDiff === 1 ? lastBonus.streak : 0,
+      streak: 0, // Упрощаем логику серий
       lastClaim: lastBonus.claimed_at,
     }
   } catch (error) {
-    console.error("Error in getDailyBonusInfo:", error)
+    console.error("Ошибка в getDailyBonusInfo:", error)
     return { canClaim: true, streak: 0, lastClaim: null }
   }
 }
