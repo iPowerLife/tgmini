@@ -1,19 +1,25 @@
 import { createClient } from "@supabase/supabase-js"
 
-// Получаем URL и ключ из переменных окружения
+// Проверяем наличие переменных окружения перед созданием клиента
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Добавляем проверку и логирование
-console.log("Environment variables check:")
-console.log("VITE_SUPABASE_URL:", supabaseUrl || "Not set")
-console.log("VITE_SUPABASE_ANON_KEY:", supabaseKey ? "Present" : "Not set")
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Missing Supabase environment variables")
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("Missing Supabase environment variables:", {
+    url: supabaseUrl ? "✓" : "✗",
+    key: supabaseAnonKey ? "✓" : "✗",
+  })
+  throw new Error("Missing required environment variables")
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+// Создаем клиента Supabase
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+})
 
 // Функция для тестирования подключения
 export async function testConnection() {
@@ -25,56 +31,36 @@ export async function testConnection() {
   }
 
   try {
-    // Шаг 1: Проверка базового подключения
-    console.log("Step 1: Testing basic connection...")
-    console.log("Using Supabase URL:", supabaseUrl)
+    // Проверяем подключение к Supabase
+    const { error: healthCheck } = await supabase.from("users").select("count", { count: "exact", head: true })
 
-    const { data: connectionTest, error: connectionError } = await supabase
-      .from("users")
-      .select("count(*)", { count: "exact", head: true })
-
-    if (connectionError) {
-      console.error("Connection error:", connectionError)
-      return { success: false, steps, error: `Ошибка подключения к базе данных: ${connectionError.message}` }
+    if (healthCheck) {
+      console.error("Health check failed:", healthCheck)
+      return {
+        success: false,
+        steps,
+        error: `Ошибка подключения: ${healthCheck.message}`,
+      }
     }
+
     steps.connection = true
-    console.log("Basic connection successful")
 
-    // Шаг 2: Проверка таблицы users
-    console.log("Step 2: Testing users table...")
-    const { data: usersTest, error: usersError } = await supabase.from("users").select("id").limit(1)
+    // Проверяем таблицы по очереди
+    const tables = ["users", "levels", "transactions"]
+    for (const table of tables) {
+      const { error } = await supabase.from(table).select("id").limit(1)
 
-    if (usersError) {
-      console.error("Users table error:", usersError)
-      return { success: false, steps, error: `Ошибка доступа к таблице users: ${usersError.message}` }
+      if (error) {
+        console.error(`Error checking ${table}:`, error)
+        return {
+          success: false,
+          steps,
+          error: `Ошибка доступа к таблице ${table}: ${error.message}`,
+        }
+      }
+
+      steps[`${table}Table`] = true
     }
-    steps.usersTable = true
-    console.log("Users table accessible")
-
-    // Шаг 3: Проверка таблицы levels
-    console.log("Step 3: Testing levels table...")
-    const { data: levelsTest, error: levelsError } = await supabase.from("levels").select("level").limit(1)
-
-    if (levelsError) {
-      console.error("Levels table error:", levelsError)
-      return { success: false, steps, error: `Ошибка доступа к таблице levels: ${levelsError.message}` }
-    }
-    steps.levelsTable = true
-    console.log("Levels table accessible")
-
-    // Шаг 4: Проверка таблицы transactions
-    console.log("Step 4: Testing transactions table...")
-    const { data: transactionsTest, error: transactionsError } = await supabase
-      .from("transactions")
-      .select("id")
-      .limit(1)
-
-    if (transactionsError) {
-      console.error("Transactions table error:", transactionsError)
-      return { success: false, steps, error: `Ошибка доступа к таблице transactions: ${transactionsError.message}` }
-    }
-    steps.transactionsTable = true
-    console.log("Transactions table accessible")
 
     return {
       success: true,
