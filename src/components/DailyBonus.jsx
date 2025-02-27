@@ -1,55 +1,19 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 
 export function DailyBonus({ onClose, onClaim, lastClaim, streak = 0 }) {
-  const [timeLeft, setTimeLeft] = useState("")
-  const [canClaim, setCanClaim] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  // Проверяем, можно ли получить бонус
-  useEffect(() => {
-    const checkBonus = () => {
-      const now = new Date()
-      const last = lastClaim ? new Date(lastClaim) : new Date(0)
-      const nextClaim = new Date(last)
-      nextClaim.setDate(nextClaim.getDate() + 1)
-      nextClaim.setHours(0, 0, 0, 0)
-
-      const diff = nextClaim - now
-      const canClaimNow = diff <= 0
-      setCanClaim(canClaimNow)
-      console.log("Can claim bonus:", canClaimNow, "Time diff:", diff)
-
-      if (diff > 0) {
-        const hours = Math.floor(diff / (1000 * 60 * 60))
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-        setTimeLeft(`${hours}ч ${minutes}м`)
-      } else {
-        setTimeLeft("")
-      }
-    }
-
-    checkBonus()
-    const timer = setInterval(checkBonus, 60000) // Обновляем каждую минуту
-    return () => clearInterval(timer)
-  }, [lastClaim])
-
-  // Рассчитываем бонус на основе серии
-  const calculateBonus = () => {
-    const baseBonus = 100
-    const multiplier = Math.min(2, 1 + streak * 0.1) // Максимальный множитель 2x
-    return Math.floor(baseBonus * multiplier)
-  }
-
-  // Обработчик получения бонуса
   const handleClaim = async () => {
     try {
       setIsLoading(true)
-      console.log("Claiming bonus with amount:", calculateBonus())
-      await onClaim(calculateBonus())
-    } catch (error) {
-      console.error("Error claiming bonus:", error)
+      setError(null)
+      const amount = 100 // Фиксированный бонус для упрощения
+      await onClaim(amount)
+    } catch (err) {
+      setError(err.message)
     } finally {
       setIsLoading(false)
     }
@@ -110,31 +74,26 @@ export function DailyBonus({ onClose, onClaim, lastClaim, streak = 0 }) {
             marginBottom: "20px",
           }}
         >
-          <div style={{ marginBottom: "10px" }}>
-            Серия: {streak} {streak > 0 ? "🔥" : ""}
-          </div>
-          <div style={{ color: "#4ade80" }}>Бонус: {calculateBonus()} 💎</div>
-          {!canClaim && timeLeft && (
-            <div style={{ color: "#666", marginTop: "10px" }}>Следующий бонус через: {timeLeft}</div>
-          )}
+          <div style={{ marginBottom: "10px" }}>Бонус: 100 💎</div>
+          {error && <div style={{ color: "#ff4444", fontSize: "14px", marginTop: "10px" }}>{error}</div>}
         </div>
 
         <button
           onClick={handleClaim}
-          disabled={!canClaim || isLoading}
+          disabled={isLoading}
           style={{
             width: "100%",
             padding: "15px",
-            backgroundColor: canClaim && !isLoading ? "#3b82f6" : "#1f2937",
+            backgroundColor: isLoading ? "#1f2937" : "#3b82f6",
             color: "white",
             border: "none",
             borderRadius: "8px",
-            cursor: canClaim && !isLoading ? "pointer" : "not-allowed",
+            cursor: isLoading ? "not-allowed" : "pointer",
             fontSize: "16px",
             fontWeight: "bold",
           }}
         >
-          {isLoading ? "Получение бонуса..." : canClaim ? "Получить бонус" : "Приходите завтра"}
+          {isLoading ? "Получение бонуса..." : "Получить бонус"}
         </button>
       </div>
     </div>
