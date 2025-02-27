@@ -144,20 +144,7 @@ export default function App() {
   }, [bonusInfo?.lastClaim])
 
   const handleClaimBonus = async () => {
-    console.log("handleClaimBonus called", {
-      userId: userData?.id,
-      isClaimingBonus,
-      bonusInfo,
-    })
-
-    if (!userData?.id || isClaimingBonus) {
-      console.log("Early return:", {
-        userId: userData?.id,
-        isClaimingBonus,
-        reason: !userData?.id ? "no userId" : "already claiming",
-      })
-      return
-    }
+    if (!userData?.id || isClaimingBonus) return
 
     try {
       setIsClaimingBonus(true)
@@ -167,29 +154,33 @@ export default function App() {
       const result = await claimDailyBonus(userData.id)
       console.log("Claim result:", result)
 
-      if (result.success) {
-        setUserData(result.user)
-        setClaimedBonus(result.bonus)
-        setShowBonusAnimation(true)
-
-        // Обновляем информацию о бонусе
-        const newBonusInfo = await getDailyBonusInfo(userData.id)
-        console.log("Updated bonus info:", newBonusInfo)
-        setBonusInfo(newBonusInfo)
-
-        setTimeout(() => {
-          setShowBonusAnimation(false)
-          setClaimedBonus(null)
-        }, 3000)
-      } else {
-        console.error("Claim failed:", result.error)
+      if (!result.success) {
         setBonusError(result.error)
-        setTimeout(() => setBonusError(null), 3000)
+        return
       }
+
+      // Обновляем данные пользователя
+      setUserData((prev) => ({
+        ...prev,
+        balance: result.user.balance,
+      }))
+
+      // Обновляем информацию о бонусе
+      const newBonusInfo = await getDailyBonusInfo(userData.id)
+      setBonusInfo(newBonusInfo)
+
+      // Показываем анимацию
+      setClaimedBonus(result.bonus)
+      setShowBonusAnimation(true)
+
+      setTimeout(() => {
+        setShowBonusAnimation(false)
+        setClaimedBonus(null)
+        setShowBonusModal(false)
+      }, 3000)
     } catch (error) {
       console.error("Error in handleClaimBonus:", error)
-      setBonusError(error.message)
-      setTimeout(() => setBonusError(null), 3000)
+      setBonusError("Произошла ошибка при получении бонуса")
     } finally {
       setIsClaimingBonus(false)
     }
