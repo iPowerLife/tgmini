@@ -3,19 +3,25 @@
 import React from "react"
 
 function App() {
+  const [user, setUser] = React.useState(null)
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState(null)
+  const [miningCooldown, setMiningCooldown] = React.useState(false)
   const [debugInfo, setDebugInfo] = React.useState({
     telegramWebAppAvailable: false,
     initDataReceived: false,
     userId: null,
-    error: null,
     host: window.location.host,
   })
 
   React.useEffect(() => {
+    initializeApp()
+  }, [])
+
+  async function initializeApp() {
     try {
       const tgWebAppAvailable = Boolean(window.Telegram?.WebApp)
       console.log("Telegram WebApp available:", tgWebAppAvailable)
-      console.log("Current host:", window.location.host)
 
       setDebugInfo((prev) => ({
         ...prev,
@@ -27,20 +33,100 @@ function App() {
         tg.ready()
         tg.expand()
 
+        const userId = tg.initDataUnsafe?.user?.id
         setDebugInfo((prev) => ({
           ...prev,
-          initDataReceived: Boolean(tg.initDataUnsafe?.user?.id),
-          userId: tg.initDataUnsafe?.user?.id,
+          initDataReceived: Boolean(userId),
+          userId: userId,
         }))
+
+        if (userId) {
+          // Здесь будет инициализация пользователя через Supabase
+          setUser({
+            id: userId,
+            balance: 0,
+            mining_power: 1,
+            level: 1,
+            experience: 0,
+            next_level_exp: 100,
+          })
+        }
       }
     } catch (err) {
       console.error("Error:", err)
-      setDebugInfo((prev) => ({
-        ...prev,
-        error: err.message,
-      }))
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
-  }, [])
+  }
+
+  async function mine() {
+    if (miningCooldown || !user) return
+
+    setMiningCooldown(true)
+    try {
+      // Здесь будет логика майнинга через Supabase
+      const minedAmount = user.mining_power
+      setUser((prev) => ({
+        ...prev,
+        balance: prev.balance + minedAmount,
+        experience: prev.experience + Math.floor(minedAmount * 0.1),
+      }))
+
+      setTimeout(() => {
+        setMiningCooldown(false)
+      }, 3000)
+    } catch (err) {
+      console.error("Mining error:", err)
+      setError(err.message)
+      setMiningCooldown(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          padding: "20px",
+          backgroundColor: "#1a1b1e",
+          color: "white",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "system-ui, -apple-system, sans-serif",
+        }}
+      >
+        Загрузка...
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div
+        style={{
+          padding: "20px",
+          backgroundColor: "#1a1b1e",
+          color: "white",
+          minHeight: "100vh",
+          fontFamily: "system-ui, -apple-system, sans-serif",
+        }}
+      >
+        <div
+          style={{
+            background: "rgba(255, 0, 0, 0.1)",
+            padding: "20px",
+            borderRadius: "12px",
+            marginBottom: "20px",
+          }}
+        >
+          <h3>Ошибка</h3>
+          <p>{error}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -52,6 +138,7 @@ function App() {
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
+      {/* Статистика */}
       <div
         style={{
           background: "rgba(255, 255, 255, 0.1)",
@@ -60,10 +147,82 @@ function App() {
           marginBottom: "20px",
         }}
       >
-        <h1 style={{ marginBottom: "10px" }}>Тестовая страница</h1>
-        <p>Версия 1.0</p>
+        <h2 style={{ marginBottom: "15px" }}>Статистика</h2>
+        <div style={{ marginBottom: "10px" }}>
+          <div style={{ color: "#888" }}>Баланс:</div>
+          <div style={{ fontSize: "24px" }}>{user?.balance?.toFixed(2)} 💰</div>
+        </div>
+        <div style={{ marginBottom: "10px" }}>
+          <div style={{ color: "#888" }}>Мощность майнинга:</div>
+          <div style={{ fontSize: "24px" }}>{user?.mining_power?.toFixed(2)} ⚡</div>
+        </div>
+        <div style={{ marginBottom: "10px" }}>
+          <div style={{ color: "#888" }}>Уровень:</div>
+          <div style={{ fontSize: "24px" }}>{user?.level || 1} 🏆</div>
+        </div>
       </div>
 
+      {/* Кнопка майнинга */}
+      <button
+        onClick={mine}
+        disabled={miningCooldown}
+        style={{
+          width: "100%",
+          padding: "15px",
+          fontSize: "16px",
+          fontWeight: "bold",
+          color: "white",
+          backgroundColor: miningCooldown ? "#666" : "#3b82f6",
+          border: "none",
+          borderRadius: "12px",
+          cursor: miningCooldown ? "not-allowed" : "pointer",
+          transition: "all 0.2s ease",
+        }}
+      >
+        {miningCooldown ? "Майнинг..." : "Майнить"}
+      </button>
+
+      {/* Прогресс уровня */}
+      <div
+        style={{
+          background: "rgba(255, 255, 255, 0.1)",
+          padding: "20px",
+          borderRadius: "12px",
+          marginTop: "20px",
+        }}
+      >
+        <div style={{ color: "#888", marginBottom: "10px" }}>Прогресс уровня:</div>
+        <div
+          style={{
+            width: "100%",
+            height: "20px",
+            backgroundColor: "rgba(0,0,0,0.3)",
+            borderRadius: "10px",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              width: `${(user?.experience / user?.next_level_exp) * 100}%`,
+              height: "100%",
+              backgroundColor: "#3b82f6",
+              transition: "width 0.3s ease",
+            }}
+          />
+        </div>
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: "5px",
+            fontSize: "14px",
+            color: "#888",
+          }}
+        >
+          {user?.experience || 0} / {user?.next_level_exp || 100} XP
+        </div>
+      </div>
+
+      {/* Отладочная информация */}
       <div
         style={{
           position: "fixed",
@@ -81,7 +240,6 @@ function App() {
         <div>Telegram WebApp доступен: {debugInfo.telegramWebAppAvailable ? "Да" : "Нет"}</div>
         <div>Данные получены: {debugInfo.initDataReceived ? "Да" : "Нет"}</div>
         <div>ID пользователя: {debugInfo.userId || "Нет"}</div>
-        <div>Ошибка: {debugInfo.error || "Нет"}</div>
       </div>
     </div>
   )
