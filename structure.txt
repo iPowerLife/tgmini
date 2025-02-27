@@ -1,9 +1,21 @@
 telegram-mining-game/
-├── index.html
+├── Dockerfile
+├── railway.json
 ├── package.json
 ├── vite.config.js
-├── railway.json
+├── index.html
 └── src/
     ├── main.jsx
-    └── App.jsx
+    ├── App.jsx
+    ├── supabase.js
+    ├── utils/
+    │   ├── shop.js
+    │   ├── telegram.js
+    │   ├── database.js
+    │   └── achievements.js
+    └── components/
+        ├── Stats.jsx
+        ├── Shop.jsx
+        ├── MiningButton.jsx
+        └── Achievements.jsx
 
