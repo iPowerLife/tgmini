@@ -6,19 +6,12 @@ import * as dotenv from "dotenv"
 dotenv.config()
 
 // Проверка наличия необходимых переменных окружения
-if (!process.env.SUPABASE_URL) {
-  console.error("SUPABASE_URL is not set")
-  process.exit(1)
-}
-
-if (!process.env.SUPABASE_KEY) {
-  console.error("SUPABASE_KEY is not set")
-  process.exit(1)
-}
-
-if (!process.env.BOT_TOKEN) {
-  console.error("BOT_TOKEN is not set")
-  process.exit(1)
+const requiredEnvVars = ["SUPABASE_URL", "SUPABASE_KEY", "BOT_TOKEN"]
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(`Error: ${envVar} is not set in environment variables`)
+    process.exit(1)
+  }
 }
 
 // Инициализация Supabase
