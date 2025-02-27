@@ -1,4 +1,59 @@
-export function Achievements({ achievements, onClose }) {
+export function Achievements({ achievements = [], onClose }) {
+  console.log("Achievements component:", { achievements }) // Отладочная информация
+
+  if (!achievements || achievements.length === 0) {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 1000,
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: "#1a1b1e",
+            borderRadius: "12px",
+            padding: "20px",
+            width: "90%",
+            maxWidth: "400px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "20px",
+            }}
+          >
+            <h2 style={{ margin: 0 }}>Достижения 🏆</h2>
+            <button
+              onClick={onClose}
+              style={{
+                background: "none",
+                border: "none",
+                color: "white",
+                fontSize: "24px",
+                cursor: "pointer",
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <p style={{ textAlign: "center", color: "#888" }}>Достижения загружаются...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       style={{
