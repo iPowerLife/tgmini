@@ -5,22 +5,13 @@ const dotenv = require("dotenv")
 // Загрузка переменных окружения
 dotenv.config()
 
-// Проверка переменных окружения
-const requiredEnvVars = ["BOT_TOKEN", "SUPABASE_URL", "SUPABASE_KEY"]
-for (const varName of requiredEnvVars) {
-  if (!process.env[varName]) {
-    console.error(`Missing required environment variable: ${varName}`)
-    process.exit(1)
-  }
-}
-
-// Инициализация Supabase
+// Инициализация Supabase с существующими учетными данными
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
 
-// Инициализация бота
+// Инициализация бота с существующим токеном
 const bot = new Telegraf(process.env.BOT_TOKEN)
 
-// Функция регистрации пользователя
+// Функции для работы с базой данных
 async function registerUser(telegramId, username) {
   try {
     const { data: existingUser } = await supabase.from("users").select("*").eq("telegram_id", telegramId).single()
@@ -47,7 +38,6 @@ async function registerUser(telegramId, username) {
   }
 }
 
-// Функция майнинга
 async function mineCoins(userId) {
   try {
     const { data: user, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()
@@ -57,7 +47,6 @@ async function mineCoins(userId) {
       return { success: false, message: "Ошибка получения данных пользователя" }
     }
 
-    // Проверка времени с последнего майнинга
     const lastMining = new Date(user.last_mining)
     const now = new Date()
     const diffMinutes = (now - lastMining) / (1000 * 60)
@@ -69,15 +58,15 @@ async function mineCoins(userId) {
       }
     }
 
-    // Расчет добытых монет
     const minedAmount = user.mining_power
+    const expGained = Math.floor(minedAmount * 0.1)
 
-    // Обновление баланса и времени
     const { error: updateError } = await supabase
       .from("users")
       .update({
         balance: user.balance + minedAmount,
         last_mining: now.toISOString(),
+        experience: user.experience + expGained,
       })
       .eq("id", userId)
 
@@ -86,7 +75,6 @@ async function mineCoins(userId) {
       return { success: false, message: "Ошибка обновления баланса" }
     }
 
-    // Запись транзакции
     await supabase.from("transactions").insert([
       {
         user_id: userId,
@@ -98,7 +86,7 @@ async function mineCoins(userId) {
 
     return {
       success: true,
-      message: `Вы добыли ${minedAmount.toFixed(2)} монет!`,
+      message: `Вы добыли ${minedAmount.toFixed(2)} монет и получили ${expGained} опыта!`,
       balance: user.balance + minedAmount,
     }
   } catch (error) {
@@ -107,7 +95,7 @@ async function mineCoins(userId) {
   }
 }
 
-// Команда /start
+// Команды бота
 bot.command("start", async (ctx) => {
   try {
     const user = await registerUser(ctx.from.id, ctx.from.username)
@@ -129,7 +117,6 @@ bot.command("start", async (ctx) => {
   }
 })
 
-// Обработчик команды майнинга
 bot.hears("⛏️ Майнить", async (ctx) => {
   try {
     const user = await registerUser(ctx.from.id, ctx.from.username)
@@ -149,7 +136,6 @@ bot.hears("⛏️ Майнить", async (ctx) => {
   }
 })
 
-// Обработчик команды баланса
 bot.hears("💰 Баланс", async (ctx) => {
   try {
     const user = await registerUser(ctx.from.id, ctx.from.username)
@@ -160,8 +146,9 @@ bot.hears("💰 Баланс", async (ctx) => {
     const { data: userData } = await supabase.from("users").select("balance, mining_power").eq("id", user.id).single()
 
     return ctx.reply(
-      `💰 Ваш баланс: ${userData.balance.toFixed(2)} монет\n` +
-        `⚡ Мощность майнинга: ${userData.mining_power.toFixed(2)} монет/мин`,
+      `💰 Ваш баланс: ${userData.balance.toFixed(2)} монет\n⚡ Мощность майнинга: ${userData.mining_power.toFixed(
+        2,
+      )} монет/мин`,
     )
   } catch (error) {
     console.error("Error in balance command:", error)
