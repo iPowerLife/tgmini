@@ -1,18 +1,21 @@
 import { supabase } from "../supabase"
+import { updateUser } from "./database"
 
 export async function getShopItems() {
   try {
     console.log("Fetching shop items...")
 
-    // Проверяем подключение к базе данных
+    // Проверяем подключение
     const { data: testData, error: testError } = await supabase.from("shop_items").select("count").single()
 
     if (testError) {
-      console.error("Database connection test failed:", testError)
-      throw new Error("Ошибка подключения к базе данных")
+      console.error("Shop items connection test failed:", testError)
+      throw new Error("Ошибка подключения к магазину")
     }
 
-    // Получаем все предметы из магазина
+    console.log("Shop items connection test:", testData)
+
+    // Получаем все предметы
     const { data: items, error } = await supabase.from("shop_items").select("*").order("price", { ascending: true })
 
     if (error) {
@@ -60,68 +63,70 @@ export async function getUserItems(userId) {
 
 export async function purchaseItem(userId, item, currentBalance) {
   try {
-    console.log("Purchase attempt:", { userId, item, currentBalance })
-
-    if (!userId || !item) {
-      throw new Error("Неверные параметры покупки")
-    }
+    console.log(`Attempting to purchase item ${item.name} for user ${userId}`)
 
     if (currentBalance < item.price) {
       throw new Error("Недостаточно средств")
     }
 
-    // Проверяем существование предмета
-    const { data: existingItem, error: checkError } = await supabase
+    // Проверяем, есть ли уже этот предмет у пользователя
+    const { data: existingItem, error: existingItemError } = await supabase
       .from("user_items")
       .select("*")
       .eq("user_id", userId)
       .eq("item_id", item.id)
       .single()
 
-    if (checkError && checkError.code !== "PGRST116") {
-      console.error("Error checking existing item:", checkError)
-      throw checkError
+    if (existingItemError && existingItemError.code !== "PGRST116") {
+      console.error("Error checking existing item:", existingItemError)
+      throw existingItemError
     }
 
     if (existingItem) {
-      throw new Error("Предмет уже куплен")
+      // Если предмет уже есть, увеличиваем количество
+      if (existingItem.quantity >= item.max_quantity) {
+        throw new Error("Достигнуто максимальное количество для этого предмета")
+      }
+
+      const { data: updatedItem, error: updateError } = await supabase
+        .from("user_items")
+        .update({ quantity: existingItem.quantity + 1 })
+        .eq("user_id", userId)
+        .eq("item_id", item.id)
+        .select()
+        .single()
+
+      if (updateError) {
+        console.error("Error updating item quantity:", updateError)
+        throw updateError
+      }
+
+      console.log("Item quantity updated:", updatedItem)
+    } else {
+      // Если предмета нет, добавляем новую запись
+      const { data: newItem, error: insertError } = await supabase
+        .from("user_items")
+        .insert([{ user_id: userId, item_id: item.id }])
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error("Error inserting new item:", insertError)
+        throw insertError
+      }
+
+      console.log("New item inserted:", newItem)
     }
 
-    // Начинаем транзакцию
-    const { data: updatedUser, error: updateError } = await supabase
-      .from("users")
-      .update({
-        balance: currentBalance - item.price,
-        mining_power: supabase.raw(`mining_power + ${item.power_boost}`),
-      })
-      .eq("id", userId)
-      .select()
-      .single()
+    // Обновляем баланс пользователя
+    const updatedBalance = currentBalance - item.price
+    const updatedUser = await updateUser(userId, { balance: updatedBalance })
 
-    if (updateError) {
-      console.error("Error updating user:", updateError)
-      throw updateError
-    }
-
-    // Добавляем предмет пользователю
-    const { error: purchaseError } = await supabase.from("user_items").insert([
-      {
-        user_id: userId,
-        item_id: item.id,
-        quantity: 1,
-      },
-    ])
-
-    if (purchaseError) {
-      console.error("Error recording purchase:", purchaseError)
-      throw purchaseError
-    }
-
-    console.log("Purchase successful:", { updatedUser })
+    console.log("Purchase successful, updated user:", updatedUser)
     return updatedUser
   } catch (error) {
     console.error("Error in purchaseItem:", error)
-    throw new Error(`Ошибка покупки: ${error.message}`)
+    throw new Error(`Ошибка при покупке предмета: ${error.message}`)
   }
 }
 

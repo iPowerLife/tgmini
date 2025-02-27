@@ -1,12 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { supabase } from "./supabase"
 import { getTelegramUser, initTelegram } from "./utils/telegram"
 import { getUser, createUser, updateUser } from "./utils/database"
 import { getShopItems, getUserItems, purchaseItem } from "./utils/shop"
 import { Stats } from "./components/Stats"
 import { MiningButton } from "./components/MiningButton"
 import { Shop } from "./components/Shop"
+import { DebugPanel } from "./components/DebugPanel"
 
 export default function App() {
   const [user, setUser] = useState(null)
@@ -17,11 +19,20 @@ export default function App() {
   const [userItems, setUserItems] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [debug, setDebug] = useState(false)
 
   useEffect(() => {
-    console.log("App mounted")
-    initTelegram()
-    initializeUser()
+    const initApp = async () => {
+      try {
+        console.log("Initializing app...")
+        initTelegram()
+        await initializeUser()
+      } catch (error) {
+        console.error("App initialization error:", error)
+        setError(error.message)
+      }
+    }
+    initApp()
   }, [])
 
   useEffect(() => {
@@ -30,6 +41,35 @@ export default function App() {
       loadShopData()
     }
   }, [user])
+
+  async function testSupabase() {
+    try {
+      console.log("Testing Supabase connection...")
+
+      // Проверяем подключение к базе данных
+      const { data: shopData, error: shopError } = await supabase.from("shop_items").select("*")
+
+      console.log("Shop items test:", { data: shopData, error: shopError })
+
+      // Проверяем политики доступа
+      const { data: policyData, error: policyError } = await supabase.rpc("get_policies")
+
+      console.log("Policies test:", { data: policyData, error: policyError })
+
+      // Проверяем аутентификацию
+      const session = supabase.auth.session()
+      console.log("Auth session:", session)
+
+      alert(
+        `Test results:\n` +
+          `Shop items: ${shopData ? shopData.length : "Error"}\n` +
+          `Auth: ${session ? "OK" : "Not authenticated"}`,
+      )
+    } catch (error) {
+      console.error("Test failed:", error)
+      alert(`Test failed: ${error.message}`)
+    }
+  }
 
   async function initializeUser() {
     try {
@@ -67,6 +107,7 @@ export default function App() {
 
       if (!items || items.length === 0) {
         console.warn("No shop items found!")
+        throw new Error("Предметы магазина не найдены")
       }
 
       // Загружаем предметы пользователя
@@ -124,6 +165,11 @@ export default function App() {
     }
   }
 
+  // Включаем режим отладки по двойному клику на баланс
+  const handleDebugToggle = () => {
+    setDebug(!debug)
+  }
+
   if (error) {
     return <div style={{ padding: 20, textAlign: "center", color: "red" }}>Ошибка: {error}</div>
   }
@@ -134,13 +180,15 @@ export default function App() {
 
   return (
     <div style={{ padding: 20, maxWidth: 600, margin: "0 auto" }}>
-      <Stats
-        balance={user.balance}
-        miningPower={user.mining_power}
-        level={user.level}
-        experience={user.experience}
-        nextLevelExp={user.next_level_exp}
-      />
+      <div onDoubleClick={handleDebugToggle}>
+        <Stats
+          balance={user.balance}
+          miningPower={user.mining_power}
+          level={user.level}
+          experience={user.experience}
+          nextLevelExp={user.next_level_exp}
+        />
+      </div>
 
       <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
         <MiningButton onMine={handleMining} cooldown={cooldown} isCooldown={cooldown > 0} />
@@ -175,6 +223,8 @@ export default function App() {
           onClose={() => setShowShop(false)}
         />
       )}
+
+      {debug && <DebugPanel onTest={testSupabase} />}
     </div>
   )
 }
