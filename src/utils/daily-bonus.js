@@ -4,6 +4,17 @@ export async function claimDailyBonus(userId) {
   console.log("Starting claimDailyBonus for userId:", userId)
 
   try {
+    // Проверяем существование пользователя
+    const { data: user, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()
+
+    if (userError || !user) {
+      console.error("User not found:", userError)
+      return {
+        success: false,
+        error: "Пользователь не найден",
+      }
+    }
+
     const { data, error } = await supabase.rpc("claim_daily_bonus", {
       user_id_param: userId,
     })
@@ -12,12 +23,18 @@ export async function claimDailyBonus(userId) {
 
     if (error) {
       console.error("Error in claimDailyBonus:", error)
-      throw new Error(error.message)
+      return {
+        success: false,
+        error: error.message || "Ошибка при получении бонуса",
+      }
     }
 
     if (!data.success) {
       console.error("Claim was not successful:", data.error)
-      throw new Error(data.error)
+      return {
+        success: false,
+        error: data.error || "Не удалось получить бонус",
+      }
     }
 
     console.log("Bonus claimed successfully:", data)
@@ -35,6 +52,21 @@ export async function getDailyBonusInfo(userId) {
   console.log("Getting daily bonus info for userId:", userId)
 
   try {
+    // Проверяем существование пользователя
+    const { data: user, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()
+
+    if (userError || !user) {
+      console.error("User not found:", userError)
+      return {
+        canClaim: false,
+        lastClaim: null,
+        streak: 0,
+        nextBonus: null,
+        isWeekend: false,
+        error: "Пользователь не найден",
+      }
+    }
+
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
@@ -63,7 +95,13 @@ export async function getDailyBonusInfo(userId) {
 
     if (error) {
       console.error("Error getting bonus info:", error)
-      throw error
+      return {
+        canClaim: true,
+        lastClaim: null,
+        streak: 0,
+        nextBonus: null,
+        isWeekend: new Date().getDay() === 0 || new Date().getDay() === 6,
+      }
     }
 
     const now = new Date()

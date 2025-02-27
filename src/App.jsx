@@ -15,7 +15,13 @@ export default function App() {
   })
   const [isMining, setIsMining] = useState(false)
   const [cooldown, setCooldown] = useState(0)
-  const [bonusInfo, setBonusInfo] = useState(null)
+  const [bonusInfo, setBonusInfo] = useState({
+    canClaim: true,
+    lastClaim: null,
+    streak: 0,
+    nextBonus: null,
+    isWeekend: false,
+  })
   const [bonusTimeLeft, setBonusTimeLeft] = useState("")
   const [isClaimingBonus, setIsClaimingBonus] = useState(false)
   const [bonusError, setBonusError] = useState(null)
@@ -25,6 +31,7 @@ export default function App() {
   // Инициализация и другие эффекты остаются без изменений...
   useEffect(() => {
     const initialize = async () => {
+      console.log("Initializing app...")
       await initTelegram()
       const user = getTelegramUser()
 
@@ -37,7 +44,13 @@ export default function App() {
           }
 
           if (data) {
+            console.log("User data loaded:", data)
             setUserData(data)
+
+            // Получаем информацию о бонусе сразу после получения данных пользователя
+            const bonusData = await getDailyBonusInfo(data.id)
+            console.log("Initial bonus info:", bonusData)
+            setBonusInfo(bonusData)
           } else {
             // Если пользователя нет в базе, создаем его
             const newUser = {
@@ -58,15 +71,14 @@ export default function App() {
             }
 
             if (newUserData) {
+              console.log("New user created:", newUserData)
               setUserData(newUserData)
-            }
-          }
 
-          // Получаем информацию о ежедневном бонусе
-          if (data?.id || (userData && userData.id)) {
-            const userId = data?.id || (userData && userData.id)
-            const bonusData = await getDailyBonusInfo(userId)
-            setBonusInfo(bonusData)
+              // Получаем информацию о бонусе для нового пользователя
+              const bonusData = await getDailyBonusInfo(newUserData.id)
+              console.log("New user bonus info:", bonusData)
+              setBonusInfo(bonusData)
+            }
           }
         } catch (error) {
           console.error("Произошла ошибка:", error)
@@ -75,7 +87,7 @@ export default function App() {
     }
 
     initialize()
-  }, [userData])
+  }, [])
 
   // Функция для запуска майнинга
   const handleMining = async () => {
@@ -153,10 +165,18 @@ export default function App() {
   }, [bonusInfo?.lastClaim])
 
   const handleClaimBonus = async () => {
-    console.log("handleClaimBonus called", { userId: userData?.id, isClaimingBonus })
+    console.log("handleClaimBonus called", {
+      userId: userData?.id,
+      isClaimingBonus,
+      bonusInfo,
+    })
 
     if (!userData?.id || isClaimingBonus) {
-      console.log("Early return:", { userId: userData?.id, isClaimingBonus })
+      console.log("Early return:", {
+        userId: userData?.id,
+        isClaimingBonus,
+        reason: !userData?.id ? "no userId" : "already claiming",
+      })
       return
     }
 
@@ -271,15 +291,15 @@ export default function App() {
           ) : (
             <button
               onClick={handleClaimBonus}
-              disabled={isClaimingBonus || !!bonusTimeLeft}
+              disabled={isClaimingBonus}
               style={{
                 width: "100%",
                 padding: "12px",
-                backgroundColor: isClaimingBonus || bonusTimeLeft ? "#1f2937" : "#3b82f6",
+                backgroundColor: isClaimingBonus ? "#1f2937" : "#3b82f6",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
-                cursor: isClaimingBonus || bonusTimeLeft ? "not-allowed" : "pointer",
+                cursor: isClaimingBonus ? "not-allowed" : "pointer",
                 fontSize: "16px",
                 fontWeight: "bold",
                 transition: "all 0.2s ease",
