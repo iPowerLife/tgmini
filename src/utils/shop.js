@@ -12,7 +12,7 @@ export async function getShopItems() {
     }
 
     console.log("Fetched shop items:", items)
-    return items
+    return items || []
   } catch (error) {
     console.error("Error in getShopItems:", error)
     return []
@@ -31,7 +31,7 @@ export async function getUserItems(userId) {
     }
 
     console.log("Fetched user items:", items)
-    return items
+    return items || []
   } catch (error) {
     console.error("Error in getUserItems:", error)
     return []

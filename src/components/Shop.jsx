@@ -1,4 +1,76 @@
-export function Shop({ items, userItems, balance, onPurchase, onClose }) {
+export function Shop({ items = [], userItems = [], balance = 0, onPurchase, onClose }) {
+  console.log("Shop component rendered with:", {
+    itemsCount: items.length,
+    userItemsCount: userItems.length,
+    balance,
+  })
+
+  if (!items || items.length === 0) {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 1000,
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: "#1a1b1e",
+            borderRadius: "12px",
+            padding: "20px",
+            width: "90%",
+            maxWidth: "400px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "20px",
+            }}
+          >
+            <h2 style={{ margin: 0 }}>Магазин 🏪</h2>
+            <button
+              onClick={onClose}
+              style={{
+                background: "none",
+                border: "none",
+                color: "white",
+                fontSize: "24px",
+                cursor: "pointer",
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          <div
+            style={{
+              marginBottom: "20px",
+              padding: "10px",
+              background: "rgba(255, 255, 255, 0.1)",
+              borderRadius: "8px",
+              textAlign: "center",
+            }}
+          >
+            Ваш баланс: {balance.toFixed(2)} 💎
+          </div>
+
+          <div style={{ textAlign: "center", color: "#888" }}>Загрузка предметов...</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       style={{
