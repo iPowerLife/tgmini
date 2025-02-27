@@ -1,4 +1,4 @@
-export function DebugPanel({ onTest, lastError }) {
+export function DebugPanel({ userId, onTestBonus }) {
   return (
     <div
       style={{
@@ -12,8 +12,9 @@ export function DebugPanel({ onTest, lastError }) {
         maxWidth: "300px",
       }}
     >
+      <div style={{ marginBottom: 10, fontSize: 12, color: "#666" }}>User ID: {userId}</div>
       <button
-        onClick={onTest}
+        onClick={onTestBonus}
         style={{
           padding: "8px 16px",
           background: "#3b82f6",
@@ -21,23 +22,10 @@ export function DebugPanel({ onTest, lastError }) {
           border: "none",
           borderRadius: 4,
           cursor: "pointer",
-          marginBottom: "10px",
         }}
       >
-        Test Daily Bonus
+        Test Bonus
       </button>
-
-      {lastError && (
-        <div
-          style={{
-            color: "#ff4444",
-            fontSize: "12px",
-            wordBreak: "break-word",
-          }}
-        >
-          Last Error: {lastError}
-        </div>
-      )}
     </div>
   )
 }

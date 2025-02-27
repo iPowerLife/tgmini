@@ -5,6 +5,7 @@ import { supabase } from "./supabase"
 import { initTelegram, getTelegramUser } from "./utils/telegram"
 import { getDailyBonusInfo, claimDailyBonus } from "./utils/daily-bonus"
 import DailyBonus from "./components/DailyBonus"
+import { DebugPanel } from "./components/DebugPanel"
 
 export default function App() {
   const [userData, setUserData] = useState({
@@ -309,6 +310,20 @@ export default function App() {
             />
           )}
         </button>
+
+        <DebugPanel
+          userId={userData.id}
+          onTestBonus={async () => {
+            try {
+              const result = await claimDailyBonus(userData.id)
+              console.log("Test bonus result:", result)
+              alert(JSON.stringify(result, null, 2))
+            } catch (error) {
+              console.error("Test bonus error:", error)
+              alert("Error: " + error.message)
+            }
+          }}
+        />
       </div>
 
       <style>
