@@ -4,7 +4,11 @@ import React from "react"
 import { Stats } from "./components/Stats"
 import { MiningButton } from "./components/MiningButton"
 import { getTelegramUser, initTelegram } from "./utils/telegram"
-import { getUser, createUser, updateUser, logTransaction } from "./utils/database"
+import { getUser, createUser, updateUser } from "./utils/database"
+
+// Добавим импорт компонента достижений
+import { Achievements } from "./components/Achievements"
+import { getAchievements, checkAchievements } from "./utils/achievements"
 
 function App() {
   const [user, setUser] = React.useState(null)
@@ -13,6 +17,10 @@ function App() {
   const [cooldown, setCooldown] = React.useState(0)
   const [error, setError] = React.useState(null)
   const [debug, setDebug] = React.useState({})
+
+  // В компоненте App добавим:
+  const [showAchievements, setShowAchievements] = React.useState(false)
+  const [achievements, setAchievements] = React.useState([])
 
   // Инициализация пользователя
   React.useEffect(() => {
@@ -60,6 +68,19 @@ function App() {
     initUser()
   }, [])
 
+  // Добавим загрузку достижений при инициализации
+  React.useEffect(() => {
+    if (user?.id) {
+      loadAchievements()
+    }
+  }, [user?.id])
+
+  // Функция загрузки достижений
+  const loadAchievements = async () => {
+    const achievementsData = await getAchievements(user.id)
+    setAchievements(achievementsData)
+  }
+
   // Функция майнинга
   const mine = async () => {
     if (isMining || cooldown > 0 || !user?.id) return
@@ -79,12 +100,11 @@ function App() {
         last_mining: new Date().toISOString(),
       })
 
+      // После обновления данных пользователя
       if (updatedUser) {
         setUser(updatedUser)
-        console.log("User data updated successfully")
-
-        // Логируем транзакцию
-        await logTransaction(user.id, minedAmount, "mining", "Майнинг криптовалюты")
+        await checkAchievements(user.id, updatedUser)
+        await loadAchievements() // Обновляем список достижений
       } else {
         throw new Error("Не удалось обновить данные пользователя")
       }
@@ -201,6 +221,7 @@ function App() {
     )
   }
 
+  // В render добавим кнопку достижений и сам компонент
   return (
     <div
       style={{
@@ -219,7 +240,27 @@ function App() {
         nextLevelExp={user.next_level_exp}
       />
 
-      <MiningButton onMine={mine} cooldown={cooldown} isCooldown={cooldown > 0} />
+      <div style={{ display: "grid", gap: "15px" }}>
+        <MiningButton onMine={mine} cooldown={cooldown} isCooldown={cooldown > 0} />
+
+        <button
+          onClick={() => setShowAchievements(true)}
+          style={{
+            padding: "15px",
+            fontSize: "16px",
+            fontWeight: "bold",
+            color: "white",
+            backgroundColor: "#2563eb",
+            border: "none",
+            borderRadius: "12px",
+            cursor: "pointer",
+          }}
+        >
+          Достижения 🏆
+        </button>
+      </div>
+
+      {showAchievements && <Achievements achievements={achievements} onClose={() => setShowAchievements(false)} />}
 
       {/* Отладочная информация */}
       <div
