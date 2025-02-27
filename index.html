@@ -18,32 +18,11 @@
       background-color: #1a1b1e;
       color: white;
       line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
     #app {
       min-height: 100vh;
-    }
-
-    #app:empty {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      gap: 20px;
-      padding: 20px;
-    }
-
-    #app:empty::before {
-      content: "Приложение не загрузилось";
-      color: #ff4444;
-      font-size: 18px;
-    }
-
-    #app:empty::after {
-      content: "Проверьте консоль для деталей";
-      color: #666;
-      font-size: 14px;
     }
 
     .debug-overlay {
@@ -61,7 +40,6 @@
   </style>
 </head>
 <body>
-  <!-- Добавляем загрузочный экран -->
   <div id="app">
     <div style="
       display: flex;
@@ -73,55 +51,12 @@
       padding: 20px;
     ">
       <div>Загрузка приложения...</div>
-      <div style="color: #666; font-size: 14px;">Пожалуйста, подождите</div>
+      <div style="color: #666; font-size: 14px;">Подождите, игра запускается</div>
     </div>
   </div>
 
-  <!-- Добавляем отладочную информацию -->
-  <div id="debug" class="debug-overlay" style="display: none;"></div>
+  <div id="debug" class="debug-overlay"></div>
 
-  <script>
-    // Отладочный код
-    const debug = document.getElementById('debug');
-    
-    function logDebug(message) {
-      console.log(message);
-      if (debug) {
-        debug.style.display = 'block';
-        debug.innerHTML += message + '<br>';
-      }
-    }
-
-    // Проверяем загрузку скриптов
-    logDebug('HTML loaded');
-    
-    window.addEventListener('load', () => {
-      logDebug('Window loaded');
-      logDebug('Telegram WebApp: ' + (window.Telegram?.WebApp ? 'Available' : 'Not available'));
-      logDebug('Root element: ' + (document.getElementById('app') ? 'Found' : 'Not found'));
-    });
-
-    // Проверяем ошибки
-    window.addEventListener('error', (event) => {
-      logDebug('Error: ' + event.message);
-      if (event.error?.stack) {
-        logDebug('Stack: ' + event.error.stack);
-      }
-    });
-
-    // Проверяем React
-    window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        const app = document.getElementById('app');
-        if (app && app.children.length <= 1) {
-          logDebug('React not mounted after 2s');
-          debug.style.display = 'block';
-        }
-      }, 2000);
-    });
-  </script>
-
-  <!-- Загружаем приложение -->
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

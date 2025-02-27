@@ -1,70 +1,88 @@
 import React from "react"
 import { createRoot } from "react-dom/client"
+import App from "./App.jsx"
 
-// Простой компонент для тестирования
-function TestApp() {
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: "20px",
-        padding: "20px",
-        backgroundColor: "#1a1b1e",
-        color: "white",
-      }}
-    >
-      <h1>Telegram Mining Game</h1>
-      <div>Тестовый компонент загружен</div>
-    </div>
-  )
+// Инициализация Telegram WebApp
+function initTelegramWebApp() {
+  const tg = window.Telegram?.WebApp
+  if (tg) {
+    tg.ready()
+    tg.expand()
+    return true
+  }
+  return false
 }
 
-// Оборачиваем монтирование в try-catch
-try {
-  console.log("Starting React initialization...")
-
+// Монтирование React приложения
+function mountReactApp() {
   const container = document.getElementById("app")
   if (!container) {
     throw new Error("Root element #app not found")
   }
 
-  console.log("Creating React root...")
   const root = createRoot(container)
-
-  console.log("Rendering React app...")
   root.render(
     <React.StrictMode>
-      <TestApp />
+      <App />
     </React.StrictMode>,
   )
 
-  console.log("React initialization complete")
-} catch (error) {
-  console.error("React initialization failed:", error)
+  return true
+}
 
-  // Показываем ошибку на странице
-  const container = document.getElementById("app")
-  if (container) {
-    container.innerHTML = `
-      <div style="
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        gap: 20px;
-        padding: 20px;
-        background-color: #1a1b1e;
-        color: white;
-      ">
-        <div style="color: #ff4444;">Ошибка инициализации React</div>
-        <div style="color: #666; font-size: 14px;">${error.message}</div>
-      </div>
-    `
+// Основная функция инициализации
+function initialize() {
+  console.log("Starting application initialization...")
+
+  // Проверяем готовность Telegram WebApp
+  if (!initTelegramWebApp()) {
+    console.warn("Telegram WebApp not available, continuing anyway...")
   }
+
+  // Монтируем React приложение
+  try {
+    mountReactApp()
+    console.log("Application initialized successfully")
+  } catch (error) {
+    console.error("Failed to initialize application:", error)
+
+    // Показываем ошибку на странице
+    const container = document.getElementById("app")
+    if (container) {
+      container.innerHTML = `
+        <div style="
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          gap: 20px;
+          padding: 20px;
+          background-color: #1a1b1e;
+          color: white;
+        ">
+          <div style="color: #ff4444;">Ошибка инициализации</div>
+          <div style="color: #666; font-size: 14px;">${error.message}</div>
+          <button onclick="window.location.reload()" style="
+            padding: 10px 20px;
+            background: #3b82f6;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+          ">
+            Перезагрузить
+          </button>
+        </div>
+      `
+    }
+  }
+}
+
+// Запускаем инициализацию после загрузки DOM
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initialize)
+} else {
+  initialize()
 }
 

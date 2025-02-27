@@ -4,128 +4,137 @@ import { useState, useEffect } from "react"
 import { supabase } from "./supabase"
 
 export default function App() {
-  const [status, setStatus] = useState("Инициализация...")
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [user, setUser] = useState(null)
 
   useEffect(() => {
-    async function init() {
+    async function initializeApp() {
       try {
-        // Проверяем, что React работает
-        setStatus("React работает")
-
-        // Проверяем Telegram WebApp
+        // Получаем данные пользователя из Telegram
         const tg = window.Telegram?.WebApp
-        if (!tg) {
-          throw new Error("Telegram WebApp не доступен")
-        }
-        setStatus("Telegram WebApp доступен")
+        const telegramUser = tg?.initDataUnsafe?.user
 
-        // Проверяем данные пользователя Telegram
-        const user = tg.initDataUnsafe?.user
-        if (!user) {
-          throw new Error("Данные пользователя Telegram не доступны")
+        if (!telegramUser) {
+          throw new Error("Не удалось получить данные пользователя Telegram")
         }
-        setStatus(`Пользователь Telegram: ${user.username || user.id}`)
 
         // Проверяем подключение к Supabase
-        const { data, error } = await supabase.from("users").select("count")
-        if (error) {
-          throw new Error(`Ошибка Supabase: ${error.message}`)
+        const { data, error } = await supabase.from("users").select("*").eq("telegram_id", telegramUser.id).single()
+
+        if (error && error.code !== "PGRST116") {
+          throw new Error(`Ошибка базы данных: ${error.message}`)
         }
-        setStatus("Подключение к Supabase работает")
+
+        setUser(data || { telegram_id: telegramUser.id })
+        setIsLoading(false)
       } catch (err) {
         console.error("Ошибка инициализации:", err)
         setError(err.message)
+        setIsLoading(false)
       }
     }
 
-    init()
+    initializeApp()
   }, [])
+
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "20px",
+          padding: "20px",
+          backgroundColor: "#1a1b1e",
+          color: "white",
+        }}
+      >
+        <div>Загрузка игры...</div>
+        <div style={{ color: "#666", fontSize: "14px" }}>Подключение к серверу</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "20px",
+          padding: "20px",
+          backgroundColor: "#1a1b1e",
+          color: "white",
+        }}
+      >
+        <div style={{ color: "#ff4444" }}>{error}</div>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            padding: "10px 20px",
+            backgroundColor: "#3b82f6",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          Попробовать снова
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#1a1b1e",
-        color: "white",
-        padding: "20px",
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        textAlign: "center",
+        padding: "20px",
+        backgroundColor: "#1a1b1e",
+        color: "white",
       }}
     >
       <h1 style={{ marginBottom: "20px" }}>Telegram Mining Game</h1>
 
-      <div
-        style={{
-          backgroundColor: "#2d2d2d",
-          padding: "20px",
-          borderRadius: "8px",
-          maxWidth: "80%",
-          width: "400px",
-        }}
-      >
-        <div style={{ marginBottom: "20px" }}>Статус: {status}</div>
-
-        {error && (
-          <div
-            style={{
-              color: "#ff4444",
-              padding: "10px",
-              backgroundColor: "#ff44441a",
-              borderRadius: "4px",
-              marginBottom: "20px",
-            }}
-          >
-            Ошибка: {error}
-          </div>
-        )}
-
+      {user && (
         <div
           style={{
-            fontSize: "12px",
-            color: "#666",
-            marginTop: "20px",
+            padding: "20px",
+            backgroundColor: "rgba(255, 255, 255, 0.1)",
+            borderRadius: "8px",
+            marginBottom: "20px",
           }}
         >
-          Версия: {import.meta.env.VITE_APP_VERSION || "1.0.0"}
+          <div>ID: {user.telegram_id}</div>
+          <div>Баланс: {user.balance || 0} 💎</div>
+          <div>Мощность: {user.mining_power || 1} ⚡</div>
         </div>
-      </div>
+      )}
 
       <button
         onClick={() => window.location.reload()}
         style={{
-          marginTop: "20px",
-          padding: "10px 20px",
+          padding: "15px",
           backgroundColor: "#3b82f6",
           color: "white",
           border: "none",
-          borderRadius: "4px",
+          borderRadius: "8px",
           cursor: "pointer",
+          fontSize: "16px",
+          fontWeight: "bold",
         }}
       >
-        Перезагрузить
+        Начать майнинг ⛏️
       </button>
-
-      <div
-        style={{
-          position: "fixed",
-          bottom: "20px",
-          left: "20px",
-          right: "20px",
-          padding: "10px",
-          backgroundColor: "#2d2d2d",
-          borderRadius: "4px",
-          fontSize: "12px",
-          color: "#666",
-        }}
-      >
-        Environment: {import.meta.env.MODE}
-        <br />
-        Supabase URL: {import.meta.env.VITE_SUPABASE_URL ? "Настроен" : "Не настроен"}
-      </div>
     </div>
   )
 }
