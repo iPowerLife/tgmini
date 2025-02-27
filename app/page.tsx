@@ -1,7 +1,7 @@
 "use client"
 
-import  from "../bot-with-buttons"
+import { getDailyBonus } from "../daily-bonus"
 
 export default function SyntheticV0PageForDeployment() {
-  return < />
+  return <getDailyBonus />
 }
