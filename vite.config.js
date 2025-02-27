@@ -6,34 +6,22 @@ export default defineConfig({
   server: {
     port: process.env.PORT || 3000,
     host: true,
-    cors: {
-      origin: "*",
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
-      credentials: true,
+  },
+  build: {
+    outDir: "dist",
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "react-vendor": ["react", "react-dom"],
+          "supabase-vendor": ["@supabase/supabase-js"],
+        },
+      },
     },
   },
   preview: {
     port: process.env.PORT || 3000,
     host: true,
-    cors: {
-      origin: "*",
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
-      credentials: true,
-    },
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    },
-    allowedHosts: [
-      "tgmini-production.up.railway.app",
-      "tgmini-production.up.railway.app:3000",
-      ".railway.app",
-      "telegram.org",
-      "telegram.me",
-    ],
   },
 })
 
