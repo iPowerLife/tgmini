@@ -15,6 +15,8 @@ export async function claimDailyBonus(userId, amount) {
       .gte("claimed_at", today.toISOString())
       .limit(1)
 
+    console.log("Проверка существующего бонуса:", { todayBonus, checkError })
+
     if (checkError) {
       console.error("Ошибка проверки бонуса:", checkError)
       throw new Error("Не удалось проверить бонус")
@@ -31,13 +33,32 @@ export async function claimDailyBonus(userId, amount) {
       .eq("id", userId)
       .single()
 
+    console.log("Получение текущего баланса:", { currentUser, getUserError })
+
     if (getUserError) {
       console.error("Ошибка получения баланса:", getUserError)
       throw new Error("Не удалось получить баланс")
     }
 
+    // Записываем бонус
+    const { data: bonus, error: bonusError } = await supabase
+      .from("daily_bonuses")
+      .insert({
+        user_id: userId,
+        amount: amount,
+      })
+      .select()
+      .single()
+
+    console.log("Запись бонуса:", { bonus, bonusError })
+
+    if (bonusError) {
+      console.error("Ошибка записи бонуса:", bonusError)
+      throw new Error("Не удалось записать бонус")
+    }
+
     // Обновляем баланс пользователя
-    const newBalance = currentUser.balance + amount
+    const newBalance = Number(currentUser.balance) + Number(amount)
     const { data: updatedUser, error: updateError } = await supabase
       .from("users")
       .update({ balance: newBalance })
@@ -45,24 +66,13 @@ export async function claimDailyBonus(userId, amount) {
       .select()
       .single()
 
+    console.log("Обновление баланса:", { updatedUser, updateError })
+
     if (updateError) {
       console.error("Ошибка обновления баланса:", updateError)
+      // Удаляем запись о бонусе, так как не удалось обновить баланс
+      await supabase.from("daily_bonuses").delete().eq("id", bonus.id)
       throw new Error("Не удалось обновить баланс")
-    }
-
-    // Записываем бонус
-    const { error: bonusError } = await supabase.from("daily_bonuses").insert([
-      {
-        user_id: userId,
-        amount: amount,
-      },
-    ])
-
-    if (bonusError) {
-      console.error("Ошибка записи бонуса:", bonusError)
-      // Откатываем изменение баланса
-      await supabase.from("users").update({ balance: currentUser.balance }).eq("id", userId)
-      throw new Error("Не удалось записать бонус")
     }
 
     return { success: true, user: updatedUser }
@@ -87,12 +97,13 @@ export async function getDailyBonusInfo(userId) {
       .order("claimed_at", { ascending: false })
       .limit(2)
 
+    console.log("Получение информации о бонусах:", { bonuses, error })
+
     if (error) {
       console.error("Ошибка получения информации о бонусах:", error)
       return { canClaim: true, streak: 0, lastClaim: null }
     }
 
-    // Если нет бонусов, можно получить
     if (!bonuses || bonuses.length === 0) {
       return { canClaim: true, streak: 0, lastClaim: null }
     }
@@ -101,7 +112,6 @@ export async function getDailyBonusInfo(userId) {
     const lastClaimDate = new Date(lastBonus.claimed_at)
     lastClaimDate.setHours(0, 0, 0, 0)
 
-    // Проверяем, можно ли получить сегодня
     const canClaim = today.getTime() > lastClaimDate.getTime()
 
     return {
