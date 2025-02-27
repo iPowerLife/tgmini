@@ -70,12 +70,10 @@
     "tsx": "latest",
     "yaml": "latest",
     "vite": "latest",
-    "chart.js": "latest",
     "@supabase/supabase-js": "latest",
     "telegraf": "latest",
     "dotenv": "latest",
-    "@vitejs/plugin-react": "latest",
-    "react-chartjs-2": "latest"
+    "@vitejs/plugin-react": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
