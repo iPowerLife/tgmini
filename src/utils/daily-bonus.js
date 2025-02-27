@@ -4,66 +4,61 @@ export async function claimDailyBonus(userId, amount) {
   try {
     console.log("Starting daily bonus claim:", { userId, amount })
 
-    // Начинаем транзакцию
-    const { error: beginError } = await supabase.rpc("begin_transaction")
-    if (beginError) throw beginError
+    // Обновляем баланс пользователя
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .update({
+        balance: supabase.raw(`balance + ${amount}`),
+      })
+      .eq("id", userId)
+      .select()
+      .single()
 
-    try {
-      // Обновляем баланс пользователя
-      const { data: user, error: userError } = await supabase
+    if (userError) {
+      console.error("Error updating user balance:", userError)
+      throw userError
+    }
+    console.log("Updated user balance:", user)
+
+    // Записываем бонус
+    const { error: bonusError } = await supabase.from("daily_bonuses").insert([
+      {
+        user_id: userId,
+        amount: amount,
+        streak: 1,
+        claimed_at: new Date().toISOString(),
+      },
+    ])
+
+    if (bonusError) {
+      console.error("Error recording bonus:", bonusError)
+      // Откатываем изменение баланса
+      await supabase
         .from("users")
         .update({
-          balance: supabase.raw(`balance + ${amount}`),
+          balance: supabase.raw(`balance - ${amount}`),
         })
         .eq("id", userId)
-        .select()
-        .single()
-
-      if (userError) throw userError
-      console.log("Updated user balance:", user)
-
-      // Записываем бонус
-      const { data: bonus, error: bonusError } = await supabase
-        .from("daily_bonuses")
-        .insert([
-          {
-            user_id: userId,
-            amount: amount,
-            streak: 1, // Начинаем новую серию
-            claimed_at: new Date().toISOString(),
-          },
-        ])
-        .select()
-        .single()
-
-      if (bonusError) throw bonusError
-      console.log("Recorded bonus:", bonus)
-
-      // Записываем транзакцию
-      const { error: transactionError } = await supabase.from("transactions").insert([
-        {
-          user_id: userId,
-          amount: amount,
-          type: "daily_bonus",
-          description: "Ежедневный бонус",
-        },
-      ])
-
-      if (transactionError) throw transactionError
-      console.log("Recorded transaction")
-
-      // Завершаем транзакцию
-      const { error: commitError } = await supabase.rpc("commit_transaction")
-      if (commitError) throw commitError
-
-      console.log("Daily bonus claimed successfully")
-      return { success: true, user }
-    } catch (error) {
-      // Откатываем транзакцию в случае ошибки
-      const { error: rollbackError } = await supabase.rpc("rollback_transaction")
-      if (rollbackError) console.error("Rollback error:", rollbackError)
-      throw error
+      throw bonusError
     }
+
+    // Записываем транзакцию
+    const { error: transactionError } = await supabase.from("transactions").insert([
+      {
+        user_id: userId,
+        amount: amount,
+        type: "daily_bonus",
+        description: "Ежедневный бонус",
+      },
+    ])
+
+    if (transactionError) {
+      console.error("Error recording transaction:", transactionError)
+      // Это некритичная ошибка, продолжаем
+    }
+
+    console.log("Daily bonus claimed successfully")
+    return { success: true, user }
   } catch (error) {
     console.error("Error in claimDailyBonus:", error)
     return { success: false, error: error.message }
