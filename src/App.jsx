@@ -1,44 +1,62 @@
+"use client"
+
+import React from "react"
+
 function App() {
+  const [debug, setDebug] = React.useState({
+    initialized: false,
+    telegramWebApp: null,
+    error: null,
+  })
+
+  React.useEffect(() => {
+    try {
+      // Проверяем доступность Telegram WebApp
+      if (window.Telegram?.WebApp) {
+        const tg = window.Telegram.WebApp
+
+        // Устанавливаем тему
+        document.documentElement.style.backgroundColor = "#1a1b1e"
+        document.body.style.backgroundColor = "#1a1b1e"
+
+        setDebug({
+          initialized: true,
+          telegramWebApp: {
+            platform: tg.platform,
+            version: tg.version,
+            initData: tg.initData,
+            colorScheme: tg.colorScheme,
+            themeParams: tg.themeParams,
+          },
+          error: null,
+        })
+      } else {
+        setDebug({
+          initialized: false,
+          telegramWebApp: null,
+          error: "Telegram WebApp не доступен",
+        })
+      }
+    } catch (err) {
+      setDebug({
+        initialized: false,
+        telegramWebApp: null,
+        error: err.message,
+      })
+    }
+  }, [])
+
   return (
-    <div
-      style={{
-        backgroundColor: "#1a1b1e",
-        color: "white",
-        minHeight: "100vh",
-        padding: "20px",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <h1 style={{ marginBottom: "20px" }}>Тестовая страница</h1>
-      <p>Если вы видите этот текст на тёмном фоне - приложение работает!</p>
-      <div
-        style={{
-          marginTop: "20px",
-          padding: "10px",
-          backgroundColor: "rgba(255,255,255,0.1)",
-          borderRadius: "8px",
-          maxWidth: "300px",
-        }}
-      >
-        {window.Telegram?.WebApp ? (
-          <pre style={{ whiteSpace: "pre-wrap", fontSize: "12px" }}>
-            {JSON.stringify(
-              {
-                platform: window.Telegram.WebApp.platform,
-                version: window.Telegram.WebApp.version,
-                initDataUnsafe: window.Telegram.WebApp.initDataUnsafe,
-              },
-              null,
-              2,
-            )}
-          </pre>
-        ) : (
-          "Telegram WebApp не доступен"
-        )}
-      </div>
+    <div className="container">
+      <h1>Тестовая страница</h1>
+
+      {debug.error ? (
+        <div style={{ color: "red", marginTop: "20px" }}>Ошибка: {debug.error}</div>
+      ) : (
+        <p>{debug.initialized ? "Telegram WebApp инициализирован успешно!" : "Инициализация..."}</p>
+      )}
+
+      <div className="debug">{JSON.stringify(debug, null, 2)}</div>
     </div>
   )
 }
