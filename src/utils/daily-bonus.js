@@ -1,24 +1,17 @@
 import { supabase } from "../supabase"
 
-export async function claimDailyBonus(userId, amount) {
+export async function claimDailyBonus(userId) {
   try {
-    console.log("Claiming daily bonus:", { userId, amount })
+    console.log("Claiming daily bonus for user:", userId)
 
     const { data, error } = await supabase.rpc("claim_daily_bonus", {
       user_id_param: userId,
-      bonus_amount: amount,
     })
 
-    console.log("Claim result:", { data, error })
+    if (error) throw new Error(error.message)
+    if (!data.success) throw new Error(data.error)
 
-    if (error) {
-      throw new Error(error.message)
-    }
-
-    if (!data.success) {
-      throw new Error(data.error)
-    }
-
+    console.log("Bonus claimed successfully:", data)
     return data
   } catch (error) {
     console.error("Error claiming bonus:", error)
@@ -34,9 +27,10 @@ export async function getDailyBonusInfo(userId) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
+    // Получаем последний бонус
     const { data: lastBonus, error } = await supabase
       .from("daily_bonuses")
-      .select("claimed_at")
+      .select("*")
       .eq("user_id", userId)
       .order("claimed_at", { ascending: false })
       .limit(1)
@@ -44,19 +38,40 @@ export async function getDailyBonusInfo(userId) {
 
     if (error && error.code !== "PGRST116") {
       console.error("Error getting bonus info:", error)
-      return { canClaim: false, lastClaim: null, streak: 0 }
+      return {
+        canClaim: false,
+        lastClaim: null,
+        streak: 0,
+        nextBonus: null,
+        isWeekend: false,
+      }
     }
+
+    const now = new Date()
+    const tomorrow = new Date(now)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(0, 0, 0, 0)
+
+    const isWeekend = now.getDay() === 0 || now.getDay() === 6
 
     const canClaim = !lastBonus || new Date(lastBonus.claimed_at).setHours(0, 0, 0, 0) < today.getTime()
 
     return {
       canClaim,
       lastClaim: lastBonus?.claimed_at || null,
-      streak: 0, // Упростим пока логику серии
+      streak: lastBonus?.streak || 0,
+      nextBonus: canClaim ? null : tomorrow.toISOString(),
+      isWeekend,
     }
   } catch (error) {
     console.error("Error in getDailyBonusInfo:", error)
-    return { canClaim: true, lastClaim: null, streak: 0 }
+    return {
+      canClaim: true,
+      lastClaim: null,
+      streak: 0,
+      nextBonus: null,
+      isWeekend: false,
+    }
   }
 }
 
