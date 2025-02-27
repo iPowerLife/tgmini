@@ -1,4 +1,4 @@
-export function DebugPanel({ onTest }) {
+export function DebugPanel({ onTest, lastError }) {
   return (
     <div
       style={{
@@ -9,6 +9,7 @@ export function DebugPanel({ onTest }) {
         padding: 10,
         borderRadius: 8,
         zIndex: 9999,
+        maxWidth: "300px",
       }}
     >
       <button
@@ -20,10 +21,23 @@ export function DebugPanel({ onTest }) {
           border: "none",
           borderRadius: 4,
           cursor: "pointer",
+          marginBottom: "10px",
         }}
       >
-        Test Supabase
+        Test Daily Bonus
       </button>
+
+      {lastError && (
+        <div
+          style={{
+            color: "#ff4444",
+            fontSize: "12px",
+            wordBreak: "break-word",
+          }}
+        >
+          Last Error: {lastError}
+        </div>
+      )}
     </div>
   )
 }
