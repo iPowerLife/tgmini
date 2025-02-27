@@ -10,7 +10,12 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: true,
-    minify: false,
+    minify: false, // Отключаем минификацию для отладки
+    rollupOptions: {
+      output: {
+        manualChunks: null, // Отключаем разделение на чанки
+      },
+    },
   },
 })
 
