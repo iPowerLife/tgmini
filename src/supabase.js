@@ -1,10 +1,38 @@
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = "https://tphsnmoitxericjvgwwn.supabase.co"
-const supabaseKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwaHNubW9pdHhlcmljanZnd3duIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MDYyMjc0MSwiZXhwIjoyMDU2MTk4NzQxfQ.FcXliEXtiyJcnLX6xFaSSZLSYtyD9JeLQ4mdOCLR1f4"
+// Используем переменные окружения
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error("Missing Supabase environment variables")
+}
+
+console.log("Supabase URL:", supabaseUrl)
+console.log("Initializing Supabase client...")
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
+
+// Функция для инициализации базы данных
+async function initializeDatabase() {
+  try {
+    console.log("Initializing database...")
+
+    // Создаем таблицу пользователей
+    const { error: usersError } = await supabase.rpc("initialize_database")
+
+    if (usersError) {
+      console.error("Error initializing database:", usersError)
+      return false
+    }
+
+    console.log("Database initialized successfully")
+    return true
+  } catch (error) {
+    console.error("Error in initializeDatabase:", error)
+    return false
+  }
+}
 
 // Функция для тестирования подключения
 export async function testConnection() {
@@ -16,6 +44,12 @@ export async function testConnection() {
   }
 
   try {
+    console.log("Testing connection...")
+    console.log("Supabase URL:", supabaseUrl)
+
+    // Инициализируем базу данных при первом подключении
+    await initializeDatabase()
+
     // Шаг 1: Проверка базового подключения
     console.log("Step 1: Testing basic connection...")
     const { data: connectionTest, error: connectionError } = await supabase
