@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { testSupabaseConnection } from "./supabase"
 import { getTelegramUser, initTelegram } from "./utils/telegram"
 import { getUser, createUser, updateUser } from "./utils/database"
 import { getAchievements, checkAchievements } from "./utils/achievements"
@@ -20,66 +21,83 @@ export default function App() {
   const [userItems, setUserItems] = useState([])
   const [achievements, setAchievements] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  // Инициализация
+  // Инициализация и проверка подключения
   useEffect(() => {
-    initTelegram()
-    initializeUser()
+    async function init() {
+      try {
+        console.log("Initializing app...")
+        initTelegram()
+
+        // Проверяем подключение к Supabase
+        const isConnected = await testSupabaseConnection()
+        if (!isConnected) {
+          throw new Error("Failed to connect to Supabase")
+        }
+
+        await initializeUser()
+      } catch (error) {
+        console.error("Initialization error:", error)
+        setError(error.message)
+      }
+    }
+    init()
   }, [])
 
-  // Загрузка достижений
+  // Загрузка достижений и предметов магазина
   useEffect(() => {
     if (user) {
-      loadAchievements()
+      console.log("Loading user data...", { userId: user.id })
+      loadUserData()
     }
   }, [user])
 
-  // Загрузка предметов магазина
-  useEffect(() => {
-    if (user) {
-      loadShopItems()
+  async function loadUserData() {
+    try {
+      console.log("Loading achievements and shop items...")
+
+      // Загружаем достижения
+      const userAchievements = await getAchievements(user.id)
+      console.log("Loaded achievements:", userAchievements)
+      setAchievements(userAchievements)
+
+      // Загружаем предметы магазина
+      const items = await getShopItems()
+      console.log("Loaded shop items:", items)
+      const userOwnedItems = await getUserItems(user.id)
+      console.log("Loaded user items:", userOwnedItems)
+
+      setShopItems(items)
+      setUserItems(userOwnedItems)
+      setIsLoading(false)
+    } catch (error) {
+      console.error("Error loading user data:", error)
+      setError(error.message)
+      setIsLoading(false)
     }
-  }, [user])
+  }
 
   async function initializeUser() {
     try {
       const telegramUser = getTelegramUser()
       if (!telegramUser) {
-        console.error("Не удалось получить данные пользователя Telegram")
-        return
+        throw new Error("Не удалось получить данные пользователя Telegram")
       }
+
+      console.log("Telegram user:", telegramUser)
 
       let userData = await getUser(telegramUser.id)
       if (!userData) {
+        console.log("Creating new user...")
         userData = await createUser(telegramUser.id, telegramUser.username)
       }
 
+      console.log("User data:", userData)
       setUser(userData)
-      setIsLoading(false)
     } catch (error) {
-      console.error("Ошибка инициализации:", error)
-    }
-  }
-
-  async function loadAchievements() {
-    try {
-      console.log("Loading achievements for user:", user.id)
-      const userAchievements = await getAchievements(user.id)
-      console.log("Loaded achievements:", userAchievements)
-      setAchievements(userAchievements)
-    } catch (error) {
-      console.error("Ошибка загрузки достижений:", error)
-    }
-  }
-
-  async function loadShopItems() {
-    try {
-      const items = await getShopItems()
-      const userOwnedItems = await getUserItems(user.id)
-      setShopItems(items)
-      setUserItems(userOwnedItems)
-    } catch (error) {
-      console.error("Ошибка загрузки предметов магазина:", error)
+      console.error("Error initializing user:", error)
+      setError(error.message)
     }
   }
 
@@ -88,18 +106,22 @@ export default function App() {
 
     setIsMining(true)
     try {
+      console.log("Mining started...")
+
       // Начисляем монеты
       const updatedUser = await updateUser(user.id, {
         balance: user.balance + user.mining_power,
         last_mining: new Date().toISOString(),
       })
 
+      console.log("Mining completed:", updatedUser)
+
       // Проверяем достижения
       await checkAchievements(user.id, updatedUser)
 
       // Обновляем данные
       setUser(updatedUser)
-      await loadAchievements()
+      await loadUserData() // Перезагружаем достижения после майнинга
 
       // Запускаем таймер перезарядки
       setCooldown(3)
@@ -113,7 +135,8 @@ export default function App() {
         })
       }, 1000)
     } catch (error) {
-      console.error("Ошибка майнинга:", error)
+      console.error("Mining error:", error)
+      setError(error.message)
     } finally {
       setIsMining(false)
     }
@@ -121,13 +144,21 @@ export default function App() {
 
   async function handlePurchase(item) {
     try {
+      console.log("Attempting purchase:", item)
+
       const updatedUser = await purchaseItem(user.id, item, user.balance)
+      console.log("Purchase completed:", updatedUser)
+
       setUser(updatedUser)
-      await loadShopItems()
+      await loadUserData() // Перезагружаем предметы после покупки
     } catch (error) {
-      console.error("Ошибка покупки:", error)
+      console.error("Purchase error:", error)
       alert(error.message)
     }
+  }
+
+  if (error) {
+    return <div style={{ padding: 20, textAlign: "center", color: "red" }}>Ошибка: {error}</div>
   }
 
   if (isLoading) {
@@ -150,7 +181,10 @@ export default function App() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <button
-          onClick={() => setShowAchievements(true)}
+          onClick={() => {
+            console.log("Opening achievements:", achievements)
+            setShowAchievements(true)
+          }}
           style={{
             padding: 15,
             fontSize: 16,
@@ -164,7 +198,10 @@ export default function App() {
           Достижения 🏆
         </button>
         <button
-          onClick={() => setShowShop(true)}
+          onClick={() => {
+            console.log("Opening shop:", { items: shopItems, userItems })
+            setShowShop(true)
+          }}
           style={{
             padding: 15,
             fontSize: 16,
