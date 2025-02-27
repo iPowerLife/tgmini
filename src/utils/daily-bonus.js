@@ -15,6 +15,7 @@ export async function claimDailyBonus(userId) {
       }
     }
 
+    // Вызываем функцию получения бонуса
     const { data, error } = await supabase.rpc("claim_daily_bonus", {
       user_id_param: userId,
     })
@@ -34,6 +35,23 @@ export async function claimDailyBonus(userId) {
       return {
         success: false,
         error: data.error || "Не удалось получить бонус",
+      }
+    }
+
+    // Обновляем информацию о пользователе в локальном хранилище или состоянии
+    if (data.user) {
+      try {
+        const { data: updatedUser, error: updateError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", userId)
+          .single()
+
+        if (!updateError && updatedUser) {
+          console.log("User data updated:", updatedUser)
+        }
+      } catch (updateError) {
+        console.error("Error updating user data:", updateError)
       }
     }
 
@@ -89,7 +107,7 @@ export async function getDailyBonusInfo(userId) {
         lastClaim: null,
         streak: 0,
         nextBonus: null,
-        isWeekend: new Date().getDay() === 0 || new Date().getDay() === 6,
+        isWeekend: today.getDay() === 0 || today.getDay() === 6,
       }
     }
 
@@ -100,7 +118,7 @@ export async function getDailyBonusInfo(userId) {
         lastClaim: null,
         streak: 0,
         nextBonus: null,
-        isWeekend: new Date().getDay() === 0 || new Date().getDay() === 6,
+        isWeekend: today.getDay() === 0 || today.getDay() === 6,
       }
     }
 
