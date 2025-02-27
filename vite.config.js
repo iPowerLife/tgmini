@@ -7,12 +7,19 @@ export default defineConfig({
     port: process.env.PORT || 3000,
     host: true,
   },
-  build: {
-    outDir: "dist",
-  },
   preview: {
     port: process.env.PORT || 3000,
     host: true,
+  },
+  build: {
+    // Включаем source maps для отладки
+    sourcemap: true,
+    // Добавляем информацию об ошибках
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
   },
 })
 

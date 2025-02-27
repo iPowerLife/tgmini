@@ -1,14 +1,42 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Тест Telegram WebApp</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Добавляем базовые стили -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1b1e;
+            color: white;
+            font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+    </style>
 </head>
 <body>
-  <div id="app"></div>
-  <script type="module" src="/src/main.jsx"></script>
+    <div id="app"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    <!-- Добавляем скрипт для отладки -->
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            // Создаем элемент для отображения ошибки
+            var errorDiv = document.createElement('div');
+            errorDiv.style.position = 'fixed';
+            errorDiv.style.bottom = '0';
+            errorDiv.style.left = '0';
+            errorDiv.style.right = '0';
+            errorDiv.style.padding = '10px';
+            errorDiv.style.background = 'rgba(255,0,0,0.8)';
+            errorDiv.style.color = 'white';
+            errorDiv.style.fontSize = '12px';
+            errorDiv.textContent = 'Error: ' + msg + ' at ' + line + ':' + col;
+            document.body.appendChild(errorDiv);
+            return false;
+        };
+    </script>
 </body>
 </html>
 
