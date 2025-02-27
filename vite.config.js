@@ -15,6 +15,7 @@ export default defineConfig({
     headers: {
       "Access-Control-Allow-Origin": "*",
     },
+    allowedHosts: ["tgmini-production.up.railway.app", ".railway.app", "telegram.org", "telegram.me"],
   },
 })
 
