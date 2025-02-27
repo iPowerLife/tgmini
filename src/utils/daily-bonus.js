@@ -7,15 +7,54 @@ export async function claimDailyBonus(userId) {
     // Проверяем существование пользователя
     const { data: user, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()
 
-    if (userError || !user) {
-      console.error("User not found:", userError)
+    if (userError) {
+      console.error("Error checking user:", userError)
+      return {
+        success: false,
+        error: "Ошибка проверки пользователя: " + userError.message,
+      }
+    }
+
+    if (!user) {
+      console.error("User not found")
       return {
         success: false,
         error: "Пользователь не найден",
       }
     }
 
+    console.log("Found user:", user)
+
+    // Проверяем, получал ли пользователь бонус сегодня
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const { data: existingBonus, error: existingBonusError } = await supabase
+      .from("daily_bonuses")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("claimed_at", today.toISOString())
+      .limit(1)
+      .single()
+
+    if (existingBonusError && existingBonusError.code !== "PGRST116") {
+      console.error("Error checking existing bonus:", existingBonusError)
+      return {
+        success: false,
+        error: "Ошибка проверки существующего бонуса: " + existingBonusError.message,
+      }
+    }
+
+    if (existingBonus) {
+      console.log("Bonus already claimed today:", existingBonus)
+      return {
+        success: false,
+        error: "Бонус уже получен сегодня",
+      }
+    }
+
     // Вызываем функцию получения бонуса
+    console.log("Calling claim_daily_bonus function...")
     const { data, error } = await supabase.rpc("claim_daily_bonus", {
       user_id_param: userId,
     })
@@ -26,42 +65,34 @@ export async function claimDailyBonus(userId) {
       console.error("Error in claimDailyBonus:", error)
       return {
         success: false,
-        error: error.message || "Ошибка при получении бонуса",
+        error: "Ошибка получения бонуса: " + error.message,
       }
     }
 
-    if (!data.success) {
-      console.error("Claim was not successful:", data.error)
+    if (!data || !data.success) {
+      console.error("Claim was not successful:", data?.error || "Unknown error")
       return {
         success: false,
-        error: data.error || "Не удалось получить бонус",
+        error: data?.error || "Неизвестная ошибка при получении бонуса",
       }
     }
 
-    // Обновляем информацию о пользователе в локальном хранилище или состоянии
-    if (data.user) {
-      try {
-        const { data: updatedUser, error: updateError } = await supabase
-          .from("users")
-          .select("*")
-          .eq("id", userId)
-          .single()
-
-        if (!updateError && updatedUser) {
-          console.log("User data updated:", updatedUser)
-        }
-      } catch (updateError) {
-        console.error("Error updating user data:", updateError)
+    // Проверяем результат
+    if (!data.user || !data.bonus) {
+      console.error("Invalid response format:", data)
+      return {
+        success: false,
+        error: "Некорректный формат ответа от сервера",
       }
     }
 
     console.log("Bonus claimed successfully:", data)
     return data
   } catch (error) {
-    console.error("Error claiming bonus:", error)
+    console.error("Unexpected error in claimDailyBonus:", error)
     return {
       success: false,
-      error: error.message || "Неизвестная ошибка",
+      error: "Непредвиденная ошибка: " + error.message,
     }
   }
 }
@@ -73,8 +104,20 @@ export async function getDailyBonusInfo(userId) {
     // Проверяем существование пользователя
     const { data: user, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()
 
-    if (userError || !user) {
-      console.error("User not found:", userError)
+    if (userError) {
+      console.error("Error checking user:", userError)
+      return {
+        canClaim: false,
+        lastClaim: null,
+        streak: 0,
+        nextBonus: null,
+        isWeekend: false,
+        error: "Ошибка проверки пользователя",
+      }
+    }
+
+    if (!user) {
+      console.error("User not found")
       return {
         canClaim: false,
         lastClaim: null,
@@ -89,7 +132,7 @@ export async function getDailyBonusInfo(userId) {
     today.setHours(0, 0, 0, 0)
 
     // Получаем последний бонус
-    const { data: lastBonus, error } = await supabase
+    const { data: lastBonus, error: bonusError } = await supabase
       .from("daily_bonuses")
       .select("*")
       .eq("user_id", userId)
@@ -97,10 +140,10 @@ export async function getDailyBonusInfo(userId) {
       .limit(1)
       .single()
 
-    console.log("Last bonus data:", { lastBonus, error })
+    console.log("Last bonus data:", { lastBonus, bonusError })
 
     // Для новых пользователей или когда нет бонусов
-    if (error && error.code === "PGRST116") {
+    if (bonusError && bonusError.code === "PGRST116") {
       console.log("No previous bonus found - new user or first claim")
       return {
         canClaim: true,
@@ -111,8 +154,8 @@ export async function getDailyBonusInfo(userId) {
       }
     }
 
-    if (error) {
-      console.error("Error getting bonus info:", error)
+    if (bonusError) {
+      console.error("Error getting bonus info:", bonusError)
       return {
         canClaim: true,
         lastClaim: null,
@@ -142,14 +185,14 @@ export async function getDailyBonusInfo(userId) {
     console.log("Returning bonus info:", result)
     return result
   } catch (error) {
-    console.error("Error in getDailyBonusInfo:", error)
-    // В случае ошибки разрешаем получить бонус
+    console.error("Unexpected error in getDailyBonusInfo:", error)
     return {
       canClaim: true,
       lastClaim: null,
       streak: 0,
       nextBonus: null,
       isWeekend: new Date().getDay() === 0 || new Date().getDay() === 6,
+      error: "Непредвиденная ошибка",
     }
   }
 }
