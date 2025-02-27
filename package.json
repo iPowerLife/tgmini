@@ -7,8 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "vite preview --host --port $PORT",
-    "security": "npm audit fix --force"
+    "start": "vite preview --host --port $PORT"
   },
   "dependencies": {
     "react": "18.2.0",
@@ -19,16 +18,11 @@
     "@types/react": "18.2.48",
     "@types/react-dom": "18.2.18",
     "@vitejs/plugin-react": "4.2.1",
-    "vite": "5.0.12",
-    "esbuild": "0.19.11"
+    "vite": "5.0.12"
   },
   "engines": {
     "node": ">=20.17.0",
     "npm": ">=10.2.4"
-  },
-  "overrides": {
-    "esbuild": "0.19.11",
-    "vite": "5.0.12"
   }
 }
 
