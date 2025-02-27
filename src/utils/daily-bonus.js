@@ -1,15 +1,24 @@
 import { supabase } from "../supabase"
 
 export async function claimDailyBonus(userId) {
-  try {
-    console.log("Claiming daily bonus for user:", userId)
+  console.log("Starting claimDailyBonus for userId:", userId)
 
+  try {
     const { data, error } = await supabase.rpc("claim_daily_bonus", {
       user_id_param: userId,
     })
 
-    if (error) throw new Error(error.message)
-    if (!data.success) throw new Error(data.error)
+    console.log("Claim daily bonus response:", { data, error })
+
+    if (error) {
+      console.error("Error in claimDailyBonus:", error)
+      throw new Error(error.message)
+    }
+
+    if (!data.success) {
+      console.error("Claim was not successful:", data.error)
+      throw new Error(data.error)
+    }
 
     console.log("Bonus claimed successfully:", data)
     return data
@@ -23,6 +32,8 @@ export async function claimDailyBonus(userId) {
 }
 
 export async function getDailyBonusInfo(userId) {
+  console.log("Getting daily bonus info for userId:", userId)
+
   try {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -36,15 +47,23 @@ export async function getDailyBonusInfo(userId) {
       .limit(1)
       .single()
 
-    if (error && error.code !== "PGRST116") {
-      console.error("Error getting bonus info:", error)
+    console.log("Last bonus data:", { lastBonus, error })
+
+    // Для новых пользователей или когда нет бонусов
+    if (error && error.code === "PGRST116") {
+      console.log("No previous bonus found - new user or first claim")
       return {
-        canClaim: false,
+        canClaim: true,
         lastClaim: null,
         streak: 0,
         nextBonus: null,
-        isWeekend: false,
+        isWeekend: new Date().getDay() === 0 || new Date().getDay() === 6,
       }
+    }
+
+    if (error) {
+      console.error("Error getting bonus info:", error)
+      throw error
     }
 
     const now = new Date()
@@ -53,24 +72,28 @@ export async function getDailyBonusInfo(userId) {
     tomorrow.setHours(0, 0, 0, 0)
 
     const isWeekend = now.getDay() === 0 || now.getDay() === 6
+    const lastClaimDate = lastBonus ? new Date(lastBonus.claimed_at) : null
+    const canClaim = !lastBonus || lastClaimDate.setHours(0, 0, 0, 0) < today.getTime()
 
-    const canClaim = !lastBonus || new Date(lastBonus.claimed_at).setHours(0, 0, 0, 0) < today.getTime()
-
-    return {
+    const result = {
       canClaim,
       lastClaim: lastBonus?.claimed_at || null,
       streak: lastBonus?.streak || 0,
       nextBonus: canClaim ? null : tomorrow.toISOString(),
       isWeekend,
     }
+
+    console.log("Returning bonus info:", result)
+    return result
   } catch (error) {
     console.error("Error in getDailyBonusInfo:", error)
+    // В случае ошибки разрешаем получить бонус
     return {
       canClaim: true,
       lastClaim: null,
       streak: 0,
       nextBonus: null,
-      isWeekend: false,
+      isWeekend: new Date().getDay() === 0 || new Date().getDay() === 6,
     }
   }
 }

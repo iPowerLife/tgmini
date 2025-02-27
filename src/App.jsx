@@ -153,13 +153,20 @@ export default function App() {
   }, [bonusInfo?.lastClaim])
 
   const handleClaimBonus = async () => {
-    if (!userData?.id || isClaimingBonus) return
+    console.log("handleClaimBonus called", { userId: userData?.id, isClaimingBonus })
+
+    if (!userData?.id || isClaimingBonus) {
+      console.log("Early return:", { userId: userData?.id, isClaimingBonus })
+      return
+    }
 
     try {
       setIsClaimingBonus(true)
       setBonusError(null)
 
+      console.log("Calling claimDailyBonus...")
       const result = await claimDailyBonus(userData.id)
+      console.log("Claim result:", result)
 
       if (result.success) {
         setUserData(result.user)
@@ -168,6 +175,7 @@ export default function App() {
 
         // Обновляем информацию о бонусе
         const newBonusInfo = await getDailyBonusInfo(userData.id)
+        console.log("Updated bonus info:", newBonusInfo)
         setBonusInfo(newBonusInfo)
 
         setTimeout(() => {
@@ -175,10 +183,12 @@ export default function App() {
           setClaimedBonus(null)
         }, 3000)
       } else {
+        console.error("Claim failed:", result.error)
         setBonusError(result.error)
         setTimeout(() => setBonusError(null), 3000)
       }
     } catch (error) {
+      console.error("Error in handleClaimBonus:", error)
       setBonusError(error.message)
       setTimeout(() => setBonusError(null), 3000)
     } finally {
