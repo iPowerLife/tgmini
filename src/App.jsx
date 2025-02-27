@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { supabase } from "./supabase"
+import { supabase, checkDatabaseConnection, createUser, getUserData } from "./supabase"
 
 function App() {
   const [user, setUser] = React.useState(null)
@@ -13,6 +13,7 @@ function App() {
     initDataReceived: false,
     userId: null,
     host: window.location.host,
+    databaseConnected: false,
   })
 
   React.useEffect(() => {
@@ -21,6 +22,19 @@ function App() {
 
   async function initializeApp() {
     try {
+      console.log("Starting app initialization...")
+
+      // Проверяем подключение к базе данных
+      const isConnected = await checkDatabaseConnection()
+      setDebugInfo((prev) => ({
+        ...prev,
+        databaseConnected: isConnected,
+      }))
+
+      if (!isConnected) {
+        throw new Error("Нет подключения к базе данных")
+      }
+
       const tgWebAppAvailable = Boolean(window.Telegram?.WebApp)
       console.log("Telegram WebApp available:", tgWebAppAvailable)
 
@@ -29,66 +43,43 @@ function App() {
         telegramWebAppAvailable: tgWebAppAvailable,
       }))
 
-      if (tgWebAppAvailable) {
-        const tg = window.Telegram.WebApp
-        tg.ready()
-        tg.expand()
-
-        const userId = tg.initDataUnsafe?.user?.id
-        setDebugInfo((prev) => ({
-          ...prev,
-          initDataReceived: Boolean(userId),
-          userId: userId,
-        }))
-
-        if (userId) {
-          await loadUserData(userId)
-        }
+      if (!tgWebAppAvailable) {
+        throw new Error("Telegram WebApp не доступен")
       }
-    } catch (err) {
-      console.error("Error:", err)
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
 
-  async function loadUserData(telegramId) {
-    try {
-      // Получаем данные пользователя
-      let { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("*")
-        .eq("telegram_id", telegramId)
-        .single()
+      const tg = window.Telegram.WebApp
+      tg.ready()
+      tg.expand()
 
-      if (userError) throw userError
+      const userId = tg.initDataUnsafe?.user?.id
+      const username = tg.initDataUnsafe?.user?.username
+
+      setDebugInfo((prev) => ({
+        ...prev,
+        initDataReceived: Boolean(userId),
+        userId: userId,
+      }))
+
+      if (!userId) {
+        throw new Error("Не удалось получить ID пользователя")
+      }
+
+      // Пытаемся получить данные пользователя
+      let userData = await getUserData(userId)
 
       // Если пользователя нет, создаем его
       if (!userData) {
-        const { data: newUser, error: createError } = await supabase
-          .from("users")
-          .insert([
-            {
-              telegram_id: telegramId,
-              balance: 0,
-              mining_power: 1,
-              level: 1,
-              experience: 0,
-              next_level_exp: 100,
-            },
-          ])
-          .select()
-          .single()
-
-        if (createError) throw createError
-        userData = newUser
+        console.log("Creating new user...")
+        userData = await createUser(userId, username)
       }
 
       setUser(userData)
+      console.log("App initialization completed")
     } catch (err) {
-      console.error("Error loading user data:", err)
-      setError("Ошибка загрузки данных пользователя")
+      console.error("Initialization error:", err)
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -97,6 +88,7 @@ function App() {
 
     setMiningCooldown(true)
     try {
+      console.log("Starting mining...")
       const minedAmount = user.mining_power
       const expGained = Math.floor(minedAmount * 0.1)
 
@@ -127,6 +119,7 @@ function App() {
       if (transactionError) throw transactionError
 
       setUser(updatedUser)
+      console.log("Mining completed successfully")
 
       // Проверяем повышение уровня
       if (updatedUser.experience >= updatedUser.next_level_exp) {
@@ -138,13 +131,14 @@ function App() {
       }, 3000)
     } catch (err) {
       console.error("Mining error:", err)
-      setError("Ошибка при майнинге")
+      setError("Ошибка при майнинге: " + err.message)
       setMiningCooldown(false)
     }
   }
 
   async function levelUp() {
     try {
+      console.log("Starting level up...")
       const { data: levelData, error: levelError } = await supabase
         .from("levels")
         .select("*")
@@ -168,6 +162,7 @@ function App() {
       if (updateError) throw updateError
 
       setUser(updatedUser)
+      console.log("Level up completed successfully")
 
       // Записываем транзакцию награды за уровень
       await supabase.from("transactions").insert([
@@ -180,7 +175,7 @@ function App() {
       ])
     } catch (err) {
       console.error("Level up error:", err)
-      setError("Ошибка при повышении уровня")
+      setError("Ошибка при повышении уровня: " + err.message)
     }
   }
 
@@ -224,6 +219,39 @@ function App() {
         >
           <h3>Ошибка</h3>
           <p>{error}</p>
+        </div>
+
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            width: "100%",
+            padding: "15px",
+            fontSize: "16px",
+            fontWeight: "bold",
+            color: "white",
+            backgroundColor: "#3b82f6",
+            border: "none",
+            borderRadius: "12px",
+            cursor: "pointer",
+            marginTop: "20px",
+          }}
+        >
+          Попробовать снова
+        </button>
+
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "10px",
+            background: "rgba(0,0,0,0.3)",
+            borderRadius: "8px",
+            fontSize: "12px",
+            fontFamily: "monospace",
+          }}
+        >
+          <div>База данных: {debugInfo.databaseConnected ? "Подключена" : "Ошибка подключения"}</div>
+          <div>Telegram WebApp: {debugInfo.telegramWebAppAvailable ? "Доступен" : "Недоступен"}</div>
+          <div>ID пользователя: {debugInfo.userId || "Нет"}</div>
         </div>
       </div>
     )
@@ -337,9 +365,8 @@ function App() {
           fontFamily: "monospace",
         }}
       >
-        <div>Текущий хост: {debugInfo.host}</div>
-        <div>Telegram WebApp доступен: {debugInfo.telegramWebAppAvailable ? "Да" : "Нет"}</div>
-        <div>Данные получены: {debugInfo.initDataReceived ? "Да" : "Нет"}</div>
+        <div>База данных: {debugInfo.databaseConnected ? "Подключена" : "Ошибка подключения"}</div>
+        <div>Telegram WebApp: {debugInfo.telegramWebAppAvailable ? "Доступен" : "Недоступен"}</div>
         <div>ID пользователя: {debugInfo.userId || "Нет"}</div>
       </div>
     </div>
