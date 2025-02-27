@@ -4,11 +4,14 @@ FROM node:20-alpine as builder
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
+# Обновляем npm до последней версии
+RUN npm install -g npm@latest
+
 # Копируем файлы package.json и package-lock.json
 COPY package*.json ./
 
-# Устанавливаем зависимости
-RUN npm install
+# Устанавливаем зависимости и исправляем уязвимости
+RUN npm install && npm audit fix --force
 
 # Копируем исходный код
 COPY . .
