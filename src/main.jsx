@@ -1,86 +1,70 @@
 import React from "react"
 import { createRoot } from "react-dom/client"
-import App from "./App.jsx"
 
-// Перехватчик ошибок
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props)
-    this.state = { hasError: false, error: null }
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error }
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error("React error:", error, errorInfo)
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div
-          style={{
-            minHeight: "100vh",
-            backgroundColor: "#1a1b1e",
-            color: "white",
-            padding: "20px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-          }}
-        >
-          <h1>Что-то пошло не так 😢</h1>
-          <div
-            style={{
-              margin: "20px",
-              padding: "20px",
-              backgroundColor: "#ff44441a",
-              borderRadius: "8px",
-              maxWidth: "80%",
-            }}
-          >
-            {this.state.error?.message || "Неизвестная ошибка"}
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#3b82f6",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Перезагрузить страницу
-          </button>
-        </div>
-      )
-    }
-
-    return this.props.children
-  }
+// Простой компонент для тестирования
+function TestApp() {
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: "20px",
+        padding: "20px",
+        backgroundColor: "#1a1b1e",
+        color: "white",
+      }}
+    >
+      <h1>Telegram Mining Game</h1>
+      <div>Тестовый компонент загружен</div>
+    </div>
+  )
 }
 
-// Глобальный обработчик ошибок
-window.onerror = (message, source, lineno, colno, error) => {
-  console.error("Global error:", { message, source, lineno, colno, error })
+// Оборачиваем монтирование в try-catch
+try {
+  console.log("Starting React initialization...")
+
+  const container = document.getElementById("app")
+  if (!container) {
+    throw new Error("Root element #app not found")
+  }
+
+  console.log("Creating React root...")
+  const root = createRoot(container)
+
+  console.log("Rendering React app...")
+  root.render(
+    <React.StrictMode>
+      <TestApp />
+    </React.StrictMode>,
+  )
+
+  console.log("React initialization complete")
+} catch (error) {
+  console.error("React initialization failed:", error)
+
+  // Показываем ошибку на странице
+  const container = document.getElementById("app")
+  if (container) {
+    container.innerHTML = `
+      <div style="
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        padding: 20px;
+        background-color: #1a1b1e;
+        color: white;
+      ">
+        <div style="color: #ff4444;">Ошибка инициализации React</div>
+        <div style="color: #666; font-size: 14px;">${error.message}</div>
+      </div>
+    `
+  }
 }
-
-const container = document.getElementById("app")
-if (!container) {
-  throw new Error("Root element #app not found")
-}
-
-const root = createRoot(container)
-
-root.render(
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>,
-)
 

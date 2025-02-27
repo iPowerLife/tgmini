@@ -12,33 +12,20 @@ export default defineConfig({
   server: {
     port: process.env.PORT || 3000,
     host: true,
-    hmr: {
-      protocol: "ws",
-      host: "localhost",
-    },
   },
   build: {
     outDir: "dist",
     sourcemap: true,
+    minify: false, // Отключаем минификацию для отладки
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
       },
-      output: {
-        manualChunks: {
-          vendor: ["react", "react-dom"],
-          supabase: ["@supabase/supabase-js"],
-        },
-      },
     },
-    target: "esnext",
-    minify: "esbuild",
   },
-  optimizeDeps: {
-    include: ["react", "react-dom", "@supabase/supabase-js"],
-    esbuildOptions: {
-      target: "esnext",
-    },
+  define: {
+    "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
 })
 
