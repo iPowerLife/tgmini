@@ -1,0 +1,11 @@
+# Устанавливаем строгий режим установки зависимостей
+engine-strict=true
+save-exact=true
+
+# Настройки безопасности
+audit=false
+fund=false
+
+# Настройки производительности
+prefer-offline=true
+
