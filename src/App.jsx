@@ -4,7 +4,13 @@ import { useState, useEffect } from "react"
 import { supabase } from "./supabase"
 
 export default function App() {
-  const [userData, setUserData] = useState(null)
+  const [userData, setUserData] = useState({
+    balance: 0,
+    mining_power: 1,
+    level: 1,
+    experience: 0,
+    next_level_exp: 100,
+  })
   const [isMining, setIsMining] = useState(false)
   const [cooldown, setCooldown] = useState(0)
 
@@ -17,7 +23,7 @@ export default function App() {
     }
   }, [])
 
-  // Загрузка данных пользователя
+  // Загрузка данных пользователя в фоновом режиме
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -64,7 +70,7 @@ export default function App() {
   }, [])
 
   const handleMining = async () => {
-    if (isMining || cooldown > 0 || !userData) return
+    if (isMining || cooldown > 0) return
 
     try {
       setIsMining(true)
@@ -118,59 +124,57 @@ export default function App() {
           gap: "20px",
         }}
       >
-        {userData && (
+        <div
+          style={{
+            padding: "20px",
+            backgroundColor: "rgba(255, 255, 255, 0.1)",
+            borderRadius: "12px",
+            display: "grid",
+            gap: "10px",
+          }}
+        >
           <div
             style={{
-              padding: "20px",
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              borderRadius: "12px",
-              display: "grid",
-              gap: "10px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <span>Баланс:</span>
-              <span style={{ color: "#4ade80" }}>{userData.balance.toFixed(2)} 💎</span>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <span>Мощность:</span>
-              <span style={{ color: "#60a5fa" }}>{userData.mining_power.toFixed(1)} ⚡</span>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <span>Уровень:</span>
-              <span style={{ color: "#fbbf24" }}>{userData.level} ✨</span>
-            </div>
+            <span>Баланс:</span>
+            <span style={{ color: "#4ade80" }}>{userData.balance.toFixed(2)} 💎</span>
           </div>
-        )}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span>Мощность:</span>
+            <span style={{ color: "#60a5fa" }}>{userData.mining_power.toFixed(1)} ⚡</span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span>Уровень:</span>
+            <span style={{ color: "#fbbf24" }}>{userData.level} ✨</span>
+          </div>
+        </div>
 
         <button
           onClick={handleMining}
-          disabled={isMining || cooldown > 0 || !userData}
+          disabled={isMining || cooldown > 0}
           style={{
             padding: "20px",
-            backgroundColor: isMining || cooldown > 0 || !userData ? "#1f2937" : "#3b82f6",
+            backgroundColor: isMining || cooldown > 0 ? "#1f2937" : "#3b82f6",
             color: "white",
             border: "none",
             borderRadius: "12px",
-            cursor: isMining || cooldown > 0 || !userData ? "not-allowed" : "pointer",
+            cursor: isMining || cooldown > 0 ? "not-allowed" : "pointer",
             fontSize: "18px",
             fontWeight: "bold",
             position: "relative",
@@ -178,13 +182,7 @@ export default function App() {
             transition: "background-color 0.2s",
           }}
         >
-          {!userData
-            ? "Подключение..."
-            : isMining
-              ? "Майнинг..."
-              : cooldown > 0
-                ? `Перезарядка (${cooldown}с)`
-                : "Майнить ⛏️"}
+          {isMining ? "Майнинг..." : cooldown > 0 ? `Перезарядка (${cooldown}с)` : "Майнить ⛏️"}
 
           {cooldown > 0 && (
             <div
