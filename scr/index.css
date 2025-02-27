@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --tg-theme-bg-color: #1a1b1e;
+  --tg-theme-text-color: #ffffff;
+  --tg-theme-hint-color: #9ca3af;
+  --tg-theme-link-color: #3b82f6;
+  --tg-theme-button-color: #3b82f6;
+  --tg-theme-button-text-color: #ffffff;
+}
+
+body {
+  background-color: var(--tg-theme-bg-color);
+  color: var(--tg-theme-text-color);
+}
+
+/* Chart.js стили */
+.chartjs-tooltip {
+  background-color: rgba(26, 27, 30, 0.9) !important;
+  border-color: #374151 !important;
+}
+
+.chartjs-tooltip-key {
+  border-color: #3b82f6 !important;
+}
+
