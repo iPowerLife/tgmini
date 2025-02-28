@@ -15,21 +15,17 @@ function App() {
   const [activeSection, setActiveSection] = useState("home")
   const [showIncrease, setShowIncrease] = useState(false)
 
-  // Обновляем функцию initTelegramAndUser для лучшей обработки ошибок
   useEffect(() => {
     const initTelegramAndUser = async () => {
       try {
-        // Инициализируем Telegram WebApp
-        const telegram = initTelegram() // Ensure initTelegram is declared or imported
+        const telegram = initTelegram()
         console.log("Telegram initialized:", telegram)
-        setTg(telegram) // Ensure setTg is declared or imported
+        setTg(telegram)
 
-        // Получаем пользователя Telegram
-        let telegramUser = getTelegramUser() // Use let instead of const
+        let telegramUser = getTelegramUser()
         console.log("Got Telegram user:", telegramUser)
 
         if (!telegramUser?.id) {
-          // Для тестирования используем тестового пользователя
           console.log("Using test user data")
           const testUser = {
             id: 12345,
@@ -37,10 +33,9 @@ function App() {
             first_name: "Test",
             last_name: "User",
           }
-          telegramUser = testUser // Assign to let variable
+          telegramUser = testUser
         }
 
-        // Ищем пользователя в базе
         const { data: users, error: selectError } = await supabase
           .from("users")
           .select("*")
@@ -54,11 +49,9 @@ function App() {
         console.log("Database query result:", users)
         let user = users?.[0]
 
-        // Если пользователя нет, создаем
         if (!user) {
           console.log("Creating new user with data:", telegramUser)
 
-          // Создаем пользователя с данными из Telegram
           const { data: newUsers, error: createError } = await supabase
             .from("users")
             .insert([
@@ -83,7 +76,6 @@ function App() {
           console.log("Created new user:", newUsers)
           user = newUsers[0]
 
-          // Создаем запись в mining_stats
           const { error: statsError } = await supabase.from("mining_stats").insert([
             {
               user_id: user.id,
@@ -103,7 +95,6 @@ function App() {
         setBalance(user.balance)
       } catch (error) {
         console.error("Error in initialization:", error)
-        // Создаем тестового пользователя для отладки
         const testUser = {
           id: "test-id",
           telegram_id: 12345,
@@ -123,9 +114,7 @@ function App() {
     initTelegramAndUser()
   }, [])
 
-  // Обновляем функцию renderContent для лучшей обработки состояний
   const renderContent = () => {
-    // Добавляем логирование
     console.log("Rendering content. User:", user, "Active section:", activeSection)
 
     if (!user) {
@@ -167,9 +156,14 @@ function App() {
   }
 
   return (
-    <div className="App">
-      {renderContent()}
-      <BottomMenu setActiveSection={setActiveSection} />
+    <div className="app-wrapper">
+      <div className="background-gradient" />
+      <div className="decorative-circle-1" />
+      <div className="decorative-circle-2" />
+
+      <div className="app-container">{renderContent()}</div>
+
+      <BottomMenu activeSection={activeSection} onSectionChange={setActiveSection} />
     </div>
   )
 }
