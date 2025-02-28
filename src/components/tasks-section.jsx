@@ -1,8 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { TasksList } from "./tasks-list"
 import { supabase } from "../supabase"
+import { Trophy, Clock, Target } from "lucide-react"
 
 export function TasksSection({ user }) {
   const [tasks, setTasks] = useState({
@@ -10,7 +12,6 @@ export function TasksSection({ user }) {
     limited: [],
     achievement: [],
   })
-  const [activeTab, setActiveTab] = useState("basic")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -26,19 +27,16 @@ export function TasksSection({ user }) {
 
         if (error) throw error
 
+        // Группируем задания по типам
         const groupedTasks = {
           basic: [],
           limited: [],
           achievement: [],
         }
 
-        if (data.tasks) {
-          data.tasks.forEach((task) => {
-            if (groupedTasks[task.type]) {
-              groupedTasks[task.type].push(task)
-            }
-          })
-        }
+        data.tasks.forEach((task) => {
+          groupedTasks[task.type].push(task)
+        })
 
         setTasks(groupedTasks)
       } catch (err) {
@@ -54,71 +52,71 @@ export function TasksSection({ user }) {
     }
   }, [user?.id])
 
-  if (!user?.id) {
-    return null
-  }
-
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-sm text-gray-400">Загрузка заданий...</div>
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Загрузка заданий...</div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-sm text-red-400">{error}</div>
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="text-destructive text-center">
+          <p className="text-lg font-semibold mb-2">Ошибка загрузки</p>
+          <p className="text-muted-foreground">{error}</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-[#0f172a]">
-      <div className="px-5 pt-4 pb-3">
-        <h1 className="text-[17px] font-semibold text-white">Задания</h1>
-        <p className="text-[13px] text-gray-400 mt-0.5">Выполняйте задания и получайте награды</p>
+    <div className="tasks-container max-w-3xl mx-auto p-4">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-center mb-2">Задания</h1>
+        <p className="text-muted-foreground text-center">Выполняйте задания и получайте награды</p>
       </div>
 
-      <div className="px-2">
-        <div className="flex gap-1 p-1 bg-[#1e293b]/80 rounded-xl mx-3">
-          <button
-            onClick={() => setActiveTab("basic")}
-            className={`flex-1 py-1.5 text-[13px] font-medium rounded-lg transition-all duration-200 ${
-              activeTab === "basic"
-                ? "bg-[#3b82f6] text-white shadow-lg shadow-blue-500/25"
-                : "text-gray-400 hover:text-white/90 hover:bg-white/5"
-            }`}
+      <Tabs defaultValue="basic" className="w-full">
+        <TabsList className="grid grid-cols-3 gap-4 p-1 mb-6 bg-card rounded-lg">
+          <TabsTrigger
+            value="basic"
+            className="flex items-center gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
           >
-            Основные
-          </button>
-          <button
-            onClick={() => setActiveTab("limited")}
-            className={`flex-1 py-1.5 text-[13px] font-medium rounded-lg transition-all duration-200 ${
-              activeTab === "limited"
-                ? "bg-[#3b82f6] text-white shadow-lg shadow-blue-500/25"
-                : "text-gray-400 hover:text-white/90 hover:bg-white/5"
-            }`}
+            <Target className="w-4 h-4" />
+            <span className="hidden sm:inline">Основные</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="limited"
+            className="flex items-center gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
           >
-            Лимитированные
-          </button>
-          <button
-            onClick={() => setActiveTab("achievement")}
-            className={`flex-1 py-1.5 text-[13px] font-medium rounded-lg transition-all duration-200 ${
-              activeTab === "achievement"
-                ? "bg-[#3b82f6] text-white shadow-lg shadow-blue-500/25"
-                : "text-gray-400 hover:text-white/90 hover:bg-white/5"
-            }`}
+            <Clock className="w-4 h-4" />
+            <span className="hidden sm:inline">Лимитированные</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="achievement"
+            className="flex items-center gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
           >
-            Достижения
-          </button>
+            <Trophy className="w-4 h-4" />
+            <span className="hidden sm:inline">Достижения</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <div className="relative">
+          <TabsContent value="basic" className="space-y-4 focus:outline-none">
+            <TasksList tasks={tasks.basic} type="basic" user={user} />
+          </TabsContent>
+
+          <TabsContent value="limited" className="space-y-4 focus:outline-none">
+            <TasksList tasks={tasks.limited} type="limited" user={user} />
+          </TabsContent>
+
+          <TabsContent value="achievement" className="space-y-4 focus:outline-none">
+            <TasksList tasks={tasks.achievement} type="achievement" user={user} />
+          </TabsContent>
         </div>
-      </div>
-
-      <div className="flex-1 overflow-auto pb-20">
-        <TasksList tasks={tasks[activeTab]} type={activeTab} user={user} />
-      </div>
+      </Tabs>
     </div>
   )
 }
