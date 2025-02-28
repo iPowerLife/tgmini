@@ -7,6 +7,11 @@ export function initTelegram() {
       tg = window.Telegram.WebApp
       console.log("Found Telegram WebApp:", tg)
 
+      // Получаем и проверяем initData
+      const initData = tg.initData
+      const initDataUnsafe = tg.initDataUnsafe
+      console.log("Telegram WebApp data:", { initData, initDataUnsafe })
+
       // Отключаем стандартные обработчики событий Telegram
       tg.disableClosingConfirmation()
       tg.expand()
@@ -19,18 +24,21 @@ export function initTelegram() {
     return createDevModeWebApp()
   } catch (error) {
     console.error("Error initializing Telegram WebApp:", error)
-    // В любом случае возвращаем мок для разработки
+    // В режиме разработки возвращаем мок
     return createDevModeWebApp()
   }
 }
 
 function createDevModeWebApp() {
+  // Создаем уникальный ID для тестового пользователя
+  const testUserId = Math.floor(Math.random() * 1000000) + 1
+
   const mockTg = {
     initDataUnsafe: {
       user: {
-        id: 12345,
-        username: "dev_user",
-        first_name: "Developer",
+        id: testUserId,
+        username: `dev_user_${testUserId}`,
+        first_name: `Developer ${testUserId}`,
       },
     },
     ready: () => console.log("Mock ready called"),
@@ -44,7 +52,7 @@ function createDevModeWebApp() {
     platform: "dev",
   }
 
-  console.log("Created mock Telegram WebApp:", mockTg)
+  console.log("Created mock Telegram WebApp with test user:", mockTg.initDataUnsafe.user)
   tg = mockTg
   return mockTg
 }
@@ -58,11 +66,13 @@ export function getTelegramUser() {
 
     const webAppUser = tg?.initDataUnsafe?.user
     if (!webAppUser?.id) {
-      // Возвращаем тестового пользователя вместо выброса ошибки
+      console.log("No valid user data, creating test user")
+      // Создаем уникального тестового пользователя
+      const testUserId = Math.floor(Math.random() * 1000000) + 1
       return {
-        id: 12345,
-        username: "dev_user",
-        first_name: "Developer",
+        id: testUserId,
+        username: `dev_user_${testUserId}`,
+        first_name: `Developer ${testUserId}`,
       }
     }
 
@@ -70,11 +80,12 @@ export function getTelegramUser() {
     return webAppUser
   } catch (error) {
     console.error("Error getting Telegram user:", error)
-    // Возвращаем тестового пользователя в случае ошибки
+    // Создаем уникального тестового пользователя в случае ошибки
+    const testUserId = Math.floor(Math.random() * 1000000) + 1
     return {
-      id: 12345,
-      username: "dev_user",
-      first_name: "Developer",
+      id: testUserId,
+      username: `dev_user_${testUserId}`,
+      first_name: `Developer ${testUserId}`,
     }
   }
 }

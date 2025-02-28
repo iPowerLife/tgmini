@@ -25,11 +25,19 @@ function App() {
         const telegramUser = getTelegramUser()
         console.log("Got Telegram user:", telegramUser)
 
+        if (!telegramUser?.id) {
+          throw new Error("No valid user data")
+        }
+
+        // Подробное логирование перед запросом к базе
+        console.log("Searching for user with telegram_id:", telegramUser.id)
+
         // Ищем пользователя в базе
         const { data: users, error: selectError } = await supabase
           .from("users")
           .select("*")
           .eq("telegram_id", telegramUser.id)
+          .single()
 
         if (selectError) {
           console.error("Error selecting user:", selectError)
@@ -37,12 +45,17 @@ function App() {
         }
 
         console.log("Database query result:", users)
-        let user = users?.[0]
 
         // Если пользователя нет, создаем
-        if (!user) {
-          console.log("Creating new user with data:", telegramUser)
-          const { data: newUsers, error: createError } = await supabase
+        if (!users) {
+          console.log("User not found, creating new user with data:", {
+            telegram_id: telegramUser.id,
+            username: telegramUser.username || null,
+            first_name: telegramUser.first_name || "",
+          })
+
+          // Создаем пользователя
+          const { data: newUser, error: createError } = await supabase
             .from("users")
             .insert([
               {
@@ -57,19 +70,19 @@ function App() {
               },
             ])
             .select()
+            .single()
 
           if (createError) {
             console.error("Error creating user:", createError)
             throw createError
           }
 
-          console.log("Created new user:", newUsers)
-          user = newUsers[0]
+          console.log("Created new user:", newUser)
 
           // Создаем запись в mining_stats
           const { error: statsError } = await supabase.from("mining_stats").insert([
             {
-              user_id: user.id,
+              user_id: newUser.id,
               total_mined: 0,
               mining_count: 0,
             },
@@ -79,14 +92,34 @@ function App() {
             console.error("Error creating mining stats:", statsError)
             throw statsError
           }
-        }
 
-        console.log("Setting user state:", user)
-        setUser(user)
-        setBalance(user.balance)
+          console.log("Setting new user state:", newUser)
+          setUser(newUser)
+          setBalance(newUser.balance)
+        } else {
+          console.log("Found existing user:", users)
+          setUser(users)
+          setBalance(users.balance)
+        }
       } catch (error) {
         console.error("Error in initialization:", error)
-        // Просто логируем ошибку, но не показываем пользователю
+        // В режиме разработки создаем тестового пользователя
+        if (process.env.NODE_ENV === "development") {
+          console.log("Creating test user in development mode")
+          const testUser = {
+            id: "test-id",
+            telegram_id: 12345,
+            username: "dev_user",
+            first_name: "Developer",
+            balance: 0,
+            mining_power: 1,
+            level: 1,
+            experience: 0,
+            next_level_exp: 100,
+          }
+          setUser(testUser)
+          setBalance(0)
+        }
       }
     }
 
