@@ -7,7 +7,7 @@ import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
 import { UserProfile } from "./components/user-profile"
 import { checkSupabaseConnection } from "./utils/supabase"
-import { testDatabaseAccess } from "./utils/supabase"
+import { createTestUser } from "./utils/supabase"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -26,18 +26,16 @@ function App() {
         setLoading(true)
         setError(null)
 
-        // Проверяем базовое подключение
-        console.log("Проверяем базовое подключение...")
+        // Проверяем подключение к базе данных
         const isConnected = await checkSupabaseConnection()
         if (!isConnected) {
-          throw new Error("Не удалось подключиться к базе данных")
+          throw new Error("Не удалось подключиться к базе данных. Пожалуйста, попробуйте позже.")
         }
 
-        // Тестируем доступ к базе данных
-        console.log("Тестируем доступ к базе данных...")
-        const accessWorks = await testDatabaseAccess()
-        if (!accessWorks) {
-          throw new Error("Проблема с доступом к базе данных")
+        // Создаём тестового пользователя для проверки записи
+        const testUser = await createTestUser()
+        if (!testUser) {
+          throw new Error("Не удалось создать тестового пользователя. Проверьте права доступа к базе данных.")
         }
 
         // Инициализируем Telegram WebApp
@@ -80,11 +78,9 @@ function App() {
         }
       } catch (err) {
         console.error("=== Ошибка инициализации ===")
-        console.error("Полная ошибка:", err)
+        console.error(err)
         if (mounted) {
-          // Добавляем больше информации в сообщение об ошибке
-          const errorMessage = err.message || "Неизвестная ошибка"
-          setError(`${errorMessage}. Пожалуйста, проверьте консоль для деталей.`)
+          setError(`${err.message} Попробуйте перезапустить приложение или обратитесь к администратору.`)
         }
       } finally {
         if (mounted) {
