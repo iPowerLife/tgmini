@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { TasksList } from "./tasks-list"
+import { supabase } from "@/utils/supabase"
 
 export function TasksSection({ user }) {
   const [tasks, setTasks] = useState({
@@ -13,7 +14,50 @@ export function TasksSection({ user }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // ... остальные функции без изменений ...
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const { data, error } = await supabase.rpc("get_available_tasks", {
+          user_id_param: user.id,
+        })
+
+        if (error) throw error
+
+        const groupedTasks = {
+          basic: [],
+          limited: [],
+          achievement: [],
+        }
+
+        // Группируем задания по типам
+        if (data.tasks) {
+          data.tasks.forEach((task) => {
+            if (groupedTasks[task.type]) {
+              groupedTasks[task.type].push(task)
+            }
+          })
+        }
+
+        setTasks(groupedTasks)
+      } catch (err) {
+        console.error("Error loading tasks:", err)
+        setError("Ошибка загрузки заданий")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (user?.id) {
+      loadTasks()
+    }
+  }, [user?.id])
+
+  if (!user?.id) {
+    return <div className="text-xs text-gray-400 text-center py-4">Ошибка: пользователь не найден</div>
+  }
 
   if (loading) {
     return <div className="text-xs text-gray-400 text-center py-4">Загрузка заданий...</div>

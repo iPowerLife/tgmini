@@ -85,6 +85,10 @@ export function TasksList({ tasks, type, user }) {
     }
   }
 
+  if (!Array.isArray(tasks)) {
+    return <div className="text-xs text-gray-400 text-center py-4">Ошибка загрузки заданий</div>
+  }
+
   if (!tasks.length) {
     return <div className="text-sm text-gray-400 text-center py-4">Нет доступных заданий</div>
   }
