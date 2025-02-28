@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
+import { useTelegramUser } from "../hooks/use-telegram-user"
+import { User } from "lucide-react"
 
-export function UserProfile({ user }) {
+export function UserProfile() {
+  const telegramUser = useTelegramUser()
   const [stats, setStats] = useState(null)
   const [miners, setMiners] = useState([])
   const [loading, setLoading] = useState(true)
@@ -11,7 +14,7 @@ export function UserProfile({ user }) {
 
   useEffect(() => {
     const loadUserData = async () => {
-      if (!user?.id) return
+      if (!telegramUser?.id) return
 
       try {
         setLoading(true)
@@ -21,10 +24,10 @@ export function UserProfile({ user }) {
         const { data: statsData, error: statsError } = await supabase
           .from("mining_stats")
           .select("*")
-          .eq("user_id", user.id)
+          .eq("telegram_id", telegramUser.id)
           .single()
 
-        if (statsError) {
+        if (statsError && statsError.code !== "PGRST116") {
           console.error("Error loading stats:", statsError)
           throw statsError
         }
@@ -39,15 +42,15 @@ export function UserProfile({ user }) {
               mining_power
             )
           `)
-          .eq("user_id", user.id)
+          .eq("telegram_id", telegramUser.id)
 
         if (minersError) {
           console.error("Error loading miners:", minersError)
           throw minersError
         }
 
-        setStats(statsData)
-        setMiners(minersData)
+        setStats(statsData || { total_mined: 0, mining_count: 0 })
+        setMiners(minersData || [])
       } catch (err) {
         console.error("Error loading user data:", err)
         setError("Ошибка загрузки данных пользователя")
@@ -57,9 +60,9 @@ export function UserProfile({ user }) {
     }
 
     loadUserData()
-  }, [user?.id])
+  }, [telegramUser?.id])
 
-  if (!user) {
+  if (!telegramUser) {
     return <div className="section-container">Пользователь не найден</div>
   }
 
@@ -77,47 +80,38 @@ export function UserProfile({ user }) {
   return (
     <div className="profile-container">
       <div className="profile-header">
-        <div className="avatar">{user.first_name?.[0] || user.telegram_id.toString()[0]}</div>
+        <div className="avatar-container">
+          {telegramUser.photoUrl ? (
+            <img
+              src={telegramUser.photoUrl || "/placeholder.svg"}
+              alt={telegramUser.displayName}
+              className="avatar-image"
+            />
+          ) : (
+            <div className="avatar-placeholder">
+              <User className="avatar-icon" />
+            </div>
+          )}
+        </div>
         <div className="user-info">
-          <h2>{user.first_name || "Пользователь"}</h2>
-          {user.username && <p className="username">@{user.username}</p>}
+          <h2>{telegramUser.displayName}</h2>
+          <p className="user-id">ID: {telegramUser.id}</p>
         </div>
       </div>
 
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-value">{user.telegram_id}</div>
-          <div className="stat-label">Telegram ID</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{user.level}</div>
-          <div className="stat-label">Уровень</div>
+          <div className="stat-value">{totalMiningPower.toFixed(3)}</div>
+          <div className="stat-label">Мощность ⚡</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{stats?.total_mined?.toFixed(2) || "0.00"}</div>
-          <div className="stat-label">Всего добыто</div>
+          <div className="stat-label">Всего добыто 💎</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{stats?.mining_count || "0"}</div>
           <div className="stat-label">Кол-во майнингов</div>
         </div>
-      </div>
-
-      <div className="mining-power">
-        <h3>Мощность майнинга</h3>
-        <div className="stat-value">{totalMiningPower.toFixed(3)} ⚡</div>
-      </div>
-
-      <div className="experience-bar">
-        <div
-          className="experience-progress"
-          style={{
-            width: `${(user.experience / user.next_level_exp) * 100}%`,
-          }}
-        />
-        <span className="experience-text">
-          {user.experience} / {user.next_level_exp} XP
-        </span>
       </div>
 
       {miners.length > 0 && (
