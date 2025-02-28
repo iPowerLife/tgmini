@@ -18,24 +18,21 @@ function App() {
   useEffect(() => {
     const initTelegramAndUser = async () => {
       try {
+        // Инициализируем Telegram WebApp
         const telegram = initTelegram()
         console.log("Telegram initialized:", telegram)
         setTg(telegram)
 
-        let telegramUser = getTelegramUser()
+        // Получаем пользователя Telegram
+        const telegramUser = getTelegramUser()
         console.log("Got Telegram user:", telegramUser)
 
         if (!telegramUser?.id) {
-          console.log("Using test user data")
-          const testUser = {
-            id: 12345,
-            username: "testuser",
-            first_name: "Test",
-            last_name: "User",
-          }
-          telegramUser = testUser
+          console.error("No valid user data received")
+          throw new Error("No valid user data")
         }
 
+        // Ищем пользователя в базе
         const { data: users, error: selectError } = await supabase
           .from("users")
           .select("*")
@@ -49,9 +46,11 @@ function App() {
         console.log("Database query result:", users)
         let user = users?.[0]
 
+        // Если пользователя нет, создаем
         if (!user) {
           console.log("Creating new user with data:", telegramUser)
 
+          // Создаем пользователя с данными из Telegram
           const { data: newUsers, error: createError } = await supabase
             .from("users")
             .insert([
@@ -76,6 +75,7 @@ function App() {
           console.log("Created new user:", newUsers)
           user = newUsers[0]
 
+          // Создаем запись в mining_stats
           const { error: statsError } = await supabase.from("mining_stats").insert([
             {
               user_id: user.id,
@@ -90,24 +90,35 @@ function App() {
           }
         }
 
+        // Обновляем данные пользователя из Telegram
+        const { error: updateError } = await supabase
+          .from("users")
+          .update({
+            username: telegramUser.username,
+            first_name: telegramUser.first_name,
+          })
+          .eq("id", user.id)
+
+        if (updateError) {
+          console.error("Error updating user data:", updateError)
+        }
+
+        // Добавляем данные из Telegram к объекту пользователя
+        user = {
+          ...user,
+          photo_url: telegramUser.photo_url,
+          username: telegramUser.username,
+          first_name: telegramUser.first_name,
+          last_name: telegramUser.last_name,
+        }
+
         console.log("Setting user state:", user)
         setUser(user)
         setBalance(user.balance)
       } catch (error) {
         console.error("Error in initialization:", error)
-        const testUser = {
-          id: "test-id",
-          telegram_id: 12345,
-          username: "testuser",
-          first_name: "Test",
-          balance: 1000,
-          mining_power: 1,
-          level: 1,
-          experience: 0,
-          next_level_exp: 100,
-        }
-        setUser(testUser)
-        setBalance(testUser.balance)
+        // Больше не создаем тестового пользователя, вместо этого показываем ошибку
+        alert("Ошибка получения данных пользователя")
       }
     }
 
