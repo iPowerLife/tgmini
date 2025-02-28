@@ -12,7 +12,7 @@ export async function checkSupabaseConnection() {
   console.log("Начинаем проверку подключения к базе данных...")
 
   try {
-    // Используем limit(1) вместо maybeSingle()
+    // Используем простой select без count
     const { data, error } = await supabase.from("users").select("id").limit(1)
 
     if (error) {
@@ -22,12 +22,6 @@ export async function checkSupabaseConnection() {
         детали: error.details,
         подсказка: error.hint,
       })
-      return false
-    }
-
-    // Проверяем, что мы получили массив (даже пустой)
-    if (!Array.isArray(data)) {
-      console.error("Неожиданный формат данных:", data)
       return false
     }
 
@@ -42,24 +36,6 @@ export async function checkSupabaseConnection() {
 // Функция для создания тестового пользователя
 export async function createTestUser() {
   try {
-    // Проверяем, существует ли уже тестовый пользователь
-    const { data: existingUser, error: checkError } = await supabase
-      .from("users")
-      .select()
-      .eq("telegram_id", 999999)
-      .limit(1)
-
-    if (checkError) {
-      console.error("Ошибка при проверке существующего пользователя:", checkError)
-      return null
-    }
-
-    // Если тестовый пользователь уже существует, возвращаем его
-    if (existingUser && existingUser.length > 0) {
-      return existingUser[0]
-    }
-
-    // Создаем нового тестового пользователя
     const testUser = {
       telegram_id: 999999,
       first_name: "Тестовый пользователь",
@@ -70,14 +46,23 @@ export async function createTestUser() {
       next_level_exp: 100,
     }
 
-    const { data, error } = await supabase.from("users").insert([testUser]).select()
+    // Простая проверка существования
+    const { data: existing } = await supabase.from("users").select("id").eq("telegram_id", 999999).single()
+
+    // Если пользователь существует, возвращаем его
+    if (existing) {
+      return existing
+    }
+
+    // Создаем нового пользователя
+    const { data, error } = await supabase.from("users").insert([testUser]).select().single()
 
     if (error) {
       console.error("Ошибка при создании тестового пользователя:", error)
       return null
     }
 
-    return data[0]
+    return data
   } catch (error) {
     console.error("Ошибка:", error.message)
     return null
@@ -89,15 +74,14 @@ export async function testDatabaseAccess() {
   console.log("=== Тестирование доступа к базе данных ===")
 
   try {
-    // Тест 1: Проверка чтения
-    console.log("Тест 1: Проверка чтения")
-    const { data: readData, error: readError } = await supabase.from("users").select("telegram_id").limit(1)
+    // Простой тест чтения
+    const { data, error } = await supabase.from("users").select("id").limit(1)
 
-    if (readError) {
-      throw new Error(`Ошибка чтения: ${readError.message}`)
+    if (error) {
+      throw new Error(`Ошибка чтения: ${error.message}`)
     }
-    console.log("Чтение успешно:", readData)
 
+    console.log("Тест чтения успешен")
     return true
   } catch (error) {
     console.error("Ошибка при тестировании:", error)
