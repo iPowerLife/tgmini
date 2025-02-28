@@ -3,6 +3,10 @@
 import { useState, useEffect } from "react"
 import { supabase } from "./supabase"
 import { initTelegram, getTelegramUser } from "./utils/telegram"
+// Добавляем импорты новых компонентов
+import { Shop } from "./components/shop"
+import { MinersList } from "./components/miners-list"
+import { UserProfile } from "./components/user-profile"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -11,6 +15,8 @@ function App() {
   const [showIncrease, setShowIncrease] = useState(false)
   const [particles, setParticles] = useState([])
   const [tg, setTg] = useState(null)
+  // В компоненте App добавляем состояние для отображения магазина
+  const [showShop, setShowShop] = useState(false)
 
   // Инициализируем Telegram WebApp
   useEffect(() => {
@@ -239,6 +245,24 @@ function App() {
 
       {/* Основной контент */}
       <div style={{ position: "relative", zIndex: 2 }}>
+        {/* Добавляем кнопку для открытия магазина в верхней части интерфейса */}
+        <div style={{ marginBottom: "20px" }}>
+          <button
+            onClick={() => setShowShop(!showShop)}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "rgba(99, 102, 241, 0.9)",
+              border: "none",
+              borderRadius: "8px",
+              color: "white",
+              cursor: "pointer",
+            }}
+          >
+            {showShop ? "Закрыть магазин" : "Открыть магазин"}
+          </button>
+        </div>
+        {/* Профиль пользователя */}
+        <UserProfile user={user} />
         {/* Карточка баланса */}
         <div
           style={{
@@ -319,96 +343,103 @@ function App() {
         </div>
 
         {/* Кнопка майнинга */}
-        <div style={{ position: "relative" }}>
-          {/* Частицы */}
-          {particles.map((particle) => (
-            <div
-              key={particle.id}
-              style={{
-                position: "absolute",
-                left: particle.x,
-                top: particle.y,
-                width: "8px",
-                height: "8px",
-                backgroundColor: "#4ade80",
-                borderRadius: "50%",
-                transform: `translate(-50%, -50%)`,
-                animation: "particle 1s ease-out forwards",
-                zIndex: 3,
-              }}
-            />
-          ))}
-
-          <button
-            onMouseDown={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-            }}
-            onClick={handleMining}
-            disabled={isMining}
-            style={{
-              width: "300px",
-              padding: "20px",
-              backgroundColor: isMining ? "#1f2937" : "rgba(99, 102, 241, 0.9)",
-              border: "none",
-              borderRadius: "15px",
-              color: "white",
-              fontSize: "18px",
-              fontWeight: "600",
-              cursor: isMining ? "not-allowed" : "pointer",
-              transition: "all 0.3s ease",
-              position: "relative",
-              overflow: "hidden",
-              boxShadow: isMining ? "none" : "0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(99, 102, 241, 0.2)",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: "linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent)",
-                animation: isMining ? "none" : "shine 2s infinite",
-              }}
-            />
-
-            {/* Анимация загрузки */}
-            {isMining && (
-              <div className="mining-animation">
-                <svg
-                  viewBox="0 0 24 24"
+        {showShop ? (
+          <Shop user={user} onPurchase={(newBalance) => setBalance(newBalance)} />
+        ) : (
+          <>
+            <MinersList user={user} />
+            <div style={{ position: "relative" }}>
+              {/* Частицы */}
+              {particles.map((particle) => (
+                <div
+                  key={particle.id}
                   style={{
                     position: "absolute",
-                    left: "50%",
-                    top: "50%",
-                    transform: "translate(-50%, -50%)",
-                    width: "24px",
-                    height: "24px",
+                    left: particle.x,
+                    top: particle.y,
+                    width: "8px",
+                    height: "8px",
+                    backgroundColor: "#4ade80",
+                    borderRadius: "50%",
+                    transform: `translate(-50%, -50%)`,
+                    animation: "particle 1s ease-out forwards",
+                    zIndex: 3,
                   }}
-                >
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.2" />
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                    strokeDasharray="62.83185307179586"
-                    strokeLinecap="round"
-                    className="spinner"
-                  />
-                </svg>
-              </div>
-            )}
+                />
+              ))}
 
-            <span style={{ position: "relative", zIndex: 2, opacity: isMining ? 0 : 1 }}>
-              {isMining ? "Майнинг..." : "Майнить ⛏️"}
-            </span>
-          </button>
-        </div>
+              <button
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                }}
+                onClick={handleMining}
+                disabled={isMining}
+                style={{
+                  width: "300px",
+                  padding: "20px",
+                  backgroundColor: isMining ? "#1f2937" : "rgba(99, 102, 241, 0.9)",
+                  border: "none",
+                  borderRadius: "15px",
+                  color: "white",
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  cursor: isMining ? "not-allowed" : "pointer",
+                  transition: "all 0.3s ease",
+                  position: "relative",
+                  overflow: "hidden",
+                  boxShadow: isMining ? "none" : "0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(99, 102, 241, 0.2)",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: "linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent)",
+                    animation: isMining ? "none" : "shine 2s infinite",
+                  }}
+                />
+
+                {/* Анимация загрузки */}
+                {isMining && (
+                  <div className="mining-animation">
+                    <svg
+                      viewBox="0 0 24 24"
+                      style={{
+                        position: "absolute",
+                        left: "50%",
+                        top: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: "24px",
+                        height: "24px",
+                      }}
+                    >
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.2" />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                        strokeDasharray="62.83185307179586"
+                        strokeLinecap="round"
+                        className="spinner"
+                      />
+                    </svg>
+                  </div>
+                )}
+
+                <span style={{ position: "relative", zIndex: 2, opacity: isMining ? 0 : 1 }}>
+                  {isMining ? "Майнинг..." : "Майнить ⛏️"}
+                </span>
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Стили для анимаций */}
