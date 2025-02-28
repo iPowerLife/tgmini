@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { initTelegram, getTelegramUser } from "./utils/telegram" // Import telegram functions
-import { supabase } from "./utils/supabaseClient" // Import supabase client
+import { supabase } from "./supabase" // Import supabase client
 import MinersList from "./components/MinersList"
 import Shop from "./components/Shop"
 import UserProfile from "./components/UserProfile"
