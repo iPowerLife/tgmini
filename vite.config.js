@@ -4,15 +4,12 @@ import react from "@vitejs/plugin-react"
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: process.env.PORT || 3000,
+    port: 3000,
     host: true,
   },
   build: {
     outDir: "dist",
     sourcemap: true,
   },
-  // Добавляем явные настройки для переменных окружения
-  envDir: ".",
-  envPrefix: "VITE_",
 })
 
