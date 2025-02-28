@@ -28,7 +28,7 @@ function App() {
           return
         }
 
-        console.log("Initializing user:", telegramUser)
+        console.log("Telegram user:", telegramUser)
 
         // Ищем пользователя в базе
         const { data: users, error: selectError } = await supabase
@@ -41,22 +41,27 @@ function App() {
           throw selectError
         }
 
+        console.log("Found users:", users)
         let user = users?.[0]
 
         // Если пользователя нет, создаем
         if (!user) {
-          console.log("Creating new user...")
+          console.log("Creating new user for telegram_id:", telegramUser.id)
+
+          // Создаем пользователя
           const { data: newUsers, error: createError } = await supabase
             .from("users")
-            .insert({
-              telegram_id: telegramUser.id,
-              username: telegramUser.username || "unknown",
-              balance: 0,
-              mining_power: 1,
-              level: 1,
-              experience: 0,
-              next_level_exp: 100,
-            })
+            .insert([
+              {
+                telegram_id: telegramUser.id,
+                username: telegramUser.username || "unknown",
+                balance: 0,
+                mining_power: 1,
+                level: 1,
+                experience: 0,
+                next_level_exp: 100,
+              },
+            ])
             .select()
 
           if (createError) {
@@ -64,27 +69,44 @@ function App() {
             throw createError
           }
 
+          console.log("Created user:", newUsers)
           user = newUsers[0]
-          console.log("Created user:", user)
+
+          if (!user?.id) {
+            throw new Error("User created but no ID returned")
+          }
 
           // Создаем запись в mining_stats
-          const { error: statsError } = await supabase.from("mining_stats").insert({
-            user_id: user.id,
-            total_mined: 0,
-            mining_count: 0,
-          })
+          console.log("Creating mining stats for user:", user.id)
+          const { data: stats, error: statsError } = await supabase
+            .from("mining_stats")
+            .insert([
+              {
+                user_id: user.id,
+                total_mined: 0,
+                mining_count: 0,
+              },
+            ])
+            .select()
 
           if (statsError) {
             console.error("Error creating mining stats:", statsError)
             throw statsError
           }
+
+          console.log("Created mining stats:", stats)
         }
 
-        console.log("Setting user:", user)
+        if (!user) {
+          throw new Error("Failed to get or create user")
+        }
+
+        console.log("Final user data:", user)
         setUser(user)
         setBalance(user.balance)
       } catch (error) {
-        console.error("Error initializing user:", error)
+        console.error("Error initializing user:", error.message)
+        console.error(error.stack)
       }
     }
 
@@ -118,13 +140,18 @@ function App() {
     e.preventDefault()
     e.stopPropagation()
 
-    if (isMining || !user) return
+    if (isMining || !user) {
+      console.log("Mining blocked:", { isMining, hasUser: !!user })
+      return
+    }
 
     try {
+      console.log("Starting mining for user:", user)
       createParticle(e)
       setIsMining(true)
 
       // Обновляем баланс в базе с полными параметрами
+      console.log("Updating user balance...")
       const { data, error } = await supabase.rpc("update_user_balance", {
         user_id_param: user.id,
         amount_param: 1,
@@ -137,8 +164,11 @@ function App() {
         throw error
       }
 
+      console.log("Balance updated:", data)
+
       // Обновляем статистику майнинга
-      const { error: statsError } = await supabase.rpc("update_mining_stats", {
+      console.log("Updating mining stats...")
+      const { data: statsData, error: statsError } = await supabase.rpc("update_mining_stats", {
         user_id_param: user.id,
         mined_amount: 1,
       })
@@ -148,11 +178,14 @@ function App() {
         throw statsError
       }
 
+      console.log("Mining stats updated:", statsData)
+
       setBalance((prev) => prev + 1)
       setShowIncrease(true)
       setTimeout(() => setShowIncrease(false), 1000)
     } catch (error) {
-      console.error("Error mining:", error)
+      console.error("Error mining:", error.message)
+      console.error(error.stack)
     } finally {
       setIsMining(false)
     }

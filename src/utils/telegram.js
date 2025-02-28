@@ -16,32 +16,29 @@ export function initTelegram() {
       return tg
     }
 
-    // Режим разработки - проверяем URL параметры
+    console.log("No Telegram WebApp found, checking URL params...")
+    // Проверяем URL параметры
     const urlParams = new URLSearchParams(window.location.search)
-    const devMode = urlParams.get("dev") === "true"
+    const userId = urlParams.get("userId")
+    const username = urlParams.get("username")
 
-    if (devMode) {
-      console.log("Development mode: using mock Telegram WebApp")
+    if (userId) {
+      console.log("Using URL params for development:", { userId, username })
       return {
         initDataUnsafe: {
           user: {
-            id: Number(urlParams.get("userId")) || 123456789,
-            username: urlParams.get("username") || "dev_user",
-            first_name: urlParams.get("firstName") || "Developer",
+            id: Number(userId),
+            username: username || "dev_user",
+            first_name: username || "Developer",
           },
         },
         ready: () => console.log("Mock ready called"),
         disableClosingConfirmation: () => console.log("Mock disableClosingConfirmation called"),
         expand: () => console.log("Mock expand called"),
-        MainButton: {
-          show: () => console.log("Mock show called"),
-          hide: () => console.log("Mock hide called"),
-        },
       }
     }
 
-    // Если не режим разработки и нет Telegram WebApp, выводим ошибку
-    throw new Error("Telegram WebApp not found and not in development mode")
+    throw new Error("No Telegram WebApp and no URL params found")
   } catch (error) {
     console.error("Error initializing Telegram WebApp:", error)
     return null
@@ -53,23 +50,26 @@ export function getTelegramUser() {
     // Пытаемся получить пользователя из Telegram WebApp
     const webAppUser = tg?.initDataUnsafe?.user
     if (webAppUser) {
+      console.log("Got Telegram user:", webAppUser)
       return webAppUser
     }
 
-    // Проверяем URL параметры для режима разработки
+    // Проверяем URL параметры
     const urlParams = new URLSearchParams(window.location.search)
-    const devMode = urlParams.get("dev") === "true"
+    const userId = urlParams.get("userId")
+    const username = urlParams.get("username")
 
-    if (devMode) {
-      return {
-        id: Number(urlParams.get("userId")) || 123456789,
-        username: urlParams.get("username") || "dev_user",
-        first_name: urlParams.get("firstName") || "Developer",
+    if (userId) {
+      const user = {
+        id: Number(userId),
+        username: username || "dev_user",
+        first_name: username || "Developer",
       }
+      console.log("Using URL params user:", user)
+      return user
     }
 
-    // Если не режим разработки и нет пользователя, выводим ошибку
-    throw new Error("No Telegram user found and not in development mode")
+    throw new Error("No Telegram user or URL params found")
   } catch (error) {
     console.error("Error getting Telegram user:", error)
     return null
