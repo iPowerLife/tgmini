@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { TasksList } from "./tasks-list"
 import { supabase } from "../supabase"
-import { Trophy, Clock, Target } from "lucide-react"
+import { Trophy, Clock, Target, Sparkles } from "lucide-react"
 
 export function TasksSection({ user }) {
   const [tasks, setTasks] = useState({
@@ -74,7 +74,10 @@ export function TasksSection({ user }) {
   return (
     <div className="tasks-container max-w-3xl mx-auto p-4">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-center mb-2">Задания</h1>
+        <h1 className="text-2xl font-bold text-center mb-2 flex items-center justify-center gap-2">
+          <Sparkles className="w-6 h-6 text-primary" />
+          Задания
+        </h1>
         <p className="text-muted-foreground text-center">Выполняйте задания и получайте награды</p>
       </div>
 
