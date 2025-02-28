@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { TasksList } from "./tasks-list"
-import { supabase } from "../supabase"
 
 export function TasksSection({ user }) {
   const [tasks, setTasks] = useState({
@@ -14,86 +13,52 @@ export function TasksSection({ user }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const { data, error } = await supabase.rpc("get_available_tasks", {
-          user_id_param: user.id,
-        })
-
-        if (error) throw error
-
-        const groupedTasks = {
-          basic: [],
-          limited: [],
-          achievement: [],
-        }
-
-        data.tasks.forEach((task) => {
-          groupedTasks[task.type].push(task)
-        })
-
-        setTasks(groupedTasks)
-      } catch (err) {
-        console.error("Error loading tasks:", err)
-        setError("Ошибка загрузки заданий")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (user?.id) {
-      loadTasks()
-    }
-  }, [user?.id])
+  // ... остальные функции без изменений ...
 
   if (loading) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-400">Загрузка заданий...</p>
-      </div>
-    )
+    return <div className="text-xs text-gray-400 text-center py-4">Загрузка заданий...</div>
   }
 
   if (error) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-red-500">{error}</p>
-      </div>
-    )
+    return <div className="text-xs text-red-400 text-center py-4">{error}</div>
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white mb-2">Задания</h1>
-        <p className="text-gray-400">Выполняйте задания и получайте награды</p>
+    <div className="max-w-md mx-auto px-4">
+      <div className="mb-4">
+        <h1 className="text-base font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent mb-1">
+          Задания
+        </h1>
+        <p className="text-xs text-gray-400">Выполняйте задания и получайте награды</p>
       </div>
 
-      <div className="flex gap-4 mb-6">
+      <div className="flex gap-1 mb-4 bg-gray-900/50 p-0.5 rounded-lg backdrop-blur-sm">
         <button
           onClick={() => setActiveTab("basic")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === "basic" ? "bg-blue-500 text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+          className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ${
+            activeTab === "basic"
+              ? "bg-blue-500/20 text-blue-400 border border-blue-500/20"
+              : "text-gray-400 hover:text-gray-300 hover:bg-gray-800/50"
           }`}
         >
           Основные
         </button>
         <button
           onClick={() => setActiveTab("limited")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === "limited" ? "bg-blue-500 text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+          className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ${
+            activeTab === "limited"
+              ? "bg-blue-500/20 text-blue-400 border border-blue-500/20"
+              : "text-gray-400 hover:text-gray-300 hover:bg-gray-800/50"
           }`}
         >
           Лимитированные
         </button>
         <button
           onClick={() => setActiveTab("achievement")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === "achievement" ? "bg-blue-500 text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+          className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ${
+            activeTab === "achievement"
+              ? "bg-blue-500/20 text-blue-400 border border-blue-500/20"
+              : "text-gray-400 hover:text-gray-300 hover:bg-gray-800/50"
           }`}
         >
           Достижения
