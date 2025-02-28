@@ -31,20 +31,22 @@ function App() {
         console.log("Initializing user:", telegramUser)
 
         // Ищем пользователя в базе
-        let { data: user, error: selectError } = await supabase
+        const { data: users, error: selectError } = await supabase
           .from("users")
           .select("*")
           .eq("telegram_id", telegramUser.id)
-          .single()
 
         if (selectError) {
           console.error("Error selecting user:", selectError)
+          throw selectError
         }
+
+        let user = users?.[0]
 
         // Если пользователя нет, создаем
         if (!user) {
           console.log("Creating new user...")
-          const { data: newUser, error: createError } = await supabase
+          const { data: newUsers, error: createError } = await supabase
             .from("users")
             .insert({
               telegram_id: telegramUser.id,
@@ -56,18 +58,18 @@ function App() {
               next_level_exp: 100,
             })
             .select()
-            .single()
 
           if (createError) {
             console.error("Error creating user:", createError)
             throw createError
           }
 
-          console.log("Created user:", newUser)
+          user = newUsers[0]
+          console.log("Created user:", user)
 
           // Создаем запись в mining_stats
           const { error: statsError } = await supabase.from("mining_stats").insert({
-            user_id: newUser.id,
+            user_id: user.id,
             total_mined: 0,
             mining_count: 0,
           })
@@ -76,8 +78,6 @@ function App() {
             console.error("Error creating mining stats:", statsError)
             throw statsError
           }
-
-          user = newUser
         }
 
         console.log("Setting user:", user)
