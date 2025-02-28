@@ -5,20 +5,23 @@ export function initTelegram() {
     // Проверяем, запущено ли приложение в Telegram
     if (window.Telegram?.WebApp) {
       tg = window.Telegram.WebApp
+      console.log("Found Telegram WebApp:", tg)
 
       // Получаем и проверяем initData
       const initData = tg.initData
       const initDataUnsafe = tg.initDataUnsafe
-      console.log("Raw Telegram initData:", initData)
-      console.log("Raw Telegram initDataUnsafe:", initDataUnsafe)
+      console.log("Telegram WebApp data:", { initData, initDataUnsafe })
 
       // Проверяем данные пользователя
       const userData = initDataUnsafe?.user
-      if (!userData?.id) {
-        throw new Error("No valid user data in Telegram WebApp")
-      }
+      console.log("Telegram user data:", userData)
 
-      console.log("Valid Telegram user data:", userData)
+      if (userData?.id) {
+        console.log("Valid Telegram user found:", userData)
+      } else {
+        console.log("No valid Telegram user, will use development mode")
+        return createDevModeWebApp()
+      }
 
       // Отключаем стандартные обработчики событий Telegram
       tg.disableClosingConfirmation()
@@ -29,36 +32,66 @@ export function initTelegram() {
       return tg
     }
 
-    throw new Error("No Telegram WebApp found")
+    // Если нет Telegram WebApp, используем режим разработки
+    console.log("No Telegram WebApp found, using development mode")
+    return createDevModeWebApp()
   } catch (error) {
     console.error("Error initializing Telegram WebApp:", error)
-    return null
+    return createDevModeWebApp()
   }
+}
+
+function createDevModeWebApp() {
+  const mockTg = {
+    initDataUnsafe: {
+      user: {
+        id: 12345,
+        username: "dev_user",
+        first_name: "Developer",
+      },
+    },
+    ready: () => console.log("Mock ready called"),
+    disableClosingConfirmation: () => console.log("Mock disableClosingConfirmation called"),
+    expand: () => console.log("Mock expand called"),
+    MainButton: {
+      show: () => console.log("Mock show called"),
+      hide: () => console.log("Mock hide called"),
+    },
+    version: "dev",
+    platform: "dev",
+  }
+
+  console.log("Created mock Telegram WebApp:", mockTg)
+  tg = mockTg // Устанавливаем глобальную переменную
+  return mockTg
 }
 
 export function getTelegramUser() {
   try {
-    // Проверяем наличие Telegram WebApp
-    if (!window.Telegram?.WebApp) {
-      throw new Error("No Telegram WebApp found")
+    if (!tg) {
+      console.log("No Telegram instance, initializing...")
+      tg = initTelegram()
     }
 
-    // Получаем данные пользователя
-    const webAppUser = window.Telegram.WebApp.initDataUnsafe?.user
-    if (!webAppUser?.id) {
-      throw new Error("No valid user data in Telegram WebApp")
+    const webAppUser = tg?.initDataUnsafe?.user
+    if (webAppUser?.id) {
+      console.log("Got Telegram user:", webAppUser)
+      return webAppUser
     }
 
-    // Проверяем обязательные поля
-    if (typeof webAppUser.id !== "number") {
-      throw new Error("Invalid user ID type")
+    console.log("No valid user in Telegram WebApp, using development user")
+    return {
+      id: 12345,
+      username: "dev_user",
+      first_name: "Developer",
     }
-
-    console.log("Validated Telegram user:", webAppUser)
-    return webAppUser
   } catch (error) {
     console.error("Error getting Telegram user:", error)
-    return null
+    return {
+      id: 12345,
+      username: "dev_user",
+      first_name: "Developer",
+    }
   }
 }
 

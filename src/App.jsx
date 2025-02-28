@@ -14,21 +14,21 @@ function App() {
 
   // Инициализируем Telegram WebApp
   useEffect(() => {
-    const telegram = initTelegram()
-    setTg(telegram)
-  }, [])
-
-  // Получаем или создаем пользователя при загрузке
-  useEffect(() => {
-    const initUser = async () => {
+    const initTelegramAndUser = async () => {
       try {
+        // Инициализируем Telegram WebApp
+        const telegram = initTelegram()
+        console.log("Telegram initialized:", telegram)
+        setTg(telegram)
+
+        // Получаем пользователя
         const telegramUser = getTelegramUser()
+        console.log("Got Telegram user:", telegramUser)
+
         if (!telegramUser?.id) {
           console.error("No valid Telegram user found")
           return
         }
-
-        console.log("Initializing user with data:", telegramUser)
 
         // Ищем пользователя в базе
         const { data: users, error: selectError } = await supabase
@@ -46,12 +46,7 @@ function App() {
 
         // Если пользователя нет, создаем
         if (!user) {
-          console.log("Creating new user with Telegram data:", {
-            telegram_id: telegramUser.id,
-            username: telegramUser.username || `user_${telegramUser.id}`,
-            first_name: telegramUser.first_name,
-          })
-
+          console.log("Creating new user with data:", telegramUser)
           const { data: newUsers, error: createError } = await supabase
             .from("users")
             .insert([
@@ -76,44 +71,31 @@ function App() {
           console.log("Created new user:", newUsers)
           user = newUsers[0]
 
-          if (!user?.id) {
-            throw new Error("User created but no ID returned")
-          }
-
           // Создаем запись в mining_stats
-          console.log("Creating mining stats for user:", user.id)
-          const { data: stats, error: statsError } = await supabase
-            .from("mining_stats")
-            .insert([
-              {
-                user_id: user.id,
-                total_mined: 0,
-                mining_count: 0,
-              },
-            ])
-            .select()
+          const { error: statsError } = await supabase.from("mining_stats").insert([
+            {
+              user_id: user.id,
+              total_mined: 0,
+              mining_count: 0,
+            },
+          ])
 
           if (statsError) {
             console.error("Error creating mining stats:", statsError)
             throw statsError
           }
-
-          console.log("Created mining stats:", stats)
-        } else {
-          console.log("Found existing user:", user)
         }
 
         console.log("Setting user state:", user)
         setUser(user)
         setBalance(user.balance)
       } catch (error) {
-        console.error("Error initializing user:", error.message)
-        console.error(error.stack)
+        console.error("Error in initialization:", error)
       }
     }
 
-    initUser()
-  }, [])
+    initTelegramAndUser()
+  }, []) // Пустой массив зависимостей для однократного выполнения
 
   const createParticle = (e) => {
     if (!e?.target) return // Проверяем наличие event и target
@@ -142,8 +124,13 @@ function App() {
     e.preventDefault()
     e.stopPropagation()
 
-    if (isMining || !user) {
-      console.log("Mining blocked:", { isMining, hasUser: !!user })
+    if (isMining) {
+      console.log("Mining blocked: already mining")
+      return
+    }
+
+    if (!user) {
+      console.log("Mining blocked: no user", { user })
       return
     }
 
@@ -152,8 +139,7 @@ function App() {
       createParticle(e)
       setIsMining(true)
 
-      // Обновляем баланс в базе с полными параметрами
-      console.log("Updating user balance...")
+      // Обновляем баланс в базе
       const { data, error } = await supabase.rpc("update_user_balance", {
         user_id_param: user.id,
         amount_param: 1,
@@ -169,7 +155,6 @@ function App() {
       console.log("Balance updated:", data)
 
       // Обновляем статистику майнинга
-      console.log("Updating mining stats...")
       const { data: statsData, error: statsError } = await supabase.rpc("update_mining_stats", {
         user_id_param: user.id,
         mined_amount: 1,
@@ -186,8 +171,7 @@ function App() {
       setShowIncrease(true)
       setTimeout(() => setShowIncrease(false), 1000)
     } catch (error) {
-      console.error("Error mining:", error.message)
-      console.error(error.stack)
+      console.error("Error mining:", error)
     } finally {
       setIsMining(false)
     }
