@@ -6,8 +6,6 @@ import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
 import { UserProfile } from "./components/user-profile"
-import { checkSupabaseConnection } from "./utils/supabase"
-import { createTestUser } from "./utils/supabase"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -22,47 +20,27 @@ function App() {
 
     const initApp = async () => {
       try {
-        console.log("=== Начало инициализации приложения ===")
         setLoading(true)
         setError(null)
 
-        // Проверяем подключение к базе данных
-        const isConnected = await checkSupabaseConnection()
-        if (!isConnected) {
-          throw new Error("Не удалось подключиться к базе данных. Пожалуйста, попробуйте позже.")
-        }
-
-        // Создаём тестового пользователя для проверки записи
-        const testUser = await createTestUser()
-        if (!testUser) {
-          throw new Error("Не удалось создать тестового пользователя. Проверьте права доступа к базе данных.")
-        }
-
         // Инициализируем Telegram WebApp
         const telegram = initTelegram()
-        console.log("Статус инициализации Telegram:", telegram ? "успешно" : "ошибка")
+        console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
 
         // Получаем данные пользователя
         const userData = getTelegramUser()
-        console.log("Полученные данные пользователя:", userData)
+        console.log("User data:", userData)
 
         if (!userData) {
-          throw new Error("Не удалось получить данные пользователя")
-        }
-
-        // Проверяем наличие id
-        if (!userData.id) {
-          console.error("ID пользователя отсутствует:", userData)
-          throw new Error("Некорректные данные пользователя (отсутствует ID)")
+          throw new Error("Не удалось получить данные пользователя из Telegram")
         }
 
         // Создаем или обновляем пользователя в базе
-        console.log("Начинаем сохранение пользователя в базу...")
         const dbUser = await createOrUpdateUser(userData)
-        console.log("Данные пользователя в базе:", dbUser)
+        console.log("Database user:", dbUser)
 
         if (!dbUser) {
-          throw new Error("Не удалось сохранить пользователя в базе")
+          throw new Error("Не удалось создать/обновить пользователя в базе")
         }
 
         if (mounted) {
@@ -74,19 +52,16 @@ function App() {
               : userData.first_name || "Неизвестный пользователь",
           })
           setBalance(dbUser.balance)
-          setError(null)
         }
       } catch (err) {
-        console.error("=== Ошибка инициализации ===")
-        console.error(err)
+        console.error("Ошибка инициализации:", err)
         if (mounted) {
-          setError(`${err.message} Попробуйте перезапустить приложение или обратитесь к администратору.`)
+          setError(err.message)
         }
       } finally {
         if (mounted) {
           setLoading(false)
         }
-        console.log("=== Завершение инициализации приложения ===")
       }
     }
 
@@ -118,7 +93,6 @@ function App() {
           <div className="section-container error">
             <h2>Ошибка</h2>
             <p>{error}</p>
-            <p className="text-sm text-gray-400 mt-2">Попробуйте перезапустить приложение в Telegram</p>
             <button onClick={() => window.location.reload()} className="shop-button mt-4">
               Попробовать снова
             </button>
