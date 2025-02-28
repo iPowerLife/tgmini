@@ -7,6 +7,7 @@ import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
 import { UserProfile } from "./components/user-profile"
 import { checkSupabaseConnection } from "./utils/supabase"
+import { testDatabaseAccess } from "./utils/supabase"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -21,14 +22,22 @@ function App() {
 
     const initApp = async () => {
       try {
-        console.log("Начинаем инициализацию приложения...")
+        console.log("=== Начало инициализации приложения ===")
         setLoading(true)
         setError(null)
 
-        // Проверяем подключение к базе данных
+        // Проверяем базовое подключение
+        console.log("Проверяем базовое подключение...")
         const isConnected = await checkSupabaseConnection()
         if (!isConnected) {
           throw new Error("Не удалось подключиться к базе данных")
+        }
+
+        // Тестируем доступ к базе данных
+        console.log("Тестируем доступ к базе данных...")
+        const accessWorks = await testDatabaseAccess()
+        if (!accessWorks) {
+          throw new Error("Проблема с доступом к базе данных")
         }
 
         // Инициализируем Telegram WebApp
@@ -70,14 +79,18 @@ function App() {
           setError(null)
         }
       } catch (err) {
-        console.error("Ошибка инициализации:", err)
+        console.error("=== Ошибка инициализации ===")
+        console.error("Полная ошибка:", err)
         if (mounted) {
-          setError(err.message)
+          // Добавляем больше информации в сообщение об ошибке
+          const errorMessage = err.message || "Неизвестная ошибка"
+          setError(`${errorMessage}. Пожалуйста, проверьте консоль для деталей.`)
         }
       } finally {
         if (mounted) {
           setLoading(false)
         }
+        console.log("=== Завершение инициализации приложения ===")
       }
     }
 
