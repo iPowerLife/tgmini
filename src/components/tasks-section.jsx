@@ -81,37 +81,39 @@ export function TasksSection({ user }) {
         <p className="text-sm text-gray-400">Выполняйте задания и получайте награды</p>
       </div>
 
-      <div className="px-4 flex border-b border-gray-800">
-        <button
-          onClick={() => setActiveTab("basic")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "basic"
-              ? "border-blue-500 text-blue-500"
-              : "border-transparent text-gray-400 hover:text-gray-300"
-          }`}
-        >
-          Основные
-        </button>
-        <button
-          onClick={() => setActiveTab("limited")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "limited"
-              ? "border-blue-500 text-blue-500"
-              : "border-transparent text-gray-400 hover:text-gray-300"
-          }`}
-        >
-          Лимитированные
-        </button>
-        <button
-          onClick={() => setActiveTab("achievement")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "achievement"
-              ? "border-blue-500 text-blue-500"
-              : "border-transparent text-gray-400 hover:text-gray-300"
-          }`}
-        >
-          Достижения
-        </button>
+      <div className="px-4 mb-2">
+        <div className="flex gap-2 p-1 bg-gray-800/50 backdrop-blur-sm rounded-xl">
+          <button
+            onClick={() => setActiveTab("basic")}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
+              activeTab === "basic"
+                ? "bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-white shadow-lg shadow-blue-500/20 border border-blue-500/20 scale-[1.02]"
+                : "text-gray-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            Основные
+          </button>
+          <button
+            onClick={() => setActiveTab("limited")}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
+              activeTab === "limited"
+                ? "bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-white shadow-lg shadow-blue-500/20 border border-blue-500/20 scale-[1.02]"
+                : "text-gray-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            Лимитированные
+          </button>
+          <button
+            onClick={() => setActiveTab("achievement")}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
+              activeTab === "achievement"
+                ? "bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-white shadow-lg shadow-blue-500/20 border border-blue-500/20 scale-[1.02]"
+                : "text-gray-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            Достижения
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto">
