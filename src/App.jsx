@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { initTelegram, useTelegramUser } from "./utils/telegram"
-import { supabase } from "./supabase"
+import { getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
@@ -13,86 +12,71 @@ function App() {
   const [balance, setBalance] = useState(0)
   const [activeSection, setActiveSection] = useState("home")
   const [showIncrease, setShowIncrease] = useState(false)
-  const telegramUser = useTelegramUser()
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const initApp = async () => {
       try {
-        // Инициализируем Telegram WebApp
-        initTelegram()
+        // Получаем данные пользователя из Telegram
+        const telegramUser = getTelegramUser()
+        console.log("Telegram user data:", telegramUser)
 
-        // Ищем пользователя в базе
-        const { data: users, error: selectError } = await supabase
-          .from("users")
-          .select("*")
-          .eq("telegram_id", telegramUser.id)
-          .single()
-
-        if (selectError && selectError.code !== "PGRST116") {
-          throw selectError
+        if (!telegramUser) {
+          throw new Error("Не удалось получить данные пользователя")
         }
 
-        let dbUser = users
+        // Создаем или обновляем пользователя в базе
+        const dbUser = await createOrUpdateUser(telegramUser)
+        console.log("Database user:", dbUser)
 
-        // Если пользователя нет, создаем
-        if (!dbUser) {
-          const { data: newUser, error: createError } = await supabase
-            .from("users")
-            .insert([
-              {
-                telegram_id: telegramUser.id,
-                username: telegramUser.username,
-                first_name: telegramUser.firstName,
-                balance: 0,
-                mining_power: 1,
-                level: 1,
-                experience: 0,
-                next_level_exp: 100,
-              },
-            ])
-            .select()
-            .single()
-
-          if (createError) {
-            throw createError
-          }
-
-          dbUser = newUser
-
-          // Создаем запись в mining_stats
-          await supabase.from("mining_stats").insert([
-            {
-              user_id: dbUser.id,
-              total_mined: 0,
-              mining_count: 0,
-            },
-          ])
-        }
-
-        // Объединяем данные из базы и Telegram
+        // Объединяем данные
         const fullUser = {
           ...dbUser,
-          telegram_id: telegramUser.id,
-          username: telegramUser.username,
-          first_name: telegramUser.firstName,
-          photo_url: telegramUser.photoUrl,
+          photo_url: telegramUser.photo_url,
+          display_name: telegramUser.username ? `@${telegramUser.username}` : telegramUser.first_name || "Unknown User",
         }
 
         setUser(fullUser)
         setBalance(dbUser.balance)
-      } catch (error) {
-        console.error("Error initializing app:", error)
+        setError(null)
+      } catch (err) {
+        console.error("Error initializing app:", err)
+        setError(err.message)
       }
     }
 
     initApp()
-  }, [telegramUser.id, telegramUser.username, telegramUser.firstName, telegramUser.photoUrl])
+  }, [])
+
+  if (error) {
+    return (
+      <div className="app-wrapper">
+        <div className="app-container">
+          <div className="section-container error">
+            <h2>Ошибка</h2>
+            <p>{error}</p>
+            <button onClick={() => window.location.reload()} className="px-4 py-2 mt-4 bg-blue-500 text-white rounded">
+              Попробовать снова
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="app-wrapper">
+        <div className="app-container">
+          <div className="section-container">
+            <div className="loading">Загрузка данных пользователя...</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const renderContent = () => {
-    if (!user) {
-      return <div className="section-container">Загрузка данных пользователя...</div>
-    }
-
     switch (activeSection) {
       case "home":
         return (

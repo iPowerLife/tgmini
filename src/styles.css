@@ -698,10 +698,38 @@ button:not(:disabled):active {
   font-size: 0.8em;
 }
 
-.error {
-  color: #ef4444;
+/* Добавляем новые стили для загрузки и ошибок */
+.loading {
   text-align: center;
   padding: 20px;
+  color: #94a3b8;
+}
+
+.error {
+  text-align: center;
+  padding: 20px;
+  color: #ef4444;
+}
+
+.error h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.error button {
+  background: rgba(99, 102, 241, 0.9);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.error button:hover {
+  background: rgba(99, 102, 241, 1);
+  transform: translateY(-2px);
 }
 
 /* Медиа-запросы для адаптивности */
