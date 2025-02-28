@@ -1,4 +1,4 @@
-export function LoadingScreen({ message = "Загрузка...", error = null, retrying = false }) {
+export function LoadingScreen({ message = "Загрузка..." }) {
   return (
     <div
       style={{
@@ -13,27 +13,17 @@ export function LoadingScreen({ message = "Загрузка...", error = null, r
         textAlign: "center",
       }}
     >
-      {error ? (
-        <div style={{ color: "#ef4444" }}>
-          <div style={{ fontSize: "18px", marginBottom: "10px" }}>Ошибка</div>
-          <div style={{ fontSize: "14px", marginBottom: "20px" }}>{error}</div>
-          {retrying && <div style={{ fontSize: "14px", color: "#60a5fa" }}>Пытаемся восстановить подключение...</div>}
-        </div>
-      ) : (
-        <>
-          <div style={{ fontSize: "18px", marginBottom: "20px" }}>{message}</div>
-          <div
-            style={{
-              width: "40px",
-              height: "40px",
-              border: "3px solid #3b82f6",
-              borderTop: "3px solid transparent",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite",
-            }}
-          />
-        </>
-      )}
+      <div style={{ fontSize: "18px", marginBottom: "20px" }}>{message}</div>
+      <div
+        style={{
+          width: "40px",
+          height: "40px",
+          border: "3px solid #3b82f6",
+          borderTop: "3px solid transparent",
+          borderRadius: "50%",
+          animation: "spin 1s linear infinite",
+        }}
+      />
       <style>
         {`
           @keyframes spin {

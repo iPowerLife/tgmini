@@ -22,10 +22,23 @@
     #root {
       min-height: 100vh;
     }
+
+    /* Добавляем стили для состояния загрузки */
+    .loading {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #1a1b1e;
+      color: white;
+    }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <!-- Добавляем начальное состояние загрузки -->
+  <div id="root">
+    <div class="loading">Загрузка приложения...</div>
+  </div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
