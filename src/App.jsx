@@ -1,44 +1,54 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
-import { supabase } from "./supabase"
-import { initTelegram, getTelegramUser } from "./utils/telegram"
-import { LoadingScreen } from "./components/LoadingScreen"
+// В начале файла App.jsx добавляем:
+import { useEffect, useState } from "react"
+import { initTelegram, getTelegramUser } from "./utils/telegram" // Предполагается, что функции находятся здесь
+import { supabase } from "./utils/supabaseClient" // Предполагается, что supabase находится здесь
 
 function App() {
   const [user, setUser] = useState(null)
   const [balance, setBalance] = useState(0)
   const [miningPower, setMiningPower] = useState(1)
-  const [isMining, setIsMining] = useState(false)
-  const [cooldown, setCooldown] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Инициализация
+  // Добавляем обработку ошибок инициализации
   useEffect(() => {
     async function init() {
       try {
-        // Инициализируем Telegram
-        initTelegram()
-        const telegramUser = getTelegramUser()
+        console.log("Starting app initialization...")
 
-        if (!telegramUser) {
-          throw new Error("Не удалось получить данные пользователя Telegram")
+        // Инициализируем Telegram
+        const tg = initTelegram()
+        console.log("Telegram initialization result:", tg)
+
+        const telegramUser = getTelegramUser()
+        console.log("Got Telegram user:", telegramUser)
+
+        if (!telegramUser?.id) {
+          throw new Error("Не удалось получить ID пользователя Telegram")
         }
 
         // Получаем или создаем пользователя в базе
-        const { data: existingUser } = await supabase
+        const { data: existingUser, error: fetchError } = await supabase
           .from("users")
           .select("*")
           .eq("telegram_id", telegramUser.id)
           .single()
 
+        if (fetchError && fetchError.code !== "PGRST116") {
+          console.error("Error fetching user:", fetchError)
+          throw new Error(`Ошибка получения данных: ${fetchError.message}`)
+        }
+
         if (existingUser) {
+          console.log("Found existing user:", existingUser)
           setUser(existingUser)
           setBalance(existingUser.balance)
           setMiningPower(existingUser.mining_power)
         } else {
-          const { data: newUser, error } = await supabase
+          console.log("Creating new user for:", telegramUser)
+          const { data: newUser, error: createError } = await supabase
             .from("users")
             .insert([
               {
@@ -54,11 +64,16 @@ function App() {
             .select()
             .single()
 
-          if (error) throw error
+          if (createError) {
+            console.error("Error creating user:", createError)
+            throw new Error(`Ошибка создания пользователя: ${createError.message}`)
+          }
+
+          console.log("Created new user:", newUser)
           setUser(newUser)
         }
       } catch (err) {
-        console.error("Ошибка инициализации:", err)
+        console.error("Error in init:", err)
         setError(err.message)
       } finally {
         setIsLoading(false)
@@ -68,148 +83,21 @@ function App() {
     init()
   }, [])
 
-  const mine = useCallback(async () => {
-    if (isMining || cooldown > 0 || !user) return
-
-    setIsMining(true)
-    const amount = miningPower
-
-    try {
-      // Обновляем баланс в базе данных
-      const { data, error } = await supabase
-        .from("users")
-        .update({
-          balance: user.balance + amount,
-          last_mining: new Date().toISOString(),
-        })
-        .eq("id", user.id)
-        .select()
-        .single()
-
-      if (error) throw error
-
-      // Обновляем локальное состояние
-      setBalance((prev) => +(prev + amount).toFixed(2))
-      setUser(data)
-
-      // Логируем транзакцию
-      await supabase.from("transactions").insert([
-        {
-          user_id: user.id,
-          amount: amount,
-          type: "mining",
-          description: "Майнинг криптовалюты",
-        },
-      ])
-    } catch (err) {
-      console.error("Ошибка майнинга:", err)
-    } finally {
-      setIsMining(false)
-      setCooldown(3)
-
-      const timer = setInterval(() => {
-        setCooldown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-    }
-  }, [isMining, cooldown, miningPower, user])
-
-  if (isLoading) {
-    return <LoadingScreen message="Загрузка игры..." />
-  }
-
-  if (error) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#1a1b1e",
-          color: "white",
-          padding: "20px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-        }}
-      >
-        <div style={{ marginBottom: "20px", color: "#ef4444" }}>Ошибка</div>
-        <div style={{ color: "#666" }}>{error}</div>
-      </div>
-    )
-  }
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#1a1b1e",
-        color: "white",
-        padding: "20px",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: "rgba(255, 255, 255, 0.1)",
-          padding: "20px",
-          borderRadius: "12px",
-          marginBottom: "20px",
-          width: "100%",
-          maxWidth: "300px",
-        }}
-      >
-        <div style={{ marginBottom: "10px", display: "flex", justifyContent: "space-between" }}>
-          <span>Баланс:</span>
-          <span>{balance.toFixed(2)} 💎</span>
+    <div>
+      {isLoading ? (
+        <p>Loading...</p>
+      ) : error ? (
+        <p>Error: {error}</p>
+      ) : user ? (
+        <div>
+          <p>Welcome, {user.username}!</p>
+          <p>Balance: {balance}</p>
+          <p>Mining Power: {miningPower}</p>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span>Мощность:</span>
-          <span>{miningPower.toFixed(1)} ⚡</span>
-        </div>
-      </div>
-
-      <button
-        onClick={mine}
-        disabled={isMining || cooldown > 0}
-        style={{
-          width: "100%",
-          maxWidth: "300px",
-          padding: "15px",
-          backgroundColor: isMining || cooldown > 0 ? "#1f2937" : "#3b82f6",
-          border: "none",
-          borderRadius: "12px",
-          color: "white",
-          fontSize: "16px",
-          cursor: isMining || cooldown > 0 ? "not-allowed" : "pointer",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {isMining ? "Майнинг..." : cooldown > 0 ? `Перезарядка (${cooldown}с)` : "Майнить ⛏️"}
-
-        {cooldown > 0 && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              height: "4px",
-              backgroundColor: "#3b82f6",
-              width: `${(cooldown / 3) * 100}%`,
-              transition: "width 0.1s linear",
-            }}
-          />
-        )}
-      </button>
+      ) : (
+        <p>No user data available.</p>
+      )}
     </div>
   )
 }
