@@ -23,12 +23,12 @@ function App() {
     const initUser = async () => {
       try {
         const telegramUser = getTelegramUser()
-        if (!telegramUser) {
-          console.error("No Telegram user found")
+        if (!telegramUser?.id) {
+          console.error("Invalid Telegram user:", telegramUser)
           return
         }
 
-        console.log("Telegram user:", telegramUser)
+        console.log("Initializing user with telegram_id:", telegramUser.id)
 
         // Ищем пользователя в базе
         const { data: users, error: selectError } = await supabase
@@ -41,20 +41,18 @@ function App() {
           throw selectError
         }
 
-        console.log("Found users:", users)
+        console.log("Database query result:", users)
         let user = users?.[0]
 
         // Если пользователя нет, создаем
         if (!user) {
-          console.log("Creating new user for telegram_id:", telegramUser.id)
-
-          // Создаем пользователя
+          console.log("User not found in database, creating new user...")
           const { data: newUsers, error: createError } = await supabase
             .from("users")
             .insert([
               {
                 telegram_id: telegramUser.id,
-                username: telegramUser.username || "unknown",
+                username: telegramUser.username || String(telegramUser.id),
                 balance: 0,
                 mining_power: 1,
                 level: 1,
@@ -69,7 +67,7 @@ function App() {
             throw createError
           }
 
-          console.log("Created user:", newUsers)
+          console.log("Created new user:", newUsers)
           user = newUsers[0]
 
           if (!user?.id) {
@@ -95,13 +93,11 @@ function App() {
           }
 
           console.log("Created mining stats:", stats)
+        } else {
+          console.log("Found existing user:", user)
         }
 
-        if (!user) {
-          throw new Error("Failed to get or create user")
-        }
-
-        console.log("Final user data:", user)
+        console.log("Setting user state:", user)
         setUser(user)
         setBalance(user.balance)
       } catch (error) {

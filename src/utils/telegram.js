@@ -5,27 +5,24 @@ export function initTelegram() {
     // Проверяем, запущено ли приложение в Telegram
     if (window.Telegram?.WebApp) {
       tg = window.Telegram.WebApp
-      console.log("Telegram WebApp initialized with data:", {
-        user: tg.initDataUnsafe?.user,
-        version: tg.version,
-        platform: tg.platform,
-      })
+      const userData = tg.initDataUnsafe?.user
+      console.log("Telegram WebApp initialized with user data:", userData)
+
+      if (!userData?.id) {
+        console.warn("Invalid Telegram user data:", userData)
+        return createDevModeWebApp()
+      }
 
       // Отключаем стандартные обработчики событий Telegram
       tg.disableClosingConfirmation()
       tg.expand() // Разворачиваем на весь экран
-
-      // Проверяем валидность данных
-      if (!tg.initDataUnsafe?.user?.id) {
-        console.warn("Invalid Telegram user data, falling back to development mode")
-        return createDevModeWebApp()
-      }
 
       // Сообщаем Telegram, что приложение готово
       tg.ready()
       return tg
     }
 
+    console.log("No Telegram WebApp found, using development mode")
     return createDevModeWebApp()
   } catch (error) {
     console.error("Error initializing Telegram WebApp:", error)
@@ -39,8 +36,6 @@ function createDevModeWebApp() {
     process.env.NODE_ENV === "development" ||
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1"
-
-  console.log("Development mode:", isDev)
 
   // Получаем параметры из URL
   const urlParams = new URLSearchParams(window.location.search)
@@ -66,7 +61,7 @@ function createDevModeWebApp() {
     platform: "dev",
   }
 
-  console.log("Using mock Telegram WebApp:", mockTg)
+  console.log("Created mock Telegram WebApp:", mockTg)
   return mockTg
 }
 
@@ -75,7 +70,7 @@ export function getTelegramUser() {
     // Пытаемся получить пользователя из Telegram WebApp
     const webAppUser = tg?.initDataUnsafe?.user
     if (webAppUser?.id) {
-      console.log("Got Telegram user:", webAppUser)
+      console.log("Got real Telegram user:", webAppUser)
       return webAppUser
     }
 
@@ -95,14 +90,7 @@ export function getTelegramUser() {
     return devUser
   } catch (error) {
     console.error("Error getting Telegram user:", error)
-    // В случае ошибки возвращаем тестового пользователя
-    const fallbackUser = {
-      id: 12345,
-      username: "error_user",
-      first_name: "Error",
-    }
-    console.log("Using fallback user:", fallbackUser)
-    return fallbackUser
+    return null
   }
 }
 
