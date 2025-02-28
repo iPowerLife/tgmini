@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Progress } from "./ui/progress"
-import { Clock, Trophy, LinkIcon } from "lucide-react"
+import { Clock, Trophy, LinkIcon, CheckCircle, Timer, Gift } from "lucide-react"
 import { supabase } from "../supabase"
 
 export function TasksList({ tasks, type, user }) {
@@ -91,14 +91,26 @@ export function TasksList({ tasks, type, user }) {
 
   if (!tasks.length) {
     return (
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="border-dashed">
+        <CardContent className="py-8">
           <div className="text-center text-muted-foreground">
-            {type === "limited"
-              ? "Сейчас нет доступных лимитированных заданий"
-              : type === "achievement"
-                ? "Нет доступных достижений"
-                : "Нет доступных заданий"}
+            <div className="mb-4 flex justify-center">
+              {type === "limited" ? (
+                <Clock className="w-12 h-12 text-muted-foreground/50" />
+              ) : type === "achievement" ? (
+                <Trophy className="w-12 h-12 text-muted-foreground/50" />
+              ) : (
+                <CheckCircle className="w-12 h-12 text-muted-foreground/50" />
+              )}
+            </div>
+            <p className="text-lg font-medium mb-2">
+              {type === "limited"
+                ? "Сейчас нет доступных лимитированных заданий"
+                : type === "achievement"
+                  ? "Нет доступных достижений"
+                  : "Нет доступных заданий"}
+            </p>
+            <p className="text-sm">Загляните позже, чтобы увидеть новые задания</p>
           </div>
         </CardContent>
       </Card>
@@ -108,70 +120,92 @@ export function TasksList({ tasks, type, user }) {
   return (
     <div className="grid gap-4">
       {tasks.map((task) => (
-        <Card key={task.id}>
+        <Card key={task.id} className="group hover:shadow-lg transition-all duration-300 hover:border-primary/50">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>{task.title}</span>
-              <span className="text-xl">💎 {task.reward}</span>
-            </CardTitle>
-            <CardDescription>{task.description}</CardDescription>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-xl mb-2">{task.title}</CardTitle>
+                <CardDescription className="text-base">{task.description}</CardDescription>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
+                <Gift className="w-5 h-5 text-primary" />
+                <span className="text-lg font-semibold">{task.reward} 💎</span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {task.type === "limited" && task.end_date && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                <Clock className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4 bg-muted/50 p-2 rounded-lg">
+                <Timer className="w-4 h-4 text-primary" />
                 <span>
                   Доступно до:{" "}
-                  {new Date(task.end_date).toLocaleDateString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                  {new Date(task.end_date).toLocaleDateString("ru-RU", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </span>
               </div>
             )}
 
             {task.type === "achievement" && (
-              <div className="space-y-2">
+              <div className="space-y-2 bg-muted/50 p-3 rounded-lg">
                 <div className="flex items-center justify-between text-sm">
-                  <span>Прогресс</span>
+                  <span className="font-medium">Прогресс выполнения</span>
                   <span className="text-muted-foreground">0/100</span>
                 </div>
-                <Progress value={0} />
+                <Progress value={0} className="h-2" />
               </div>
             )}
 
             {task.user_status === "active" && verificationTimers[task.id] > 0 && (
-              <div className="mt-4">
-                <Progress value={(verificationTimers[task.id] / 15) * 100} />
-                <p className="text-center text-sm mt-2">Проверка: {verificationTimers[task.id]} сек</p>
+              <div className="mt-4 bg-muted/50 p-3 rounded-lg">
+                <Progress value={(verificationTimers[task.id] / 15) * 100} className="h-2" />
+                <p className="text-center text-sm mt-2 font-medium">Проверка: {verificationTimers[task.id]} сек</p>
               </div>
             )}
           </CardContent>
-          <CardFooter className="flex justify-between">
+          <CardFooter className="flex flex-col sm:flex-row justify-between gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Trophy className="w-4 h-4" />
               <span>Выполнили: {task.total_completions}</span>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 sm:flex-nowrap">
               {!task.user_status && (
                 <Button
                   variant="outline"
                   onClick={() => window.open(task.link, "_blank")}
                   disabled={processingTasks[task.id]}
+                  className="w-full sm:w-auto"
                 >
                   <LinkIcon className="w-4 h-4 mr-2" />
                   Перейти
                 </Button>
               )}
               {!task.user_status && (
-                <Button onClick={() => startTask(task.id)} disabled={processingTasks[task.id]}>
+                <Button
+                  onClick={() => startTask(task.id)}
+                  disabled={processingTasks[task.id]}
+                  className="w-full sm:w-auto"
+                >
                   Начать
                 </Button>
               )}
               {task.user_status === "active" && verificationTimers[task.id] === 0 && (
-                <Button onClick={() => completeTask(task.id)} disabled={processingTasks[task.id]}>
+                <Button
+                  onClick={() => completeTask(task.id)}
+                  disabled={processingTasks[task.id]}
+                  className="w-full sm:w-auto"
+                >
                   Завершить
                 </Button>
               )}
               {task.user_status === "completed" && !task.reward_claimed && (
-                <Button onClick={() => claimReward(task.id)} disabled={processingTasks[task.id]}>
+                <Button
+                  onClick={() => claimReward(task.id)}
+                  disabled={processingTasks[task.id]}
+                  className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+                >
+                  <Gift className="w-4 h-4 mr-2" />
                   Получить награду
                 </Button>
               )}
