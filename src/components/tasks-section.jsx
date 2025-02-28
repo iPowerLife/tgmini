@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { TasksList } from "./tasks-list"
-import { supabase } from "@/utils/supabase"
+import { supabase } from "../supabase"
 
 export function TasksSection({ user }) {
   const [tasks, setTasks] = useState({
