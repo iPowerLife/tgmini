@@ -13,41 +13,73 @@ function App() {
   const [activeSection, setActiveSection] = useState("home")
   const [showIncrease, setShowIncrease] = useState(false)
   const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
+
     const initApp = async () => {
       try {
-        // Получаем данные пользователя из Telegram
+        setLoading(true)
+        setError(null)
+
+        // Получаем данные пользователя
         const telegramUser = getTelegramUser()
-        console.log("Telegram user data:", telegramUser)
 
         if (!telegramUser) {
-          throw new Error("Не удалось получить данные пользователя")
+          throw new Error("Не удалось получить данные пользователя из Telegram")
         }
 
         // Создаем или обновляем пользователя в базе
         const dbUser = await createOrUpdateUser(telegramUser)
-        console.log("Database user:", dbUser)
 
-        // Объединяем данные
-        const fullUser = {
-          ...dbUser,
-          photo_url: telegramUser.photo_url,
-          display_name: telegramUser.username ? `@${telegramUser.username}` : telegramUser.first_name || "Unknown User",
+        if (!dbUser) {
+          throw new Error("Не удалось создать/обновить пользователя в базе")
         }
 
-        setUser(fullUser)
-        setBalance(dbUser.balance)
-        setError(null)
+        if (mounted) {
+          setUser({
+            ...dbUser,
+            photo_url: telegramUser.photo_url,
+            display_name: telegramUser.username
+              ? `@${telegramUser.username}`
+              : telegramUser.first_name || "Неизвестный пользователь",
+          })
+          setBalance(dbUser.balance)
+        }
       } catch (err) {
-        console.error("Error initializing app:", err)
-        setError(err.message)
+        console.error("Ошибка инициализации:", err)
+        if (mounted) {
+          setError(err.message)
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
 
     initApp()
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
+  // Показываем загрузку
+  if (loading) {
+    return (
+      <div className="app-wrapper">
+        <div className="app-container">
+          <div className="section-container">
+            <div className="loading">Загрузка приложения...</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Показываем ошибку
   if (error) {
     return (
       <div className="app-wrapper">
@@ -55,7 +87,7 @@ function App() {
           <div className="section-container error">
             <h2>Ошибка</h2>
             <p>{error}</p>
-            <button onClick={() => window.location.reload()} className="px-4 py-2 mt-4 bg-blue-500 text-white rounded">
+            <button onClick={() => window.location.reload()} className="shop-button mt-4">
               Попробовать снова
             </button>
           </div>
@@ -64,6 +96,7 @@ function App() {
     )
   }
 
+  // Показываем загрузку, если нет пользователя
   if (!user) {
     return (
       <div className="app-wrapper">
