@@ -1,39 +1,40 @@
+let tg = null
+
 export function initTelegram() {
-  // Проверяем наличие Telegram WebApp
-  if (window.Telegram?.WebApp) {
-    const tg = window.Telegram.WebApp
-
-    // Выводим все доступные данные для отладки
-    console.log("Telegram WebApp:", {
-      initData: tg.initData,
-      initDataUnsafe: tg.initDataUnsafe,
-      version: tg.version,
-      platform: tg.platform,
-      colorScheme: tg.colorScheme,
-      themeParams: tg.themeParams,
-      isExpanded: tg.isExpanded,
-    })
-
-    // Настраиваем WebApp
-    tg.expand()
-    tg.ready()
-
-    return tg
+  try {
+    if (window.Telegram?.WebApp) {
+      tg = window.Telegram.WebApp
+      tg.expand()
+      tg.ready()
+      return tg
+    }
+    return null
+  } catch (error) {
+    console.error("Error initializing Telegram:", error)
+    return null
   }
-  return null
 }
 
-export function getTelegramUser() {
-  // Простой способ получения данных пользователя
-  const tg = window.Telegram?.WebApp
-
-  if (tg?.initDataUnsafe?.user) {
-    const user = tg.initDataUnsafe.user
-    console.log("Telegram user data:", user)
-    return user
+export function useTelegramUser() {
+  const user = window.Telegram?.WebApp?.initDataUnsafe?.user || {
+    id: 12345,
+    username: "testuser",
+    first_name: "Test",
   }
 
-  console.log("No Telegram user data found")
-  return null
+  return {
+    id: user.id,
+    firstName: user.first_name || "Unknown",
+    lastName: user.last_name,
+    username: user.username,
+    languageCode: user.language_code,
+    photoUrl: user.photo_url,
+    // Форматированное имя для отображения
+    displayName: user.username
+      ? `@${user.username}`
+      : user.first_name
+        ? `${user.first_name}${user.last_name ? ` ${user.last_name}` : ""}`
+        : "Unknown User",
+  }
 }
 

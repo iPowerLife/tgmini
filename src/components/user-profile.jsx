@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { User } from "lucide-react"
+import { useTelegramUser } from "../utils/telegram"
 
 export function UserProfile({ user }) {
   const [stats, setStats] = useState(null)
   const [miners, setMiners] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const telegramUser = useTelegramUser()
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -75,15 +77,16 @@ export function UserProfile({ user }) {
   // Вычисляем общую мощность майнинга
   const totalMiningPower = miners.reduce((sum, miner) => sum + miner.model.mining_power * miner.quantity, 0)
 
-  // Определяем имя для отображения
-  const displayName = user.first_name || user.username || "Пользователь"
-
   return (
     <div className="profile-container">
       <div className="profile-header">
         <div className="avatar-container">
-          {user.photo_url ? (
-            <img src={user.photo_url || "/placeholder.svg"} alt={displayName} className="avatar-image" />
+          {telegramUser.photoUrl ? (
+            <img
+              src={telegramUser.photoUrl || "/placeholder.svg"}
+              alt={telegramUser.displayName}
+              className="avatar-image"
+            />
           ) : (
             <div className="avatar-placeholder">
               <User className="avatar-icon" />
@@ -91,9 +94,9 @@ export function UserProfile({ user }) {
           )}
         </div>
         <div className="user-info">
-          <h2>{displayName}</h2>
-          {user.username && <p className="username">@{user.username}</p>}
-          <p className="user-id">ID: {user.telegram_id}</p>
+          <h2>{telegramUser.firstName}</h2>
+          {telegramUser.username && <p className="username">@{telegramUser.username}</p>}
+          <p className="user-id">ID: {telegramUser.id}</p>
         </div>
       </div>
 

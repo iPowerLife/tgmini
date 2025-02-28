@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { initTelegram, getTelegramUser } from "./utils/telegram"
+import { initTelegram, useTelegramUser } from "./utils/telegram"
 import { supabase } from "./supabase"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
@@ -13,24 +13,13 @@ function App() {
   const [balance, setBalance] = useState(0)
   const [activeSection, setActiveSection] = useState("home")
   const [showIncrease, setShowIncrease] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const telegramUser = useTelegramUser()
 
   useEffect(() => {
     const initApp = async () => {
       try {
         // Инициализируем Telegram WebApp
-        const tg = initTelegram()
-        if (!tg) {
-          throw new Error("Telegram WebApp не найден")
-        }
-
-        // Получаем данные пользователя
-        const telegramUser = getTelegramUser()
-        if (!telegramUser?.id) {
-          throw new Error("Не удалось получить данные пользователя")
-        }
-
-        console.log("Telegram user:", telegramUser)
+        initTelegram()
 
         // Ищем пользователя в базе
         const { data: users, error: selectError } = await supabase
@@ -53,7 +42,7 @@ function App() {
               {
                 telegram_id: telegramUser.id,
                 username: telegramUser.username,
-                first_name: telegramUser.first_name,
+                first_name: telegramUser.firstName,
                 balance: 0,
                 mining_power: 1,
                 level: 1,
@@ -85,52 +74,25 @@ function App() {
           ...dbUser,
           telegram_id: telegramUser.id,
           username: telegramUser.username,
-          first_name: telegramUser.first_name,
-          photo_url: telegramUser.photo_url,
+          first_name: telegramUser.firstName,
+          photo_url: telegramUser.photoUrl,
         }
 
         setUser(fullUser)
         setBalance(dbUser.balance)
       } catch (error) {
         console.error("Error initializing app:", error)
-        // Не устанавливаем пользователя, чтобы показать сообщение об ошибке
-      } finally {
-        setLoading(false)
       }
     }
 
     initApp()
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="app-wrapper">
-        <div className="app-container">
-          <div className="section-container">
-            <div>Загрузка приложения...</div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return (
-      <div className="app-wrapper">
-        <div className="app-container">
-          <div className="section-container">
-            <div className="text-lg font-bold mb-2">Ошибка загрузки данных</div>
-            <div className="text-sm mb-4">Убедитесь, что вы открыли приложение через Telegram</div>
-            <button onClick={() => window.location.reload()} className="px-4 py-2 bg-blue-500 text-white rounded">
-              Перезагрузить
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  }, [telegramUser.id, telegramUser.username, telegramUser.firstName, telegramUser.photoUrl])
 
   const renderContent = () => {
+    if (!user) {
+      return <div className="section-container">Загрузка данных пользователя...</div>
+    }
+
     switch (activeSection) {
       case "home":
         return (
