@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabase } from "./supabase"
+import { supabase, testConnection } from "./supabase"
 import { initTelegram, getTelegramUser } from "./utils/telegram"
 import { getDailyBonusInfo, claimDailyBonus } from "./utils/daily-bonus"
 import { LoadingScreen } from "./components/LoadingScreen"
@@ -11,6 +11,7 @@ import DailyBonus from "./components/DailyBonus"
 export default function App() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [isRetrying, setIsRetrying] = useState(false)
   const [userData, setUserData] = useState({
     id: null,
     balance: 0,
@@ -34,12 +35,26 @@ export default function App() {
   useEffect(() => {
     const initialize = async () => {
       try {
-        console.log("Initializing app...")
+        setIsLoading(true)
+        setError(null)
+        setIsRetrying(false)
+
+        // Проверяем подключение к Supabase
+        const isConnected = await testConnection()
+        if (!isConnected) {
+          throw new Error("Не удалось подключиться к серверу")
+        }
+
+        // Инициализируем Telegram WebApp
         const tg = await initTelegram()
-        if (!tg) throw new Error("Telegram WebApp not available")
+        if (!tg) {
+          throw new Error("Не удалось инициализировать Telegram WebApp")
+        }
 
         const telegramUser = getTelegramUser()
-        if (!telegramUser) throw new Error("No Telegram user data available")
+        if (!telegramUser) {
+          throw new Error("Не удалось получить данные пользователя Telegram")
+        }
 
         console.log("Telegram user:", telegramUser)
 
@@ -86,6 +101,12 @@ export default function App() {
         console.error("Initialization error:", error)
         setError(error.message)
         setIsLoading(false)
+
+        // Пробуем переподключиться через 5 секунд
+        setIsRetrying(true)
+        setTimeout(() => {
+          initialize()
+        }, 5000)
       }
     }
 
@@ -172,7 +193,7 @@ export default function App() {
   }
 
   if (isLoading || error) {
-    return <LoadingScreen message={isLoading ? "Загрузка..." : undefined} error={error} />
+    return <LoadingScreen message={isLoading ? "Загрузка..." : undefined} error={error} retrying={isRetrying} />
   }
 
   return (

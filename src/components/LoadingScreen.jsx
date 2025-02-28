@@ -1,4 +1,4 @@
-export function LoadingScreen({ message = "Загрузка...", error = null }) {
+export function LoadingScreen({ message = "Загрузка...", error = null, retrying = false }) {
   return (
     <div
       style={{
@@ -16,7 +16,8 @@ export function LoadingScreen({ message = "Загрузка...", error = null })
       {error ? (
         <div style={{ color: "#ef4444" }}>
           <div style={{ fontSize: "18px", marginBottom: "10px" }}>Ошибка</div>
-          <div style={{ fontSize: "14px" }}>{error}</div>
+          <div style={{ fontSize: "14px", marginBottom: "20px" }}>{error}</div>
+          {retrying && <div style={{ fontSize: "14px", color: "#60a5fa" }}>Пытаемся восстановить подключение...</div>}
         </div>
       ) : (
         <>
