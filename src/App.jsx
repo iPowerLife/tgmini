@@ -29,15 +29,11 @@ function App() {
           throw new Error("No valid user data")
         }
 
-        // Подробное логирование перед запросом к базе
-        console.log("Searching for user with telegram_id:", telegramUser.id)
-
         // Ищем пользователя в базе
         const { data: users, error: selectError } = await supabase
           .from("users")
           .select("*")
           .eq("telegram_id", telegramUser.id)
-          .single()
 
         if (selectError) {
           console.error("Error selecting user:", selectError)
@@ -45,17 +41,12 @@ function App() {
         }
 
         console.log("Database query result:", users)
+        let user = users?.[0] // Используем первый элемент массива вместо .single()
 
         // Если пользователя нет, создаем
-        if (!users) {
-          console.log("User not found, creating new user with data:", {
-            telegram_id: telegramUser.id,
-            username: telegramUser.username || null,
-            first_name: telegramUser.first_name || "",
-          })
-
-          // Создаем пользователя
-          const { data: newUser, error: createError } = await supabase
+        if (!user) {
+          console.log("Creating new user with data:", telegramUser)
+          const { data: newUsers, error: createError } = await supabase
             .from("users")
             .insert([
               {
@@ -70,19 +61,19 @@ function App() {
               },
             ])
             .select()
-            .single()
 
           if (createError) {
             console.error("Error creating user:", createError)
             throw createError
           }
 
-          console.log("Created new user:", newUser)
+          console.log("Created new user:", newUsers)
+          user = newUsers[0] // Используем первый элемент массива
 
           // Создаем запись в mining_stats
           const { error: statsError } = await supabase.from("mining_stats").insert([
             {
-              user_id: newUser.id,
+              user_id: user.id,
               total_mined: 0,
               mining_count: 0,
             },
@@ -92,15 +83,11 @@ function App() {
             console.error("Error creating mining stats:", statsError)
             throw statsError
           }
-
-          console.log("Setting new user state:", newUser)
-          setUser(newUser)
-          setBalance(newUser.balance)
-        } else {
-          console.log("Found existing user:", users)
-          setUser(users)
-          setBalance(users.balance)
         }
+
+        console.log("Setting user state:", user)
+        setUser(user)
+        setBalance(user.balance)
       } catch (error) {
         console.error("Error in initialization:", error)
         // В режиме разработки создаем тестового пользователя

@@ -14,10 +14,8 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
+      Prefer: "return=minimal", // Добавляем этот заголовок
     },
-  },
-  db: {
-    schema: "public",
   },
 })
 
