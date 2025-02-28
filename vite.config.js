@@ -11,5 +11,8 @@ export default defineConfig({
     outDir: "dist",
     sourcemap: true,
   },
+  // Добавляем явные настройки для переменных окружения
+  envDir: ".",
+  envPrefix: "VITE_",
 })
 
