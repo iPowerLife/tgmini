@@ -109,6 +109,10 @@ function App() {
   }
 
   const handleMining = async (e) => {
+    // Предотвращаем всплытие события
+    e.preventDefault()
+    e.stopPropagation()
+
     if (isMining || !user) return
 
     try {
@@ -301,6 +305,10 @@ function App() {
           ))}
 
           <button
+            onMouseDown={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
             onClick={handleMining}
             disabled={isMining}
             style={{

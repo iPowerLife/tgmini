@@ -7,6 +7,10 @@ export function initTelegram() {
       tg = window.Telegram.WebApp
       console.log("Telegram WebApp initialized:", tg)
 
+      // Отключаем стандартные обработчики событий Telegram
+      tg.disableClosingConfirmation()
+      tg.expand() // Разворачиваем на весь экран
+
       // Сообщаем Telegram, что приложение готово
       tg.ready()
       return tg
@@ -23,6 +27,8 @@ export function initTelegram() {
         },
       },
       ready: () => console.log("Mock ready called"),
+      disableClosingConfirmation: () => console.log("Mock disableClosingConfirmation called"),
+      expand: () => console.log("Mock expand called"),
       MainButton: {
         show: () => console.log("Mock show called"),
         hide: () => console.log("Mock hide called"),
