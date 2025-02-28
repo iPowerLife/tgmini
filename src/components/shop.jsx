@@ -7,12 +7,15 @@ export function Shop({ user, onPurchase }) {
   const [categories, setCategories] = useState([])
   const [models, setModels] = useState([])
   const [selectedCategory, setSelectedCategory] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     const loadShopData = async () => {
+      if (!user?.id) return // Проверяем наличие пользователя
+
       try {
+        console.log("Loading shop data...")
         setLoading(true)
         setError(null)
 
@@ -22,7 +25,12 @@ export function Shop({ user, onPurchase }) {
           .select("*")
           .order("id")
 
-        if (categoriesError) throw categoriesError
+        if (categoriesError) {
+          console.error("Error loading categories:", categoriesError)
+          throw categoriesError
+        }
+
+        console.log("Loaded categories:", categoriesData)
 
         // Загружаем модели
         const { data: modelsData, error: modelsError } = await supabase
@@ -30,11 +38,18 @@ export function Shop({ user, onPurchase }) {
           .select("*")
           .order("category_id, price")
 
-        if (modelsError) throw modelsError
+        if (modelsError) {
+          console.error("Error loading models:", modelsError)
+          throw modelsError
+        }
+
+        console.log("Loaded models:", modelsData)
 
         setCategories(categoriesData)
         setModels(modelsData)
-        setSelectedCategory(categoriesData[0]?.id)
+        if (categoriesData.length > 0) {
+          setSelectedCategory(categoriesData[0].id)
+        }
       } catch (err) {
         console.error("Error loading shop data:", err)
         setError("Ошибка загрузки данных магазина")
@@ -44,9 +59,11 @@ export function Shop({ user, onPurchase }) {
     }
 
     loadShopData()
-  }, [])
+  }, [user?.id]) // Добавляем зависимость от user.id
 
   const handlePurchase = async (modelId) => {
+    if (!user?.id) return // Проверяем наличие пользователя
+
     try {
       setLoading(true)
       const { data, error } = await supabase.rpc("purchase_miner", {
@@ -71,12 +88,20 @@ export function Shop({ user, onPurchase }) {
     }
   }
 
+  if (!user) {
+    return <div className="section-container">Пользователь не найден</div>
+  }
+
   if (loading && !models.length) {
     return <div className="section-container">Загрузка магазина...</div>
   }
 
   if (error) {
     return <div className="section-container error">{error}</div>
+  }
+
+  if (!categories.length || !models.length) {
+    return <div className="section-container">Товары в магазине отсутствуют</div>
   }
 
   return (

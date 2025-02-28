@@ -150,6 +150,55 @@ body {
   font-size: 14px;
 }
 
+/* Добавляем новые стили для профиля */
+.mining-power {
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 20px 0;
+  text-align: center;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.mining-power h3 {
+  color: #94a3b8;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.miners-summary {
+  margin-top: 24px;
+}
+
+.miners-summary h3 {
+  color: #94a3b8;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.miners-list {
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.miner-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+  color: #f8fafc;
+}
+
+.miner-item:last-child {
+  border-bottom: none;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -224,6 +273,7 @@ body {
   gap: 10px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .category-btn {
@@ -234,10 +284,13 @@ body {
   color: white;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-size: 14px;
 }
 
 .category-btn.active {
   background: rgba(99, 102, 241, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
 }
 
 .models-grid {
@@ -598,5 +651,30 @@ button:not(:disabled):active {
 
 .balance-currency {
   font-size: 0.8em;
+}
+
+.error {
+  color: #ef4444;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Медиа-запросы для адаптивности */
+@media (max-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .models-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .categories {
+    flex-direction: column;
+  }
+
+  .category-btn {
+    width: 100%;
+  }
 }
 
