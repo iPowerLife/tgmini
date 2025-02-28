@@ -1,12 +1,82 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { supabase } from "./supabase"
 
 function App() {
+  const [user, setUser] = useState(null)
   const [balance, setBalance] = useState(0)
   const [isMining, setIsMining] = useState(false)
   const [showIncrease, setShowIncrease] = useState(false)
   const [particles, setParticles] = useState([])
+
+  // Получаем или создаем пользователя при загрузке
+  useEffect(() => {
+    const initUser = async () => {
+      try {
+        // Получаем Telegram пользователя
+        const tg = window.Telegram?.WebApp
+        if (!tg?.initDataUnsafe?.user) {
+          console.error("No Telegram user found")
+          return
+        }
+
+        const telegramUser = tg.initDataUnsafe.user
+
+        // Ищем пользователя в базе
+        let { data: user, error } = await supabase.from("users").select("*").eq("telegram_id", telegramUser.id).single()
+
+        // Если пользователя нет, создаем
+        if (!user) {
+          console.log("Creating new user...")
+          const { data: newUser, error: createError } = await supabase
+            .from("users")
+            .insert([
+              {
+                telegram_id: telegramUser.id,
+                username: telegramUser.username || "unknown",
+                balance: 0,
+                mining_power: 1,
+                level: 1,
+                experience: 0,
+                next_level_exp: 100,
+              },
+            ])
+            .select()
+            .single()
+
+          if (createError) {
+            console.error("Error creating user:", createError)
+            throw createError
+          }
+
+          // Создаем запись в mining_stats
+          const { error: statsError } = await supabase.from("mining_stats").insert([
+            {
+              user_id: newUser.id,
+              total_mined: 0,
+              mining_count: 0,
+            },
+          ])
+
+          if (statsError) {
+            console.error("Error creating mining stats:", statsError)
+            throw statsError
+          }
+
+          user = newUser
+          console.log("New user created:", user)
+        }
+
+        setUser(user)
+        setBalance(user.balance)
+      } catch (error) {
+        console.error("Error initializing user:", error)
+      }
+    }
+
+    initUser()
+  }, [])
 
   const createParticle = (e) => {
     const rect = e.target.getBoundingClientRect()
@@ -29,16 +99,37 @@ function App() {
     setTimeout(() => setParticles([]), 1000)
   }
 
-  const handleMining = (e) => {
-    if (isMining) return
+  const handleMining = async (e) => {
+    if (isMining || !user) return
+
     createParticle(e)
     setIsMining(true)
-    setTimeout(() => {
-      setBalance((prev) => prev + 1)
+
+    try {
+      // Обновляем баланс в базе
+      const miningAmount = 1 // Базовое количество
+      const { error } = await supabase.rpc("update_user_balance", {
+        user_id_param: user.id,
+        amount_param: miningAmount,
+        type_param: "mining",
+      })
+
+      if (error) throw error
+
+      // Обновляем статистику майнинга
+      await supabase.rpc("update_mining_stats", {
+        user_id_param: user.id,
+        mined_amount: miningAmount,
+      })
+
+      setBalance((prev) => prev + miningAmount)
       setShowIncrease(true)
       setTimeout(() => setShowIncrease(false), 1000)
+    } catch (error) {
+      console.error("Error mining:", error)
+    } finally {
       setIsMining(false)
-    }, 1000)
+    }
   }
 
   return (
