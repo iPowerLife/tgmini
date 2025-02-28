@@ -6,9 +6,32 @@ function App() {
   const [balance, setBalance] = useState(0)
   const [isMining, setIsMining] = useState(false)
   const [showIncrease, setShowIncrease] = useState(false)
+  const [particles, setParticles] = useState([])
 
-  const handleMining = () => {
+  const createParticle = (e) => {
+    const rect = e.target.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+
+    const particles = []
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI * 2) / 8
+      particles.push({
+        id: Date.now() + i,
+        x,
+        y,
+        angle,
+        speed: 2 + Math.random() * 2,
+        life: 1,
+      })
+    }
+    setParticles(particles)
+    setTimeout(() => setParticles([]), 1000)
+  }
+
+  const handleMining = (e) => {
     if (isMining) return
+    createParticle(e)
     setIsMining(true)
     setTimeout(() => {
       setBalance((prev) => prev + 1)
@@ -157,38 +180,92 @@ function App() {
         </div>
 
         {/* Кнопка майнинга */}
-        <button
-          onClick={handleMining}
-          disabled={isMining}
-          style={{
-            width: "300px",
-            padding: "20px",
-            backgroundColor: isMining ? "#1f2937" : "rgba(99, 102, 241, 0.9)",
-            border: "none",
-            borderRadius: "15px",
-            color: "white",
-            fontSize: "18px",
-            fontWeight: "600",
-            cursor: isMining ? "not-allowed" : "pointer",
-            transition: "all 0.3s ease",
-            position: "relative",
-            overflow: "hidden",
-            boxShadow: isMining ? "none" : "0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(99, 102, 241, 0.1)",
-          }}
-        >
-          <div
+        <div style={{ position: "relative" }}>
+          {/* Частицы */}
+          {particles.map((particle) => (
+            <div
+              key={particle.id}
+              style={{
+                position: "absolute",
+                left: particle.x,
+                top: particle.y,
+                width: "8px",
+                height: "8px",
+                backgroundColor: "#4ade80",
+                borderRadius: "50%",
+                transform: `translate(-50%, -50%)`,
+                animation: "particle 1s ease-out forwards",
+                zIndex: 3,
+              }}
+            />
+          ))}
+
+          <button
+            onClick={handleMining}
+            disabled={isMining}
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent)",
-              animation: isMining ? "none" : "shine 2s infinite",
+              width: "300px",
+              padding: "20px",
+              backgroundColor: isMining ? "#1f2937" : "rgba(99, 102, 241, 0.9)",
+              border: "none",
+              borderRadius: "15px",
+              color: "white",
+              fontSize: "18px",
+              fontWeight: "600",
+              cursor: isMining ? "not-allowed" : "pointer",
+              transition: "all 0.3s ease",
+              position: "relative",
+              overflow: "hidden",
+              boxShadow: isMining ? "none" : "0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(99, 102, 241, 0.1)",
             }}
-          />
-          <span style={{ position: "relative", zIndex: 2 }}>{isMining ? "Майнинг..." : "Майнить ⛏️"}</span>
-        </button>
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: "linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent)",
+                animation: isMining ? "none" : "shine 2s infinite",
+              }}
+            />
+
+            {/* Анимация загрузки */}
+            {isMining && (
+              <div className="mining-animation">
+                <svg
+                  viewBox="0 0 24 24"
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: "50%",
+                    transform: "translate(-50%, -50%)",
+                    width: "24px",
+                    height: "24px",
+                  }}
+                >
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.2" />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                    strokeDasharray="62.83185307179586"
+                    strokeLinecap="round"
+                    className="spinner"
+                  />
+                </svg>
+              </div>
+            )}
+
+            <span style={{ position: "relative", zIndex: 2, opacity: isMining ? 0 : 1 }}>
+              {isMining ? "Майнинг..." : "Майнить ⛏️"}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Стили для анимаций */}
@@ -221,6 +298,30 @@ function App() {
             }
           }
 
+          @keyframes particle {
+            0% {
+              transform: translate(-50%, -50%) scale(1);
+              opacity: 1;
+            }
+            100% {
+              transform: translate(
+                calc(-50% + ${Math.cos(Math.PI * 2)}px * 50),
+                calc(-50% + ${Math.sin(Math.PI * 2)}px * 50)
+              ) scale(0);
+              opacity: 0;
+            }
+          }
+
+          .spinner {
+            animation: spin 1s linear infinite;
+            transform-origin: center;
+          }
+
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+
           button:not(:disabled):hover {
             transform: translateY(-2px);
             box-shadow: 0 0 30px rgba(99, 102, 241, 0.4), 0 0 60px rgba(99, 102, 241, 0.2);
@@ -228,6 +329,19 @@ function App() {
 
           button:not(:disabled):active {
             transform: translateY(0);
+          }
+
+          .mining-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(31, 41, 55, 0.9);
+            border-radius: 15px;
           }
         `}
       </style>
