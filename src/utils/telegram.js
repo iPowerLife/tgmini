@@ -17,42 +17,78 @@ function getTestUser() {
 
 // Функция для инициализации Telegram WebApp
 export function initTelegram() {
-  const telegram = window.Telegram?.WebApp
+  try {
+    if (!window.Telegram?.WebApp) {
+      console.log("ERROR: Telegram WebApp не доступен")
+      return null
+    }
 
-  if (telegram) {
-    console.log("Инициализация Telegram WebApp...")
-    telegram.ready()
-    telegram.expand()
-    return telegram
+    const webApp = window.Telegram.WebApp
+    webApp.ready()
+    webApp.expand()
+
+    console.log("SUCCESS: Telegram WebApp инициализирован")
+    return webApp
+  } catch (error) {
+    console.error("ERROR в initTelegram:", error)
+    return null
   }
-
-  console.log("Telegram WebApp не найден")
-  return null
 }
 
 // Функция для получения данных пользователя
 export function getTelegramUser() {
-  // В режиме разработки возвращаем тестового пользователя
+  // Проверяем режим разработки
   if (process.env.NODE_ENV === "development") {
-    console.log("Режим разработки - возвращаем тестового пользователя")
-    return getTestUser()
+    console.log("DEV MODE: Возвращаем тестового пользователя")
+    return {
+      id: 12345,
+      first_name: "Тестовый",
+      username: "testuser",
+      photo_url: null,
+      last_name: null,
+    }
   }
 
-  const telegram = window.Telegram?.WebApp
+  try {
+    // Проверяем наличие объекта Telegram
+    if (!window.Telegram) {
+      console.log("ERROR: window.Telegram не найден")
+      return null
+    }
 
-  if (!telegram) {
-    console.log("Telegram WebApp не доступен")
+    // Проверяем наличие WebApp
+    if (!window.Telegram.WebApp) {
+      console.log("ERROR: window.Telegram.WebApp не найден")
+      return null
+    }
+
+    // Проверяем наличие initDataUnsafe
+    if (!window.Telegram.WebApp.initDataUnsafe) {
+      console.log("ERROR: initDataUnsafe не найден")
+      return null
+    }
+
+    // Получаем данные пользователя
+    const user = window.Telegram.WebApp.initDataUnsafe.user
+
+    // Проверяем наличие пользователя
+    if (!user) {
+      console.log("ERROR: user не найден в initDataUnsafe")
+      return null
+    }
+
+    // Проверяем наличие id
+    if (!user.id) {
+      console.log("ERROR: id не найден в данных пользователя", user)
+      return null
+    }
+
+    console.log("SUCCESS: Получены данные пользователя:", user)
+    return user
+  } catch (error) {
+    console.error("ERROR в getTelegramUser:", error)
     return null
   }
-
-  const user = telegram.initDataUnsafe?.user
-  if (!user) {
-    console.log("Данные пользователя не найдены в initDataUnsafe")
-    return null
-  }
-
-  console.log("Получены данные пользователя:", user)
-  return user
 }
 
 // Хук для получения данных пользователя

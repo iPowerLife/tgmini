@@ -24,19 +24,21 @@ function App() {
         setError(null)
 
         // Инициализируем Telegram WebApp
-        initTelegram()
+        const telegram = initTelegram()
+        console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
 
         // Получаем данные пользователя
         const userData = getTelegramUser()
-        console.log("Полученные данные пользователя:", userData)
+        console.log("User data:", userData)
 
-        if (!userData) {
-          throw new Error("Не удалось получить данные пользователя")
+        if (!userData || !userData.id) {
+          console.error("Некорректные данные пользователя:", userData)
+          throw new Error("Не удалось получить корректные данные пользователя")
         }
 
         // Создаем или обновляем пользователя в базе
         const dbUser = await createOrUpdateUser(userData)
-        console.log("Данные пользователя в базе:", dbUser)
+        console.log("Database user:", dbUser)
 
         if (!dbUser) {
           throw new Error("Не удалось создать/обновить пользователя в базе")
