@@ -8,10 +8,15 @@ export function Shop({ user, onPurchase }) {
   const [models, setModels] = useState([])
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const loadShopData = async () => {
       try {
+        setLoading(true)
+        setError(null)
+
+        // Загружаем категории
         const { data: categoriesData, error: categoriesError } = await supabase
           .from("miner_categories")
           .select("*")
@@ -19,6 +24,7 @@ export function Shop({ user, onPurchase }) {
 
         if (categoriesError) throw categoriesError
 
+        // Загружаем модели
         const { data: modelsData, error: modelsError } = await supabase
           .from("miner_models")
           .select("*")
@@ -29,8 +35,11 @@ export function Shop({ user, onPurchase }) {
         setCategories(categoriesData)
         setModels(modelsData)
         setSelectedCategory(categoriesData[0]?.id)
-      } catch (error) {
-        console.error("Error loading shop data:", error)
+      } catch (err) {
+        console.error("Error loading shop data:", err)
+        setError("Ошибка загрузки данных магазина")
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -60,6 +69,14 @@ export function Shop({ user, onPurchase }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (loading && !models.length) {
+    return <div className="section-container">Загрузка магазина...</div>
+  }
+
+  if (error) {
+    return <div className="section-container error">{error}</div>
   }
 
   return (

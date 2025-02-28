@@ -7,10 +7,14 @@ export function MinersList({ user }) {
   const [miners, setMiners] = useState([])
   const [loading, setLoading] = useState(true)
   const [totalPower, setTotalPower] = useState(0)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const loadMiners = async () => {
       try {
+        setLoading(true)
+        setError(null)
+
         const { data, error } = await supabase
           .from("user_miners")
           .select(`
@@ -34,6 +38,7 @@ export function MinersList({ user }) {
         setTotalPower(power)
       } catch (error) {
         console.error("Error loading miners:", error)
+        setError("Ошибка загрузки майнеров")
       } finally {
         setLoading(false)
       }
@@ -45,7 +50,20 @@ export function MinersList({ user }) {
   }, [user?.id])
 
   if (loading) {
-    return <div>Загрузка майнеров...</div>
+    return <div className="section-container">Загрузка майнеров...</div>
+  }
+
+  if (error) {
+    return <div className="section-container error">{error}</div>
+  }
+
+  if (!miners.length) {
+    return (
+      <div className="section-container empty">
+        <p>У вас пока нет майнеров</p>
+        <p>Купите майнеры в магазине, чтобы начать добывать монеты</p>
+      </div>
+    )
   }
 
   return (

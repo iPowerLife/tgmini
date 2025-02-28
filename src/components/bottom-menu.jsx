@@ -1,8 +1,9 @@
-import { Home, Trophy, Target, User } from "lucide-react"
+import { Home, Trophy, Target, User, ShoppingBag } from "lucide-react"
 
 export function BottomMenu({ activeSection, onSectionChange }) {
   const menuItems = [
     { id: "home", icon: Home, label: "Главная" },
+    { id: "shop", icon: ShoppingBag, label: "Магазин" },
     { id: "tasks", icon: Target, label: "Задания" },
     { id: "rating", icon: Trophy, label: "Рейтинг" },
     { id: "profile", icon: User, label: "Профиль" },
