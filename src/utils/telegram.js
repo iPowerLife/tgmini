@@ -2,91 +2,87 @@ let tg = null
 
 export function initTelegram() {
   try {
-    // Проверяем, запущено ли приложение в Telegram
+    // 1. Проверяем наличие Telegram WebApp
     if (window.Telegram?.WebApp) {
       tg = window.Telegram.WebApp
       console.log("Found Telegram WebApp:", tg)
 
-      // Получаем и проверяем initData
-      const initData = tg.initData
-      const initDataUnsafe = tg.initDataUnsafe
-      console.log("Telegram WebApp data:", { initData, initDataUnsafe })
+      // 2. Получаем все возможные данные
+      console.log("WebApp version:", tg.version)
+      console.log("WebApp platform:", tg.platform)
+      console.log("InitData:", tg.initData)
+      console.log("InitDataUnsafe:", tg.initDataUnsafe)
 
-      // Отключаем стандартные обработчики событий Telegram
-      tg.disableClosingConfirmation()
+      // 3. Настраиваем WebApp
       tg.expand()
       tg.ready()
+
       return tg
     }
 
-    // В режиме разработки возвращаем мок
-    console.log("Development mode, using mock WebApp")
-    return createDevModeWebApp()
+    console.log("Telegram WebApp not found, using development mode")
+    return null
   } catch (error) {
-    console.error("Error initializing Telegram WebApp:", error)
-    // В режиме разработки возвращаем мок
-    return createDevModeWebApp()
+    console.error("Error initializing Telegram:", error)
+    return null
   }
-}
-
-function createDevModeWebApp() {
-  // Создаем уникальный ID для тестового пользователя
-  const testUserId = Math.floor(Math.random() * 1000000) + 1
-
-  const mockTg = {
-    initDataUnsafe: {
-      user: {
-        id: testUserId,
-        username: `dev_user_${testUserId}`,
-        first_name: `Developer ${testUserId}`,
-      },
-    },
-    ready: () => console.log("Mock ready called"),
-    disableClosingConfirmation: () => console.log("Mock disableClosingConfirmation called"),
-    expand: () => console.log("Mock expand called"),
-    MainButton: {
-      show: () => console.log("Mock show called"),
-      hide: () => console.log("Mock hide called"),
-    },
-    version: "dev",
-    platform: "dev",
-  }
-
-  console.log("Created mock Telegram WebApp with test user:", mockTg.initDataUnsafe.user)
-  tg = mockTg
-  return mockTg
 }
 
 export function getTelegramUser() {
   try {
+    // 1. Проверяем инициализацию Telegram
     if (!tg) {
       console.log("No Telegram instance, initializing...")
       tg = initTelegram()
     }
 
-    const webAppUser = tg?.initDataUnsafe?.user
-    if (!webAppUser?.id) {
-      console.log("No valid user data, creating test user")
-      // Создаем уникального тестового пользователя
-      const testUserId = Math.floor(Math.random() * 1000000) + 1
-      return {
-        id: testUserId,
-        username: `dev_user_${testUserId}`,
-        first_name: `Developer ${testUserId}`,
+    // 2. Пытаемся получить данные разными способами
+    let userData = null
+
+    // Способ 1: Через window.Telegram.WebApp напрямую
+    if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+      userData = window.Telegram.WebApp.initDataUnsafe.user
+      console.log("Got user data from window.Telegram.WebApp:", userData)
+    }
+    // Способ 2: Через наш tg объект
+    else if (tg?.initDataUnsafe?.user) {
+      userData = tg.initDataUnsafe.user
+      console.log("Got user data from tg object:", userData)
+    }
+    // Способ 3: Через параметры URL (для тестирования)
+    else {
+      const urlParams = new URLSearchParams(window.location.search)
+      const userId = urlParams.get("userId")
+      const username = urlParams.get("username")
+
+      if (userId) {
+        userData = {
+          id: Number.parseInt(userId),
+          username: username || `user_${userId}`,
+          first_name: username || `User ${userId}`,
+        }
+        console.log("Got user data from URL params:", userData)
+      } else {
+        // Создаем тестового пользователя для разработки
+        const testUserId = Math.floor(Math.random() * 1000000) + 1
+        userData = {
+          id: testUserId,
+          username: `dev_user_${testUserId}`,
+          first_name: `Developer ${testUserId}`,
+        }
+        console.log("Created test user for development:", userData)
       }
     }
 
-    console.log("Got user data:", webAppUser)
-    return webAppUser
+    // 3. Проверяем полученные данные
+    if (!userData?.id) {
+      throw new Error("No valid user data")
+    }
+
+    return userData
   } catch (error) {
     console.error("Error getting Telegram user:", error)
-    // Создаем уникального тестового пользователя в случае ошибки
-    const testUserId = Math.floor(Math.random() * 1000000) + 1
-    return {
-      id: testUserId,
-      username: `dev_user_${testUserId}`,
-      first_name: `Developer ${testUserId}`,
-    }
+    throw error
   }
 }
 
