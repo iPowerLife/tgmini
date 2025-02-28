@@ -16,18 +16,25 @@ export function initTelegram() {
       return tg
     }
 
-    console.log("No Telegram WebApp found, checking URL params...")
-    // Проверяем URL параметры
-    const urlParams = new URLSearchParams(window.location.search)
-    const userId = urlParams.get("userId")
-    const username = urlParams.get("username")
+    // Определяем, находимся ли мы в режиме разработки
+    const isDev =
+      process.env.NODE_ENV === "development" ||
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1"
 
-    if (userId) {
-      console.log("Using URL params for development:", { userId, username })
-      return {
+    console.log("Development mode check:", isDev)
+
+    // В режиме разработки возвращаем тестового пользователя
+    if (isDev) {
+      // Сначала проверяем URL параметры
+      const urlParams = new URLSearchParams(window.location.search)
+      const userId = urlParams.get("userId")
+      const username = urlParams.get("username")
+
+      const mockTg = {
         initDataUnsafe: {
           user: {
-            id: Number(userId),
+            id: userId ? Number(userId) : 12345,
             username: username || "dev_user",
             first_name: username || "Developer",
           },
@@ -35,13 +42,32 @@ export function initTelegram() {
         ready: () => console.log("Mock ready called"),
         disableClosingConfirmation: () => console.log("Mock disableClosingConfirmation called"),
         expand: () => console.log("Mock expand called"),
+        MainButton: {
+          show: () => console.log("Mock show called"),
+          hide: () => console.log("Mock hide called"),
+        },
       }
+
+      console.log("Using mock Telegram WebApp:", mockTg)
+      return mockTg
     }
 
-    throw new Error("No Telegram WebApp and no URL params found")
+    throw new Error("Application must be run in Telegram or development mode")
   } catch (error) {
     console.error("Error initializing Telegram WebApp:", error)
-    return null
+    // В случае ошибки возвращаем тестового пользователя
+    return {
+      initDataUnsafe: {
+        user: {
+          id: 12345,
+          username: "error_user",
+          first_name: "Error",
+        },
+      },
+      ready: () => {},
+      disableClosingConfirmation: () => {},
+      expand: () => {},
+    }
   }
 }
 
@@ -54,25 +80,45 @@ export function getTelegramUser() {
       return webAppUser
     }
 
-    // Проверяем URL параметры
-    const urlParams = new URLSearchParams(window.location.search)
-    const userId = urlParams.get("userId")
-    const username = urlParams.get("username")
+    // Определяем, находимся ли мы в режиме разработки
+    const isDev =
+      process.env.NODE_ENV === "development" ||
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1"
 
-    if (userId) {
-      const user = {
-        id: Number(userId),
+    if (isDev) {
+      // Проверяем URL параметры
+      const urlParams = new URLSearchParams(window.location.search)
+      const userId = urlParams.get("userId")
+      const username = urlParams.get("username")
+
+      const devUser = {
+        id: userId ? Number(userId) : 12345,
         username: username || "dev_user",
         first_name: username || "Developer",
       }
-      console.log("Using URL params user:", user)
-      return user
+
+      console.log("Using development user:", devUser)
+      return devUser
     }
 
-    throw new Error("No Telegram user or URL params found")
+    // Если не в Telegram и не в режиме разработки, возвращаем тестового пользователя
+    const fallbackUser = {
+      id: 12345,
+      username: "fallback_user",
+      first_name: "Fallback",
+    }
+
+    console.log("Using fallback user:", fallbackUser)
+    return fallbackUser
   } catch (error) {
     console.error("Error getting Telegram user:", error)
-    return null
+    // В случае ошибки возвращаем тестового пользователя
+    return {
+      id: 12345,
+      username: "error_user",
+      first_name: "Error",
+    }
   }
 }
 
