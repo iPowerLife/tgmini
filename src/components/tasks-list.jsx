@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Clock, Trophy, LinkIcon, Timer, Gift, Users, CheckCircle2, ArrowRight } from "lucide-react"
+import { ArrowRight, LinkIcon } from "lucide-react"
 import { supabase } from "../supabase"
 
 export function TasksList({ tasks, type, user }) {
@@ -87,147 +87,111 @@ export function TasksList({ tasks, type, user }) {
 
   if (!tasks.length) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-gray-900/50 to-gray-800/50 rounded-xl border border-gray-800 backdrop-blur-sm">
-        <div className="text-center text-gray-400">
-          <div className="mb-4 flex justify-center">
-            {type === "limited" ? (
-              <Clock className="h-12 w-12 text-indigo-500/50" />
-            ) : type === "achievement" ? (
-              <Trophy className="h-12 w-12 text-amber-500/50" />
-            ) : (
-              <CheckCircle2 className="h-12 w-12 text-emerald-500/50" />
-            )}
-          </div>
-          <p className="text-lg font-medium mb-2 text-white">
-            {type === "limited"
-              ? "Сейчас нет доступных лимитированных заданий"
-              : type === "achievement"
-                ? "Нет доступных достижений"
-                : "Нет доступных заданий"}
-          </p>
-          <p className="text-sm text-gray-500">Загляните позже, чтобы увидеть новые задания</p>
-        </div>
+      <div className="text-center py-8 text-gray-400">
+        <p className="text-lg">
+          {type === "limited"
+            ? "Сейчас нет доступных лимитированных заданий"
+            : type === "achievement"
+              ? "Нет доступных достижений"
+              : "Нет доступных заданий"}
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="grid gap-4 animate-in fade-in-50 duration-500">
+    <div className="space-y-4">
       {tasks.map((task) => (
-        <div
-          key={task.id}
-          className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-900/50 to-gray-800/50 border border-gray-800 backdrop-blur-sm transition-all duration-300 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/10"
-        >
-          {/* Фоновый градиент */}
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div key={task.id} className="bg-gray-900 rounded-lg p-4">
+          <h3 className="text-lg font-medium text-white mb-2">{task.title}</h3>
+          <p className="text-gray-400 mb-4">{task.description}</p>
 
-          {/* Контент */}
-          <div className="relative p-6">
-            <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
-              <div>
-                <h3 className="text-xl font-semibold mb-2 text-white group-hover:text-indigo-400 transition-colors">
-                  {task.title}
-                </h3>
-                <p className="text-gray-400 leading-relaxed">{task.description}</p>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="flex items-center gap-1">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 2L15 8L21 9L17 14L18 20L12 17L6 20L7 14L3 9L9 8L12 2Z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className="text-blue-400">{task.reward} 💎</span>
+            </span>
+            <span className="text-gray-500 text-sm">•</span>
+            <span className="flex items-center gap-1 text-gray-400 text-sm">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M17 21V19C17 16.7909 15.2091 15 13 15H5C2.79086 15 1 16.7909 1 19V21"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+              Выполнили: {task.total_completions}
+            </span>
+          </div>
+
+          {task.user_status === "active" && verificationTimers[task.id] > 0 && (
+            <div className="mb-4">
+              <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 transition-all duration-1000"
+                  style={{ width: `${(verificationTimers[task.id] / 15) * 100}%` }}
+                />
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20">
-                <Gift className="w-5 h-5 text-indigo-400" />
-                <span className="text-lg font-semibold text-white">{task.reward} 💎</span>
-              </div>
+              <p className="text-center text-sm mt-2 text-gray-400">Проверка: {verificationTimers[task.id]} сек</p>
             </div>
+          )}
 
-            {/* Дополнительная информация */}
-            {task.type === "limited" && task.end_date && (
-              <div className="flex items-center gap-2 text-sm text-gray-400 p-3 rounded-lg bg-gray-900/50 border border-gray-800 mb-4">
-                <Timer className="w-4 h-4 text-indigo-400" />
-                <span>
-                  Доступно до:{" "}
-                  {new Date(task.end_date).toLocaleDateString("ru-RU", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
+          <div className="flex gap-2">
+            {!task.user_status && (
+              <>
+                <button
+                  onClick={() => window.open(task.link, "_blank")}
+                  disabled={processingTasks[task.id]}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-50"
+                >
+                  <LinkIcon className="w-4 h-4" />
+                  Перейти
+                </button>
+                <button
+                  onClick={() => startTask(task.id)}
+                  disabled={processingTasks[task.id]}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
+                >
+                  Начать
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </>
             )}
 
-            {task.type === "achievement" && (
-              <div className="p-3 rounded-lg bg-gray-900/50 border border-gray-800 mb-4">
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="font-medium text-white">Прогресс выполнения</span>
-                  <span className="text-gray-400">0/100</span>
-                </div>
-                <div className="h-2 rounded-full bg-gray-800 overflow-hidden">
-                  <div className="h-full w-0 bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300" />
-                </div>
-              </div>
+            {task.user_status === "active" && verificationTimers[task.id] === 0 && (
+              <button
+                onClick={() => completeTask(task.id)}
+                disabled={processingTasks[task.id]}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
+              >
+                Завершить
+              </button>
             )}
 
-            {task.user_status === "active" && verificationTimers[task.id] > 0 && (
-              <div className="p-3 rounded-lg bg-gray-900/50 border border-gray-800 mb-4">
-                <div className="h-2 rounded-full bg-gray-800 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
-                    style={{ width: `${(verificationTimers[task.id] / 15) * 100}%` }}
-                  />
-                </div>
-                <p className="text-center text-sm mt-2 font-medium text-gray-400">
-                  Проверка: {verificationTimers[task.id]} сек
-                </p>
-              </div>
+            {task.user_status === "completed" && !task.reward_claimed && (
+              <button
+                onClick={() => claimReward(task.id)}
+                disabled={processingTasks[task.id]}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
+              >
+                Получить награду 💎
+              </button>
             )}
-
-            {/* Нижняя часть карточки */}
-            <div className="flex flex-col sm:flex-row justify-between gap-4 mt-4 pt-4 border-t border-gray-800">
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Users className="w-4 h-4" />
-                <span>Выполнили: {task.total_completions}</span>
-              </div>
-
-              <div className="flex flex-wrap gap-2 sm:flex-nowrap">
-                {!task.user_status && (
-                  <>
-                    <button
-                      onClick={() => window.open(task.link, "_blank")}
-                      disabled={processingTasks[task.id]}
-                      className="px-4 py-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 group/button"
-                    >
-                      <LinkIcon className="w-4 h-4 group-hover/button:-translate-y-0.5 transition-transform" />
-                      Перейти
-                    </button>
-                    <button
-                      onClick={() => startTask(task.id)}
-                      disabled={processingTasks[task.id]}
-                      className="px-4 py-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 group/button"
-                    >
-                      Начать
-                      <ArrowRight className="w-4 h-4 group-hover/button:translate-x-0.5 transition-transform" />
-                    </button>
-                  </>
-                )}
-
-                {task.user_status === "active" && verificationTimers[task.id] === 0 && (
-                  <button
-                    onClick={() => completeTask(task.id)}
-                    disabled={processingTasks[task.id]}
-                    className="px-4 py-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Завершить
-                  </button>
-                )}
-
-                {task.user_status === "completed" && !task.reward_claimed && (
-                  <button
-                    onClick={() => claimReward(task.id)}
-                    disabled={processingTasks[task.id]}
-                    className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 group/button"
-                  >
-                    <Gift className="w-4 h-4 group-hover/button:scale-110 transition-transform" />
-                    Получить награду
-                  </button>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       ))}
