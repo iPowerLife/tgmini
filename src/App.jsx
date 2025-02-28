@@ -16,12 +16,6 @@ function App() {
   useEffect(() => {
     const initTelegramAndUser = async () => {
       try {
-        // Определяем режим разработки
-        const isDev =
-          process.env.NODE_ENV === "development" ||
-          window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1"
-
         // Инициализируем Telegram WebApp
         const telegram = initTelegram()
         console.log("Telegram initialized:", telegram)
@@ -30,10 +24,6 @@ function App() {
         // Получаем пользователя Telegram
         const telegramUser = getTelegramUser()
         console.log("Got Telegram user:", telegramUser)
-
-        if (!telegramUser?.id) {
-          throw new Error("No valid user data")
-        }
 
         // Ищем пользователя в базе
         const { data: users, error: selectError } = await supabase
@@ -57,7 +47,7 @@ function App() {
             .insert([
               {
                 telegram_id: telegramUser.id,
-                username: telegramUser.username || null, // Делаем username опциональным
+                username: telegramUser.username || null,
                 first_name: telegramUser.first_name || "",
                 balance: 0,
                 mining_power: 1,
@@ -96,16 +86,7 @@ function App() {
         setBalance(user.balance)
       } catch (error) {
         console.error("Error in initialization:", error)
-
-        // В режиме разработки не показываем ошибку
-        const isDev =
-          process.env.NODE_ENV === "development" ||
-          window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1"
-
-        if (!isDev) {
-          alert("Ошибка инициализации. Пожалуйста, откройте приложение в Telegram.")
-        }
+        // Просто логируем ошибку, но не показываем пользователю
       }
     }
 

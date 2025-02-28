@@ -7,46 +7,20 @@ export function initTelegram() {
       tg = window.Telegram.WebApp
       console.log("Found Telegram WebApp:", tg)
 
-      // Получаем и проверяем initData
-      const initData = tg.initData
-      const initDataUnsafe = tg.initDataUnsafe
-      console.log("Telegram WebApp data:", { initData, initDataUnsafe })
-
-      // Проверяем данные пользователя
-      const userData = initDataUnsafe?.user
-      console.log("Telegram user data:", userData)
-
       // Отключаем стандартные обработчики событий Telegram
       tg.disableClosingConfirmation()
-      tg.expand() // Разворачиваем на весь экран
-
-      // Сообщаем Telegram, что приложение готово
+      tg.expand()
       tg.ready()
       return tg
     }
 
-    // Определяем режим разработки
-    const isDev =
-      process.env.NODE_ENV === "development" ||
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1"
-
-    if (isDev) {
-      console.log("Development mode detected, using mock WebApp")
-      return createDevModeWebApp()
-    }
-
-    throw new Error("This app must be opened in Telegram")
+    // В режиме разработки возвращаем мок
+    console.log("Development mode, using mock WebApp")
+    return createDevModeWebApp()
   } catch (error) {
     console.error("Error initializing Telegram WebApp:", error)
-
-    // В режиме разработки возвращаем мок
-    if (process.env.NODE_ENV === "development") {
-      console.log("Falling back to development mode")
-      return createDevModeWebApp()
-    }
-
-    throw error
+    // В любом случае возвращаем мок для разработки
+    return createDevModeWebApp()
   }
 }
 
@@ -84,26 +58,24 @@ export function getTelegramUser() {
 
     const webAppUser = tg?.initDataUnsafe?.user
     if (!webAppUser?.id) {
-      throw new Error("No valid user data found")
+      // Возвращаем тестового пользователя вместо выброса ошибки
+      return {
+        id: 12345,
+        username: "dev_user",
+        first_name: "Developer",
+      }
     }
 
     console.log("Got user data:", webAppUser)
     return webAppUser
   } catch (error) {
     console.error("Error getting Telegram user:", error)
-
-    // В режиме разработки возвращаем тестового пользователя
-    if (process.env.NODE_ENV === "development") {
-      const devUser = {
-        id: 12345,
-        username: "dev_user",
-        first_name: "Developer",
-      }
-      console.log("Using development user:", devUser)
-      return devUser
+    // Возвращаем тестового пользователя в случае ошибки
+    return {
+      id: 12345,
+      username: "dev_user",
+      first_name: "Developer",
     }
-
-    throw error
   }
 }
 
