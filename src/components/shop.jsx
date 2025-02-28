@@ -12,10 +12,13 @@ export function Shop({ user, onPurchase }) {
 
   useEffect(() => {
     const loadShopData = async () => {
-      if (!user?.id) return // Проверяем наличие пользователя
+      if (!user?.id) {
+        console.log("No user data available")
+        return
+      }
 
       try {
-        console.log("Loading shop data...")
+        console.log("Loading shop data for user:", user.id)
         setLoading(true)
         setError(null)
 
@@ -30,8 +33,6 @@ export function Shop({ user, onPurchase }) {
           throw categoriesError
         }
 
-        console.log("Loaded categories:", categoriesData)
-
         // Загружаем модели
         const { data: modelsData, error: modelsError } = await supabase
           .from("miner_models")
@@ -43,6 +44,7 @@ export function Shop({ user, onPurchase }) {
           throw modelsError
         }
 
+        console.log("Loaded categories:", categoriesData)
         console.log("Loaded models:", modelsData)
 
         setCategories(categoriesData)
@@ -59,11 +61,25 @@ export function Shop({ user, onPurchase }) {
     }
 
     loadShopData()
-  }, [user?.id]) // Добавляем зависимость от user.id
+  }, [user?.id])
+
+  if (!user) {
+    return <div className="section-container">Загрузка...</div>
+  }
+
+  if (loading) {
+    return <div className="section-container">Загрузка магазина...</div>
+  }
+
+  if (error) {
+    return <div className="section-container error">{error}</div>
+  }
+
+  if (!categories.length || !models.length) {
+    return <div className="section-container">Товары в магазине отсутствуют</div>
+  }
 
   const handlePurchase = async (modelId) => {
-    if (!user?.id) return // Проверяем наличие пользователя
-
     try {
       setLoading(true)
       const { data, error } = await supabase.rpc("purchase_miner", {
@@ -86,22 +102,6 @@ export function Shop({ user, onPurchase }) {
     } finally {
       setLoading(false)
     }
-  }
-
-  if (!user) {
-    return <div className="section-container">Пользователь не найден</div>
-  }
-
-  if (loading && !models.length) {
-    return <div className="section-container">Загрузка магазина...</div>
-  }
-
-  if (error) {
-    return <div className="section-container error">{error}</div>
-  }
-
-  if (!categories.length || !models.length) {
-    return <div className="section-container">Товары в магазине отсутствуют</div>
   }
 
   return (

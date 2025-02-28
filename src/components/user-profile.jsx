@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
-import { useTelegramUser } from "../hooks/use-telegram-user"
 import { User } from "lucide-react"
 
-export function UserProfile() {
-  const telegramUser = useTelegramUser()
+export function UserProfile({ user }) {
   const [stats, setStats] = useState(null)
   const [miners, setMiners] = useState([])
   const [loading, setLoading] = useState(true)
@@ -14,7 +12,7 @@ export function UserProfile() {
 
   useEffect(() => {
     const loadUserData = async () => {
-      if (!telegramUser?.id) return
+      if (!user?.id) return
 
       try {
         setLoading(true)
@@ -24,7 +22,7 @@ export function UserProfile() {
         const { data: statsData, error: statsError } = await supabase
           .from("mining_stats")
           .select("*")
-          .eq("telegram_id", telegramUser.id)
+          .eq("user_id", user.id)
           .single()
 
         if (statsError && statsError.code !== "PGRST116") {
@@ -42,7 +40,7 @@ export function UserProfile() {
               mining_power
             )
           `)
-          .eq("telegram_id", telegramUser.id)
+          .eq("user_id", user.id)
 
         if (minersError) {
           console.error("Error loading miners:", minersError)
@@ -60,14 +58,14 @@ export function UserProfile() {
     }
 
     loadUserData()
-  }, [telegramUser?.id])
+  }, [user?.id])
 
-  if (!telegramUser) {
-    return <div className="section-container">Пользователь не найден</div>
+  if (!user) {
+    return <div className="section-container">Загрузка профиля...</div>
   }
 
   if (loading) {
-    return <div className="section-container">Загрузка профиля...</div>
+    return <div className="section-container">Загрузка данных...</div>
   }
 
   if (error) {
@@ -81,10 +79,10 @@ export function UserProfile() {
     <div className="profile-container">
       <div className="profile-header">
         <div className="avatar-container">
-          {telegramUser.photoUrl ? (
+          {user.photo_url ? (
             <img
-              src={telegramUser.photoUrl || "/placeholder.svg"}
-              alt={telegramUser.displayName}
+              src={user.photo_url || "/placeholder.svg"}
+              alt={user.username || user.first_name}
               className="avatar-image"
             />
           ) : (
@@ -94,8 +92,8 @@ export function UserProfile() {
           )}
         </div>
         <div className="user-info">
-          <h2>{telegramUser.displayName}</h2>
-          <p className="user-id">ID: {telegramUser.id}</p>
+          <h2>{user.username ? `@${user.username}` : user.first_name}</h2>
+          <p className="user-id">ID: {user.telegram_id}</p>
         </div>
       </div>
 

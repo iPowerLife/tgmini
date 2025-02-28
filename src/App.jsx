@@ -190,13 +190,16 @@ function App() {
     }
   }
 
-  // Функция для рендеринга контента в зависимости от активного раздела
+  // В функции renderContent обновляем логику отображения разделов
   const renderContent = () => {
+    if (!user) {
+      return <div className="section-container">Загрузка...</div>
+    }
+
     switch (activeSection) {
       case "home":
         return (
           <>
-            {/* Карточка баланса */}
             <div className="balance-card">
               <div className="balance-background" />
               <div className="balance-content">
@@ -227,7 +230,7 @@ function App() {
     }
   }
 
-  // В return добавляем BottomMenu и оборачиваем контент в контейнер
+  // В основном return обновляем структуру для гарантированного отображения меню
   return (
     <div className="app-wrapper">
       <div className="background-gradient" />
@@ -236,7 +239,17 @@ function App() {
 
       <div className="app-container">{renderContent()}</div>
 
+      {/* Меню всегда отображается, независимо от состояния контента */}
       <BottomMenu activeSection={activeSection} onSectionChange={setActiveSection} />
+
+      <style>
+        {`
+        .app-wrapper {
+          min-height: 100vh;
+          padding-bottom: 60px; /* Добавляем отступ для меню */
+        }
+      `}
+      </style>
     </div>
   )
 }
