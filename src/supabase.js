@@ -10,12 +10,32 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     autoRefreshToken: false,
     detectSessionInUrl: false,
   },
+  db: {
+    schema: "public",
+  },
   global: {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      Prefer: "return=minimal", // Добавляем этот заголовок
     },
   },
 })
+
+// Добавляем функцию для проверки подключения
+export async function checkSupabaseConnection() {
+  try {
+    const { data, error } = await supabase.from("users").select("count(*)", { count: "exact" }).limit(0)
+
+    if (error) {
+      console.error("Ошибка подключения к Supabase:", error)
+      return false
+    }
+
+    console.log("Подключение к Supabase успешно")
+    return true
+  } catch (error) {
+    console.error("Критическая ошибка при подключении к Supabase:", error)
+    return false
+  }
+}
 

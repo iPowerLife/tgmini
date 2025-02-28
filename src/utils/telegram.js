@@ -1,3 +1,5 @@
+"use client"
+
 // Функция для получения тестового пользователя
 function getTestUser() {
   console.log("Возвращаем тестового пользователя")
@@ -83,24 +85,49 @@ export function getTelegramUser() {
 
 // Функция для создания/обновления пользователя в базе
 export async function createOrUpdateUser(userData) {
-  console.log("Начинаем создание/обновление пользователя:", userData)
+  console.log("=== Начало createOrUpdateUser ===")
+  console.log("Входные данные:", userData)
 
   if (!userData) {
-    console.error("userData is null")
+    console.error("userData отсутствует")
     return null
   }
 
-  // Проверяем наличие id
   if (!userData.id) {
-    console.error("id не найден в данных пользователя:", userData)
+    console.error("id отсутствует в данных пользователя:", userData)
     return null
   }
 
   try {
     const supabase = (await import("../supabase")).supabase
+    console.log("Supabase клиент инициализирован")
 
-    // Сначала проверяем, существует ли пользователь
-    console.log("Проверяем существующего пользователя...")
+    // Проверяем подключение к базе данных
+    const { data: healthCheck, error: healthError } = await supabase
+      .from("users")
+      .select("count(*)", { count: "exact" })
+      .limit(0)
+
+    if (healthError) {
+      console.error("Ошибка подключения к базе данных:", healthError)
+      throw new Error("Ошибка подключения к базе данных")
+    }
+
+    console.log("Подключение к базе данных успешно")
+
+    // Подготавливаем данные пользователя
+    const userDataToSave = {
+      telegram_id: userData.id,
+      username: userData.username || null,
+      first_name: userData.first_name || "Неизвестно",
+      last_name: userData.last_name || null,
+      photo_url: userData.photo_url || null,
+      last_seen: new Date().toISOString(),
+    }
+
+    console.log("Подготовленные данные для сохранения:", userDataToSave)
+
+    // Пробуем найти существующего пользователя
     const { data: existingUser, error: selectError } = await supabase
       .from("users")
       .select("*")
@@ -109,65 +136,53 @@ export async function createOrUpdateUser(userData) {
 
     if (selectError && selectError.code !== "PGRST116") {
       console.error("Ошибка при поиске пользователя:", selectError)
-      throw selectError
+      throw new Error(`Ошибка при поиске пользователя: ${selectError.message}`)
     }
 
     let result
 
     if (existingUser) {
-      console.log("Найден существующий пользователь:", existingUser)
-      // Обновляем существующего пользователя
-      const { data, error: updateError } = await supabase
+      console.log("Обновляем существующего пользователя:", existingUser)
+
+      const { data: updatedUser, error: updateError } = await supabase
         .from("users")
-        .update({
-          username: userData.username,
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          photo_url: userData.photo_url,
-          last_seen: new Date().toISOString(),
-        })
+        .update(userDataToSave)
         .eq("telegram_id", userData.id)
         .select()
         .single()
 
       if (updateError) {
         console.error("Ошибка при обновлении пользователя:", updateError)
-        throw updateError
+        throw new Error(`Ошибка при обновлении пользователя: ${updateError.message}`)
       }
 
-      result = data
+      result = updatedUser
+      console.log("Пользователь успешно обновлен:", result)
     } else {
-      console.log("Создаем нового пользователя...")
-      // Создаем нового пользователя
-      const { data, error: insertError } = await supabase
-        .from("users")
-        .insert([
-          {
-            telegram_id: userData.id,
-            username: userData.username,
-            first_name: userData.first_name,
-            last_name: userData.last_name,
-            photo_url: userData.photo_url,
-            balance: 0,
-            mining_power: 1,
-            level: 1,
-            experience: 0,
-            next_level_exp: 100,
-            last_seen: new Date().toISOString(),
-          },
-        ])
-        .select()
-        .single()
+      console.log("Создаем нового пользователя")
+
+      // Добавляем начальные значения для нового пользователя
+      const newUserData = {
+        ...userDataToSave,
+        balance: 0,
+        mining_power: 1,
+        level: 1,
+        experience: 0,
+        next_level_exp: 100,
+      }
+
+      const { data: newUser, error: insertError } = await supabase.from("users").insert([newUserData]).select().single()
 
       if (insertError) {
         console.error("Ошибка при создании пользователя:", insertError)
-        throw insertError
+        throw new Error(`Ошибка при создании пользователя: ${insertError.message}`)
       }
 
-      result = data
+      result = newUser
+      console.log("Новый пользователь создан:", result)
 
       // Создаем запись в mining_stats
-      console.log("Создаем запись в mining_stats...")
+      console.log("Создаем запись в mining_stats")
       const { error: statsError } = await supabase.from("mining_stats").insert([
         {
           user_id: result.id,
@@ -178,17 +193,56 @@ export async function createOrUpdateUser(userData) {
 
       if (statsError) {
         console.error("Ошибка при создании mining_stats:", statsError)
-        throw statsError
+        throw new Error(`Ошибка при создании mining_stats: ${statsError.message}`)
       }
+
+      console.log("Mining stats успешно созданы")
     }
 
-    console.log("Пользователь успешно сохранен:", result)
+    console.log("=== Завершение createOrUpdateUser успешно ===")
     return result
   } catch (error) {
-    console.error("Ошибка в createOrUpdateUser:", error)
-    throw error
+    console.error("=== Ошибка в createOrUpdateUser ===")
+    console.error("Полная ошибка:", error)
+    throw new Error(error.message || "Неизвестная ошибка при сохранении пользователя")
   }
 }
 
-export function useTelegramUser() {}
+// Обновляем хук useTelegramUser
+import { useState, useEffect } from "react"
+
+export function useTelegramUser() {
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    const telegram = initTelegram()
+    if (telegram) {
+      const userData = getTelegramUser()
+      if (userData) {
+        setUser({
+          id: userData.id,
+          firstName: userData.first_name || "Неизвестно",
+          lastName: userData.last_name || null,
+          username: userData.username || null,
+          photoUrl: userData.photo_url || null,
+          displayName: userData.username
+            ? `@${userData.username}`
+            : userData.first_name
+              ? `${userData.first_name}${userData.last_name ? ` ${userData.last_name}` : ""}`
+              : "Неизвестный пользователь",
+        })
+      }
+    }
+  }, [])
+
+  return (
+    user || {
+      id: null,
+      firstName: "Неизвестно",
+      username: null,
+      photoUrl: null,
+      displayName: "Неизвестный пользователь",
+    }
+  )
+}
 
