@@ -7,12 +7,6 @@ export function initTelegram() {
       tg = window.Telegram.WebApp
       console.log("Found Telegram WebApp:", tg)
 
-      // Получаем все возможные данные
-      console.log("WebApp version:", tg.version)
-      console.log("WebApp platform:", tg.platform)
-      console.log("InitData:", tg.initData)
-      console.log("InitDataUnsafe:", tg.initDataUnsafe)
-
       // Настраиваем WebApp
       tg.expand()
       tg.ready()
@@ -20,7 +14,7 @@ export function initTelegram() {
       return tg
     }
 
-    console.log("Telegram WebApp not found")
+    console.log("Telegram WebApp not found, using development mode")
     return null
   } catch (error) {
     console.error("Error initializing Telegram:", error)
@@ -39,7 +33,7 @@ export function getTelegramUser() {
     // Пытаемся получить данные из Telegram WebApp
     if (window.Telegram?.WebApp) {
       const webAppUser = window.Telegram.WebApp.initDataUnsafe?.user
-      if (webAppUser) {
+      if (webAppUser?.id) {
         console.log("Got real Telegram user:", webAppUser)
         return {
           id: webAppUser.id,
@@ -72,11 +66,26 @@ export function getTelegramUser() {
       return userData
     }
 
-    // Если ничего не получилось, выбрасываем ошибку
-    throw new Error("Could not get user data")
+    // Для разработки возвращаем тестового пользователя
+    return {
+      id: 12345,
+      username: "testuser",
+      first_name: "Test",
+      last_name: "User",
+      language_code: "en",
+      photo_url: null,
+    }
   } catch (error) {
     console.error("Error getting Telegram user:", error)
-    throw error // Пробрасываем ошибку дальше, чтобы App мог её обработать
+    // Возвращаем тестового пользователя в случае ошибки
+    return {
+      id: 12345,
+      username: "testuser",
+      first_name: "Test",
+      last_name: "User",
+      language_code: "en",
+      photo_url: null,
+    }
   }
 }
 

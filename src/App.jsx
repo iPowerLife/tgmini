@@ -9,7 +9,7 @@ import { Shop } from "./components/shop"
 import { UserProfile } from "./components/user-profile"
 
 function App() {
-  const [tg, setTg] = useState(window.Telegram?.WebApp)
+  const [tg, setTg] = useState(null)
   const [user, setUser] = useState(null)
   const [balance, setBalance] = useState(0)
   const [activeSection, setActiveSection] = useState("home")
@@ -26,11 +26,6 @@ function App() {
         // Получаем пользователя Telegram
         const telegramUser = getTelegramUser()
         console.log("Got Telegram user:", telegramUser)
-
-        if (!telegramUser?.id) {
-          console.error("No valid user data received")
-          throw new Error("No valid user data")
-        }
 
         // Ищем пользователя в базе
         const { data: users, error: selectError } = await supabase
@@ -90,21 +85,8 @@ function App() {
           }
         }
 
-        // Обновляем данные пользователя из Telegram
-        const { error: updateError } = await supabase
-          .from("users")
-          .update({
-            username: telegramUser.username,
-            first_name: telegramUser.first_name,
-          })
-          .eq("id", user.id)
-
-        if (updateError) {
-          console.error("Error updating user data:", updateError)
-        }
-
         // Добавляем данные из Telegram к объекту пользователя
-        user = {
+        const fullUser = {
           ...user,
           photo_url: telegramUser.photo_url,
           username: telegramUser.username,
@@ -112,13 +94,27 @@ function App() {
           last_name: telegramUser.last_name,
         }
 
-        console.log("Setting user state:", user)
-        setUser(user)
+        console.log("Setting user state:", fullUser)
+        setUser(fullUser)
         setBalance(user.balance)
       } catch (error) {
         console.error("Error in initialization:", error)
-        // Больше не создаем тестового пользователя, вместо этого показываем ошибку
-        alert("Ошибка получения данных пользователя")
+        // В случае ошибки используем тестового пользователя
+        const telegramUser = getTelegramUser() // Получаем тестового пользователя
+        const testUser = {
+          id: "test-id",
+          telegram_id: telegramUser.id,
+          username: telegramUser.username,
+          first_name: telegramUser.first_name,
+          balance: 1000,
+          mining_power: 1,
+          level: 1,
+          experience: 0,
+          next_level_exp: 100,
+          photo_url: telegramUser.photo_url,
+        }
+        setUser(testUser)
+        setBalance(testUser.balance)
       }
     }
 
