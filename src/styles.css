@@ -751,3 +751,364 @@ button:not(:disabled):active {
   }
 }
 
+/* Добавляем стили для лидерборда */
+.leaderboard-container {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 24px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto 30px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.leaderboard-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.leaderboard-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #f8fafc;
+  text-align: center;
+}
+
+.timeframe-selector {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.timeframe-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.1);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.timeframe-btn.active {
+  background: rgba(99, 102, 241, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.leaderboard-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+}
+
+.leaderboard-item.current-user {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.5);
+  font-weight: bold;
+  color: #f8fafc;
+}
+
+.rank-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.rank-icon.gold {
+  color: #fbbf24;
+}
+
+.rank-icon.silver {
+  color: #94a3b8;
+}
+
+.rank-icon.bronze {
+  color: #b45309;
+}
+
+.rank-number {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #f8fafc;
+}
+
+.user-level {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.user-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.balance {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.mining-power {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 0;
+  color: #94a3b8;
+}
+
+/* Медиа-запросы для адаптивности */
+@media (max-width: 480px) {
+  .leaderboard-item {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .rank {
+    width: 30px;
+    height: 30px;
+  }
+
+  .user-name {
+    font-size: 14px;
+  }
+
+  .balance {
+    font-size: 14px;
+  }
+
+  .timeframe-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+/* Добавляем стили для раздела заданий */
+.tasks-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Стили для вкладок */
+.tabs-list {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  background: rgba(30, 41, 59, 0.7);
+  padding: 8px;
+  border-radius: 12px;
+}
+
+.tab-trigger {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.tab-trigger[data-state="active"] {
+  background: rgba(99, 102, 241, 0.2);
+  color: white;
+}
+
+/* Стили для карточек заданий */
+.task-card {
+  background: rgba(30, 41, 59, 0.7);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.task-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+}
+
+.task-reward {
+  font-size: 20px;
+  color: #4ade80;
+}
+
+.task-description {
+  color: #94a3b8;
+  margin-bottom: 16px;
+}
+
+.task-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.task-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Стили для прогресс-бара */
+.progress-wrapper {
+  margin: 16px 0;
+}
+
+.progress-bar {
+  height: 4px;
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-value {
+  height: 100%;
+  background: rgb(99, 102, 241);
+  transition: width 0.3s ease;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* Стили для тестов */
+.quiz-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.quiz-progress {
+  margin-bottom: 24px;
+}
+
+.quiz-question {
+  margin-bottom: 24px;
+}
+
+.quiz-answers {
+  display: grid;
+  gap: 12px;
+}
+
+.answer-button {
+  width: 100%;
+  text-align: left;
+  padding: 12px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.answer-button:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.answer-button.selected {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgb(99, 102, 241);
+}
+
+/* Медиа-запросы для адаптивности */
+@media (max-width: 640px) {
+  .tasks-container {
+    padding: 16px;
+  }
+
+  .task-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .task-footer {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .task-actions {
+    width: 100%;
+  }
+
+  .task-actions button {
+    flex: 1;
+  }
+}
+

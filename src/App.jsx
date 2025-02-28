@@ -6,6 +6,7 @@ import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
 import { UserProfile } from "./components/user-profile"
+import { TasksSection } from "./components/tasks-section"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -140,7 +141,7 @@ function App() {
       case "shop":
         return <Shop user={user} onPurchase={(newBalance) => setBalance(newBalance)} />
       case "tasks":
-        return <div className="section-container">Раздел заданий в разработке</div>
+        return <TasksSection user={user} />
       case "rating":
         return <div className="section-container">Раздел рейтинга в разработке</div>
       case "profile":
