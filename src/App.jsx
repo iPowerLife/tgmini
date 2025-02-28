@@ -41,18 +41,20 @@ function App() {
         }
 
         console.log("Database query result:", users)
-        let user = users?.[0] // Используем первый элемент массива вместо .single()
+        let user = users?.[0]
 
         // Если пользователя нет, создаем
         if (!user) {
           console.log("Creating new user with data:", telegramUser)
+
+          // Создаем пользователя с данными из Telegram
           const { data: newUsers, error: createError } = await supabase
             .from("users")
             .insert([
               {
                 telegram_id: telegramUser.id,
-                username: telegramUser.username || null,
-                first_name: telegramUser.first_name || "",
+                username: telegramUser.username || null, // Используем реальный username или null
+                first_name: telegramUser.first_name || "", // Используем реальное имя
                 balance: 0,
                 mining_power: 1,
                 level: 1,
@@ -68,7 +70,7 @@ function App() {
           }
 
           console.log("Created new user:", newUsers)
-          user = newUsers[0] // Используем первый элемент массива
+          user = newUsers[0]
 
           // Создаем запись в mining_stats
           const { error: statsError } = await supabase.from("mining_stats").insert([
@@ -90,23 +92,8 @@ function App() {
         setBalance(user.balance)
       } catch (error) {
         console.error("Error in initialization:", error)
-        // В режиме разработки создаем тестового пользователя
-        if (process.env.NODE_ENV === "development") {
-          console.log("Creating test user in development mode")
-          const testUser = {
-            id: "test-id",
-            telegram_id: 12345,
-            username: "dev_user",
-            first_name: "Developer",
-            balance: 0,
-            mining_power: 1,
-            level: 1,
-            experience: 0,
-            next_level_exp: 100,
-          }
-          setUser(testUser)
-          setBalance(0)
-        }
+        // Больше не создаем тестового пользователя при ошибке
+        throw error
       }
     }
 

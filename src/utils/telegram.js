@@ -2,7 +2,7 @@ let tg = null
 
 export function initTelegram() {
   try {
-    // 1. Проверяем наличие Telegram WebApp
+    // Проверяем, запущено ли приложение в Telegram
     if (window.Telegram?.WebApp) {
       tg = window.Telegram.WebApp
       console.log("Found Telegram WebApp:", tg)
@@ -36,50 +36,33 @@ export function getTelegramUser() {
       tg = initTelegram()
     }
 
-    // 2. Пытаемся получить данные разными способами
-    let userData = null
-
-    // Способ 1: Через window.Telegram.WebApp напрямую
-    if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-      userData = window.Telegram.WebApp.initDataUnsafe.user
-      console.log("Got user data from window.Telegram.WebApp:", userData)
-    }
-    // Способ 2: Через наш tg объект
-    else if (tg?.initDataUnsafe?.user) {
-      userData = tg.initDataUnsafe.user
-      console.log("Got user data from tg object:", userData)
-    }
-    // Способ 3: Через параметры URL (для тестирования)
-    else {
-      const urlParams = new URLSearchParams(window.location.search)
-      const userId = urlParams.get("userId")
-      const username = urlParams.get("username")
-
-      if (userId) {
-        userData = {
-          id: Number.parseInt(userId),
-          username: username || `user_${userId}`,
-          first_name: username || `User ${userId}`,
-        }
-        console.log("Got user data from URL params:", userData)
-      } else {
-        // Создаем тестового пользователя для разработки
-        const testUserId = Math.floor(Math.random() * 1000000) + 1
-        userData = {
-          id: testUserId,
-          username: `dev_user_${testUserId}`,
-          first_name: `Developer ${testUserId}`,
-        }
-        console.log("Created test user for development:", userData)
+    // 2. Пытаемся получить данные из Telegram WebApp
+    if (window.Telegram?.WebApp) {
+      const webAppUser = window.Telegram.WebApp.initDataUnsafe?.user
+      if (webAppUser?.id) {
+        console.log("Got real Telegram user:", webAppUser)
+        return webAppUser
       }
     }
 
-    // 3. Проверяем полученные данные
-    if (!userData?.id) {
-      throw new Error("No valid user data")
+    // 3. Пытаемся получить данные из URL параметров
+    const urlParams = new URLSearchParams(window.location.search)
+    const userId = urlParams.get("userId")
+    const username = urlParams.get("username")
+    const firstName = urlParams.get("first_name")
+
+    if (userId) {
+      const userData = {
+        id: Number.parseInt(userId),
+        username: username || null,
+        first_name: firstName || null,
+      }
+      console.log("Got user data from URL params:", userData)
+      return userData
     }
 
-    return userData
+    // 4. Если ничего не получилось, выбрасываем ошибку
+    throw new Error("Could not get user data")
   } catch (error) {
     console.error("Error getting Telegram user:", error)
     throw error
