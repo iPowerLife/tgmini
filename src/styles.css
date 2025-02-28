@@ -986,11 +986,90 @@ button:not(:disabled):active {
 }
 
 /* Добавляем стили для раздела заданий */
-.tasks-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-  animation: slideIn 0.3s ease-out;
+@layer components {
+  .tasks-container {
+    @apply flex-1 flex flex-col bg-[#0f172a];
+  }
+
+  .tasks-header {
+    @apply px-5 pt-4 pb-3;
+  }
+
+  .tasks-title {
+    @apply text-[17px] font-semibold text-white;
+  }
+
+  .tasks-subtitle {
+    @apply text-[13px] text-gray-400 mt-0.5;
+  }
+
+  .tasks-tabs {
+    @apply flex gap-1 p-1 bg-[#1e293b]/80 rounded-xl mx-3;
+  }
+
+  .task-tab {
+    @apply flex-1 py-1.5 text-[13px] font-medium rounded-lg transition-all duration-200;
+  }
+
+  .task-tab-active {
+    @apply bg-[#3b82f6] text-white shadow-lg shadow-blue-500/25;
+  }
+
+  .task-tab-inactive {
+    @apply text-gray-400 hover:text-white/90 hover:bg-white/5;
+  }
+
+  .tasks-list {
+    @apply flex-1 overflow-auto pb-20;
+  }
+
+  .task-card {
+    @apply bg-[#1e293b]/80 rounded-xl p-3.5 space-y-3 transition-all duration-200 active:scale-[0.98];
+  }
+
+  .task-card-title {
+    @apply text-[15px] text-white font-medium leading-snug;
+  }
+
+  .task-card-description {
+    @apply text-[13px] text-gray-400 mt-1 leading-snug;
+  }
+
+  .task-card-reward {
+    @apply flex items-center gap-1;
+  }
+
+  .task-card-reward-amount {
+    @apply text-[15px] font-semibold text-blue-400;
+  }
+
+  .task-card-actions {
+    @apply flex gap-2;
+  }
+
+  .task-button {
+    @apply flex items-center gap-1.5 px-3 h-8 rounded-lg text-[13px] font-medium transition-colors disabled:opacity-50;
+  }
+
+  .task-button-primary {
+    @apply bg-[#3b82f6] text-white hover:bg-blue-500 disabled:hover:bg-[#3b82f6];
+  }
+
+  .task-button-secondary {
+    @apply bg-white/5 text-white hover:bg-white/10 disabled:hover:bg-white/5;
+  }
+
+  .task-progress {
+    @apply h-1 bg-white/5 rounded-full overflow-hidden;
+  }
+
+  .task-progress-bar {
+    @apply h-full bg-[#3b82f6] transition-all duration-1000;
+  }
+
+  .task-progress-text {
+    @apply text-center text-[13px] text-gray-400 mt-1.5;
+  }
 }
 
 /* Стили для вкладок */

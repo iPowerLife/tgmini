@@ -92,7 +92,7 @@ export function TasksList({ tasks, type, user }) {
   if (!tasks.length) {
     return (
       <div className="flex items-center justify-center p-4">
-        <div className="text-sm text-gray-400">
+        <div className="text-[13px] text-gray-400">
           {type === "limited"
             ? "Сейчас нет доступных лимитированных заданий"
             : type === "achievement"
@@ -104,17 +104,21 @@ export function TasksList({ tasks, type, user }) {
   }
 
   return (
-    <div className="p-4 space-y-3">
+    <div className="px-5 pt-3 space-y-3">
       {tasks.map((task) => (
-        <div key={task.id} className="bg-gray-900/50 rounded-lg p-4 space-y-3">
+        <div
+          key={task.id}
+          className="bg-[#1e293b]/80 rounded-xl p-3.5 space-y-3 transition-all duration-200 active:scale-[0.98]"
+        >
           <div>
-            <h3 className="text-base text-white font-medium">{task.title}</h3>
-            <p className="text-sm text-gray-400 mt-1">{task.description}</p>
+            <h3 className="text-[15px] text-white font-medium leading-snug">{task.title}</h3>
+            <p className="text-[13px] text-gray-400 mt-1 leading-snug">{task.description}</p>
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-base font-medium text-blue-400">{task.reward} 💎</span>
+            <div className="flex items-center gap-1">
+              <span className="text-[15px] font-semibold text-blue-400">{task.reward}</span>
+              <span className="text-[15px]">💎</span>
             </div>
 
             {!task.user_status && (
@@ -123,7 +127,7 @@ export function TasksList({ tasks, type, user }) {
                   <button
                     onClick={() => window.open(task.link, "_blank")}
                     disabled={processingTasks[task.id]}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 text-sm text-white hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-white/5 text-[13px] font-medium text-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:hover:bg-white/5"
                   >
                     <LinkIcon className="w-4 h-4" />
                     Перейти
@@ -132,7 +136,7 @@ export function TasksList({ tasks, type, user }) {
                 <button
                   onClick={() => startTask(task.id)}
                   disabled={processingTasks[task.id]}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500 text-sm text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#3b82f6] text-[13px] font-medium text-white hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:hover:bg-[#3b82f6]"
                 >
                   Начать
                   <ArrowRight className="w-4 h-4" />
@@ -144,7 +148,7 @@ export function TasksList({ tasks, type, user }) {
               <button
                 onClick={() => completeTask(task.id)}
                 disabled={processingTasks[task.id]}
-                className="px-3 py-1.5 rounded-lg bg-blue-500 text-sm text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
+                className="px-3 h-8 rounded-lg bg-[#3b82f6] text-[13px] font-medium text-white hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:hover:bg-[#3b82f6]"
               >
                 Завершить
               </button>
@@ -154,7 +158,7 @@ export function TasksList({ tasks, type, user }) {
               <button
                 onClick={() => claimReward(task.id)}
                 disabled={processingTasks[task.id]}
-                className="px-3 py-1.5 rounded-lg bg-blue-500 text-sm text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
+                className="px-3 h-8 rounded-lg bg-[#3b82f6] text-[13px] font-medium text-white hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:hover:bg-[#3b82f6]"
               >
                 Получить награду
               </button>
@@ -163,13 +167,15 @@ export function TasksList({ tasks, type, user }) {
 
           {task.user_status === "active" && verificationTimers[task.id] > 0 && (
             <div>
-              <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-1 bg-white/5 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-blue-500 transition-all duration-1000"
+                  className="h-full bg-[#3b82f6] transition-all duration-1000"
                   style={{ width: `${(verificationTimers[task.id] / 15) * 100}%` }}
                 />
               </div>
-              <p className="text-center text-sm text-gray-400 mt-1">Проверка: {verificationTimers[task.id]} сек</p>
+              <p className="text-center text-[13px] text-gray-400 mt-1.5">
+                Проверка: {verificationTimers[task.id]} сек
+              </p>
             </div>
           )}
         </div>

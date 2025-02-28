@@ -75,40 +75,40 @@ export function TasksSection({ user }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="px-4 py-3">
-        <h1 className="text-lg font-medium text-white mb-1">Задания</h1>
-        <p className="text-sm text-gray-400">Выполняйте задания и получайте награды</p>
+    <div className="flex-1 flex flex-col bg-[#0f172a]">
+      <div className="px-5 pt-4 pb-3">
+        <h1 className="text-[17px] font-semibold text-white">Задания</h1>
+        <p className="text-[13px] text-gray-400 mt-0.5">Выполняйте задания и получайте награды</p>
       </div>
 
-      <div className="px-4 mb-2">
-        <div className="flex gap-2 p-1 bg-gray-800/50 backdrop-blur-sm rounded-xl">
+      <div className="px-2">
+        <div className="flex gap-1 p-1 bg-[#1e293b]/80 rounded-xl mx-3">
           <button
             onClick={() => setActiveTab("basic")}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
+            className={`flex-1 py-1.5 text-[13px] font-medium rounded-lg transition-all duration-200 ${
               activeTab === "basic"
-                ? "bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-white shadow-lg shadow-blue-500/20 border border-blue-500/20 scale-[1.02]"
-                : "text-gray-400 hover:text-white hover:bg-white/5"
+                ? "bg-[#3b82f6] text-white shadow-lg shadow-blue-500/25"
+                : "text-gray-400 hover:text-white/90 hover:bg-white/5"
             }`}
           >
             Основные
           </button>
           <button
             onClick={() => setActiveTab("limited")}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
+            className={`flex-1 py-1.5 text-[13px] font-medium rounded-lg transition-all duration-200 ${
               activeTab === "limited"
-                ? "bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-white shadow-lg shadow-blue-500/20 border border-blue-500/20 scale-[1.02]"
-                : "text-gray-400 hover:text-white hover:bg-white/5"
+                ? "bg-[#3b82f6] text-white shadow-lg shadow-blue-500/25"
+                : "text-gray-400 hover:text-white/90 hover:bg-white/5"
             }`}
           >
             Лимитированные
           </button>
           <button
             onClick={() => setActiveTab("achievement")}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
+            className={`flex-1 py-1.5 text-[13px] font-medium rounded-lg transition-all duration-200 ${
               activeTab === "achievement"
-                ? "bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-white shadow-lg shadow-blue-500/20 border border-blue-500/20 scale-[1.02]"
-                : "text-gray-400 hover:text-white hover:bg-white/5"
+                ? "bg-[#3b82f6] text-white shadow-lg shadow-blue-500/25"
+                : "text-gray-400 hover:text-white/90 hover:bg-white/5"
             }`}
           >
             Достижения
@@ -116,7 +116,7 @@ export function TasksSection({ user }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto pb-20">
         <TasksList tasks={tasks[activeTab]} type={activeTab} user={user} />
       </div>
     </div>
