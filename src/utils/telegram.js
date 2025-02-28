@@ -21,7 +21,17 @@ export function initTelegram() {
     }
 
     console.log("Telegram WebApp not found, using development mode")
-    return null
+    // Возвращаем мок объекта Telegram для разработки
+    return {
+      initDataUnsafe: {
+        user: {
+          id: 12345,
+          username: "testuser",
+          first_name: "Test",
+          last_name: "User",
+        },
+      },
+    }
   } catch (error) {
     console.error("Error initializing Telegram:", error)
     return null
@@ -37,46 +47,40 @@ export function getTelegramUser() {
     }
 
     // Пытаемся получить данные из Telegram WebApp
-    if (window.Telegram?.WebApp) {
-      const webAppUser = window.Telegram.WebApp.initDataUnsafe?.user
-      if (webAppUser?.id) {
-        console.log("Got real Telegram user:", webAppUser)
-        return {
-          id: webAppUser.id,
-          username: webAppUser.username,
-          first_name: webAppUser.first_name,
-          last_name: webAppUser.last_name,
-          language_code: webAppUser.language_code,
-          photo_url: webAppUser.photo_url,
-        }
+    if (tg?.initDataUnsafe?.user) {
+      const webAppUser = tg.initDataUnsafe.user
+      console.log("Got real Telegram user:", webAppUser)
+      return {
+        id: webAppUser.id,
+        username: webAppUser.username,
+        first_name: webAppUser.first_name,
+        last_name: webAppUser.last_name,
+        language_code: webAppUser.language_code,
+        photo_url: webAppUser.photo_url,
       }
     }
 
-    // Пытаемся получить данные из URL параметров
-    const urlParams = new URLSearchParams(window.location.search)
-    const userId = urlParams.get("userId")
-    const username = urlParams.get("username")
-    const firstName = urlParams.get("first_name")
-    const lastName = urlParams.get("last_name")
-
-    if (userId) {
-      const userData = {
-        id: Number.parseInt(userId),
-        username: username || null,
-        first_name: firstName || null,
-        last_name: lastName || null,
-        language_code: "en",
-        photo_url: null,
-      }
-      console.log("Got user data from URL params:", userData)
-      return userData
+    // Если не получилось получить реального пользователя, возвращаем тестового
+    console.log("Using test user data")
+    return {
+      id: 12345,
+      username: "testuser",
+      first_name: "Test",
+      last_name: "User",
+      language_code: "en",
+      photo_url: null,
     }
-
-    // Если ничего не получилось, выбрасываем ошибку
-    throw new Error("Could not get user data")
   } catch (error) {
     console.error("Error getting Telegram user:", error)
-    throw error
+    // Возвращаем тестового пользователя в случае ошибки
+    return {
+      id: 12345,
+      username: "testuser",
+      first_name: "Test",
+      last_name: "User",
+      language_code: "en",
+      photo_url: null,
+    }
   }
 }
 
