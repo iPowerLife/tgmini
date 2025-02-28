@@ -30,7 +30,6 @@ export function MinersList({ user }) {
 
         setMiners(data)
 
-        // Подсчитываем общую мощность
         const power = data.reduce((sum, miner) => sum + miner.model.mining_power * miner.quantity, 0)
         setTotalPower(power)
       } catch (error) {
@@ -40,8 +39,10 @@ export function MinersList({ user }) {
       }
     }
 
-    loadMiners()
-  }, [user.id])
+    if (user?.id) {
+      loadMiners()
+    }
+  }, [user?.id])
 
   if (loading) {
     return <div>Загрузка майнеров...</div>
@@ -64,48 +65,6 @@ export function MinersList({ user }) {
           </div>
         ))}
       </div>
-
-      <style jsx>{`
-        .miners-container {
-          padding: 20px;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-
-        .total-power {
-          font-size: 1.2em;
-          color: #4ade80;
-          text-align: center;
-          margin-bottom: 20px;
-        }
-
-        .miners-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-          gap: 20px;
-        }
-
-        .miner-card {
-          background: rgba(30, 41, 59, 0.7);
-          border-radius: 12px;
-          padding: 20px;
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(99, 102, 241, 0.1);
-        }
-
-        .miner-card h3 {
-          margin: 0 0 10px 0;
-          color: #f8fafc;
-        }
-
-        .stats {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-          font-size: 0.9em;
-          color: #94a3b8;
-        }
-      `}</style>
     </div>
   )
 }
