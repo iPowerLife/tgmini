@@ -16,24 +16,32 @@ export function initTelegram() {
       return tg
     }
 
-    // Режим разработки - возвращаем мок объект
-    console.log("Development mode: using mock Telegram WebApp")
-    return {
-      initDataUnsafe: {
-        user: {
-          id: 123456789,
-          username: "dev_user",
-          first_name: "Developer",
+    // Режим разработки - проверяем URL параметры
+    const urlParams = new URLSearchParams(window.location.search)
+    const devMode = urlParams.get("dev") === "true"
+
+    if (devMode) {
+      console.log("Development mode: using mock Telegram WebApp")
+      return {
+        initDataUnsafe: {
+          user: {
+            id: Number(urlParams.get("userId")) || 123456789,
+            username: urlParams.get("username") || "dev_user",
+            first_name: urlParams.get("firstName") || "Developer",
+          },
         },
-      },
-      ready: () => console.log("Mock ready called"),
-      disableClosingConfirmation: () => console.log("Mock disableClosingConfirmation called"),
-      expand: () => console.log("Mock expand called"),
-      MainButton: {
-        show: () => console.log("Mock show called"),
-        hide: () => console.log("Mock hide called"),
-      },
+        ready: () => console.log("Mock ready called"),
+        disableClosingConfirmation: () => console.log("Mock disableClosingConfirmation called"),
+        expand: () => console.log("Mock expand called"),
+        MainButton: {
+          show: () => console.log("Mock show called"),
+          hide: () => console.log("Mock hide called"),
+        },
+      }
     }
+
+    // Если не режим разработки и нет Telegram WebApp, выводим ошибку
+    throw new Error("Telegram WebApp not found and not in development mode")
   } catch (error) {
     console.error("Error initializing Telegram WebApp:", error)
     return null
@@ -42,6 +50,7 @@ export function initTelegram() {
 
 export function getTelegramUser() {
   try {
+    // Пытаемся получить пользователя из Telegram WebApp
     const webAppUser = tg?.initDataUnsafe?.user
     if (webAppUser) {
       return webAppUser
@@ -49,30 +58,21 @@ export function getTelegramUser() {
 
     // Проверяем URL параметры для режима разработки
     const urlParams = new URLSearchParams(window.location.search)
-    const userId = urlParams.get("userId")
-    const username = urlParams.get("username")
+    const devMode = urlParams.get("dev") === "true"
 
-    if (userId) {
+    if (devMode) {
       return {
-        id: Number.parseInt(userId),
-        username: username || "user",
-        first_name: username || "User",
+        id: Number(urlParams.get("userId")) || 123456789,
+        username: urlParams.get("username") || "dev_user",
+        first_name: urlParams.get("firstName") || "Developer",
       }
     }
 
-    // Возвращаем тестового пользователя
-    return {
-      id: 123456789,
-      username: "test_user",
-      first_name: "Test",
-    }
+    // Если не режим разработки и нет пользователя, выводим ошибку
+    throw new Error("No Telegram user found and not in development mode")
   } catch (error) {
     console.error("Error getting Telegram user:", error)
-    return {
-      id: 123456789,
-      username: "test_user",
-      first_name: "Test",
-    }
+    return null
   }
 }
 
