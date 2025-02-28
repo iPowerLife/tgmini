@@ -354,3 +354,179 @@ button:not(:disabled):active {
   transform: translateY(0);
 }
 
+/* Добавляем в конец файла стили для нижнего меню */
+
+.bottom-menu {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(99, 102, 241, 0.1);
+  padding: 8px 0;
+  z-index: 1000;
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  color: #94a3b8;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  width: 25%;
+}
+
+.menu-item::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 20px;
+  height: 3px;
+  background: rgb(99, 102, 241);
+  border-radius: 3px;
+  transition: transform 0.3s ease;
+}
+
+.menu-item.active {
+  color: rgb(99, 102, 241);
+}
+
+.menu-item.active::after {
+  transform: translateX(-50%) scaleX(1);
+}
+
+.menu-icon {
+  transition: transform 0.3s ease;
+}
+
+.menu-item:hover .menu-icon {
+  transform: translateY(-2px);
+}
+
+.menu-label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Добавляем отступ для контента, чтобы он не перекрывался с меню */
+.app-container {
+  padding-bottom: 80px;
+}
+
+/* Анимация для активного состояния */
+@keyframes menuItemActivate {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.menu-item.active .menu-icon {
+  animation: menuItemActivate 0.3s ease;
+}
+
+/* Добавляем новые стили */
+
+.section-container {
+  padding: 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 1.2em;
+}
+
+.shop-button {
+  padding: 10px 20px;
+  background: rgba(99, 102, 241, 0.9);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.shop-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+.background-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15), transparent);
+  animation: pulse 8s ease-in-out infinite;
+  z-index: 1;
+}
+
+.decorative-circle-1 {
+  position: absolute;
+  top: 10%;
+  left: 10%;
+  width: 200px;
+  height: 200px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 50%;
+  animation: rotate 20s linear infinite;
+  z-index: 1;
+}
+
+.decorative-circle-2 {
+  position: absolute;
+  bottom: 10%;
+  right: 10%;
+  width: 150px;
+  height: 150px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 50%;
+  animation: rotate 15s linear infinite reverse;
+  z-index: 1;
+}
+
+.app-container {
+  position: relative;
+  z-index: 2;
+  padding: 20px;
+  padding-bottom: 80px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Медиа-запрос для маленьких экранов */
+@media (max-width: 480px) {
+  .menu-label {
+    font-size: 10px;
+  }
+
+  .menu-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .bottom-menu {
+    padding: 4px 0;
+  }
+
+  .menu-item {
+    padding: 6px 12px;
+  }
+}
+

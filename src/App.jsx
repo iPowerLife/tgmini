@@ -7,6 +7,8 @@ import { initTelegram, getTelegramUser } from "./utils/telegram"
 import { Shop } from "./components/shop"
 import { MinersList } from "./components/miners-list"
 import { UserProfile } from "./components/user-profile"
+// В начале файла добавляем импорт
+import { BottomMenu } from "./components/bottom-menu"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -17,6 +19,8 @@ function App() {
   const [tg, setTg] = useState(null)
   // В компоненте App добавляем состояние для отображения магазина
   const [showShop, setShowShop] = useState(false)
+  // В компоненте App добавляем состояние для активного раздела
+  const [activeSection, setActiveSection] = useState("home")
 
   // Инициализируем Telegram WebApp
   useEffect(() => {
@@ -186,17 +190,219 @@ function App() {
     }
   }
 
+  // Функция для рендеринга контента в зависимости от активного раздела
+  const renderContent = () => {
+    switch (activeSection) {
+      case "home":
+        return (
+          <>
+            {/* Карточка баланса */}
+            <div
+              style={{
+                backgroundColor: "rgba(30, 41, 59, 0.7)",
+                backdropFilter: "blur(10px)",
+                padding: "30px",
+                borderRadius: "20px",
+                marginBottom: "30px",
+                width: "300px",
+                boxShadow: "20px 20px 60px #1a1b1e, -20px -20px 60px #1e293b",
+                border: "1px solid rgba(99, 102, 241, 0.1)",
+                position: "relative",
+                overflow: "hidden",
+              }}
+              className="balance-card"
+            >
+              {/* Футуристический фон карточки */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: "linear-gradient(45deg, rgba(99, 102, 241, 0.05), rgba(99, 102, 241, 0.1))",
+                  zIndex: 1,
+                }}
+              />
+
+              <div
+                style={{
+                  position: "relative",
+                  zIndex: 2,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.9em",
+                    color: "#94a3b8",
+                    marginBottom: "10px",
+                    textTransform: "uppercase",
+                    letterSpacing: "2px",
+                  }}
+                >
+                  Баланс
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    fontSize: "2.5em",
+                    fontWeight: "bold",
+                    color: "#f8fafc",
+                    textShadow: "0 0 10px rgba(99, 102, 241, 0.5)",
+                  }}
+                >
+                  <span style={{ position: "relative" }}>
+                    {balance.toFixed(2)}
+                    {showIncrease && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: "-20px",
+                          right: "-20px",
+                          color: "#4ade80",
+                          fontSize: "0.5em",
+                          animation: "fadeUp 1s ease-out",
+                        }}
+                      >
+                        +1
+                      </span>
+                    )}
+                  </span>
+                  <span style={{ fontSize: "0.8em" }}>💎</span>
+                </div>
+              </div>
+            </div>
+
+            {showShop ? (
+              <Shop user={user} onPurchase={(newBalance) => setBalance(newBalance)} />
+            ) : (
+              <>
+                <MinersList user={user} />
+                <div style={{ position: "relative" }}>
+                  {/* Частицы */}
+                  {particles.map((particle) => (
+                    <div
+                      key={particle.id}
+                      style={{
+                        position: "absolute",
+                        left: particle.x,
+                        top: particle.y,
+                        width: "8px",
+                        height: "8px",
+                        backgroundColor: "#4ade80",
+                        borderRadius: "50%",
+                        transform: `translate(-50%, -50%)`,
+                        animation: "particle 1s ease-out forwards",
+                        zIndex: 3,
+                      }}
+                    />
+                  ))}
+
+                  <button
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }}
+                    onClick={handleMining}
+                    disabled={isMining}
+                    style={{
+                      width: "300px",
+                      padding: "20px",
+                      backgroundColor: isMining ? "#1f2937" : "rgba(99, 102, 241, 0.9)",
+                      border: "none",
+                      borderRadius: "15px",
+                      color: "white",
+                      fontSize: "18px",
+                      fontWeight: "600",
+                      cursor: isMining ? "not-allowed" : "pointer",
+                      transition: "all 0.3s ease",
+                      position: "relative",
+                      overflow: "hidden",
+                      boxShadow: isMining
+                        ? "none"
+                        : "0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(99, 102, 241, 0.2)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: "linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent)",
+                        animation: isMining ? "none" : "shine 2s infinite",
+                      }}
+                    />
+
+                    {/* Анимация загрузки */}
+                    {isMining && (
+                      <div className="mining-animation">
+                        <svg
+                          viewBox="0 0 24 24"
+                          style={{
+                            position: "absolute",
+                            left: "50%",
+                            top: "50%",
+                            transform: "translate(-50%, -50%)",
+                            width: "24px",
+                            height: "24px",
+                          }}
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                            opacity="0.2"
+                          />
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                            strokeDasharray="62.83185307179586"
+                            strokeLinecap="round"
+                            className="spinner"
+                          />
+                        </svg>
+                      </div>
+                    )}
+
+                    <span style={{ position: "relative", zIndex: 2, opacity: isMining ? 0 : 1 }}>
+                      {isMining ? "Майнинг..." : "Майнить ⛏️"}
+                    </span>
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )
+      case "tasks":
+        return <div className="section-container">Раздел заданий в разработке</div>
+      case "rating":
+        return <div className="section-container">Раздел рейтинга в разработке</div>
+      case "profile":
+        return <UserProfile user={user} />
+      default:
+        return null
+    }
+  }
+
+  // В return добавляем BottomMenu и оборачиваем контент в контейнер
   return (
     <div
       style={{
         minHeight: "100vh",
         background: "linear-gradient(45deg, #0f172a, #1e293b)",
         color: "white",
-        padding: "20px",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
         position: "relative",
         overflow: "hidden",
       }}
@@ -213,6 +419,7 @@ function App() {
           animation: "pulse 8s ease-in-out infinite",
           zIndex: 1,
         }}
+        className="background-gradient"
       />
 
       {/* Футуристические декоративные элементы */}
@@ -228,6 +435,7 @@ function App() {
           animation: "rotate 20s linear infinite",
           zIndex: 1,
         }}
+        className="decorative-circle-1"
       />
       <div
         style={{
@@ -241,206 +449,37 @@ function App() {
           animation: "rotate 15s linear infinite reverse",
           zIndex: 1,
         }}
+        className="decorative-circle-2"
       />
 
       {/* Основной контент */}
-      <div style={{ position: "relative", zIndex: 2 }}>
-        {/* Добавляем кнопку для открытия магазина в верхней части интерфейса */}
-        <div style={{ marginBottom: "20px" }}>
-          <button
-            onClick={() => setShowShop(!showShop)}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "rgba(99, 102, 241, 0.9)",
-              border: "none",
-              borderRadius: "8px",
-              color: "white",
-              cursor: "pointer",
-            }}
-          >
-            {showShop ? "Закрыть магазин" : "Открыть магазин"}
-          </button>
-        </div>
-        {/* Профиль пользователя */}
-        <UserProfile user={user} />
-        {/* Карточка баланса */}
-        <div
-          style={{
-            backgroundColor: "rgba(30, 41, 59, 0.7)",
-            backdropFilter: "blur(10px)",
-            padding: "30px",
-            borderRadius: "20px",
-            marginBottom: "30px",
-            width: "300px",
-            boxShadow: "20px 20px 60px #1a1b1e, -20px -20px 60px #1e293b",
-            border: "1px solid rgba(99, 102, 241, 0.1)",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          {/* Футуристический фон карточки */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "linear-gradient(45deg, rgba(99, 102, 241, 0.05), rgba(99, 102, 241, 0.1))",
-              zIndex: 1,
-            }}
-          />
-
-          <div
-            style={{
-              position: "relative",
-              zIndex: 2,
-            }}
-          >
-            <div
+      <div style={{ position: "relative", zIndex: 2 }} className="app-container">
+        {/* Кнопка магазина отображается только на главной */}
+        {activeSection === "home" && (
+          <div style={{ marginBottom: "20px", textAlign: "center" }}>
+            <button
+              onClick={() => setShowShop(!showShop)}
               style={{
-                fontSize: "0.9em",
-                color: "#94a3b8",
-                marginBottom: "10px",
-                textTransform: "uppercase",
-                letterSpacing: "2px",
+                padding: "10px 20px",
+                backgroundColor: "rgba(99, 102, 241, 0.9)",
+                border: "none",
+                borderRadius: "8px",
+                color: "white",
+                cursor: "pointer",
               }}
+              className="shop-button"
             >
-              Баланс
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-                fontSize: "2.5em",
-                fontWeight: "bold",
-                color: "#f8fafc",
-                textShadow: "0 0 10px rgba(99, 102, 241, 0.5)",
-              }}
-            >
-              <span style={{ position: "relative" }}>
-                {balance.toFixed(2)}
-                {showIncrease && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: "-20px",
-                      right: "-20px",
-                      color: "#4ade80",
-                      fontSize: "0.5em",
-                      animation: "fadeUp 1s ease-out",
-                    }}
-                  >
-                    +1
-                  </span>
-                )}
-              </span>
-              <span style={{ fontSize: "0.8em" }}>💎</span>
-            </div>
+              {showShop ? "Закрыть магазин" : "Открыть магазин"}
+            </button>
           </div>
-        </div>
-
-        {/* Кнопка майнинга */}
-        {showShop ? (
-          <Shop user={user} onPurchase={(newBalance) => setBalance(newBalance)} />
-        ) : (
-          <>
-            <MinersList user={user} />
-            <div style={{ position: "relative" }}>
-              {/* Частицы */}
-              {particles.map((particle) => (
-                <div
-                  key={particle.id}
-                  style={{
-                    position: "absolute",
-                    left: particle.x,
-                    top: particle.y,
-                    width: "8px",
-                    height: "8px",
-                    backgroundColor: "#4ade80",
-                    borderRadius: "50%",
-                    transform: `translate(-50%, -50%)`,
-                    animation: "particle 1s ease-out forwards",
-                    zIndex: 3,
-                  }}
-                />
-              ))}
-
-              <button
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                }}
-                onClick={handleMining}
-                disabled={isMining}
-                style={{
-                  width: "300px",
-                  padding: "20px",
-                  backgroundColor: isMining ? "#1f2937" : "rgba(99, 102, 241, 0.9)",
-                  border: "none",
-                  borderRadius: "15px",
-                  color: "white",
-                  fontSize: "18px",
-                  fontWeight: "600",
-                  cursor: isMining ? "not-allowed" : "pointer",
-                  transition: "all 0.3s ease",
-                  position: "relative",
-                  overflow: "hidden",
-                  boxShadow: isMining ? "none" : "0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(99, 102, 241, 0.2)",
-                }}
-              >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: "linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent)",
-                    animation: isMining ? "none" : "shine 2s infinite",
-                  }}
-                />
-
-                {/* Анимация загрузки */}
-                {isMining && (
-                  <div className="mining-animation">
-                    <svg
-                      viewBox="0 0 24 24"
-                      style={{
-                        position: "absolute",
-                        left: "50%",
-                        top: "50%",
-                        transform: "translate(-50%, -50%)",
-                        width: "24px",
-                        height: "24px",
-                      }}
-                    >
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.2" />
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                        strokeDasharray="62.83185307179586"
-                        strokeLinecap="round"
-                        className="spinner"
-                      />
-                    </svg>
-                  </div>
-                )}
-
-                <span style={{ position: "relative", zIndex: 2, opacity: isMining ? 0 : 1 }}>
-                  {isMining ? "Майнинг..." : "Майнить ⛏️"}
-                </span>
-              </button>
-            </div>
-          </>
         )}
+
+        {/* Рендерим контент активного раздела */}
+        {renderContent()}
       </div>
+
+      {/* Нижнее меню */}
+      <BottomMenu activeSection={activeSection} onSectionChange={setActiveSection} />
 
       {/* Стили для анимаций */}
       <style>
