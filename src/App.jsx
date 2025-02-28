@@ -1,63 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { testConnection } from "./supabase"
-import { initTelegram, getTelegramUser } from "./utils/telegram"
+import { useState } from "react"
 
 export default function App() {
-  const [status, setStatus] = useState("Инициализация...")
-  const [error, setError] = useState(null)
+  const [balance, setBalance] = useState(0)
+  const [miningPower, setMiningPower] = useState(1)
 
-  useEffect(() => {
-    const initialize = async () => {
-      try {
-        // Шаг 1: Проверяем подключение к Supabase
-        setStatus("Подключение к серверу...")
-        const isConnected = await testConnection()
-        if (!isConnected) {
-          throw new Error("Не удалось подключиться к серверу")
-        }
-
-        // Шаг 2: Инициализируем Telegram WebApp
-        setStatus("Инициализация Telegram...")
-        const tg = initTelegram()
-        if (!tg) {
-          console.warn("⚠️ Telegram WebApp not available, continuing in dev mode")
-        }
-
-        // Шаг 3: Получаем данные пользователя
-        const user = getTelegramUser()
-        console.log("👤 User data:", user)
-
-        setStatus("Приложение загружено!")
-      } catch (err) {
-        console.error("❌ Initialization error:", err)
-        setError(err.message)
-      }
-    }
-
-    initialize()
-  }, [])
-
-  if (error) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#1a1b1e",
-          color: "white",
-          padding: "20px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          textAlign: "center",
-        }}
-      >
-        <div style={{ color: "#ef4444", marginBottom: "20px" }}>Ошибка</div>
-        <div style={{ color: "#666" }}>{error}</div>
-      </div>
-    )
+  const handleMining = () => {
+    setBalance((prev) => prev + miningPower)
   }
 
   return (
@@ -67,15 +17,54 @@ export default function App() {
         backgroundColor: "#1a1b1e",
         color: "white",
         padding: "20px",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        textAlign: "center",
       }}
     >
-      <h1 style={{ marginBottom: "20px" }}>{status}</h1>
-      <p>Базовая версия приложения</p>
+      <div
+        style={{
+          maxWidth: "500px",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px",
+        }}
+      >
+        {/* Статистика */}
+        <div
+          style={{
+            padding: "20px",
+            backgroundColor: "rgba(255, 255, 255, 0.1)",
+            borderRadius: "12px",
+            display: "grid",
+            gap: "10px",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Баланс:</span>
+            <span style={{ color: "#4ade80" }}>{balance.toFixed(2)} 💎</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Мощность:</span>
+            <span style={{ color: "#60a5fa" }}>{miningPower.toFixed(1)} ⚡</span>
+          </div>
+        </div>
+
+        {/* Кнопка майнинга */}
+        <button
+          onClick={handleMining}
+          style={{
+            padding: "20px",
+            backgroundColor: "#3b82f6",
+            color: "white",
+            border: "none",
+            borderRadius: "12px",
+            cursor: "pointer",
+            fontSize: "18px",
+            fontWeight: "bold",
+          }}
+        >
+          Майнить ⛏️
+        </button>
+      </div>
     </div>
   )
 }
