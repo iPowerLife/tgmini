@@ -24,11 +24,11 @@ function App() {
       try {
         const telegramUser = getTelegramUser()
         if (!telegramUser?.id) {
-          console.error("Invalid Telegram user:", telegramUser)
+          console.error("No valid Telegram user found")
           return
         }
 
-        console.log("Initializing user with telegram_id:", telegramUser.id)
+        console.log("Initializing user with data:", telegramUser)
 
         // Ищем пользователя в базе
         const { data: users, error: selectError } = await supabase
@@ -46,13 +46,19 @@ function App() {
 
         // Если пользователя нет, создаем
         if (!user) {
-          console.log("User not found in database, creating new user...")
+          console.log("Creating new user with Telegram data:", {
+            telegram_id: telegramUser.id,
+            username: telegramUser.username || `user_${telegramUser.id}`,
+            first_name: telegramUser.first_name,
+          })
+
           const { data: newUsers, error: createError } = await supabase
             .from("users")
             .insert([
               {
                 telegram_id: telegramUser.id,
-                username: telegramUser.username || String(telegramUser.id),
+                username: telegramUser.username || `user_${telegramUser.id}`,
+                first_name: telegramUser.first_name,
                 balance: 0,
                 mining_power: 1,
                 level: 1,
