@@ -190,3 +190,5 @@ export async function createOrUpdateUser(userData) {
   }
 }
 
+export function useTelegramUser() {}
+
