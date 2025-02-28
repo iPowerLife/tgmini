@@ -57,7 +57,7 @@ function App() {
             .insert([
               {
                 telegram_id: telegramUser.id,
-                username: telegramUser.username || String(telegramUser.id),
+                username: telegramUser.username || null, // Делаем username опциональным
                 first_name: telegramUser.first_name || "",
                 balance: 0,
                 mining_power: 1,
@@ -371,7 +371,7 @@ function App() {
               transition: "all 0.3s ease",
               position: "relative",
               overflow: "hidden",
-              boxShadow: isMining ? "none" : "0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(99, 102, 241, 0.1)",
+              boxShadow: isMining ? "none" : "0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(99, 102, 241, 0.2)",
             }}
           >
             <div
