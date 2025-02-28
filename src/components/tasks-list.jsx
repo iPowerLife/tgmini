@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Progress } from "./ui/progress"
-import { Clock, Trophy, LinkIcon } from "lucide-react"
+import { Clock, Trophy, LinkIcon, Timer, Gift, Users, CheckCircle2, ArrowRight } from "lucide-react"
 import { supabase } from "../supabase"
 
 export function TasksList({ tasks, type, user }) {
@@ -22,7 +22,6 @@ export function TasksList({ tasks, type, user }) {
 
       if (error) throw error
 
-      // Запускаем таймер верификации
       const timer = setInterval(() => {
         setVerificationTimers((prev) => {
           const timeLeft = (prev[taskId] || 15) - 1
@@ -91,14 +90,26 @@ export function TasksList({ tasks, type, user }) {
 
   if (!tasks.length) {
     return (
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="border-dashed bg-card/50 backdrop-blur-sm">
+        <CardContent className="py-8">
           <div className="text-center text-muted-foreground">
-            {type === "limited"
-              ? "Сейчас нет доступных лимитированных заданий"
-              : type === "achievement"
-                ? "Нет доступных достижений"
-                : "Нет доступных заданий"}
+            <div className="mb-4 flex justify-center">
+              {type === "limited" ? (
+                <Clock className="h-12 w-12 text-muted-foreground/50" />
+              ) : type === "achievement" ? (
+                <Trophy className="h-12 w-12 text-muted-foreground/50" />
+              ) : (
+                <CheckCircle2 className="h-12 w-12 text-muted-foreground/50" />
+              )}
+            </div>
+            <p className="text-lg font-medium mb-2">
+              {type === "limited"
+                ? "Сейчас нет доступных лимитированных заданий"
+                : type === "achievement"
+                  ? "Нет доступных достижений"
+                  : "Нет доступных заданий"}
+            </p>
+            <p className="text-sm">Загляните позже, чтобы увидеть новые задания</p>
           </div>
         </CardContent>
       </Card>
@@ -106,72 +117,111 @@ export function TasksList({ tasks, type, user }) {
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4 animate-in fade-in-50 duration-500">
       {tasks.map((task) => (
-        <Card key={task.id}>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>{task.title}</span>
-              <span className="text-xl">💎 {task.reward}</span>
-            </CardTitle>
-            <CardDescription>{task.description}</CardDescription>
+        <Card
+          key={task.id}
+          className="group hover:shadow-lg transition-all duration-300 hover:shadow-primary/5 bg-card/50 backdrop-blur-sm border-primary/10 hover:border-primary/20"
+        >
+          <CardHeader className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-primary/10 group-hover:opacity-100 opacity-0 transition-opacity duration-300" />
+            <div className="relative">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <CardTitle className="text-xl mb-2 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                    {task.title}
+                  </CardTitle>
+                  <CardDescription className="text-base leading-relaxed">{task.description}</CardDescription>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary">
+                  <Gift className="w-5 h-5" />
+                  <span className="text-lg font-semibold tabular-nums">{task.reward} 💎</span>
+                </div>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
+
+          <CardContent className="space-y-4">
             {task.type === "limited" && task.end_date && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                <Clock className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 rounded-lg bg-muted/50 border border-primary/5">
+                <Timer className="w-4 h-4 text-primary" />
                 <span>
                   Доступно до:{" "}
-                  {new Date(task.end_date).toLocaleDateString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                  {new Date(task.end_date).toLocaleDateString("ru-RU", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </span>
               </div>
             )}
 
             {task.type === "achievement" && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span>Прогресс</span>
-                  <span className="text-muted-foreground">0/100</span>
+              <div className="p-3 rounded-lg bg-muted/50 border border-primary/5">
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="font-medium">Прогресс выполнения</span>
+                  <span className="text-muted-foreground tabular-nums">0/100</span>
                 </div>
-                <Progress value={0} />
+                <Progress value={0} className="h-2 bg-primary/10" />
               </div>
             )}
 
             {task.user_status === "active" && verificationTimers[task.id] > 0 && (
-              <div className="mt-4">
-                <Progress value={(verificationTimers[task.id] / 15) * 100} />
-                <p className="text-center text-sm mt-2">Проверка: {verificationTimers[task.id]} сек</p>
+              <div className="p-3 rounded-lg bg-muted/50 border border-primary/5">
+                <Progress value={(verificationTimers[task.id] / 15) * 100} className="h-2 bg-primary/10" />
+                <p className="text-center text-sm mt-2 font-medium tabular-nums">
+                  Проверка: {verificationTimers[task.id]} сек
+                </p>
               </div>
             )}
           </CardContent>
-          <CardFooter className="flex justify-between">
+
+          <CardFooter className="flex flex-col sm:flex-row justify-between gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Trophy className="w-4 h-4" />
-              <span>Выполнили: {task.total_completions}</span>
+              <Users className="w-4 h-4" />
+              <span className="tabular-nums">Выполнили: {task.total_completions}</span>
             </div>
-            <div className="flex gap-2">
+
+            <div className="flex flex-wrap gap-2 sm:flex-nowrap">
               {!task.user_status && (
-                <Button
-                  variant="outline"
-                  onClick={() => window.open(task.link, "_blank")}
-                  disabled={processingTasks[task.id]}
-                >
-                  <LinkIcon className="w-4 h-4 mr-2" />
-                  Перейти
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(task.link, "_blank")}
+                    disabled={processingTasks[task.id]}
+                    className="w-full sm:w-auto group/button"
+                  >
+                    <LinkIcon className="w-4 h-4 mr-2 group-hover/button:-translate-y-0.5 transition-transform" />
+                    Перейти
+                  </Button>
+                  <Button
+                    onClick={() => startTask(task.id)}
+                    disabled={processingTasks[task.id]}
+                    className="w-full sm:w-auto group/button"
+                  >
+                    Начать
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover/button:translate-x-0.5 transition-transform" />
+                  </Button>
+                </>
               )}
-              {!task.user_status && (
-                <Button onClick={() => startTask(task.id)} disabled={processingTasks[task.id]}>
-                  Начать
-                </Button>
-              )}
+
               {task.user_status === "active" && verificationTimers[task.id] === 0 && (
-                <Button onClick={() => completeTask(task.id)} disabled={processingTasks[task.id]}>
+                <Button
+                  onClick={() => completeTask(task.id)}
+                  disabled={processingTasks[task.id]}
+                  className="w-full sm:w-auto"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
                   Завершить
                 </Button>
               )}
+
               {task.user_status === "completed" && !task.reward_claimed && (
-                <Button onClick={() => claimReward(task.id)} disabled={processingTasks[task.id]}>
+                <Button
+                  onClick={() => claimReward(task.id)}
+                  disabled={processingTasks[task.id]}
+                  className="w-full sm:w-auto bg-primary hover:bg-primary/90 group/button"
+                >
+                  <Gift className="w-4 h-4 mr-2 group-hover/button:scale-110 transition-transform" />
                   Получить награду
                 </Button>
               )}
