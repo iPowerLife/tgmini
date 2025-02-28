@@ -34,12 +34,12 @@ export function UserProfile({ user }) {
         const { data: minersData, error: minersError } = await supabase
           .from("user_miners")
           .select(`
-          *,
-          model:miner_models (
-            display_name,
-            mining_power
-          )
-        `)
+            *,
+            model:miner_models (
+              display_name,
+              mining_power
+            )
+          `)
           .eq("user_id", user.id)
 
         if (minersError) {
@@ -75,16 +75,15 @@ export function UserProfile({ user }) {
   // Вычисляем общую мощность майнинга
   const totalMiningPower = miners.reduce((sum, miner) => sum + miner.model.mining_power * miner.quantity, 0)
 
+  // Определяем имя для отображения
+  const displayName = user.first_name || user.username || "Пользователь"
+
   return (
     <div className="profile-container">
       <div className="profile-header">
         <div className="avatar-container">
           {user.photo_url ? (
-            <img
-              src={user.photo_url || "/placeholder.svg"}
-              alt={user.username || user.first_name}
-              className="avatar-image"
-            />
+            <img src={user.photo_url || "/placeholder.svg"} alt={displayName} className="avatar-image" />
           ) : (
             <div className="avatar-placeholder">
               <User className="avatar-icon" />
@@ -92,12 +91,17 @@ export function UserProfile({ user }) {
           )}
         </div>
         <div className="user-info">
-          <h2>{user.username ? `@${user.username}` : user.first_name}</h2>
+          <h2>{displayName}</h2>
+          {user.username && <p className="username">@{user.username}</p>}
           <p className="user-id">ID: {user.telegram_id}</p>
         </div>
       </div>
 
       <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-value">{user.balance.toFixed(2)}</div>
+          <div className="stat-label">Баланс 💎</div>
+        </div>
         <div className="stat-card">
           <div className="stat-value">{totalMiningPower.toFixed(3)}</div>
           <div className="stat-label">Мощность ⚡</div>
