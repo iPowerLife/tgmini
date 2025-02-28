@@ -24,20 +24,19 @@ function App() {
         setError(null)
 
         // Инициализируем Telegram WebApp
-        const telegram = initTelegram()
-        console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
+        initTelegram()
 
         // Получаем данные пользователя
         const userData = getTelegramUser()
-        console.log("User data:", userData)
+        console.log("Полученные данные пользователя:", userData)
 
         if (!userData) {
-          throw new Error("Не удалось получить данные пользователя из Telegram")
+          throw new Error("Не удалось получить данные пользователя")
         }
 
         // Создаем или обновляем пользователя в базе
         const dbUser = await createOrUpdateUser(userData)
-        console.log("Database user:", dbUser)
+        console.log("Данные пользователя в базе:", dbUser)
 
         if (!dbUser) {
           throw new Error("Не удалось создать/обновить пользователя в базе")
@@ -52,6 +51,7 @@ function App() {
               : userData.first_name || "Неизвестный пользователь",
           })
           setBalance(dbUser.balance)
+          setError(null)
         }
       } catch (err) {
         console.error("Ошибка инициализации:", err)
