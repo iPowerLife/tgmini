@@ -5,11 +5,18 @@ export function initTelegram() {
     // Проверяем, запущено ли приложение в Telegram
     if (window.Telegram?.WebApp) {
       tg = window.Telegram.WebApp
-      const userData = tg.initDataUnsafe?.user
-      console.log("Telegram WebApp initialized with user data:", userData)
+
+      // Получаем initData для проверки
+      const initData = tg.initData
+      const initDataUnsafe = tg.initDataUnsafe
+      console.log("Telegram WebApp init data:", { initData, initDataUnsafe })
+
+      // Проверяем данные пользователя
+      const userData = initDataUnsafe?.user
+      console.log("Telegram user data:", userData)
 
       if (!userData?.id) {
-        console.warn("Invalid Telegram user data:", userData)
+        console.warn("No valid user data in Telegram WebApp")
         return createDevModeWebApp()
       }
 
@@ -31,23 +38,17 @@ export function initTelegram() {
 }
 
 function createDevModeWebApp() {
-  // Определяем, находимся ли мы в режиме разработки
-  const isDev =
-    process.env.NODE_ENV === "development" ||
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1"
-
   // Получаем параметры из URL
   const urlParams = new URLSearchParams(window.location.search)
-  const userId = urlParams.get("userId")
-  const username = urlParams.get("username")
+  const userId = urlParams.get("userId") || Math.floor(Math.random() * 1000000) + 1
+  const username = urlParams.get("username") || `dev_user_${userId}`
 
   const mockTg = {
     initDataUnsafe: {
       user: {
-        id: userId ? Number(userId) : 12345,
-        username: username || "dev_user",
-        first_name: username || "Developer",
+        id: Number(userId),
+        username: username,
+        first_name: username,
       },
     },
     ready: () => console.log("Mock ready called"),
@@ -74,23 +75,29 @@ export function getTelegramUser() {
       return webAppUser
     }
 
-    // Получаем параметры из URL
-    const urlParams = new URLSearchParams(window.location.search)
-    const userId = urlParams.get("userId")
-    const username = urlParams.get("username")
+    // Если нет пользователя в WebApp, генерируем случайного
+    const userId = Math.floor(Math.random() * 1000000) + 1
+    const username = `user_${userId}`
 
-    // Создаем тестового пользователя
     const devUser = {
-      id: userId ? Number(userId) : 12345,
-      username: username || "dev_user",
-      first_name: username || "Developer",
+      id: userId,
+      username: username,
+      first_name: username,
     }
 
-    console.log("Using development user:", devUser)
+    console.log("Using generated user:", devUser)
     return devUser
   } catch (error) {
     console.error("Error getting Telegram user:", error)
-    return null
+    // В случае ошибки генерируем случайного пользователя
+    const userId = Math.floor(Math.random() * 1000000) + 1
+    const fallbackUser = {
+      id: userId,
+      username: `error_user_${userId}`,
+      first_name: `Error User ${userId}`,
+    }
+    console.log("Using fallback user:", fallbackUser)
+    return fallbackUser
   }
 }
 

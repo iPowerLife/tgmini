@@ -6,13 +6,18 @@ const supabaseKey =
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
-    persistSession: false, // Отключаем сохранение сессии
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
   },
   global: {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
     },
+  },
+  db: {
+    schema: "public",
   },
 })
 
