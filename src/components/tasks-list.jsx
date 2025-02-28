@@ -86,81 +86,65 @@ export function TasksList({ tasks, type, user }) {
   }
 
   if (!Array.isArray(tasks)) {
-    return <div className="text-xs text-gray-400 text-center py-4">Ошибка загрузки заданий</div>
+    return null
   }
 
   if (!tasks.length) {
-    return <div className="text-sm text-gray-400 text-center py-4">Нет доступных заданий</div>
+    return (
+      <div className="flex items-center justify-center p-4">
+        <div className="text-sm text-gray-400">
+          {type === "limited"
+            ? "Сейчас нет доступных лимитированных заданий"
+            : type === "achievement"
+              ? "Нет доступных достижений"
+              : "Нет доступных заданий"}
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-2">
+    <div className="p-4 space-y-3">
       {tasks.map((task) => (
-        <div
-          key={task.id}
-          className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-3 hover:bg-gray-900/70 transition-all duration-300 border border-gray-800/50 hover:border-blue-500/30"
-        >
-          <div className="flex items-start justify-between gap-3 mb-2">
-            <div>
-              <h3 className="text-sm font-medium text-white mb-1">{task.title}</h3>
-              <p className="text-xs text-gray-400">{task.description}</p>
-            </div>
-            <div className="flex items-center bg-blue-500/10 px-2 py-1 rounded-full">
-              <span className="text-xs font-medium bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                {task.reward} 💎
-              </span>
-            </div>
+        <div key={task.id} className="bg-gray-900/50 rounded-lg p-4 space-y-3">
+          <div>
+            <h3 className="text-base text-white font-medium">{task.title}</h3>
+            <p className="text-sm text-gray-400 mt-1">{task.description}</p>
           </div>
 
-          <div className="flex items-center gap-4 mb-2">
-            <div className="flex items-center gap-1">
-              <svg className="w-3 h-3 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-              </svg>
-              <span className="text-xs text-gray-500">Выполнили: {task.total_completions}</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base font-medium text-blue-400">{task.reward} 💎</span>
             </div>
-          </div>
 
-          {task.user_status === "active" && verificationTimers[task.id] > 0 && (
-            <div className="mb-3">
-              <div className="h-1 bg-gray-800/50 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-1000"
-                  style={{ width: `${(verificationTimers[task.id] / 15) * 100}%` }}
-                />
-              </div>
-              <p className="text-center text-xs mt-1 text-gray-500">Проверка: {verificationTimers[task.id]} сек</p>
-            </div>
-          )}
-
-          <div className="flex gap-2">
             {!task.user_status && (
-              <>
-                <button
-                  onClick={() => window.open(task.link, "_blank")}
-                  disabled={processingTasks[task.id]}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-800/50 hover:bg-gray-800 text-xs text-gray-300 hover:text-white transition-all duration-300 disabled:opacity-50 border border-gray-700/50"
-                >
-                  <LinkIcon className="w-3 h-3" />
-                  Перейти
-                </button>
+              <div className="flex gap-2">
+                {task.link && (
+                  <button
+                    onClick={() => window.open(task.link, "_blank")}
+                    disabled={processingTasks[task.id]}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 text-sm text-white hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  >
+                    <LinkIcon className="w-4 h-4" />
+                    Перейти
+                  </button>
+                )}
                 <button
                   onClick={() => startTask(task.id)}
                   disabled={processingTasks[task.id]}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-xs text-blue-400 hover:text-blue-300 transition-all duration-300 disabled:opacity-50 border border-blue-500/20"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500 text-sm text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
                 >
                   Начать
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="w-4 h-4" />
                 </button>
-              </>
+              </div>
             )}
 
             {task.user_status === "active" && verificationTimers[task.id] === 0 && (
               <button
                 onClick={() => completeTask(task.id)}
                 disabled={processingTasks[task.id]}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-xs text-blue-400 hover:text-blue-300 transition-all duration-300 disabled:opacity-50 border border-blue-500/20"
+                className="px-3 py-1.5 rounded-lg bg-blue-500 text-sm text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
               >
                 Завершить
               </button>
@@ -170,12 +154,24 @@ export function TasksList({ tasks, type, user }) {
               <button
                 onClick={() => claimReward(task.id)}
                 disabled={processingTasks[task.id]}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 hover:from-blue-500/30 hover:to-indigo-500/30 text-xs text-blue-400 hover:text-blue-300 transition-all duration-300 disabled:opacity-50 border border-blue-500/20"
+                className="px-3 py-1.5 rounded-lg bg-blue-500 text-sm text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
               >
-                Получить награду 💎
+                Получить награду
               </button>
             )}
           </div>
+
+          {task.user_status === "active" && verificationTimers[task.id] > 0 && (
+            <div>
+              <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 transition-all duration-1000"
+                  style={{ width: `${(verificationTimers[task.id] / 15) * 100}%` }}
+                />
+              </div>
+              <p className="text-center text-sm text-gray-400 mt-1">Проверка: {verificationTimers[task.id]} сек</p>
+            </div>
+          )}
         </div>
       ))}
     </div>

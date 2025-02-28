@@ -32,7 +32,6 @@ export function TasksSection({ user }) {
           achievement: [],
         }
 
-        // Группируем задания по типам
         if (data.tasks) {
           data.tasks.forEach((task) => {
             if (groupedTasks[task.type]) {
@@ -56,60 +55,68 @@ export function TasksSection({ user }) {
   }, [user?.id])
 
   if (!user?.id) {
-    return <div className="text-xs text-gray-400 text-center py-4">Ошибка: пользователь не найден</div>
+    return null
   }
 
   if (loading) {
-    return <div className="text-xs text-gray-400 text-center py-4">Загрузка заданий...</div>
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-sm text-gray-400">Загрузка заданий...</div>
+      </div>
+    )
   }
 
   if (error) {
-    return <div className="text-xs text-red-400 text-center py-4">{error}</div>
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-sm text-red-400">{error}</div>
+      </div>
+    )
   }
 
   return (
-    <div className="max-w-md mx-auto px-4">
-      <div className="mb-4">
-        <h1 className="text-base font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent mb-1">
-          Задания
-        </h1>
-        <p className="text-xs text-gray-400">Выполняйте задания и получайте награды</p>
+    <div className="flex-1 flex flex-col">
+      <div className="px-4 py-3">
+        <h1 className="text-lg font-medium text-white mb-1">Задания</h1>
+        <p className="text-sm text-gray-400">Выполняйте задания и получайте награды</p>
       </div>
 
-      <div className="flex gap-1 mb-4 bg-gray-900/50 p-0.5 rounded-lg backdrop-blur-sm">
+      <div className="px-4 flex border-b border-gray-800">
         <button
           onClick={() => setActiveTab("basic")}
-          className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "basic"
-              ? "bg-blue-500/20 text-blue-400 border border-blue-500/20"
-              : "text-gray-400 hover:text-gray-300 hover:bg-gray-800/50"
+              ? "border-blue-500 text-blue-500"
+              : "border-transparent text-gray-400 hover:text-gray-300"
           }`}
         >
           Основные
         </button>
         <button
           onClick={() => setActiveTab("limited")}
-          className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "limited"
-              ? "bg-blue-500/20 text-blue-400 border border-blue-500/20"
-              : "text-gray-400 hover:text-gray-300 hover:bg-gray-800/50"
+              ? "border-blue-500 text-blue-500"
+              : "border-transparent text-gray-400 hover:text-gray-300"
           }`}
         >
           Лимитированные
         </button>
         <button
           onClick={() => setActiveTab("achievement")}
-          className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "achievement"
-              ? "bg-blue-500/20 text-blue-400 border border-blue-500/20"
-              : "text-gray-400 hover:text-gray-300 hover:bg-gray-800/50"
+              ? "border-blue-500 text-blue-500"
+              : "border-transparent text-gray-400 hover:text-gray-300"
           }`}
         >
           Достижения
         </button>
       </div>
 
-      <TasksList tasks={tasks[activeTab]} type={activeTab} user={user} />
+      <div className="flex-1 overflow-auto">
+        <TasksList tasks={tasks[activeTab]} type={activeTab} user={user} />
+      </div>
     </div>
   )
 }
