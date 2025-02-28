@@ -48,6 +48,25 @@ export function getTelegramUser() {
   return null
 }
 
+// Добавляем экспорт хука useTelegramUser
+export function useTelegramUser() {
+  const user = getTelegramUser()
+
+  return {
+    id: user?.id,
+    firstName: user?.first_name || "Unknown",
+    lastName: user?.last_name,
+    username: user?.username,
+    languageCode: user?.language_code,
+    photoUrl: user?.photo_url,
+    displayName: user?.username
+      ? `@${user.username}`
+      : user?.first_name
+        ? `${user.first_name}${user.last_name ? ` ${user.last_name}` : ""}`
+        : "Unknown User",
+  }
+}
+
 // Функция для создания пользователя в базе
 export async function createOrUpdateUser(telegramUser) {
   if (!telegramUser?.id) {
