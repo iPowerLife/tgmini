@@ -20,28 +20,35 @@ function App() {
 
     const initApp = async () => {
       try {
+        console.log("Начинаем инициализацию приложения...")
         setLoading(true)
         setError(null)
 
         // Инициализируем Telegram WebApp
         const telegram = initTelegram()
-        console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
+        console.log("Статус инициализации Telegram:", telegram ? "успешно" : "ошибка")
 
         // Получаем данные пользователя
         const userData = getTelegramUser()
-        console.log("User data:", userData)
+        console.log("Полученные данные пользователя:", userData)
 
-        if (!userData || !userData.id) {
-          console.error("Некорректные данные пользователя:", userData)
-          throw new Error("Не удалось получить корректные данные пользователя")
+        if (!userData) {
+          throw new Error("Не удалось получить данные пользователя")
+        }
+
+        // Проверяем наличие id
+        if (!userData.id) {
+          console.error("ID пользователя отсутствует:", userData)
+          throw new Error("Некорректные данные пользователя (отсутствует ID)")
         }
 
         // Создаем или обновляем пользователя в базе
+        console.log("Начинаем сохранение пользователя в базу...")
         const dbUser = await createOrUpdateUser(userData)
-        console.log("Database user:", dbUser)
+        console.log("Данные пользователя в базе:", dbUser)
 
         if (!dbUser) {
-          throw new Error("Не удалось создать/обновить пользователя в базе")
+          throw new Error("Не удалось сохранить пользователя в базе")
         }
 
         if (mounted) {
@@ -95,6 +102,7 @@ function App() {
           <div className="section-container error">
             <h2>Ошибка</h2>
             <p>{error}</p>
+            <p className="text-sm text-gray-400 mt-2">Попробуйте перезапустить приложение в Telegram</p>
             <button onClick={() => window.location.reload()} className="shop-button mt-4">
               Попробовать снова
             </button>
