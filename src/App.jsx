@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "./supabase"
+import { initTelegram, getTelegramUser } from "./utils/telegram"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -9,19 +10,25 @@ function App() {
   const [isMining, setIsMining] = useState(false)
   const [showIncrease, setShowIncrease] = useState(false)
   const [particles, setParticles] = useState([])
+  const [tg, setTg] = useState(null)
+
+  // Инициализируем Telegram WebApp
+  useEffect(() => {
+    const telegram = initTelegram()
+    setTg(telegram)
+  }, [])
 
   // Получаем или создаем пользователя при загрузке
   useEffect(() => {
     const initUser = async () => {
       try {
-        // Получаем Telegram пользователя
-        const tg = window.Telegram?.WebApp
-        if (!tg?.initDataUnsafe?.user) {
+        const telegramUser = getTelegramUser()
+        if (!telegramUser) {
           console.error("No Telegram user found")
           return
         }
 
-        const telegramUser = tg.initDataUnsafe.user
+        console.log("Telegram user:", telegramUser)
 
         // Ищем пользователя в базе
         let { data: user, error } = await supabase.from("users").select("*").eq("telegram_id", telegramUser.id).single()
@@ -79,6 +86,8 @@ function App() {
   }, [])
 
   const createParticle = (e) => {
+    if (!e?.target) return // Проверяем наличие event и target
+
     const rect = e.target.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
@@ -102,10 +111,10 @@ function App() {
   const handleMining = async (e) => {
     if (isMining || !user) return
 
-    createParticle(e)
-    setIsMining(true)
-
     try {
+      createParticle(e)
+      setIsMining(true)
+
       // Обновляем баланс в базе
       const miningAmount = 1 // Базовое количество
       const { error } = await supabase.rpc("update_user_balance", {
