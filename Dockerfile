@@ -2,13 +2,13 @@ FROM node:20-alpine as builder
 
 WORKDIR /app
 
-# Копируем только файлы для установки зависимостей
-COPY package.json ./
+# Копируем файлы для установки зависимостей
+COPY package*.json ./
 
 # Устанавливаем зависимости
 RUN npm install
 
-# Копируем остальные файлы
+# Копируем исходный код
 COPY . .
 
 # Собираем приложение
@@ -19,14 +19,22 @@ FROM node:20-alpine as runner
 
 WORKDIR /app
 
-# Копируем только необходимые файлы
+# Копируем необходимые файлы
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/server.js ./
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
+
+# Устанавливаем только production зависимости
+RUN npm ci --only=production
+
+# Проверяем наличие файлов
+RUN ls -la && \
+    echo "Content of current directory:" && \
+    ls -R
 
 # Открываем порт
-EXPOSE $PORT
+EXPOSE 3000
 
-# Запускаем приложение
-CMD ["npm", "start"]
+# Запускаем сервер
+CMD ["node", "server.js"]
 
