@@ -22,6 +22,41 @@
   --radius: 0.5rem;
 }
 
+button {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Эффект пульсации при нажатии */
+button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%);
+  transform-origin: 50% 50%;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0, 0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(100, 100);
+    opacity: 0;
+  }
+}
+
+button:active::after {
+  animation: ripple 0.6s ease-out;
+}
+
 .dark {
   --background: 222.2 84% 4.9%;
   --foreground: 210 40% 98%;
@@ -1165,5 +1200,52 @@ button:not(:disabled):active {
   .task-actions button {
     flex: 1;
   }
+}
+
+/* Добавляем в конец файла */
+
+/* Стили для кнопок */
+.button-gradient {
+  background: linear-gradient(to right, rgba(99, 102, 241, 0.8), rgba(99, 102, 241, 1));
+  transition: all 0.3s ease;
+}
+
+.button-gradient:hover {
+  background: linear-gradient(to right, rgba(99, 102, 241, 1), rgba(99, 102, 241, 0.8));
+  transform: translateY(-2px);
+}
+
+.button-outline {
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: rgb(59, 130, 246);
+  transition: all 0.3s ease;
+}
+
+.button-outline:hover {
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Добавляем эффект свечения при наведении */
+.button-gradient:hover,
+.button-outline:hover {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+/* Стили для disabled состояния */
+.button-gradient:disabled,
+.button-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Анимация при нажатии */
+.button-gradient:active,
+.button-outline:active {
+  transform: translateY(0);
 }
 

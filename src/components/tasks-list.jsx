@@ -197,7 +197,7 @@ export function TasksList({ tasks, type, user }) {
                 variant="outline"
                 onClick={() => window.open(task.link, "_blank")}
                 disabled={processingTasks[task.id]}
-                className="w-full sm:w-auto bg-gradient-to-r from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border-blue-500/20 hover:border-blue-500/30 transition-all duration-300 text-blue-500"
+                className="min-w-[120px] h-[40px]"
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Перейти
@@ -207,7 +207,7 @@ export function TasksList({ tasks, type, user }) {
               <Button
                 onClick={() => startTask(task.id)}
                 disabled={processingTasks[task.id]}
-                className="w-full sm:w-auto bg-gradient-to-r from-primary/80 to-primary hover:from-primary hover:to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 border-none"
+                className="min-w-[120px] h-[40px]"
               >
                 <Play className="w-4 h-4 mr-2" />
                 Начать
