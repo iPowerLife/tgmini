@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getTelegramUser, createOrUpdateUser } from "./utils/telegram"
+import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
@@ -23,15 +23,21 @@ function App() {
         setLoading(true)
         setError(null)
 
-        // Получаем данные пользователя
-        const telegramUser = getTelegramUser()
+        // Инициализируем Telegram WebApp
+        const telegram = initTelegram()
+        console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
 
-        if (!telegramUser) {
+        // Получаем данные пользователя
+        const userData = getTelegramUser()
+        console.log("User data:", userData)
+
+        if (!userData) {
           throw new Error("Не удалось получить данные пользователя из Telegram")
         }
 
         // Создаем или обновляем пользователя в базе
-        const dbUser = await createOrUpdateUser(telegramUser)
+        const dbUser = await createOrUpdateUser(userData)
+        console.log("Database user:", dbUser)
 
         if (!dbUser) {
           throw new Error("Не удалось создать/обновить пользователя в базе")
@@ -40,10 +46,10 @@ function App() {
         if (mounted) {
           setUser({
             ...dbUser,
-            photo_url: telegramUser.photo_url,
-            display_name: telegramUser.username
-              ? `@${telegramUser.username}`
-              : telegramUser.first_name || "Неизвестный пользователь",
+            photo_url: userData.photo_url,
+            display_name: userData.username
+              ? `@${userData.username}`
+              : userData.first_name || "Неизвестный пользователь",
           })
           setBalance(dbUser.balance)
         }
