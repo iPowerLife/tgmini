@@ -6,6 +6,7 @@ import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
 import { UserProfile } from "./components/user-profile"
+import { checkSupabaseConnection } from "./utils/supabase"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -23,6 +24,12 @@ function App() {
         console.log("Начинаем инициализацию приложения...")
         setLoading(true)
         setError(null)
+
+        // Проверяем подключение к базе данных
+        const isConnected = await checkSupabaseConnection()
+        if (!isConnected) {
+          throw new Error("Не удалось подключиться к базе данных")
+        }
 
         // Инициализируем Telegram WebApp
         const telegram = initTelegram()
