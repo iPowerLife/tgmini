@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { initTelegram, getTelegramUser } from "./utils/telegram" // Import telegram functions
-import { supabase } from "./supabase" // Import supabase client
-import MinersList from "./components/MinersList"
-import Shop from "./components/Shop"
-import UserProfile from "./components/UserProfile"
+import { initTelegram, getTelegramUser } from "./utils/telegram"
+import { supabase } from "./supabase"
+import { BottomMenu } from "./components/bottom-menu"
+import { MinersList } from "./components/miners-list"
+import { Shop } from "./components/shop"
+import { UserProfile } from "./components/user-profile"
 
 function App() {
   const [tg, setTg] = useState(window.Telegram?.WebApp)
@@ -165,7 +166,12 @@ function App() {
     }
   }
 
-  return <div className="App">{renderContent()}</div>
+  return (
+    <div className="App">
+      {renderContent()}
+      <BottomMenu setActiveSection={setActiveSection} />
+    </div>
+  )
 }
 
 export default App

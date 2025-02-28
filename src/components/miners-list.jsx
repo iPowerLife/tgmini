@@ -18,15 +18,15 @@ export function MinersList({ user }) {
         const { data, error } = await supabase
           .from("user_miners")
           .select(`
-            *,
-            model:miner_models (
-              id,
-              name,
-              display_name,
-              mining_power,
-              energy_consumption
-            )
-          `)
+          *,
+          model:miner_models (
+            id,
+            name,
+            display_name,
+            mining_power,
+            energy_consumption
+          )
+        `)
           .eq("user_id", user.id)
           .order("purchased_at")
 

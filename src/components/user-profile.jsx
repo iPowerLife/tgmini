@@ -34,12 +34,12 @@ export function UserProfile({ user }) {
         const { data: minersData, error: minersError } = await supabase
           .from("user_miners")
           .select(`
-            *,
-            model:miner_models (
-              display_name,
-              mining_power
-            )
-          `)
+          *,
+          model:miner_models (
+            display_name,
+            mining_power
+          )
+        `)
           .eq("user_id", user.id)
 
         if (minersError) {
