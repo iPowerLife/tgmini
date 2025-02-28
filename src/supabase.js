@@ -1,13 +1,14 @@
 import { createClient } from "@supabase/supabase-js"
 
-console.log("📡 Initializing Supabase...")
+console.log("📡 Инициализация Supabase...")
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error("❌ Missing Supabase environment variables!")
-  throw new Error("Необходимо указать VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY в файле .env")
+  console.error("❌ Отсутствуют переменные окружения Supabase!")
+  console.log("VITE_SUPABASE_URL:", supabaseUrl ? "✓" : "✗")
+  console.log("VITE_SUPABASE_ANON_KEY:", supabaseKey ? "✓" : "✗")
 }
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -18,21 +19,16 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
   },
 })
 
-// Функция для проверки подключения
-export async function testConnection(retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const { data, error } = await supabase.from("users").select("count").single()
-      if (error) throw error
-      console.log("✅ Supabase connection successful")
-      return true
-    } catch (error) {
-      console.error(`❌ Connection attempt ${i + 1}/${retries} failed:`, error.message)
-      if (i < retries - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)))
-      }
+// Проверяем подключение
+supabase
+  .from("users")
+  .select("count")
+  .single()
+  .then(({ data, error }) => {
+    if (error) {
+      console.error("❌ Ошибка подключения к Supabase:", error)
+    } else {
+      console.log("✅ Подключение к Supabase успешно")
     }
-  }
-  return false
-}
+  })
 
