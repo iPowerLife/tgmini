@@ -223,23 +223,31 @@ export function TasksSection({ user, onBalanceUpdate }) {
       <div className="tasks-list">
         {filteredTasks.map((task) => (
           <div key={task.id} className={`task-card ${task.is_completed ? "completed" : ""}`}>
+            {task.type === "limited" && task.end_date && (
+              <div
+                className="absolute top-0 right-0 bg-red-600/80 text-white text-sm px-3 py-1 rounded-bl-lg rounded-tr-lg font-medium"
+                style={{ marginTop: "-1px", marginRight: "-1px" }}
+              >
+                ⏳ {formatTimeRemaining(task.end_date)}
+              </div>
+            )}
             <div className="task-header" style={{ marginBottom: "8px" }}>
               <div className="task-info">
                 <h3 className="task-title">{task.title}</h3>
                 <p className="task-description">{task.description}</p>
-                {task.type === "limited" && task.end_date && (
-                  <div
-                    className="time-remaining"
-                    style={{
-                      color: "#5b9af5",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      marginTop: "8px",
-                    }}
-                  >
-                    ⏳ Осталось: {formatTimeRemaining(task.end_date)}
-                  </div>
-                )}
+                {/*{task.type === "limited" && task.end_date && (*/}
+                {/*  <div*/}
+                {/*    className="time-remaining"*/}
+                {/*    style={{*/}
+                {/*      color: "#5b9af5",*/}
+                {/*      fontSize: "14px",*/}
+                {/*      fontWeight: "500",*/}
+                {/*      marginTop: "8px",*/}
+                {/*    }}*/}
+                {/*  >*/}
+                {/*    ⏳ Осталось: {formatTimeRemaining(task.end_date)}*/}
+                {/*  </div>*/}
+                {/*)}*/}
               </div>
             </div>
             <div className="task-actions">{renderActionButton(task)}</div>
