@@ -1,5 +1,8 @@
 /* Добавляем базовые цвета для компонентов */
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 :root {
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
