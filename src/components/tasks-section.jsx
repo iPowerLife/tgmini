@@ -127,7 +127,11 @@ export function TasksSection({ user, onBalanceUpdate }) {
     if (!taskState || taskState.status === "initial") {
       return (
         <button className="task-button execute-button" onClick={() => handleExecuteTask(task)}>
-          Выполнить
+          <span>Выполнить</span>
+          <span className="reward">
+            {task.reward}
+            <span className="reward-icon">💎</span>
+          </span>
         </button>
       )
     }
