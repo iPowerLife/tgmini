@@ -36,10 +36,6 @@ export function TasksSection({ user, onBalanceUpdate }) {
       if (error) throw error
 
       setTasks(data?.tasks || [])
-      console.log(
-        "Task data:",
-        data?.tasks?.map((t) => ({ id: t.id, type: t.type, end_date: t.end_date })),
-      )
     } catch (err) {
       console.error("Error loading tasks:", err)
       setError("Ошибка загрузки заданий: " + err.message)
@@ -143,10 +139,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
   const renderActionButton = (task) => {
     if (task.is_completed) {
       return (
-        <button
-          className="w-full py-2.5 px-4 rounded-lg bg-green-600/20 text-green-500 text-sm font-medium cursor-not-allowed"
-          disabled
-        >
+        <button className="completed-button" disabled>
           Выполнено ✓
         </button>
       )
@@ -156,14 +149,11 @@ export function TasksSection({ user, onBalanceUpdate }) {
 
     if (!taskState || taskState.status === "initial") {
       return (
-        <button
-          onClick={() => handleExecuteTask(task)}
-          className="w-full py-2.5 px-4 rounded-lg bg-blue-500/10 text-white text-sm font-medium hover:bg-blue-500/20 transition-colors flex items-center justify-between"
-        >
-          <span>Выполнить</span>
-          <span className="flex items-center gap-1">
+        <button className="execute-button" onClick={() => handleExecuteTask(task)}>
+          Выполнить
+          <span className="reward">
             {task.reward}
-            <span>💎</span>
+            <span className="reward-icon">💎</span>
           </span>
         </button>
       )
@@ -171,10 +161,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
 
     if (taskState.status === "verifying") {
       return (
-        <button
-          className="w-full py-2.5 px-4 rounded-lg bg-gray-700/50 text-gray-400 text-sm font-medium cursor-not-allowed"
-          disabled
-        >
+        <button className="verify-button" disabled>
           Проверка ({Math.ceil(taskState.timeLeft / 1000)}с)
         </button>
       )
@@ -182,10 +169,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
 
     if (taskState.status === "completed" || task.user_status === "completed") {
       return (
-        <button
-          onClick={() => handleClaimReward(task)}
-          className="w-full py-2.5 px-4 rounded-lg bg-green-500/10 text-white text-sm font-medium hover:bg-green-500/20 transition-colors"
-        >
+        <button className="claim-button" onClick={() => handleClaimReward(task)}>
           Получить
         </button>
       )
@@ -215,64 +199,54 @@ export function TasksSection({ user, onBalanceUpdate }) {
 
   return (
     <div className="tasks-page">
-      <div className="mb-4 flex gap-2 bg-[#1a1b1e] p-1 rounded-xl">
-        <button
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors
-            ${activeTab === "all" ? "bg-blue-500/20 text-white" : "text-gray-400 hover:text-white"}`}
-          onClick={() => setActiveTab("all")}
-        >
+      <div className="tasks-tabs">
+        <button className={`tab-button ${activeTab === "all" ? "active" : ""}`} onClick={() => setActiveTab("all")}>
           Все
         </button>
-        <button
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors
-            ${activeTab === "basic" ? "bg-blue-500/20 text-white" : "text-gray-400 hover:text-white"}`}
-          onClick={() => setActiveTab("basic")}
-        >
+        <button className={`tab-button ${activeTab === "basic" ? "active" : ""}`} onClick={() => setActiveTab("basic")}>
           Базовые
         </button>
         <button
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors
-            ${activeTab === "limited" ? "bg-blue-500/20 text-white" : "text-gray-400 hover:text-white"}`}
+          className={`tab-button ${activeTab === "limited" ? "active" : ""}`}
           onClick={() => setActiveTab("limited")}
         >
           Лимит
         </button>
         <button
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors
-            ${activeTab === "achievement" ? "bg-blue-500/20 text-white" : "text-gray-400 hover:text-white"}`}
+          className={`tab-button ${activeTab === "achievement" ? "active" : ""}`}
           onClick={() => setActiveTab("achievement")}
         >
           Достижения
         </button>
       </div>
 
-      <div className="tasks-list space-y-4">
+      <div className="tasks-list">
         {filteredTasks.map((task) => (
-          <div key={task.id} className={`bg-[#1a1b1e] rounded-xl p-4 ${task.is_completed ? "opacity-70" : ""}`}>
-            <div className="mb-2">
-              <div className="flex flex-col">
-                <h3 className="text-white text-base font-medium mb-2">{task.title}</h3>
+          <div key={task.id} className={`task-card ${task.is_completed ? "completed" : ""}`}>
+            <div className="task-header">
+              <div className="task-info">
+                <h3 className="task-title">{task.title}</h3>
                 {task.type === "limited" && (
-                  <div className="flex flex-col items-center mt-1 mb-3">
+                  <div className="flex flex-col items-center mt-4 mb-6">
                     <svg
-                      className="w-12 h-12 text-white mb-2"
+                      className="w-24 h-24 text-white mb-2"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="1.5"
+                      strokeWidth="1"
                     >
                       <circle cx="12" cy="12" r="10" />
                       <path d="M12 6v6l4 2" />
                     </svg>
-                    <span className="text-[11px] uppercase tracking-wider text-gray-400">
+                    <span className="text-xs uppercase tracking-[0.1em] text-gray-400 font-medium">
                       ОСТАЛОСЬ: {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
                     </span>
                   </div>
                 )}
-                <p className="text-gray-400 text-sm">{task.description}</p>
+                <p className="task-description">{task.description}</p>
               </div>
             </div>
-            <div className="flex">{renderActionButton(task)}</div>
+            <div className="task-actions">{renderActionButton(task)}</div>
           </div>
         ))}
 
