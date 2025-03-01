@@ -228,11 +228,10 @@ export function TasksSection({ user, onBalanceUpdate }) {
               <div className="task-info">
                 <h3 className="task-title">{task.title}</h3>
                 {task.type === "limited" && (
-                  <div className="flex items-center justify-center mt-3 mb-4">
-                    <div className="flex items-center bg-gradient-to-r from-gray-800/50 to-gray-900/50 rounded-full px-3 py-1.5 border border-gray-700/30">
-                      <Timer className="w-3.5 h-3.5 text-blue-400 mr-1.5" />
-                      <span className="text-[10px] font-medium tracking-[0.15em] text-gray-400 mr-1">ОСТАЛОСЬ:</span>
-                      <span className="text-xs font-semibold text-blue-400">
+                  <div className="flex items-center justify-center mt-2 mb-3">
+                    <div className="flex items-center bg-gradient-to-r from-[#1a1b1e]/90 to-[#2a2b2e]/90 backdrop-blur-sm rounded-xl px-4 py-2 border border-blue-500/10 shadow-lg shadow-blue-500/5">
+                      <Timer className="w-4 h-4 text-blue-400 mr-2" />
+                      <span className="text-xs font-medium bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">
                         {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
                       </span>
                     </div>
