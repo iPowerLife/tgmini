@@ -235,9 +235,11 @@ export function TasksSection({ user, onBalanceUpdate }) {
                 <div>
                   <h3 className="task-title">{task.title}</h3>
                   {task.type === "limited" && (
-                    <div className="flex items-center gap-1 text-white/70 text-sm">
-                      <Clock className="w-4 h-4" />
-                      <span>Осталось: {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Clock className="w-3.5 h-3.5 text-indigo-400" strokeWidth={2.5} />
+                      <span className="font-medium text-xs tracking-wide text-indigo-400/90">
+                        Осталось времени: {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
+                      </span>
                     </div>
                   )}
                   <p className="task-description">{task.description}</p>
