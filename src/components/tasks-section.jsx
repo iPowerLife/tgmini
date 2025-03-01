@@ -2,126 +2,98 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs"
+import { TasksList } from "./tasks-list"
+import { QuizTask } from "./tasks/quiz-task"
 
 export function TasksSection({ user }) {
-  const [tasks, setTasks] = useState([])
-  const [taskStates, setTaskStates] = useState({})
+  const [tasks, setTasks] = useState({
+    basic: [],
+    limited: [],
+    achievement: [],
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const loadTasks = useCallback(async () => {
-    const { data, error } = await supabase.from("tasks").select("*")
-    if (error) {
-      console.error("Ошибка при загрузке заданий:", error)
-    } else {
-      setTasks(data)
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Загружаем задания всех типов
+      const { data, error } = await supabase.rpc("get_available_tasks", {
+        user_id_param: user.id,
+      })
+
+      if (error) throw error
+
+      // Группируем задания по типам
+      const groupedTasks = data.tasks.reduce(
+        (acc, task) => {
+          if (!acc[task.type]) {
+            acc[task.type] = []
+          }
+          acc[task.type].push(task)
+          return acc
+        },
+        {
+          basic: [],
+          limited: [],
+          achievement: [],
+        },
+      )
+
+      setTasks(groupedTasks)
+    } catch (err) {
+      console.error("Error loading tasks:", err)
+      setError("Ошибка при загрузке заданий")
+    } finally {
+      setLoading(false)
     }
-  }, [])
+  }, [user?.id])
 
   useEffect(() => {
-    loadTasks()
-  }, [loadTasks])
-
-  const handleClaimReward = async (task) => {
-    try {
-      // Завершаем задание
-      const { data: completeData, error: completeError } = await supabase.rpc("complete_task", {
-        user_id_param: user.id,
-        task_id_param: task.id,
-      })
-
-      if (completeError) throw completeError
-
-      // Проверяем результат выполнения
-      if (completeData && !completeData.success) {
-        if (completeData.remaining_seconds > 0) {
-          // Обновляем состояние таймера
-          setTaskStates((prev) => ({
-            ...prev,
-            [task.id]: {
-              status: "verifying",
-              timeLeft: completeData.remaining_seconds * 1000,
-            },
-          }))
-          return // Прерываем выполнение, не пытаемся получить награду
-        }
-        throw new Error(completeData.message)
-      }
-
-      // Получаем награду только если задание успешно завершено
-      const { error: rewardError } = await supabase.rpc("claim_task_reward", {
-        user_id_param: user.id,
-        task_id_param: task.id,
-      })
-
-      if (rewardError) throw rewardError
-
-      // Обновляем список заданий
-      await loadTasks()
-    } catch (error) {
-      console.error("Ошибка при получении награды:", error)
-      alert(error.message || "Ошибка при получении награды")
+    if (user?.id) {
+      loadTasks()
     }
+  }, [user?.id, loadTasks])
+
+  const handleTaskComplete = () => {
+    // Перезагружаем задания после выполнения
+    loadTasks()
   }
 
-  const handleExecuteTask = async (task) => {
-    try {
-      const { error: startError } = await supabase.rpc("start_task", {
-        user_id_param: user.id,
-        task_id_param: task.id,
-      })
+  if (loading) {
+    return <div className="p-4 text-center">Загрузка заданий...</div>
+  }
 
-      if (startError) throw startError
-
-      // Используем verification_time из задания
-      const verificationTime = (task.verification_time || 15) * 1000 // конвертируем в миллисекунды
-
-      setTaskStates((prev) => ({
-        ...prev,
-        [task.id]: { status: "verifying", timeLeft: verificationTime },
-      }))
-
-      if (task.link) {
-        window.open(task.link, "_blank")
-      }
-
-      const interval = setInterval(() => {
-        setTaskStates((prev) => {
-          const taskState = prev[task.id]
-          if (!taskState || taskState.timeLeft <= 0) {
-            clearInterval(interval)
-            return prev
-          }
-
-          const newTimeLeft = taskState.timeLeft - 1000
-          return {
-            ...prev,
-            [task.id]: {
-              status: newTimeLeft > 0 ? "verifying" : "completed",
-              timeLeft: newTimeLeft,
-            },
-          }
-        })
-      }, 1000)
-    } catch (error) {
-      console.error("Ошибка при выполнении задания:", error)
-      alert(error.message || "Ошибка при выполнении задания")
-    }
+  if (error) {
+    return <div className="p-4 text-center text-red-500">{error}</div>
   }
 
   return (
-    <div>
-      {tasks.map((task) => (
-        <div key={task.id}>
-          <h3>{task.title}</h3>
-          <p>{task.description}</p>
-          {taskStates[task.id]?.status === "verifying" ? (
-            <p>Проверка, осталось: {taskStates[task.id].timeLeft / 1000} секунд</p>
-          ) : taskStates[task.id]?.status === "completed" ? (
-            <button onClick={() => handleClaimReward(task)}>Получить награду</button>
-          ) : (
-            <button onClick={() => handleExecuteTask(task)}>Выполнить</button>
-          )}
-        </div>
-      ))}
+    <div className="tasks-container">
+      <Tabs defaultValue="basic" className="w-full">
+        <TabsList className="w-full justify-center mb-6">
+          <TabsTrigger value="basic">Базовые</TabsTrigger>
+          <TabsTrigger value="limited">Лимитированные</TabsTrigger>
+          <TabsTrigger value="achievement">Достижения</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="basic">
+          <TasksList tasks={tasks.basic} type="basic" user={user} onComplete={handleTaskComplete} />
+        </TabsContent>
+
+        <TabsContent value="limited">
+          <TasksList tasks={tasks.limited} type="limited" user={user} onComplete={handleTaskComplete} />
+        </TabsContent>
+
+        <TabsContent value="achievement">
+          {tasks.achievement.map((task) => (
+            <QuizTask key={task.id} task={task} user={user} onComplete={handleTaskComplete} />
+          ))}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
