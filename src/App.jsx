@@ -71,6 +71,11 @@ function App() {
   }, [])
 
   const renderContent = () => {
+    // Если пользователь не загружен, показываем загрузку
+    if (!user) {
+      return <div className="loading">Загрузка данных пользователя...</div>
+    }
+
     switch (activeSection) {
       case "home":
         return (

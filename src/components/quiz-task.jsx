@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Progress } from "./ui/progress"
@@ -15,52 +15,58 @@ export function QuizTask({ task, user, onComplete }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    const loadQuestions = async () => {
-      try {
-        setLoading(true)
-        setError(null)
+  if (!task || !user) {
+    return <div className="quiz-error">Ошибка: недостаточно данных для запуска теста</div>
+  }
 
-        const { data, error } = await supabase.rpc("get_random_quiz_questions", {
-          task_id_param: task.id,
-          questions_count: 10,
-        })
+  const loadQuestions = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-        if (error) throw error
+      const { data, error } = await supabase.rpc("get_random_quiz_questions", {
+        task_id_param: task.id,
+        questions_count: 10,
+      })
 
-        setQuestions(data.questions)
-        setTimeLeft(data.questions[0]?.time_limit || 30)
-      } catch (err) {
-        console.error("Error loading questions:", err)
-        setError("Ошибка загрузки вопросов")
-      } finally {
-        setLoading(false)
-      }
+      if (error) throw error
+
+      setQuestions(data.questions)
+      setTimeLeft(data.questions[0]?.time_limit || 30)
+    } catch (err) {
+      console.error("Error loading questions:", err)
+      setError("Ошибка загрузки вопросов")
+    } finally {
+      setLoading(false)
     }
-
-    loadQuestions()
   }, [task.id])
 
   useEffect(() => {
+    loadQuestions()
+  }, [loadQuestions])
+
+  useEffect(() => {
+    let timer
     if (timeLeft > 0 && !loading) {
-      const timer = setInterval(() => {
+      timer = setInterval(() => {
         setTimeLeft((prev) => prev - 1)
       }, 1000)
-
-      return () => clearInterval(timer)
     } else if (timeLeft === 0 && !loading) {
       handleNextQuestion()
     }
-  }, [timeLeft, loading])
+
+    return () => clearInterval(timer)
+  }, [timeLeft, loading, handleNextQuestion])
 
   const handleAnswerSelect = (answerId) => {
     setSelectedAnswer(answerId)
   }
 
-  const handleNextQuestion = async () => {
-    if (!currentQuestionData) return
-
+  const handleNextQuestion = useCallback(async () => {
     // Сохраняем ответ
+    if (!questions || questions.length === 0 || !questions[currentQuestion]) return
+
+    const currentQuestionData = questions[currentQuestion]
     const newAnswers = [
       ...answers,
       {
@@ -80,7 +86,7 @@ export function QuizTask({ task, user, onComplete }) {
       try {
         const { data, error } = await supabase.rpc("check_quiz_answers", {
           user_task_id_param: task.user_task_id,
-          answers: JSON.stringify(newAnswers), // Используем обновленный массив
+          answers: JSON.stringify(newAnswers),
         })
 
         if (error) throw error
@@ -96,7 +102,7 @@ export function QuizTask({ task, user, onComplete }) {
         alert("Ошибка при проверке ответов")
       }
     }
-  }
+  }, [answers, currentQuestion, questions, selectedAnswer, task.user_task_id, timeLeft, onComplete])
 
   if (!task || !task.id) {
     return <div className="text-center text-red-500">Ошибка: данные задания не найдены</div>
@@ -111,6 +117,9 @@ export function QuizTask({ task, user, onComplete }) {
   }
 
   const currentQuestionData = questions[currentQuestion]
+  if (!currentQuestionData) {
+    return <div className="quiz-error">Ошибка загрузки вопроса</div>
+  }
 
   if (!questions || questions.length === 0) {
     return <div className="text-center">Загрузка вопросов...</div>
@@ -159,5 +168,11 @@ export function QuizTask({ task, user, onComplete }) {
       </CardFooter>
     </Card>
   )
+
+  const quizStyles = {
+    container: "bg-card rounded-lg p-6 shadow-lg",
+    error: "text-center text-red-500 p-4 rounded-lg bg-red-50",
+    loading: "text-center text-gray-500 p-4",
+  }
 }
 

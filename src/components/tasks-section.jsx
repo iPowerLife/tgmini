@@ -44,8 +44,16 @@ export function TasksSection({ user }) {
 
       if (error) throw error
 
-      loadTasks()
-      return data
+      // Добавляем проверку на успешность и наличие task_id
+      if (data?.success && data?.task_id) {
+        loadTasks() // Обновляем список заданий
+        return {
+          success: true,
+          task_id: data.task_id,
+        }
+      }
+
+      throw new Error("Не удалось получить ID задания")
     } catch (err) {
       console.error("Error starting task:", err)
       alert("Ошибка при начале задания")
