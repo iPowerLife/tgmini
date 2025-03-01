@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs"
 import { TasksList } from "./tasks-list"
-import { QuizTask } from "./tasks/quiz-task"
+import { QuizTask } from "./quiz-task" // Изменен путь импорта
 
 export function TasksSection({ user }) {
   const [tasks, setTasks] = useState({

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Progress } from "./ui/progress"
@@ -15,67 +15,59 @@ export function QuizTask({ task, user, onComplete }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  if (!task || !user) {
-    return <div className="quiz-error">Ошибка: недостаточно данных для запуска теста</div>
-  }
+  useEffect(() => {
+    const loadQuestions = async () => {
+      try {
+        setLoading(true)
+        setError(null)
 
-  const loadQuestions = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
+        const { data, error } = await supabase.rpc("get_random_quiz_questions", {
+          task_id_param: task.id,
+          questions_count: 10,
+        })
 
-      const { data, error } = await supabase.rpc("get_random_quiz_questions", {
-        task_id_param: task.id,
-        questions_count: 10,
-      })
+        if (error) throw error
 
-      if (error) throw error
-
-      setQuestions(data.questions)
-      setTimeLeft(data.questions[0]?.time_limit || 30)
-    } catch (err) {
-      console.error("Error loading questions:", err)
-      setError("Ошибка загрузки вопросов")
-    } finally {
-      setLoading(false)
+        setQuestions(data.questions)
+        setTimeLeft(data.questions[0]?.time_limit || 30)
+      } catch (err) {
+        console.error("Error loading questions:", err)
+        setError("Ошибка загрузки вопросов")
+      } finally {
+        setLoading(false)
+      }
     }
+
+    loadQuestions()
   }, [task.id])
 
   useEffect(() => {
-    loadQuestions()
-  }, [loadQuestions])
-
-  useEffect(() => {
-    let timer
     if (timeLeft > 0 && !loading) {
-      timer = setInterval(() => {
+      const timer = setInterval(() => {
         setTimeLeft((prev) => prev - 1)
       }, 1000)
+
+      return () => clearInterval(timer)
     } else if (timeLeft === 0 && !loading) {
       handleNextQuestion()
     }
-
-    return () => clearInterval(timer)
-  }, [timeLeft, loading, handleNextQuestion])
+  }, [timeLeft, loading])
 
   const handleAnswerSelect = (answerId) => {
     setSelectedAnswer(answerId)
   }
 
-  const handleNextQuestion = useCallback(async () => {
+  const handleNextQuestion = async () => {
     // Сохраняем ответ
-    if (!questions || questions.length === 0 || !questions[currentQuestion]) return
-
     const currentQuestionData = questions[currentQuestion]
-    const newAnswers = [
-      ...answers,
+    setAnswers((prev) => [
+      ...prev,
       {
         question_id: currentQuestionData.id,
         answer_id: selectedAnswer,
         time_taken: currentQuestionData.time_limit - timeLeft,
       },
-    ]
-    setAnswers(newAnswers)
+    ])
 
     // Переходим к следующему вопросу или завершаем тест
     if (currentQuestion + 1 < questions.length) {
@@ -83,17 +75,20 @@ export function QuizTask({ task, user, onComplete }) {
       setSelectedAnswer(null)
       setTimeLeft(questions[currentQuestion + 1].time_limit)
     } else {
+      // Отправляем все ответы на проверку
       try {
         const { data, error } = await supabase.rpc("check_quiz_answers", {
           user_task_id_param: task.user_task_id,
-          answers: JSON.stringify(newAnswers),
+          answers: JSON.stringify(answers),
         })
 
         if (error) throw error
 
         if (data.success) {
           alert(
-            `Тест завершен!\nПравильных ответов: ${data.correct_answers} из ${data.total_questions}\nПолучено очков: ${data.total_points}`,
+            `Тест завершен!
+Правильных ответов: ${data.correct_answers} из ${data.total_questions}
+Получено очков: ${data.total_points}`,
           )
           if (onComplete) onComplete()
         }
@@ -102,10 +97,6 @@ export function QuizTask({ task, user, onComplete }) {
         alert("Ошибка при проверке ответов")
       }
     }
-  }, [answers, currentQuestion, questions, selectedAnswer, task.user_task_id, timeLeft, onComplete])
-
-  if (!task || !task.id) {
-    return <div className="text-center text-red-500">Ошибка: данные задания не найдены</div>
   }
 
   if (loading) {
@@ -117,17 +108,6 @@ export function QuizTask({ task, user, onComplete }) {
   }
 
   const currentQuestionData = questions[currentQuestion]
-  if (!currentQuestionData) {
-    return <div className="quiz-error">Ошибка загрузки вопроса</div>
-  }
-
-  if (!questions || questions.length === 0) {
-    return <div className="text-center">Загрузка вопросов...</div>
-  }
-
-  if (!currentQuestionData) {
-    return <div className="text-center">Ошибка загрузки вопроса</div>
-  }
 
   return (
     <Card>
@@ -148,7 +128,7 @@ export function QuizTask({ task, user, onComplete }) {
           </div>
 
           <div className="grid gap-2">
-            {currentQuestionData.answers?.map((answer) => (
+            {currentQuestionData.answers.map((answer) => (
               <Button
                 key={answer.id}
                 variant={selectedAnswer === answer.id ? "default" : "outline"}
@@ -168,11 +148,5 @@ export function QuizTask({ task, user, onComplete }) {
       </CardFooter>
     </Card>
   )
-
-  const quizStyles = {
-    container: "bg-card rounded-lg p-6 shadow-lg",
-    error: "text-center text-red-500 p-4 rounded-lg bg-red-50",
-    loading: "text-center text-gray-500 p-4",
-  }
 }
 
