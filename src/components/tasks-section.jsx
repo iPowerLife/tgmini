@@ -200,14 +200,10 @@ export function TasksSection({ user, onBalanceUpdate }) {
       <div className="tasks-list">
         {filteredTasks.map((task) => (
           <div key={task.id} className={`task-card ${task.is_completed ? "completed" : ""}`}>
-            <div className="task-header">
+            <div className="task-header" style={{ marginBottom: "8px" }}>
               <div className="task-info">
                 <h3 className="task-title">{task.title}</h3>
                 <p className="task-description">{task.description}</p>
-              </div>
-              <div className="task-reward">
-                <span>{task.reward}</span>
-                <span className="reward-icon">💎</span>
               </div>
             </div>
             <div className="task-actions">{renderActionButton(task)}</div>
