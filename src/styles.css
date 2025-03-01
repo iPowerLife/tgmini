@@ -1799,3 +1799,14 @@ button:active {
   transform: translateY(1px);
 }
 
+.test-button {
+  background: linear-gradient(135deg, #2a2b2e, #1a1b1e) !important;
+  border: 1px solid rgba(91, 154, 245, 0.2) !important;
+  color: #5b9af5 !important;
+}
+
+.test-button:hover {
+  background: linear-gradient(135deg, #2a2b2e, #2a2b2e) !important;
+  border-color: rgba(91, 154, 245, 0.4) !important;
+}
+

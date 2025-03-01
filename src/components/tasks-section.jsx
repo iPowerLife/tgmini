@@ -9,31 +9,76 @@ export function TasksSection({ user }) {
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState("all")
 
-  useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        setLoading(true)
-        setError(null)
+  const loadTasks = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-        const { data, error } = await supabase.rpc("get_available_tasks", {
-          user_id_param: user.id,
-        })
+      const { data, error } = await supabase.rpc("get_available_tasks", {
+        user_id_param: user.id,
+      })
 
-        if (error) throw error
+      if (error) throw error
 
-        setTasks(data.tasks || [])
-      } catch (err) {
-        console.error("Error loading tasks:", err)
-        setError("Ошибка загрузки заданий")
-      } finally {
-        setLoading(false)
-      }
+      setTasks(data?.tasks || [])
+    } catch (err) {
+      console.error("Error loading tasks:", err)
+      setError("Ошибка загрузки заданий")
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     if (user?.id) {
       loadTasks()
     }
   }, [user?.id])
+
+  const testTask = async (task) => {
+    try {
+      // 1. Начинаем задание
+      console.log("Начинаем задание:", task.title)
+      const { data: startData, error: startError } = await supabase.rpc("start_task", {
+        user_id_param: user.id,
+        task_id_param: task.id,
+      })
+
+      if (startError) throw startError
+      console.log("Задание начато успешно")
+
+      // 2. Ждем время верификации
+      const waitTime = task.verification_time * 1000
+      console.log(`Ожидаем ${task.verification_time} секунд...`)
+      await new Promise((resolve) => setTimeout(resolve, waitTime))
+
+      // 3. Завершаем задание
+      console.log("Завершаем задание...")
+      const { data: completeData, error: completeError } = await supabase.rpc("complete_task", {
+        user_id_param: user.id,
+        task_id_param: task.id,
+      })
+
+      if (completeError) throw completeError
+      console.log("Задание завершено успешно")
+
+      // 4. Получаем награду
+      console.log("Получаем награду...")
+      const { data: rewardData, error: rewardError } = await supabase.rpc("claim_task_reward", {
+        user_id_param: user.id,
+        task_id_param: task.id,
+      })
+
+      if (rewardError) throw rewardError
+      console.log("Награда получена:", rewardData)
+
+      // Обновляем список заданий
+      loadTasks()
+    } catch (error) {
+      console.error("Ошибка при тестировании:", error)
+      alert("Ошибка при тестировании задания")
+    }
+  }
 
   if (loading) {
     return <div className="tasks-loading">Загрузка заданий...</div>
@@ -93,6 +138,9 @@ export function TasksSection({ user }) {
                 </button>
               )}
               <button className="task-button start-button">Начать</button>
+              <button className="task-button test-button" onClick={() => testTask(task)}>
+                Тест
+              </button>
             </div>
           </div>
         ))}
