@@ -115,21 +115,21 @@ export function UserProfile({ user }) {
         className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-gray-700/50 mb-3 flex-shrink-0"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
-        <div className="relative p-4">
-          <div className="flex items-center gap-4">
+        <div className="relative p-3">
+          <div className="flex items-center gap-3">
             <div className="relative flex-shrink-0 group">
               {telegramUser.photoUrl ? (
                 <img
                   src={telegramUser.photoUrl || "/placeholder.svg"}
                   alt={telegramUser.displayName}
-                  className="w-16 h-16 rounded-2xl object-cover border-2 border-gray-700/50 shadow-lg transform transition-transform duration-300 group-hover:scale-105"
+                  className="w-14 h-14 rounded-xl object-cover border-2 border-gray-700/50 shadow-lg transform transition-transform duration-300 group-hover:scale-105"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center border-2 border-gray-700/50 shadow-lg transform transition-transform duration-300 group-hover:scale-105">
-                  <User className="w-8 h-8 text-gray-400" />
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center border-2 border-gray-700/50 shadow-lg transform transition-transform duration-300 group-hover:scale-105">
+                  <User className="w-7 h-7 text-gray-400" />
                 </div>
               )}
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-gray-800 shadow-lg" />
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-800 shadow-lg" />
             </div>
 
             <div className="flex-1 min-w-0 flex items-center w-full">

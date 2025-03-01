@@ -307,19 +307,19 @@ export function TasksSection({ user, onBalanceUpdate }) {
 
   return (
     <div className="tasks-container">
-      <div className="flex items-center justify-between p-2 mb-3 bg-gray-800/50 rounded-xl backdrop-blur-sm border border-gray-700/50">
-        <motion.div className="flex gap-1.5" initial={false}>
+      <div className="flex items-center justify-between p-2 mb-2 bg-gray-800/50 rounded-lg backdrop-blur-sm border border-gray-700/50">
+        <motion.div className="flex gap-1" initial={false}>
           <TabButton active={activeTab === "all"} onClick={() => setActiveTab("all")} icon={ListTodo}>
-            Все
+            <span className="text-sm">Все</span>
           </TabButton>
           <TabButton active={activeTab === "basic"} onClick={() => setActiveTab("basic")} icon={CheckCircle2}>
-            Базовые
+            <span className="text-sm">Базовые</span>
           </TabButton>
           <TabButton active={activeTab === "limited"} onClick={() => setActiveTab("limited")} icon={Clock}>
-            Лимит
+            <span className="text-sm">Лимит</span>
           </TabButton>
           <TabButton active={activeTab === "achievement"} onClick={() => setActiveTab("achievement")} icon={Trophy}>
-            Достижения
+            <span className="text-sm">Достижения</span>
           </TabButton>
         </motion.div>
       </div>
