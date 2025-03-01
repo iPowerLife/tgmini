@@ -49,5 +49,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [], // Убрали require("tailwindcss-animate")
 }
