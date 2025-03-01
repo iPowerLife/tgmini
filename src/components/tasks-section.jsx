@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
 
 export function TasksSection({ user }) {
@@ -9,31 +9,53 @@ export function TasksSection({ user }) {
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState("all")
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
+      console.log("Загрузка заданий...")
 
       const { data, error } = await supabase.rpc("get_available_tasks", {
         user_id_param: user.id,
       })
 
+      console.log("Ответ от сервера:", { data, error })
+
       if (error) throw error
 
       setTasks(data?.tasks || [])
+      console.log("Задания загружены:", data?.tasks)
     } catch (err) {
       console.error("Error loading tasks:", err)
-      setError("Ошибка загрузки заданий")
+      setError("Ошибка загрузки заданий: " + err.message)
     } finally {
       setLoading(false)
     }
-  }
+  }, [user?.id])
 
   useEffect(() => {
     if (user?.id) {
       loadTasks()
     }
-  }, [user?.id, loadTasks, user])
+  }, [user?.id, loadTasks]) // Убираем loadTasks из зависимостей
+
+  useEffect(() => {
+    // Проверяем подключение к Supabase
+    const checkConnection = async () => {
+      try {
+        const { error } = await supabase.from("tasks").select("count").single()
+        if (error) {
+          console.error("Ошибка подключения к Supabase:", error)
+          setError("Ошибка подключения к базе данных")
+        }
+      } catch (err) {
+        console.error("Ошибка проверки подключения:", err)
+        setError("Ошибка подключения к базе данных")
+      }
+    }
+
+    checkConnection()
+  }, [])
 
   const testTask = async (task) => {
     try {
