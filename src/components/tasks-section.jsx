@@ -1,155 +1,251 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
 import { initTelegram } from "../utils/telegram"
 import { Timer } from "lucide-react"
 
+const formatTimeRemaining = (endDate) => {
+  const now = new Date()
+  const end = new Date(endDate)
+  const diff = end - now
+
+  if (diff <= 0) return "Время истекло"
+
+  const minutes = Math.floor(diff / 60000)
+  const seconds = Math.floor((diff % 60000) / 1000)
+
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`
+}
+
 export function TasksSection({ user, onBalanceUpdate }) {
   const [tasks, setTasks] = useState([])
-  const [activeTab, setActiveTab] = useState("all")
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [activeTab, setActiveTab] = useState("all")
+  const [taskStates, setTaskStates] = useState({})
 
-  useEffect(() => {
-    fetchTasks()
-  }, [])
-
-  const fetchTasks = async () => {
+  const loadTasks = useCallback(async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase.from("tasks").select("*")
+      setError(null)
+
+      const { data, error } = await supabase.rpc("get_available_tasks", {
+        user_id_param: user.id,
+      })
 
       if (error) throw error
 
-      setTasks(data)
+      setTasks(data?.tasks || [])
     } catch (err) {
-      setError(err.message)
+      console.error("Error loading tasks:", err)
+      setError("Ошибка загрузки заданий: " + err.message)
     } finally {
       setLoading(false)
     }
-  }
+  }, [user?.id])
+
+  useEffect(() => {
+    if (user?.id) {
+      loadTasks()
+    }
+  }, [user?.id, loadTasks])
+
+  // Add timer update effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      // Force re-render to update timers
+      setTasks((prevTasks) => [...prevTasks])
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [])
 
   const handleExecuteTask = async (task) => {
     try {
-      setLoading(true)
+      const { error: startError } = await supabase.rpc("start_task", {
+        user_id_param: user.id,
+        task_id_param: task.id,
+      })
 
-      // Проверка выполнения задания
-      const { data: existingCompletion } = await supabase
-        .from("task_completions")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("task_id", task.id)
-        .single()
+      if (startError) throw startError
 
-      if (existingCompletion) {
-        throw new Error("Вы уже выполнили это задание")
+      setTaskStates((prev) => ({
+        ...prev,
+        [task.id]: { status: "verifying", timeLeft: 15000 },
+      }))
+
+      if (task.link) {
+        const tg = initTelegram()
+        if (tg) {
+          tg.openLink(task.link)
+        } else {
+          window.open(task.link, "_blank")
+        }
       }
 
-      // Записываем выполнение
-      const { error: completionError } = await supabase.from("task_completions").insert([
-        {
-          user_id: user.id,
-          task_id: task.id,
-        },
-      ])
+      const interval = setInterval(() => {
+        setTaskStates((prev) => {
+          const taskState = prev[task.id]
+          if (!taskState || taskState.timeLeft <= 0) {
+            clearInterval(interval)
+            return prev
+          }
 
-      if (completionError) throw completionError
-
-      // Обновляем баланс
-      const { error: balanceError } = await supabase
-        .from("users")
-        .update({ balance: user.balance + task.reward })
-        .eq("id", user.id)
-
-      if (balanceError) throw balanceError
-
-      // Обновляем UI
-      onBalanceUpdate(user.balance + task.reward)
-
-      const telegram = await initTelegram()
-      telegram.showAlert(`Задание выполнено! +${task.reward} монет`)
-    } catch (err) {
-      setError(err.message)
-      const telegram = await initTelegram()
-      telegram.showAlert(err.message)
-    } finally {
-      setLoading(false)
+          const newTimeLeft = taskState.timeLeft - 1000
+          return {
+            ...prev,
+            [task.id]: {
+              status: newTimeLeft > 0 ? "verifying" : "completed",
+              timeLeft: newTimeLeft,
+            },
+          }
+        })
+      }, 1000)
+    } catch (error) {
+      console.error("Ошибка при выполнении:", error)
+      alert("Ошибка при выполнении задания: " + error.message)
     }
   }
 
-  const filteredTasks = tasks.filter((task) => {
-    if (activeTab === "all") return true
-    if (activeTab === "daily") return task.type === "daily"
-    if (activeTab === "weekly") return task.type === "weekly"
-    return true
-  })
+  const handleClaimReward = async (task) => {
+    try {
+      const { error: completeError } = await supabase.rpc("complete_task", {
+        user_id_param: user.id,
+        task_id_param: task.id,
+      })
+
+      if (completeError) throw completeError
+
+      const { data: rewardData, error: rewardError } = await supabase.rpc("claim_task_reward", {
+        user_id_param: user.id,
+        task_id_param: task.id,
+      })
+
+      if (rewardError) throw rewardError
+
+      // Обновляем баланс в родительском компоненте
+      if (rewardData && onBalanceUpdate) {
+        onBalanceUpdate(rewardData.new_balance)
+      }
+
+      // Обновляем список заданий
+      await loadTasks()
+    } catch (error) {
+      console.error("Ошибка при получении награды:", error)
+      alert("Ошибка при получении награды: " + error.message)
+    }
+  }
+
+  const renderActionButton = (task) => {
+    if (task.is_completed) {
+      return (
+        <button className="completed-button" disabled>
+          Выполнено ✓
+        </button>
+      )
+    }
+
+    const taskState = taskStates[task.id]
+
+    if (!taskState || taskState.status === "initial") {
+      return (
+        <button className="execute-button" onClick={() => handleExecuteTask(task)}>
+          Выполнить
+          <span className="reward">
+            {task.reward}
+            <span className="reward-icon">💎</span>
+          </span>
+        </button>
+      )
+    }
+
+    if (taskState.status === "verifying") {
+      return (
+        <button className="verify-button" disabled>
+          Проверка ({Math.ceil(taskState.timeLeft / 1000)}с)
+        </button>
+      )
+    }
+
+    if (taskState.status === "completed" || task.user_status === "completed") {
+      return (
+        <button className="claim-button" onClick={() => handleClaimReward(task)}>
+          Получить
+        </button>
+      )
+    }
+  }
+
+  if (loading) {
+    return <div className="tasks-loading">Загрузка заданий...</div>
+  }
+
+  if (error) {
+    return <div className="tasks-error">{error}</div>
+  }
+
+  const filteredTasks = tasks
+    .filter((task) => {
+      if (activeTab === "all") return true
+      return task.type === activeTab
+    })
+    .sort((a, b) => {
+      // Сначала сортируем по статусу выполнения
+      if (a.is_completed && !b.is_completed) return 1
+      if (!a.is_completed && b.is_completed) return -1
+      // Затем по времени создания (новые сверху)
+      return new Date(b.created_at) - new Date(a.created_at)
+    })
 
   return (
-    <div className="tasks-page bg-[#1a1b1e] text-white min-h-screen p-4">
-      {/* Tabs */}
-      <div className="tasks-tabs bg-[#25262b] inline-flex p-1 rounded-md mb-6">
-        <button
-          className={`px-4 py-1.5 rounded ${
-            activeTab === "all" ? "bg-[#1a1b1e] text-white" : "text-gray-400 hover:text-white"
-          } transition-colors text-sm font-medium`}
-          onClick={() => setActiveTab("all")}
-        >
+    <div className="tasks-page">
+      <div className="tasks-tabs">
+        <button className={`tab-button ${activeTab === "all" ? "active" : ""}`} onClick={() => setActiveTab("all")}>
           Все
         </button>
-        <button
-          className={`px-4 py-1.5 rounded ${
-            activeTab === "daily" ? "bg-[#1a1b1e] text-white" : "text-gray-400 hover:text-white"
-          } transition-colors text-sm font-medium`}
-          onClick={() => setActiveTab("daily")}
-        >
-          Ежедневные
+        <button className={`tab-button ${activeTab === "basic" ? "active" : ""}`} onClick={() => setActiveTab("basic")}>
+          Базовые
         </button>
         <button
-          className={`px-4 py-1.5 rounded ${
-            activeTab === "weekly" ? "bg-[#1a1b1e] text-white" : "text-gray-400 hover:text-white"
-          } transition-colors text-sm font-medium`}
-          onClick={() => setActiveTab("weekly")}
+          className={`tab-button ${activeTab === "limited" ? "active" : ""}`}
+          onClick={() => setActiveTab("limited")}
         >
-          Еженедельные
+          Лимит
+        </button>
+        <button
+          className={`tab-button ${activeTab === "achievement" ? "active" : ""}`}
+          onClick={() => setActiveTab("achievement")}
+        >
+          Достижения
         </button>
       </div>
 
-      {/* Tasks List */}
-      <div className="tasks-list space-y-4">
-        {loading ? (
-          <div className="text-center py-8 text-gray-400">Загрузка...</div>
-        ) : error ? (
-          <div className="text-center py-8 text-red-400">{error}</div>
-        ) : filteredTasks.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">В этой категории пока нет доступных заданий</div>
-        ) : (
-          filteredTasks.map((task) => (
-            <div key={task.id} className="task-card bg-[#25262b] rounded-xl p-4 transition-all hover:bg-[#2c2d32]">
-              <div className="task-header mb-4">
-                <div className="task-info">
-                  <h3 className="text-lg font-semibold mb-2">{task.title}</h3>
-                  {task.type === "limited" && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <Timer className="w-4 h-4 text-blue-400" />
-                      <span className="text-sm text-gray-400">Осталось: {task.end_date}</span>
+      <div className="tasks-list">
+        {filteredTasks.map((task) => (
+          <div key={task.id} className={`task-card ${task.is_completed ? "completed" : ""}`}>
+            <div className="task-header">
+              <div className="task-info">
+                <h3 className="task-title">{task.title}</h3>
+                {task.type === "limited" && (
+                  <div className="flex items-center justify-center mt-3 mb-4">
+                    <div className="flex items-center bg-gradient-to-r from-gray-800/50 to-gray-900/50 rounded-full px-3 py-1.5 border border-gray-700/30">
+                      <Timer className="w-3.5 h-3.5 text-blue-400 mr-1.5" />
+                      <span className="text-[10px] font-medium tracking-[0.15em] text-gray-400 mr-1">ОСТАЛОСЬ:</span>
+                      <span className="text-xs font-semibold text-blue-400">
+                        {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
+                      </span>
                     </div>
-                  )}
-                  <p className="text-gray-400">{task.description}</p>
-                </div>
-              </div>
-              <div className="task-actions">
-                <button
-                  className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  onClick={() => handleExecuteTask(task)}
-                  disabled={loading}
-                >
-                  {loading ? "Выполняется..." : "Выполнить"}
-                </button>
+                  </div>
+                )}
+                <p className="task-description">{task.description}</p>
               </div>
             </div>
-          ))
-        )}
+            <div className="task-actions">{renderActionButton(task)}</div>
+          </div>
+        ))}
+
+        {filteredTasks.length === 0 && <div className="no-tasks">В этой категории пока нет доступных заданий</div>}
       </div>
     </div>
   )
