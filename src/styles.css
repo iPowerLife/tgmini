@@ -1021,9 +1021,8 @@ button:not(:disabled):active {
 
 /* Добавляем стили для раздела заданий */
 .tasks-container {
-  min-height: 100vh;
-  background: #0f1012;
-  padding-bottom: 80px; /* Для нижнего меню */
+  min-height: auto; /* Было 100vh */
+  padding-bottom: 20px;
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
@@ -1797,5 +1796,13 @@ button:active {
 
 .tab-button:active {
   transform: translateY(1px);
+}
+
+.section-container {
+  min-height: calc(100vh - 80px); /* Учитываем высоту нижнего меню */
+  padding: 20px;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
 }
 

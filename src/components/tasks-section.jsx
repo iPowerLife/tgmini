@@ -12,47 +12,8 @@ export function TasksSection({ user }) {
   const [activeQuiz, setActiveQuiz] = useState(null)
 
   useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const { data, error } = await supabase.rpc("get_available_tasks", {
-          user_id_param: user.id,
-        })
-
-        if (error) throw error
-
-        setTasks(data || [])
-      } catch (err) {
-        console.error("Error loading tasks:", err)
-        setError("Ошибка загрузки заданий")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (user?.id) {
-      loadTasks()
-    }
+    loadTasks()
   }, [user?.id])
-
-  const startTask = async (taskId) => {
-    try {
-      const { data, error } = await supabase.rpc("start_task", {
-        user_id_param: user.id,
-        task_id_param: taskId,
-      })
-
-      if (error) throw error
-
-      // Перезагружаем список заданий после начала
-      loadTasks()
-    } catch (err) {
-      console.error("Error starting task:", err)
-      alert("Ошибка при начале задания")
-    }
-  }
 
   const loadTasks = async () => {
     try {
@@ -74,12 +35,40 @@ export function TasksSection({ user }) {
     }
   }
 
+  const startTask = async (taskId) => {
+    try {
+      const { data, error } = await supabase.rpc("start_task", {
+        user_id_param: user.id,
+        task_id_param: taskId,
+      })
+
+      if (error) throw error
+
+      // Перезагружаем список заданий после начала
+      loadTasks()
+
+      return data
+    } catch (err) {
+      console.error("Error starting task:", err)
+      alert("Ошибка при начале задания")
+      return null
+    }
+  }
+
   if (loading) {
-    return <div className="tasks-loading">Загрузка заданий...</div>
+    return (
+      <div className="section-container">
+        <div className="tasks-loading">Загрузка заданий...</div>
+      </div>
+    )
   }
 
   if (error) {
-    return <div className="tasks-error">{error}</div>
+    return (
+      <div className="section-container">
+        <div className="tasks-error">{error}</div>
+      </div>
+    )
   }
 
   const filteredTasks = tasks.filter((task) => {
@@ -153,18 +142,16 @@ export function TasksSection({ user }) {
                     )}
                     <button
                       className="task-button start-button"
-                      onClick={() => {
+                      onClick={async () => {
                         if (task.type === "achievement" && task.subtype === "quiz") {
-                          // Для тестов показываем компонент QuizTask
-                          startTask(task.id).then(() => {
-                            // После успешного запуска показываем тест
+                          const result = await startTask(task.id)
+                          if (result?.success) {
                             setActiveQuiz({
                               taskId: task.id,
-                              user_task_id: task.user_task_id,
+                              user_task_id: result.task_id,
                             })
-                          })
+                          }
                         } else {
-                          // Для обычных заданий используем существующую логику
                           startTask(task.id)
                         }
                       }}
@@ -180,14 +167,6 @@ export function TasksSection({ user }) {
           {filteredTasks.length === 0 && <div className="no-tasks">В этой категории пока нет доступных заданий</div>}
         </div>
       </div>
-      <style jsx>{`
-        .quiz-container {
-          background: rgba(30, 41, 59, 0.7);
-          border-radius: 12px;
-          padding: 20px;
-          margin-bottom: 16px;
-        }
-      `}</style>
     </div>
   )
 }
