@@ -1,12 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { ExternalLink, Play } from "lucide-react"
 import { supabase } from "../supabase"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs"
+import { Button } from "./ui/button"
 
 export function TasksSection({ user }) {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [activeTab, setActiveTab] = useState("all")
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -20,9 +24,7 @@ export function TasksSection({ user }) {
 
         if (error) throw error
 
-        // Фильтруем только базовые задания
-        const basicTasks = data.tasks.filter((task) => task.type === "basic")
-        setTasks(basicTasks)
+        setTasks(data.tasks)
       } catch (err) {
         console.error("Error loading tasks:", err)
         setError("Ошибка загрузки заданий")
@@ -55,43 +57,73 @@ export function TasksSection({ user }) {
     )
   }
 
-  return (
-    <div className="tasks-container max-w-lg mx-auto p-4">
-      <div className="space-y-4">
-        {tasks.map((task) => (
-          <div key={task.id} className="task-card">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <h3 className="text-white/90 font-medium mb-2">{task.title}</h3>
-                <p className="text-white/70 text-sm">{task.description}</p>
-              </div>
-              <div className="flex items-center gap-1 text-[#5b9af5] ml-4">
-                <span className="text-lg font-medium">{task.reward}</span>
-                <span className="text-sm">💎</span>
-              </div>
-            </div>
+  const filteredTasks = tasks.filter((task) => {
+    if (activeTab === "all") return true
+    return task.type === activeTab
+  })
 
-            <div className="flex gap-3">
-              {task.link && (
-                <button className="task-button task-button-outline" onClick={() => window.open(task.link, "_blank")}>
-                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                    <polyline points="15 3 21 3 21 9" />
-                    <line x1="10" y1="14" x2="21" y2="3" />
-                  </svg>
-                  Перейти
-                </button>
-              )}
-              <button className="task-button task-button-primary">
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="5 3 19 12 5 21 5 3" />
-                </svg>
-                Начать
-              </button>
+  return (
+    <div className="tasks-container max-w-2xl mx-auto p-4">
+      <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
+        <TabsList className="grid grid-cols-3 mb-6">
+          <TabsTrigger value="all" className="text-sm font-medium">
+            Все задания
+          </TabsTrigger>
+          <TabsTrigger value="basic" className="text-sm font-medium">
+            Базовые
+          </TabsTrigger>
+          <TabsTrigger value="achievement" className="text-sm font-medium">
+            Достижения
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab} className="space-y-4">
+          {filteredTasks.map((task) => (
+            <div
+              key={task.id}
+              className="task-card bg-gradient-to-br from-gray-900/50 to-gray-800/50 rounded-xl p-6 border border-gray-800/50 hover:border-primary/20 transition-all duration-300"
+            >
+              <div className="flex flex-col gap-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                      {task.title}
+                    </h3>
+                    <p className="mt-2 text-gray-400 leading-relaxed">{task.description}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-primary ml-4">
+                    <span className="text-xl font-bold">{task.reward}</span>
+                    <span className="text-lg">💎</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 mt-2">
+                  {task.link && (
+                    <Button
+                      variant="outline"
+                      className="flex-1 sm:flex-none min-w-[140px] bg-gray-900/50 hover:bg-gray-800"
+                      onClick={() => window.open(task.link, "_blank")}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Перейти
+                    </Button>
+                  )}
+                  <Button className="flex-1 sm:flex-none min-w-[140px] bg-gradient-to-r from-primary/80 to-primary hover:from-primary hover:to-primary/80">
+                    <Play className="w-4 h-4 mr-2" />
+                    Начать
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+
+          {filteredTasks.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-400">Нет доступных заданий в этой категории</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
