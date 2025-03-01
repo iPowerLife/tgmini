@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
 import { initTelegram } from "../utils/telegram"
-import { Clock } from "lucide-react"
 
 const formatTimeRemaining = (endDate) => {
   const now = new Date()
@@ -235,10 +234,22 @@ export function TasksSection({ user, onBalanceUpdate }) {
                 <div>
                   <h3 className="task-title">{task.title}</h3>
                   {task.type === "limited" && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <Clock className="w-3.5 h-3.5 text-indigo-400" strokeWidth={2.5} />
-                      <span className="font-medium text-xs tracking-wide text-indigo-400/90">
-                        Осталось времени: {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <svg
+                        className="w-3 h-3 text-blue-400/80"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 6v6l4 2" />
+                      </svg>
+                      <span
+                        className="text-[11px] font-medium tracking-tight text-blue-400/80"
+                        style={{ fontFamily: "-apple-system, BlinkMacSystemFont, system-ui, sans-serif" }}
+                      >
+                        осталось: {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
                       </span>
                     </div>
                   )}
