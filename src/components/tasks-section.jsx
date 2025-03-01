@@ -55,9 +55,7 @@ export function TasksSection({ user }) {
         <div className="text-center">
           <p className="text-red-400 text-lg font-semibold mb-2">Ошибка загрузки</p>
           <p className="text-white/50">{error}</p>
-          <Button className="mt-4 bg-primary/80 hover:bg-primary" onClick={() => window.location.reload()}>
-            Попробовать снова
-          </Button>
+          <Button onClick={() => window.location.reload()}>Попробовать снова</Button>
         </div>
       </div>
     )
@@ -72,60 +70,40 @@ export function TasksSection({ user }) {
     <div className="tasks-container w-full max-w-2xl mx-auto px-4 py-6 sm:px-6">
       <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-4 w-full max-w-md mx-auto mb-6">
-          <TabsTrigger value="all" className="text-sm font-medium">
-            Все
-          </TabsTrigger>
-          <TabsTrigger value="basic" className="text-sm font-medium">
-            Базовые
-          </TabsTrigger>
-          <TabsTrigger value="limited" className="text-sm font-medium">
+          <TabsTrigger value="all">Все</TabsTrigger>
+          <TabsTrigger value="basic">Базовые</TabsTrigger>
+          <TabsTrigger value="limited">
             <Clock className="w-4 h-4 mr-1" />
             Лимит
           </TabsTrigger>
-          <TabsTrigger value="achievement" className="text-sm font-medium">
-            Достижения
-          </TabsTrigger>
+          <TabsTrigger value="achievement">Достижения</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab}>
-          <div className="grid gap-4 sm:gap-6 animate-fadeIn">
+          <div className="grid gap-4 animate-fadeIn">
             {filteredTasks.map((task) => (
-              <div
-                key={task.id}
-                className="task-card relative overflow-hidden bg-gradient-to-br from-gray-900/50 to-gray-800/50 rounded-xl p-4 sm:p-6 border border-gray-800/50 hover:border-primary/20 transition-all duration-300"
-              >
-                {/* Декоративный элемент */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
-
-                <div className="relative space-y-4">
-                  {/* Заголовок и награда */}
+              <div key={task.id} className="relative overflow-hidden bg-gray-900/80 rounded-xl p-4">
+                <div className="space-y-4">
                   <div className="flex items-start justify-between gap-4">
-                    <h3 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                      {task.title}
-                    </h3>
-                    <div className="flex items-center gap-1 text-primary shrink-0">
-                      <span className="text-lg sm:text-xl font-bold">{task.reward}</span>
-                      <span className="text-base sm:text-lg">💎</span>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-1">{task.title}</h3>
+                      <p className="text-sm text-gray-400">{task.description}</p>
+                    </div>
+                    <div className="flex items-center gap-1 text-blue-400">
+                      <span className="text-lg font-bold">{task.reward}</span>
+                      <span>💎</span>
                     </div>
                   </div>
 
-                  {/* Описание */}
-                  <p className="text-sm sm:text-base text-gray-400 leading-relaxed">{task.description}</p>
-
-                  {/* Кнопки */}
-                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <div className="flex gap-2">
                     {task.link && (
-                      <Button
-                        variant="outline"
-                        className="w-full sm:w-auto bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 border-none text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                        onClick={() => window.open(task.link, "_blank")}
-                      >
-                        <ExternalLink className="w-4 h-4 mr-2 text-blue-400" />
+                      <Button variant="outline" className="flex-1" onClick={() => window.open(task.link, "_blank")}>
+                        <ExternalLink className="w-4 h-4 mr-2" />
                         Перейти
                       </Button>
                     )}
-                    <Button className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg hover:shadow-xl transition-all duration-300">
-                      <Play className="w-4 h-4 mr-2 text-blue-300" />
+                    <Button className="flex-1">
+                      <Play className="w-4 h-4 mr-2" />
                       Начать
                     </Button>
                   </div>
@@ -134,13 +112,8 @@ export function TasksSection({ user }) {
             ))}
 
             {filteredTasks.length === 0 && (
-              <div className="text-center py-12 px-4">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-800/50 mb-4">
-                  <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </div>
-                <p className="text-gray-400 text-sm sm:text-base">В этой категории пока нет доступных заданий</p>
+              <div className="text-center py-12">
+                <p className="text-gray-400">В этой категории пока нет доступных заданий</p>
               </div>
             )}
           </div>
