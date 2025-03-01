@@ -154,11 +154,12 @@ export function TasksSection({ user, onBalanceUpdate }) {
     if (!taskState || taskState.status === "initial") {
       return (
         <button className="task-button execute-button" onClick={() => handleExecuteTask(task)}>
-          <span>Выполнить</span>
           <div className="flex items-center gap-2">
+            <span>Выполнить</span>
             {task.type === "limited" && (
-              <span className="text-white/90 text-sm">
-                ⏳ {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
+              <span className="flex items-center gap-1 text-white/90">
+                <span>⏳</span>
+                <span>{task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}</span>
               </span>
             )}
             <span className="reward">
