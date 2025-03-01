@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
+import { QuizTask } from "./tasks/quiz-task"
 
 export function TasksSection({ user }) {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState("all")
+  const [activeQuiz, setActiveQuiz] = useState(null)
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -21,7 +23,7 @@ export function TasksSection({ user }) {
 
         if (error) throw error
 
-        setTasks(data.tasks || [])
+        setTasks(data || [])
       } catch (err) {
         console.error("Error loading tasks:", err)
         setError("Ошибка загрузки заданий")
@@ -34,6 +36,43 @@ export function TasksSection({ user }) {
       loadTasks()
     }
   }, [user?.id])
+
+  const startTask = async (taskId) => {
+    try {
+      const { data, error } = await supabase.rpc("start_task", {
+        user_id_param: user.id,
+        task_id_param: taskId,
+      })
+
+      if (error) throw error
+
+      // Перезагружаем список заданий после начала
+      loadTasks()
+    } catch (err) {
+      console.error("Error starting task:", err)
+      alert("Ошибка при начале задания")
+    }
+  }
+
+  const loadTasks = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const { data, error } = await supabase.rpc("get_available_tasks", {
+        user_id_param: user.id,
+      })
+
+      if (error) throw error
+
+      setTasks(data || [])
+    } catch (err) {
+      console.error("Error loading tasks:", err)
+      setError("Ошибка загрузки заданий")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (loading) {
     return <div className="tasks-loading">Загрузка заданий...</div>
@@ -75,25 +114,52 @@ export function TasksSection({ user }) {
       {/* Список заданий */}
       <div className="tasks-list">
         {filteredTasks.map((task) => (
-          <div key={task.id} className="task-card">
-            <div className="task-header">
-              <div className="task-info">
-                <h3 className="task-title">{task.title}</h3>
-                <p className="task-description">{task.description}</p>
+          <div key={task.id}>
+            {activeQuiz?.taskId === task.id ? (
+              <QuizTask
+                task={task}
+                user={user}
+                onComplete={() => {
+                  setActiveQuiz(null)
+                  // Перезагружаем список заданий
+                  loadTasks()
+                }}
+              />
+            ) : (
+              <div className="task-card">
+                <div className="task-header">
+                  <div className="task-info">
+                    <h3 className="task-title">{task.title}</h3>
+                    <p className="task-description">{task.description}</p>
+                  </div>
+                  <div className="task-reward">
+                    <span>{task.reward}</span>
+                    <span className="reward-icon">💎</span>
+                  </div>
+                </div>
+                <div className="task-actions">
+                  {task.link && (
+                    <button className="task-button goto-button" onClick={() => window.open(task.link, "_blank")}>
+                      Перейти
+                    </button>
+                  )}
+                  <button
+                    className="task-button start-button"
+                    onClick={() => {
+                      if (task.type === "achievement" && task.subtype === "quiz") {
+                        // Для тестов показываем компонент QuizTask
+                        setActiveQuiz({ taskId: task.id })
+                      } else {
+                        // Для обычных заданий используем существующую логику
+                        startTask(task.id)
+                      }
+                    }}
+                  >
+                    Начать
+                  </button>
+                </div>
               </div>
-              <div className="task-reward">
-                <span>{task.reward}</span>
-                <span className="reward-icon">💎</span>
-              </div>
-            </div>
-            <div className="task-actions">
-              {task.link && (
-                <button className="task-button goto-button" onClick={() => window.open(task.link, "_blank")}>
-                  Перейти
-                </button>
-              )}
-              <button className="task-button start-button">Начать</button>
-            </div>
+            )}
           </div>
         ))}
 
