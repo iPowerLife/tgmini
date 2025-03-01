@@ -33,26 +33,43 @@ export function TasksSection({ user }) {
     if (user?.id) {
       loadTasks()
     }
-  }, [user?.id])
+  }, [user?.id, loadTasks, user])
 
   const testTask = async (task) => {
     try {
-      // 1. Начинаем задание
-      console.log("Начинаем задание:", task.title)
-      const { data: startData, error: startError } = await supabase.rpc("start_task", {
-        user_id_param: user.id,
-        task_id_param: task.id,
-      })
+      // 1. Проверяем статус задания
+      const { data: taskStatus, error: statusError } = await supabase
+        .from("user_tasks")
+        .select("status")
+        .eq("user_id", user.id)
+        .eq("task_id", task.id)
+        .single()
 
-      if (startError) throw startError
-      console.log("Задание начато успешно")
+      if (statusError && statusError.code !== "PGRST116") {
+        throw statusError
+      }
 
-      // 2. Ждем время верификации
+      // Если задание уже начато, пропускаем start_task
+      if (!taskStatus) {
+        // 2. Начинаем задание
+        console.log("Начинаем задание:", task.title)
+        const { data: startData, error: startError } = await supabase.rpc("start_task", {
+          user_id_param: user.id,
+          task_id_param: task.id,
+        })
+
+        if (startError) throw startError
+        console.log("Задание начато успешно")
+      } else {
+        console.log("Задание уже начато, пропускаем start_task")
+      }
+
+      // 3. Ждем время верификации
       const waitTime = task.verification_time * 1000
       console.log(`Ожидаем ${task.verification_time} секунд...`)
       await new Promise((resolve) => setTimeout(resolve, waitTime))
 
-      // 3. Завершаем задание
+      // 4. Завершаем задание
       console.log("Завершаем задание...")
       const { data: completeData, error: completeError } = await supabase.rpc("complete_task", {
         user_id_param: user.id,
@@ -62,7 +79,7 @@ export function TasksSection({ user }) {
       if (completeError) throw completeError
       console.log("Задание завершено успешно")
 
-      // 4. Получаем награду
+      // 5. Получаем награду
       console.log("Получаем награду...")
       const { data: rewardData, error: rewardError } = await supabase.rpc("claim_task_reward", {
         user_id_param: user.id,
@@ -76,7 +93,7 @@ export function TasksSection({ user }) {
       loadTasks()
     } catch (error) {
       console.error("Ошибка при тестировании:", error)
-      alert("Ошибка при тестировании задания")
+      alert("Ошибка при тестировании задания: " + error.message)
     }
   }
 
