@@ -38,7 +38,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
       setTasks(data?.tasks || [])
       console.log(
         "Task data:",
-        tasks.map((t) => ({ id: t.id, type: t.type, end_date: t.end_date })),
+        data?.tasks?.map((t) => ({ id: t.id, type: t.type, end_date: t.end_date })),
       )
     } catch (err) {
       console.error("Error loading tasks:", err)
@@ -46,7 +46,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
     } finally {
       setLoading(false)
     }
-  }, [user?.id, tasks])
+  }, [user?.id])
 
   useEffect(() => {
     if (user?.id) {
