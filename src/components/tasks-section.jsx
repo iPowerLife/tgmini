@@ -102,7 +102,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
         })
       }, 1000)
     } catch (error) {
-      console.error("Ошибка при выполнении задания:", error)
+      console.error("Ошибка при выполнении:", error)
       alert("Ошибка при выполнении задания: " + error.message)
     }
   }
