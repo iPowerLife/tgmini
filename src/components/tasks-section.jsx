@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
+import { tg } from "../utils/telegram"
 
 export function TasksSection({ user }) {
   const [tasks, setTasks] = useState([])
@@ -78,7 +79,9 @@ export function TasksSection({ user }) {
       }))
 
       // Открываем ссылку в новом окне
-      window.open(task.link, "_blank")
+      if (task.link) {
+        tg.openLink(task.link)
+      }
 
       // Запускаем таймер
       const interval = setInterval(() => {
