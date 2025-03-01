@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ExternalLink, Play } from "lucide-react"
+import { ExternalLink, Play, Clock } from "lucide-react"
 import { supabase } from "../supabase"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs"
 import { Button } from "./ui/button"
@@ -71,12 +71,16 @@ export function TasksSection({ user }) {
   return (
     <div className="tasks-container w-full max-w-2xl mx-auto px-4 py-6 sm:px-6">
       <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-6">
+        <TabsList className="grid grid-cols-4 w-full max-w-md mx-auto mb-6">
           <TabsTrigger value="all" className="text-sm font-medium">
             Все
           </TabsTrigger>
           <TabsTrigger value="basic" className="text-sm font-medium">
             Базовые
+          </TabsTrigger>
+          <TabsTrigger value="limited" className="text-sm font-medium">
+            <Clock className="w-4 h-4 mr-1" />
+            Лимит
           </TabsTrigger>
           <TabsTrigger value="achievement" className="text-sm font-medium">
             Достижения
@@ -113,16 +117,16 @@ export function TasksSection({ user }) {
                     {task.link && (
                       <Button
                         variant="outline"
-                        className="w-full sm:w-auto sm:flex-1 bg-gray-900/50 hover:bg-gray-800 border-gray-700/50 hover:border-primary/30 text-gray-300"
+                        className="w-full sm:w-auto bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 border-none text-white shadow-lg hover:shadow-xl transition-all duration-300"
                         onClick={() => window.open(task.link, "_blank")}
                       >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Перейти к заданию
+                        <ExternalLink className="w-4 h-4 mr-2 text-blue-400" />
+                        Перейти
                       </Button>
                     )}
-                    <Button className="w-full sm:w-auto sm:flex-1 bg-gradient-to-r from-primary/80 to-primary hover:from-primary hover:to-primary/80 text-white shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30">
-                      <Play className="w-4 h-4 mr-2" />
-                      Начать выполнение
+                    <Button className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg hover:shadow-xl transition-all duration-300">
+                      <Play className="w-4 h-4 mr-2 text-blue-300" />
+                      Начать
                     </Button>
                   </div>
                 </div>
