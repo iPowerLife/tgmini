@@ -5,9 +5,20 @@ import { supabase } from "../supabase"
 import { initTelegram } from "../utils/telegram"
 
 const formatTimeRemaining = (endDate) => {
+  if (!endDate) {
+    console.log("endDate is null or undefined")
+    return "Нет времени"
+  }
+
   const now = new Date()
   const end = new Date(endDate)
+
+  console.log("Current time:", now)
+  console.log("End time:", end)
+
   const diff = end - now
+
+  console.log("Time difference:", diff)
 
   if (diff <= 0) return "Время истекло"
 
@@ -176,6 +187,9 @@ export function TasksSection({ user, onBalanceUpdate }) {
     }
 
     if (task.type === "limited") {
+      console.log("Limited task:", task)
+      console.log("End date:", task.end_date)
+
       return (
         <button
           onClick={() => handleExecuteTask(task)}
