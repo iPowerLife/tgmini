@@ -1848,12 +1848,53 @@ button:active {
 .task-card.completed {
   opacity: 0.7;
   background-color: rgba(0, 0, 0, 0.1);
+  transform: scale(0.95);
+  margin-bottom: 8px !important;
+  padding: 12px !important;
+  transition: all 0.3s ease;
+}
+
+.task-card.completed .task-description {
+  display: none;
+}
+
+.task-card.completed .task-header {
+  margin-bottom: 0;
+}
+
+.task-card.completed .task-title {
+  font-size: 14px !important;
+  color: #94a3b8 !important;
+}
+
+.task-card.completed .task-reward {
+  font-size: 14px !important;
+  opacity: 0.7;
 }
 
 .completed-button {
   background-color: #4caf50 !important;
   color: white !important;
   cursor: not-allowed !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  height: auto !important;
+}
+
+/* Добавляем анимацию для сворачивания */
+@keyframes collapseCard {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+}
+
+.task-card.completed {
+  animation: collapseCard 0.3s ease forwards;
 }
 
 /* Остальные стили остаются без изменений */
