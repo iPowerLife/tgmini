@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { User } from "lucide-react"
-import { useTelegramUser } from "../hooks/use-telegram-user"
+import { useTelegramUser } from "../utils/telegram"
 
 export function UserProfile({ user }) {
   const [stats, setStats] = useState(null)
@@ -81,10 +81,10 @@ export function UserProfile({ user }) {
     <div className="profile-container">
       <div className="profile-header">
         <div className="avatar-container">
-          {telegramUser?.photoUrl ? (
+          {telegramUser.photoUrl ? (
             <img
               src={telegramUser.photoUrl || "/placeholder.svg"}
-              alt={telegramUser.firstName}
+              alt={telegramUser.displayName}
               className="avatar-image"
             />
           ) : (
@@ -94,9 +94,9 @@ export function UserProfile({ user }) {
           )}
         </div>
         <div className="user-info">
-          <h2>{telegramUser?.firstName || "Пользователь"}</h2>
-          {telegramUser?.username && <p className="username">@{telegramUser.username}</p>}
-          <p className="user-id">ID: {telegramUser?.id || "Загрузка..."}</p>
+          <h2>{telegramUser.firstName}</h2>
+          {telegramUser.username && <p className="username">@{telegramUser.username}</p>}
+          <p className="user-id">ID: {telegramUser.id}</p>
         </div>
       </div>
 

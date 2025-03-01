@@ -84,11 +84,18 @@ import { supabase } from "../supabase"
 
 export async function createOrUpdateUser(userData) {
   try {
-    const { data, error } = await supabase.rpc("create_or_update_user", {
-      telegram_id_param: userData.id,
-      username_param: userData.username,
-      first_name_param: userData.first_name,
-    })
+    const { data, error } = await supabase
+      .from("users")
+      .upsert(
+        {
+          telegram_id: userData.id,
+          username: userData.username,
+          first_name: userData.first_name,
+        },
+        { onConflict: "telegram_id" },
+      )
+      .select()
+      .single()
 
     if (error) {
       console.error("Ошибка при создании/обновлении пользователя:", error)
@@ -99,6 +106,26 @@ export async function createOrUpdateUser(userData) {
   } catch (error) {
     console.error("Ошибка при создании/обновлении пользователя:", error)
     return null
+  }
+}
+
+// Экспортируем хук для получения данных пользователя
+export function useTelegramUser() {
+  const user = getTelegramUser()
+
+  return {
+    id: user?.id,
+    firstName: user?.first_name || "Unknown",
+    lastName: user?.last_name,
+    username: user?.username,
+    languageCode: user?.language_code,
+    photoUrl: user?.photo_url,
+    // Форматированное имя для отображения
+    displayName: user?.username
+      ? `@${user.username}`
+      : user?.first_name
+        ? `${user.first_name}${user.last_name ? ` ${user.last_name}` : ""}`
+        : "Unknown User",
   }
 }
 
