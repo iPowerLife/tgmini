@@ -9,45 +9,16 @@
 }
 
 @layer components {
-  .profile-container {
-    @apply p-3;
-  }
-
-  .stat-card {
-    @apply p-3 rounded-xl bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 transition-all duration-300;
-  }
-
-  .stat-value {
-    @apply text-lg font-bold text-white transition-colors duration-300;
-  }
-
-  .stat-label {
-    @apply text-xs text-gray-400 font-medium;
-  }
-
-  .miners-summary {
-    @apply p-4 rounded-xl bg-gray-800/50 backdrop-blur-sm border border-gray-700/50;
-  }
-
-  .miners-list {
-    @apply space-y-1.5;
-  }
-
-  .miner-item {
-    @apply flex items-center justify-between py-2 px-3;
-  }
-
-  /* Остальные стили остаются без изменений */
-  .tasks-page {
-    @apply p-4 max-w-2xl mx-auto;
+  .tasks-container {
+    @apply p-3 max-w-md mx-auto;
   }
 
   .tasks-list {
-    @apply space-y-4;
+    @apply space-y-2;
   }
 
   .task-card {
-    @apply bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-4 transition-all duration-200;
+    @apply bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-3 transition-all duration-200;
   }
 
   .task-card.completed {
@@ -55,15 +26,45 @@
   }
 
   .task-header {
-    @apply mb-4;
+    @apply mb-2;
   }
 
   .task-info {
-    @apply space-y-2;
+    @apply space-y-1;
   }
 
   .task-title {
-    @apply text-lg font-semibold text-white;
+    @apply text-sm font-medium text-white;
+  }
+
+  /* Стили для кнопок задач */
+  .task-button {
+    @apply w-full flex items-center justify-between px-3 py-2 rounded-lg border transition-colors text-sm;
+  }
+
+  .task-button-default {
+    @apply bg-gray-800/80 border-gray-700/50 hover:bg-gray-800/90;
+  }
+
+  .task-button-completed {
+    @apply bg-gray-800/80 border-gray-700/50 text-gray-400 cursor-not-allowed;
+  }
+
+  .task-button-claim {
+    @apply bg-blue-600/80 border-blue-500/50 hover:bg-blue-600/90 text-white;
+  }
+
+  /* Стили для статистики профиля остаются без изменений */
+  .profile-stat {
+    @apply p-4 rounded-xl bg-gray-900/50 border border-gray-700/30;
+  }
+
+  .profile-stat-value {
+    @apply text-2xl font-bold text-white mb-1;
+  }
+
+  .profile-stat-label {
+    @apply text-xs text-gray-400 uppercase tracking-wider;
   }
 }
 

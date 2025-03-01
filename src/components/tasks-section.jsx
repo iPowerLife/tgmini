@@ -25,15 +25,15 @@ const formatTimeRemaining = (endDate) => {
 
 const TabButton = ({ active, onClick, children, icon: Icon }) => (
   <motion.button
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
     onClick={onClick}
     className={`
-      relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+      relative px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200
       ${active ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white" : "text-gray-400 hover:text-gray-300"}
     `}
   >
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <Icon className={`w-4 h-4 ${active ? "text-blue-400" : "text-gray-500"}`} />
       {children}
     </div>
@@ -290,22 +290,25 @@ export function TasksSection({ user, onBalanceUpdate }) {
       return task.type === activeTab
     })
     .sort((a, b) => {
-      // Сначала сортируем limited задания наверх
-      if (a.type === "limited" && b.type !== "limited") return -1
-      if (a.type !== "limited" && b.type === "limited") return 1
-
-      // Затем по статусу выполнения
-      if (a.is_completed && !b.is_completed) return 1
+      // Сначала сортируем по статусу выполнения
       if (!a.is_completed && b.is_completed) return -1
+      if (a.is_completed && !b.is_completed) return 1
 
-      // И наконец по времени создания
+      // Если оба задания не выполнены или оба выполнены,
+      // сортируем limited задания наверх
+      if (!a.is_completed && !b.is_completed) {
+        if (a.type === "limited" && b.type !== "limited") return -1
+        if (a.type !== "limited" && b.type === "limited") return 1
+      }
+
+      // В конце сортируем по времени создания
       return new Date(b.created_at) - new Date(a.created_at)
     })
 
   return (
-    <div className="tasks-page">
-      <div className="flex items-center justify-between p-2 mb-4 bg-gray-800/50 rounded-xl backdrop-blur-sm border border-gray-700/50">
-        <motion.div className="flex gap-2" initial={false}>
+    <div className="tasks-container">
+      <div className="flex items-center justify-between p-2 mb-3 bg-gray-800/50 rounded-xl backdrop-blur-sm border border-gray-700/50">
+        <motion.div className="flex gap-1.5" initial={false}>
           <TabButton active={activeTab === "all"} onClick={() => setActiveTab("all")} icon={ListTodo}>
             Все
           </TabButton>
@@ -321,20 +324,28 @@ export function TasksSection({ user, onBalanceUpdate }) {
         </motion.div>
       </div>
 
-      <div className="tasks-list space-y-3">
+      <div className="tasks-list space-y-2">
         {filteredTasks.map((task) => (
           <motion.div
             key={task.id}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            exit={{ opacity: 0, y: -10 }}
             className={`task-card ${task.is_completed ? "completed" : ""}`}
           >
             <div className="task-header">
               <div className="task-info">
-                <h3 className="task-title text-lg font-semibold text-white mb-4">{task.title}</h3>
+                <h3 className="task-title">{task.title}</h3>
               </div>
             </div>
+            {task.type === "limited" && !task.is_completed && (
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-medium text-gray-400">ОСТАЛОСЬ:</span>
+                <span className="text-sm font-mono font-medium text-blue-400">
+                  {task.end_date ? formatTimeRemaining(task.end_date) : "Время истекло"}
+                </span>
+              </div>
+            )}
             {renderTaskButton(task)}
           </motion.div>
         ))}
@@ -343,10 +354,10 @@ export function TasksSection({ user, onBalanceUpdate }) {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="no-tasks flex flex-col items-center justify-center p-8 text-gray-400"
+            className="no-tasks flex flex-col items-center justify-center p-6 text-gray-400"
           >
-            <Sparkles className="w-12 h-12 mb-4 text-gray-500" />
-            <p>В этой категории пока нет доступных заданий</p>
+            <Sparkles className="w-8 h-8 mb-3 text-gray-500" />
+            <p className="text-sm">В этой категории пока нет доступных заданий</p>
           </motion.div>
         )}
       </div>

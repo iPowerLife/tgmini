@@ -131,13 +131,20 @@ export function UserProfile({ user }) {
               )}
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-800 shadow-lg" />
             </div>
+
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent truncate">
-                {telegramUser.firstName}
-              </h2>
-              {telegramUser.username && (
-                <p className="text-sm text-gray-400 font-medium truncate">@{telegramUser.username}</p>
-              )}
+              <div className="p-2 rounded-lg bg-gray-800/50 border border-gray-700/50 backdrop-blur-sm">
+                <h2 className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent truncate">
+                  {telegramUser.firstName}
+                </h2>
+                {telegramUser.username && (
+                  <p className="text-sm text-gray-400 font-medium truncate">@{telegramUser.username}</p>
+                )}
+                <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
+                  <Hash className="w-3.5 h-3.5" />
+                  <span className="font-mono">{telegramUser.id}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
