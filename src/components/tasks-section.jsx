@@ -3,22 +3,13 @@
 import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
 import { initTelegram } from "../utils/telegram"
+import { motion } from "framer-motion"
+import { Clock, CheckCircle2, Trophy, ListTodo, Sparkles } from "lucide-react"
 
 const formatTimeRemaining = (endDate) => {
-  if (!endDate) {
-    console.log("endDate is null or undefined")
-    return "Нет времени"
-  }
-
   const now = new Date()
   const end = new Date(endDate)
-
-  console.log("Current time:", now)
-  console.log("End time:", end)
-
   const diff = end - now
-
-  console.log("Time difference:", diff)
 
   if (diff <= 0) return "Время истекло"
 
@@ -31,6 +22,31 @@ const formatTimeRemaining = (endDate) => {
   }
   return `${minutes}:${seconds.toString().padStart(2, "0")}`
 }
+
+const TabButton = ({ active, onClick, children, icon: Icon }) => (
+  <motion.button
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    onClick={onClick}
+    className={`
+      relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+      ${active ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white" : "text-gray-400 hover:text-gray-300"}
+    `}
+  >
+    <div className="flex items-center gap-2">
+      <Icon className={`w-4 h-4 ${active ? "text-blue-400" : "text-gray-500"}`} />
+      {children}
+    </div>
+    {active && (
+      <motion.div
+        layoutId="activeTab"
+        className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20"
+        initial={false}
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      />
+    )}
+  </motion.button>
+)
 
 export function TasksSection({ user, onBalanceUpdate }) {
   const [tasks, setTasks] = useState([])
@@ -288,39 +304,51 @@ export function TasksSection({ user, onBalanceUpdate }) {
 
   return (
     <div className="tasks-page">
-      <div className="tasks-tabs">
-        <button className={`tab-button ${activeTab === "all" ? "active" : ""}`} onClick={() => setActiveTab("all")}>
-          Все
-        </button>
-        <button className={`tab-button ${activeTab === "basic" ? "active" : ""}`} onClick={() => setActiveTab("basic")}>
-          Базовые
-        </button>
-        <button
-          className={`tab-button ${activeTab === "limited" ? "active" : ""}`}
-          onClick={() => setActiveTab("limited")}
-        >
-          Лимит
-        </button>
-        <button
-          className={`tab-button ${activeTab === "achievement" ? "active" : ""}`}
-          onClick={() => setActiveTab("achievement")}
-        >
-          Достижения
-        </button>
+      <div className="flex items-center justify-between p-2 mb-4 bg-gray-800/50 rounded-xl backdrop-blur-sm border border-gray-700/50">
+        <motion.div className="flex gap-2" initial={false}>
+          <TabButton active={activeTab === "all"} onClick={() => setActiveTab("all")} icon={ListTodo}>
+            Все
+          </TabButton>
+          <TabButton active={activeTab === "basic"} onClick={() => setActiveTab("basic")} icon={CheckCircle2}>
+            Базовые
+          </TabButton>
+          <TabButton active={activeTab === "limited"} onClick={() => setActiveTab("limited")} icon={Clock}>
+            Лимит
+          </TabButton>
+          <TabButton active={activeTab === "achievement"} onClick={() => setActiveTab("achievement")} icon={Trophy}>
+            Достижения
+          </TabButton>
+        </motion.div>
       </div>
-      <div className="tasks-list">
+
+      <div className="tasks-list space-y-3">
         {filteredTasks.map((task) => (
-          <div key={task.id} className={`task-card ${task.is_completed ? "completed" : ""}`}>
+          <motion.div
+            key={task.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`task-card ${task.is_completed ? "completed" : ""}`}
+          >
             <div className="task-header">
               <div className="task-info">
                 <h3 className="task-title text-lg font-semibold text-white mb-4">{task.title}</h3>
               </div>
             </div>
             {renderTaskButton(task)}
-          </div>
+          </motion.div>
         ))}
 
-        {filteredTasks.length === 0 && <div className="no-tasks">В этой категории пока нет доступных заданий</div>}
+        {filteredTasks.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="no-tasks flex flex-col items-center justify-center p-8 text-gray-400"
+          >
+            <Sparkles className="w-12 h-12 mb-4 text-gray-500" />
+            <p>В этой категории пока нет доступных заданий</p>
+          </motion.div>
+        )}
       </div>
     </div>
   )
