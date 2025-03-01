@@ -36,13 +36,17 @@ export function TasksSection({ user, onBalanceUpdate }) {
       if (error) throw error
 
       setTasks(data?.tasks || [])
+      console.log(
+        "Task data:",
+        tasks.map((t) => ({ id: t.id, type: t.type, end_date: t.end_date })),
+      )
     } catch (err) {
       console.error("Error loading tasks:", err)
       setError("Ошибка загрузки заданий: " + err.message)
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [user?.id, tasks])
 
   useEffect(() => {
     if (user?.id) {
@@ -222,13 +226,13 @@ export function TasksSection({ user, onBalanceUpdate }) {
 
       <div className="tasks-list">
         {filteredTasks.map((task) => (
-          <div key={task.id} className={`task-card ${task.is_completed ? "completed" : ""}`}>
-            {task.type === "limited" && task.end_date && (
+          <div key={task.id} className={`task-card ${task.is_completed ? "completed" : ""} relative`}>
+            {task.type === "limited" && (
               <div
-                className="absolute top-0 right-0 bg-red-600/80 text-white text-sm px-3 py-1 rounded-bl-lg rounded-tr-lg font-medium"
-                style={{ marginTop: "-1px", marginRight: "-1px" }}
+                className="absolute top-0 right-0 bg-red-500 text-white px-2 py-1 text-sm font-medium z-50"
+                style={{ borderRadius: "0 4px 0 4px" }}
               >
-                ⏳ {formatTimeRemaining(task.end_date)}
+                ⏳ {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
               </div>
             )}
             <div className="task-header" style={{ marginBottom: "8px" }}>
