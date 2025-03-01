@@ -24,11 +24,9 @@ function App() {
         setLoading(true)
         setError(null)
 
-        // Инициализируем Telegram WebApp
         const telegram = initTelegram()
         console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
 
-        // Получаем данные пользователя
         const userData = getTelegramUser()
         console.log("User data:", userData)
 
@@ -36,7 +34,6 @@ function App() {
           throw new Error("Не удалось получить данные пользователя из Telegram")
         }
 
-        // Создаем или обновляем пользователя в базе
         const dbUser = await createOrUpdateUser(userData)
         console.log("Database user:", dbUser)
 
@@ -73,7 +70,6 @@ function App() {
     }
   }, [])
 
-  // Показываем загрузку
   if (loading) {
     return (
       <div className="app-wrapper">
@@ -86,7 +82,6 @@ function App() {
     )
   }
 
-  // Показываем ошибку
   if (error) {
     return (
       <div className="app-wrapper">
@@ -103,7 +98,6 @@ function App() {
     )
   }
 
-  // Показываем загрузку, если нет пользователя
   if (!user) {
     return (
       <div className="app-wrapper">
