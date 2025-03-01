@@ -86,34 +86,36 @@ export function TasksSection({ user, onBalanceUpdate }) {
   })
 
   return (
-    <div className="tasks-page bg-background text-white min-h-screen p-4">
-      <div className="tasks-tabs flex gap-2 mb-6">
+    <div className="tasks-page bg-[#1a1b1e] text-white min-h-screen p-4">
+      {/* Tabs */}
+      <div className="tasks-tabs bg-[#25262b] inline-flex p-1 rounded-md mb-6">
         <button
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            activeTab === "all" ? "bg-primary text-white" : "bg-background-lighter text-gray-400 hover:bg-primary/10"
-          }`}
+          className={`px-4 py-1.5 rounded ${
+            activeTab === "all" ? "bg-[#1a1b1e] text-white" : "text-gray-400 hover:text-white"
+          } transition-colors text-sm font-medium`}
           onClick={() => setActiveTab("all")}
         >
           Все
         </button>
         <button
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            activeTab === "daily" ? "bg-primary text-white" : "bg-background-lighter text-gray-400 hover:bg-primary/10"
-          }`}
+          className={`px-4 py-1.5 rounded ${
+            activeTab === "daily" ? "bg-[#1a1b1e] text-white" : "text-gray-400 hover:text-white"
+          } transition-colors text-sm font-medium`}
           onClick={() => setActiveTab("daily")}
         >
           Ежедневные
         </button>
         <button
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            activeTab === "weekly" ? "bg-primary text-white" : "bg-background-lighter text-gray-400 hover:bg-primary/10"
-          }`}
+          className={`px-4 py-1.5 rounded ${
+            activeTab === "weekly" ? "bg-[#1a1b1e] text-white" : "text-gray-400 hover:text-white"
+          } transition-colors text-sm font-medium`}
           onClick={() => setActiveTab("weekly")}
         >
           Еженедельные
         </button>
       </div>
 
+      {/* Tasks List */}
       <div className="tasks-list space-y-4">
         {loading ? (
           <div className="text-center py-8 text-gray-400">Загрузка...</div>
@@ -123,16 +125,13 @@ export function TasksSection({ user, onBalanceUpdate }) {
           <div className="text-center py-8 text-gray-400">В этой категории пока нет доступных заданий</div>
         ) : (
           filteredTasks.map((task) => (
-            <div
-              key={task.id}
-              className="task-card bg-background-lighter rounded-xl p-4 transition-all hover:bg-background-lighter/80"
-            >
+            <div key={task.id} className="task-card bg-[#25262b] rounded-xl p-4 transition-all hover:bg-[#2c2d32]">
               <div className="task-header mb-4">
                 <div className="task-info">
                   <h3 className="text-lg font-semibold mb-2">{task.title}</h3>
                   {task.type === "limited" && (
                     <div className="flex items-center gap-2 mb-2">
-                      <Timer className="w-4 h-4 text-accent-blue" />
+                      <Timer className="w-4 h-4 text-blue-400" />
                       <span className="text-sm text-gray-400">Осталось: {task.end_date}</span>
                     </div>
                   )}
@@ -141,7 +140,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
               </div>
               <div className="task-actions">
                 <button
-                  className="w-full px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => handleExecuteTask(task)}
                   disabled={loading}
                 >
