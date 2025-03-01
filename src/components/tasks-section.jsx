@@ -4,6 +4,19 @@ import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
 import { initTelegram } from "../utils/telegram"
 
+const formatTimeRemaining = (endDate) => {
+  const now = new Date()
+  const end = new Date(endDate)
+  const diff = end - now
+
+  if (diff <= 0) return "Время истекло"
+
+  const minutes = Math.floor(diff / 60000)
+  const seconds = Math.floor((diff % 60000) / 1000)
+
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`
+}
+
 export function TasksSection({ user, onBalanceUpdate }) {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
@@ -204,6 +217,9 @@ export function TasksSection({ user, onBalanceUpdate }) {
               <div className="task-info">
                 <h3 className="task-title">{task.title}</h3>
                 <p className="task-description">{task.description}</p>
+                {task.type === "limited" && task.end_date && (
+                  <div className="time-remaining">⏳ Осталось: {formatTimeRemaining(task.end_date)}</div>
+                )}
               </div>
             </div>
             <div className="task-actions">{renderActionButton(task)}</div>
