@@ -1,92 +1,158 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { supabase } from "../supabase"
+import { initTelegram } from "../utils/telegram"
 import { Timer } from "lucide-react"
-import { motion } from "framer-motion"
-import { fadeInUp, cardAnimation, buttonAnimation } from "../utils/animations"
-
-// ... остальные импорты и код остаются теми же
 
 export function TasksSection({ user, onBalanceUpdate }) {
-  // ... существующий код состояний
-  const [filteredTasks, setFilteredTasks] = useState([])
+  const [tasks, setTasks] = useState([])
+  const [activeTab, setActiveTab] = useState("all")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  const formatTimeRemaining = (endTime) => {
-    const timeLeft = new Date(endTime).getTime() - new Date().getTime()
-    if (timeLeft <= 0) {
-      return "00:00"
+  useEffect(() => {
+    fetchTasks()
+  }, [])
+
+  const fetchTasks = async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase.from("tasks").select("*")
+
+      if (error) throw error
+
+      setTasks(data)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
-
-    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60))
-    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000)
-
-    const formattedMinutes = String(minutes).padStart(2, "0")
-    const formattedSeconds = String(seconds).padStart(2, "0")
-
-    return `${formattedMinutes}:${formattedSeconds}`
   }
 
   const handleExecuteTask = async (task) => {
-    // Implement your task execution logic here
-    console.log(`Executing task: ${task.title}`)
+    try {
+      setLoading(true)
+
+      // Проверка выполнения задания
+      const { data: existingCompletion } = await supabase
+        .from("task_completions")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("task_id", task.id)
+        .single()
+
+      if (existingCompletion) {
+        throw new Error("Вы уже выполнили это задание")
+      }
+
+      // Записываем выполнение
+      const { error: completionError } = await supabase.from("task_completions").insert([
+        {
+          user_id: user.id,
+          task_id: task.id,
+        },
+      ])
+
+      if (completionError) throw completionError
+
+      // Обновляем баланс
+      const { error: balanceError } = await supabase
+        .from("users")
+        .update({ balance: user.balance + task.reward })
+        .eq("id", user.id)
+
+      if (balanceError) throw balanceError
+
+      // Обновляем UI
+      onBalanceUpdate(user.balance + task.reward)
+
+      const telegram = await initTelegram()
+      telegram.showAlert(`Задание выполнено! +${task.reward} монет`)
+    } catch (err) {
+      setError(err.message)
+      const telegram = await initTelegram()
+      telegram.showAlert(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  return (
-    <motion.div className="tasks-page" initial="initial" animate="animate" variants={fadeInUp}>
-      <div className="tasks-tabs">{/* ... существующие кнопки вкладок */}</div>
+  const filteredTasks = tasks.filter((task) => {
+    if (activeTab === "all") return true
+    if (activeTab === "daily") return task.type === "daily"
+    if (activeTab === "weekly") return task.type === "weekly"
+    return true
+  })
 
-      <div className="tasks-list">
-        {filteredTasks.map((task, index) => (
-          <motion.div
-            key={task.id}
-            className={`task-card ${task.is_completed ? "completed" : ""}`}
-            variants={cardAnimation}
-            initial="initial"
-            animate="animate"
-            whileHover="hover"
-            transition={{ delay: index * 0.1 }}
-          >
-            <div className="task-header">
-              <div className="task-info">
-                <h3 className="task-title">{task.title}</h3>
-                {task.type === "limited" && (
-                  <div className="flex items-center justify-center mt-3 mb-4">
-                    <motion.div
-                      className="flex items-center bg-gradient-to-r from-gray-800/50 to-gray-900/50 rounded-full px-3 py-1.5 border border-gray-700/30"
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      <Timer className="w-3.5 h-3.5 text-blue-400 mr-1.5" />
-                      <span className="text-[10px] font-medium tracking-[0.15em] text-gray-400 mr-1">ОСТАЛОСЬ:</span>
-                      <span className="text-xs font-semibold text-blue-400">
-                        {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
-                      </span>
-                    </motion.div>
-                  </div>
-                )}
-                <p className="task-description">{task.description}</p>
+  return (
+    <div className="tasks-page bg-background text-white min-h-screen p-4">
+      <div className="tasks-tabs flex gap-2 mb-6">
+        <button
+          className={`px-4 py-2 rounded-lg transition-colors ${
+            activeTab === "all" ? "bg-primary text-white" : "bg-background-lighter text-gray-400 hover:bg-primary/10"
+          }`}
+          onClick={() => setActiveTab("all")}
+        >
+          Все
+        </button>
+        <button
+          className={`px-4 py-2 rounded-lg transition-colors ${
+            activeTab === "daily" ? "bg-primary text-white" : "bg-background-lighter text-gray-400 hover:bg-primary/10"
+          }`}
+          onClick={() => setActiveTab("daily")}
+        >
+          Ежедневные
+        </button>
+        <button
+          className={`px-4 py-2 rounded-lg transition-colors ${
+            activeTab === "weekly" ? "bg-primary text-white" : "bg-background-lighter text-gray-400 hover:bg-primary/10"
+          }`}
+          onClick={() => setActiveTab("weekly")}
+        >
+          Еженедельные
+        </button>
+      </div>
+
+      <div className="tasks-list space-y-4">
+        {loading ? (
+          <div className="text-center py-8 text-gray-400">Загрузка...</div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-400">{error}</div>
+        ) : filteredTasks.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">В этой категории пока нет доступных заданий</div>
+        ) : (
+          filteredTasks.map((task) => (
+            <div
+              key={task.id}
+              className="task-card bg-background-lighter rounded-xl p-4 transition-all hover:bg-background-lighter/80"
+            >
+              <div className="task-header mb-4">
+                <div className="task-info">
+                  <h3 className="text-lg font-semibold mb-2">{task.title}</h3>
+                  {task.type === "limited" && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <Timer className="w-4 h-4 text-accent-blue" />
+                      <span className="text-sm text-gray-400">Осталось: {task.end_date}</span>
+                    </div>
+                  )}
+                  <p className="text-gray-400">{task.description}</p>
+                </div>
+              </div>
+              <div className="task-actions">
+                <button
+                  className="w-full px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleExecuteTask(task)}
+                  disabled={loading}
+                >
+                  {loading ? "Выполняется..." : "Выполнить"}
+                </button>
               </div>
             </div>
-            <div className="task-actions">
-              <motion.button
-                variants={buttonAnimation}
-                whileTap="tap"
-                whileHover="hover"
-                className="w-full px-4 py-2 bg-primary text-white rounded-lg font-medium"
-                onClick={() => handleExecuteTask(task)}
-              >
-                Выполнить
-              </motion.button>
-            </div>
-          </motion.div>
-        ))}
-
-        {filteredTasks.length === 0 && (
-          <motion.div className="no-tasks" variants={fadeInUp} initial="initial" animate="animate">
-            В этой категории пока нет доступных заданий
-          </motion.div>
+          ))
         )}
       </div>
-    </motion.div>
+    </div>
   )
 }
 
