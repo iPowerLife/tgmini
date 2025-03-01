@@ -107,12 +107,12 @@ export function UserProfile({ user }) {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="profile-container max-w-md mx-auto h-[calc(100vh-4rem)] flex flex-col"
+      className="profile-container max-w-md mx-auto flex flex-col h-full min-h-0"
     >
       {/* Profile Header */}
       <motion.div
         variants={itemVariants}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-gray-700/50 mb-3"
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-gray-700/50 mb-3 flex-shrink-0"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
         <div className="relative p-3">
@@ -151,7 +151,7 @@ export function UserProfile({ user }) {
       </motion.div>
 
       {/* Stats Grid */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-2.5 mb-3">
+      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-2.5 mb-3 flex-shrink-0">
         <div className="stat-card group">
           <div className="flex items-center gap-2">
             <div className="stat-icon-wrapper bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-blue-500/20">
@@ -209,14 +209,14 @@ export function UserProfile({ user }) {
 
       {/* Miners List */}
       {miners.length > 0 && (
-        <motion.div variants={itemVariants} className="miners-summary flex-1 overflow-auto">
-          <div className="flex items-center gap-2 mb-3 px-3">
+        <motion.div variants={itemVariants} className="miners-summary flex-1 min-h-0 flex flex-col">
+          <div className="flex items-center gap-2 mb-3 px-3 flex-shrink-0">
             <div className="p-1.5 rounded-lg bg-gray-800/80 border border-gray-700/50">
               <Pickaxe className="w-4 h-4 text-gray-400" />
             </div>
             <h3 className="text-sm font-medium text-gray-300">Ваши майнеры</h3>
           </div>
-          <div className="miners-list">
+          <div className="miners-list flex-1 overflow-y-auto">
             {miners.map((miner, index) => (
               <motion.div key={miner.id} variants={itemVariants} custom={index} className="miner-item group">
                 <span className="font-medium group-hover:text-blue-400">{miner.model.display_name}</span>

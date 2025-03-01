@@ -4,7 +4,16 @@
 
 @layer base {
   body {
-    @apply bg-gray-900 text-white;
+    @apply bg-gray-900 text-white h-full;
+  }
+
+  html {
+    @apply h-full;
+  }
+
+  #__next,
+  main {
+    @apply h-full;
   }
 }
 
