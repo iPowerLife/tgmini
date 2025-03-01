@@ -8,6 +8,7 @@ export function TasksSection({ user }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState("all")
+  const [processingTasks, setProcessingTasks] = useState({})
 
   const loadTasks = useCallback(async () => {
     try {
@@ -37,28 +38,18 @@ export function TasksSection({ user }) {
     if (user?.id) {
       loadTasks()
     }
-  }, [user?.id, loadTasks]) // Убираем loadTasks из зависимостей
-
-  useEffect(() => {
-    // Проверяем подключение к Supabase
-    const checkConnection = async () => {
-      try {
-        const { error } = await supabase.from("tasks").select("count").single()
-        if (error) {
-          console.error("Ошибка подключения к Supabase:", error)
-          setError("Ошибка подключения к базе данных")
-        }
-      } catch (err) {
-        console.error("Ошибка проверки подключения:", err)
-        setError("Ошибка подключения к базе данных")
-      }
-    }
-
-    checkConnection()
-  }, [])
+  }, [user?.id, loadTasks])
 
   const testTask = async (task) => {
     try {
+      // Предотвращаем повторное нажатие
+      if (processingTasks[task.id]) {
+        console.log("Задание уже обрабатывается")
+        return
+      }
+
+      setProcessingTasks((prev) => ({ ...prev, [task.id]: true }))
+
       // 1. Проверяем статус задания
       const { data: taskStatus, error: statusError } = await supabase
         .from("user_tasks")
@@ -71,9 +62,8 @@ export function TasksSection({ user }) {
         throw statusError
       }
 
-      // Если задание уже начато, пропускаем start_task
-      if (!taskStatus) {
-        // 2. Начинаем задание
+      // 2. Начинаем задание если оно еще не начато
+      if (!taskStatus || taskStatus.status === "completed") {
         console.log("Начинаем задание:", task.title)
         const { data: startData, error: startError } = await supabase.rpc("start_task", {
           user_id_param: user.id,
@@ -81,9 +71,9 @@ export function TasksSection({ user }) {
         })
 
         if (startError) throw startError
-        console.log("Задание начато успешно")
+        console.log("Задание начато успешно:", startData)
       } else {
-        console.log("Задание уже начато, пропускаем start_task")
+        console.log("Задание уже в процессе, пропускаем start_task")
       }
 
       // 3. Ждем время верификации
@@ -112,10 +102,12 @@ export function TasksSection({ user }) {
       console.log("Награда получена:", rewardData)
 
       // Обновляем список заданий
-      loadTasks()
+      await loadTasks()
     } catch (error) {
       console.error("Ошибка при тестировании:", error)
       alert("Ошибка при тестировании задания: " + error.message)
+    } finally {
+      setProcessingTasks((prev) => ({ ...prev, [task.id]: false }))
     }
   }
 
@@ -177,8 +169,12 @@ export function TasksSection({ user }) {
                 </button>
               )}
               <button className="task-button start-button">Начать</button>
-              <button className="task-button test-button" onClick={() => testTask(task)}>
-                Тест
+              <button
+                className="task-button test-button"
+                onClick={() => testTask(task)}
+                disabled={processingTasks[task.id]}
+              >
+                {processingTasks[task.id] ? "Тестирование..." : "Тест"}
               </button>
             </div>
           </div>
