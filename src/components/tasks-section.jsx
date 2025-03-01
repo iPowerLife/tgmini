@@ -155,10 +155,17 @@ export function TasksSection({ user, onBalanceUpdate }) {
       return (
         <button className="task-button execute-button" onClick={() => handleExecuteTask(task)}>
           <span>Выполнить</span>
-          <span className="reward">
-            {task.reward}
-            <span className="reward-icon">💎</span>
-          </span>
+          <div className="flex items-center gap-2">
+            {task.type === "limited" && (
+              <span className="text-white/90 text-sm">
+                ⏳ {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
+              </span>
+            )}
+            <span className="reward">
+              {task.reward}
+              <span className="reward-icon">💎</span>
+            </span>
+          </div>
         </button>
       )
     }
@@ -233,14 +240,6 @@ export function TasksSection({ user, onBalanceUpdate }) {
                   <h3 className="task-title">{task.title}</h3>
                   <p className="task-description">{task.description}</p>
                 </div>
-                {task.type === "limited" && (
-                  <div className="flex items-center gap-1 ml-2">
-                    <span className="text-white/90">⏳</span>
-                    <span className="text-white/90 font-medium">
-                      {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
             <div className="task-actions">{renderActionButton(task)}</div>
