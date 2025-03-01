@@ -88,91 +88,106 @@ export function TasksSection({ user }) {
   })
 
   return (
-    <div className="tasks-page">
-      {/* Вкладки */}
-      <div className="tasks-tabs">
-        <button className={`tab-button ${activeTab === "all" ? "active" : ""}`} onClick={() => setActiveTab("all")}>
-          Все
-        </button>
-        <button className={`tab-button ${activeTab === "basic" ? "active" : ""}`} onClick={() => setActiveTab("basic")}>
-          Базовые
-        </button>
-        <button
-          className={`tab-button ${activeTab === "limited" ? "active" : ""}`}
-          onClick={() => setActiveTab("limited")}
-        >
-          Лимит
-        </button>
-        <button
-          className={`tab-button ${activeTab === "achievement" ? "active" : ""}`}
-          onClick={() => setActiveTab("achievement")}
-        >
-          Достижения
-        </button>
-      </div>
+    <div className="section-container">
+      <div className="tasks-page">
+        {/* Вкладки */}
+        <div className="tasks-tabs">
+          <button className={`tab-button ${activeTab === "all" ? "active" : ""}`} onClick={() => setActiveTab("all")}>
+            Все
+          </button>
+          <button
+            className={`tab-button ${activeTab === "basic" ? "active" : ""}`}
+            onClick={() => setActiveTab("basic")}
+          >
+            Базовые
+          </button>
+          <button
+            className={`tab-button ${activeTab === "limited" ? "active" : ""}`}
+            onClick={() => setActiveTab("limited")}
+          >
+            Лимит
+          </button>
+          <button
+            className={`tab-button ${activeTab === "achievement" ? "active" : ""}`}
+            onClick={() => setActiveTab("achievement")}
+          >
+            Достижения
+          </button>
+        </div>
 
-      {/* Список заданий */}
-      <div className="tasks-list">
-        {filteredTasks.map((task) => (
-          <div key={task.id}>
-            {activeQuiz?.taskId === task.id ? (
-              <QuizTask
-                task={{
-                  ...task,
-                  user_task_id: activeQuiz.user_task_id || task.user_task_id,
-                }}
-                user={user}
-                onComplete={() => {
-                  setActiveQuiz(null)
-                  loadTasks()
-                }}
-              />
-            ) : (
-              <div className="task-card">
-                <div className="task-header">
-                  <div className="task-info">
-                    <h3 className="task-title">{task.title}</h3>
-                    <p className="task-description">{task.description}</p>
-                  </div>
-                  <div className="task-reward">
-                    <span>{task.reward}</span>
-                    <span className="reward-icon">💎</span>
-                  </div>
-                </div>
-                <div className="task-actions">
-                  {task.link && (
-                    <button className="task-button goto-button" onClick={() => window.open(task.link, "_blank")}>
-                      Перейти
-                    </button>
-                  )}
-                  <button
-                    className="task-button start-button"
-                    onClick={() => {
-                      if (task.type === "achievement" && task.subtype === "quiz") {
-                        // Для тестов показываем компонент QuizTask
-                        startTask(task.id).then(() => {
-                          // После успешного запуска показываем тест
-                          setActiveQuiz({
-                            taskId: task.id,
-                            user_task_id: task.user_task_id,
-                          })
-                        })
-                      } else {
-                        // Для обычных заданий используем существующую логику
-                        startTask(task.id)
-                      }
+        {/* Список заданий */}
+        <div className="tasks-list">
+          {filteredTasks.map((task) => (
+            <div key={task.id}>
+              {activeQuiz?.taskId === task.id ? (
+                <div className="quiz-container">
+                  <QuizTask
+                    task={{
+                      ...task,
+                      user_task_id: activeQuiz.user_task_id || task.user_task_id,
                     }}
-                  >
-                    Начать
-                  </button>
+                    user={user}
+                    onComplete={() => {
+                      setActiveQuiz(null)
+                      loadTasks()
+                    }}
+                  />
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+              ) : (
+                <div className="task-card">
+                  <div className="task-header">
+                    <div className="task-info">
+                      <h3 className="task-title">{task.title}</h3>
+                      <p className="task-description">{task.description}</p>
+                    </div>
+                    <div className="task-reward">
+                      <span>{task.reward}</span>
+                      <span className="reward-icon">💎</span>
+                    </div>
+                  </div>
+                  <div className="task-actions">
+                    {task.link && (
+                      <button className="task-button goto-button" onClick={() => window.open(task.link, "_blank")}>
+                        Перейти
+                      </button>
+                    )}
+                    <button
+                      className="task-button start-button"
+                      onClick={() => {
+                        if (task.type === "achievement" && task.subtype === "quiz") {
+                          // Для тестов показываем компонент QuizTask
+                          startTask(task.id).then(() => {
+                            // После успешного запуска показываем тест
+                            setActiveQuiz({
+                              taskId: task.id,
+                              user_task_id: task.user_task_id,
+                            })
+                          })
+                        } else {
+                          // Для обычных заданий используем существующую логику
+                          startTask(task.id)
+                        }
+                      }}
+                    >
+                      Начать
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
 
-        {filteredTasks.length === 0 && <div className="no-tasks">В этой категории пока нет доступных заданий</div>}
+          {filteredTasks.length === 0 && <div className="no-tasks">В этой категории пока нет доступных заданий</div>}
+        </div>
       </div>
+      <style jsx>{`
+        .quiz-container {
+          background: rgba(30, 41, 59, 0.7);
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 16px;
+        }
+      `}</style>
     </div>
   )
 }

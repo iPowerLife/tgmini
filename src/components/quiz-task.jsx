@@ -58,16 +58,18 @@ export function QuizTask({ task, user, onComplete }) {
   }
 
   const handleNextQuestion = async () => {
+    if (!currentQuestionData) return
+
     // Сохраняем ответ
-    const currentQuestionData = questions[currentQuestion]
-    setAnswers((prev) => [
-      ...prev,
+    const newAnswers = [
+      ...answers,
       {
         question_id: currentQuestionData.id,
         answer_id: selectedAnswer,
         time_taken: currentQuestionData.time_limit - timeLeft,
       },
-    ])
+    ]
+    setAnswers(newAnswers)
 
     // Переходим к следующему вопросу или завершаем тест
     if (currentQuestion + 1 < questions.length) {
@@ -75,11 +77,10 @@ export function QuizTask({ task, user, onComplete }) {
       setSelectedAnswer(null)
       setTimeLeft(questions[currentQuestion + 1].time_limit)
     } else {
-      // Отправляем все ответы на проверку
       try {
         const { data, error } = await supabase.rpc("check_quiz_answers", {
           user_task_id_param: task.user_task_id,
-          answers: JSON.stringify(answers),
+          answers: JSON.stringify(newAnswers), // Используем обновленный массив
         })
 
         if (error) throw error
@@ -97,6 +98,10 @@ export function QuizTask({ task, user, onComplete }) {
     }
   }
 
+  if (!task || !task.id) {
+    return <div className="text-center text-red-500">Ошибка: данные задания не найдены</div>
+  }
+
   if (loading) {
     return <div className="text-center">Загрузка вопросов...</div>
   }
@@ -106,6 +111,10 @@ export function QuizTask({ task, user, onComplete }) {
   }
 
   const currentQuestionData = questions[currentQuestion]
+
+  if (!questions || questions.length === 0) {
+    return <div className="text-center">Загрузка вопросов...</div>
+  }
 
   if (!currentQuestionData) {
     return <div className="text-center">Ошибка загрузки вопроса</div>
