@@ -1,8 +1,11 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
+
 import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
 import { initTelegram } from "../utils/telegram"
+import { Clock } from "lucide-react"
 
 const formatTimeRemaining = (endDate) => {
   const now = new Date()
@@ -153,21 +156,13 @@ export function TasksSection({ user, onBalanceUpdate }) {
 
     if (!taskState || taskState.status === "initial") {
       return (
-        <button className="task-button execute-button" onClick={() => handleExecuteTask(task)}>
-          <div className="flex items-center gap-2">
-            <span>Выполнить</span>
-            {task.type === "limited" && (
-              <span className="flex items-center gap-1 text-white/90">
-                <span>⏳</span>
-                <span>{task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}</span>
-              </span>
-            )}
-            <span className="reward">
-              {task.reward}
-              <span className="reward-icon">💎</span>
-            </span>
-          </div>
-        </button>
+        <Button className="task-button execute-button" onClick={() => handleExecuteTask(task)}>
+          Выполнить
+          <span className="reward">
+            {task.reward}
+            <span className="reward-icon">💎</span>
+          </span>
+        </Button>
       )
     }
 
@@ -239,6 +234,12 @@ export function TasksSection({ user, onBalanceUpdate }) {
               <div className="task-info flex justify-between items-start">
                 <div>
                   <h3 className="task-title">{task.title}</h3>
+                  {task.type === "limited" && (
+                    <div className="flex items-center gap-1 text-white/70 text-sm">
+                      <Clock className="w-4 h-4" />
+                      <span>Осталось: {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}</span>
+                    </div>
+                  )}
                   <p className="task-description">{task.description}</p>
                 </div>
               </div>
