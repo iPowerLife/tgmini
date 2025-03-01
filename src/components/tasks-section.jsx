@@ -8,24 +8,44 @@ export function TasksSection({ user }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState("all")
-  const [processingTasks, setProcessingTasks] = useState({})
+  const [taskStates, setTaskStates] = useState({}) // { taskId: { status: 'initial' | 'verifying' | 'completed', timeLeft: number } }
 
   const loadTasks = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-      console.log("Загрузка заданий...")
 
       const { data, error } = await supabase.rpc("get_available_tasks", {
         user_id_param: user.id,
       })
 
-      console.log("Ответ от сервера:", { data, error })
-
       if (error) throw error
 
+      // Загружаем статусы заданий
+      const { data: userTasks, error: userTasksError } = await supabase
+        .from("user_tasks")
+        .select("task_id, status, verification_started_at")
+        .eq("user_id", user.id)
+
+      if (userTasksError) throw userTasksError
+
+      // Обновляем состояния заданий
+      const newTaskStates = {}
+      userTasks?.forEach((userTask) => {
+        if (userTask.status === "in_progress") {
+          const verificationTime = new Date(userTask.verification_started_at).getTime()
+          const now = Date.now()
+          const timeLeft = Math.max(0, 15000 - (now - verificationTime))
+
+          newTaskStates[userTask.task_id] = {
+            status: timeLeft > 0 ? "verifying" : "completed",
+            timeLeft,
+          }
+        }
+      })
+
+      setTaskStates(newTaskStates)
       setTasks(data?.tasks || [])
-      console.log("Задания загружены:", data?.tasks)
     } catch (err) {
       console.error("Error loading tasks:", err)
       setError("Ошибка загрузки заданий: " + err.message)
@@ -40,74 +60,104 @@ export function TasksSection({ user }) {
     }
   }, [user?.id, loadTasks])
 
-  const testTask = async (task) => {
+  // Обработчик для кнопки "Выполнить"
+  const handleExecuteTask = async (task) => {
     try {
-      // Предотвращаем повторное нажатие
-      if (processingTasks[task.id]) {
-        console.log("Задание уже обрабатывается")
-        return
-      }
+      // Начинаем задание
+      const { error: startError } = await supabase.rpc("start_task", {
+        user_id_param: user.id,
+        task_id_param: task.id,
+      })
 
-      setProcessingTasks((prev) => ({ ...prev, [task.id]: true }))
+      if (startError) throw startError
 
-      // 1. Проверяем статус задания
-      const { data: taskStatus, error: statusError } = await supabase
-        .from("user_tasks")
-        .select("status")
-        .eq("user_id", user.id)
-        .eq("task_id", task.id)
-        .single()
+      // Обновляем состояние задания
+      setTaskStates((prev) => ({
+        ...prev,
+        [task.id]: { status: "verifying", timeLeft: 15000 },
+      }))
 
-      if (statusError && statusError.code !== "PGRST116") {
-        throw statusError
-      }
+      // Открываем ссылку в новом окне
+      window.open(task.link, "_blank")
 
-      // 2. Начинаем задание если оно еще не начато
-      if (!taskStatus || taskStatus.status === "completed") {
-        console.log("Начинаем задание:", task.title)
-        const { data: startData, error: startError } = await supabase.rpc("start_task", {
-          user_id_param: user.id,
-          task_id_param: task.id,
+      // Запускаем таймер
+      const interval = setInterval(() => {
+        setTaskStates((prev) => {
+          const taskState = prev[task.id]
+          if (!taskState || taskState.timeLeft <= 0) {
+            clearInterval(interval)
+            return prev
+          }
+
+          const newTimeLeft = taskState.timeLeft - 1000
+          return {
+            ...prev,
+            [task.id]: {
+              status: newTimeLeft > 0 ? "verifying" : "completed",
+              timeLeft: newTimeLeft,
+            },
+          }
         })
+      }, 1000)
+    } catch (error) {
+      console.error("Ошибка при выполнении задания:", error)
+      alert("Ошибка при выполнении задания: " + error.message)
+    }
+  }
 
-        if (startError) throw startError
-        console.log("Задание начато успешно:", startData)
-      } else {
-        console.log("Задание уже в процессе, пропускаем start_task")
-      }
-
-      // 3. Ждем время верификации
-      const waitTime = task.verification_time * 1000
-      console.log(`Ожидаем ${task.verification_time} секунд...`)
-      await new Promise((resolve) => setTimeout(resolve, waitTime))
-
-      // 4. Завершаем задание
-      console.log("Завершаем задание...")
-      const { data: completeData, error: completeError } = await supabase.rpc("complete_task", {
+  // Обработчик для кнопки "Получить"
+  const handleClaimReward = async (task) => {
+    try {
+      // Завершаем задание
+      const { error: completeError } = await supabase.rpc("complete_task", {
         user_id_param: user.id,
         task_id_param: task.id,
       })
 
       if (completeError) throw completeError
-      console.log("Задание завершено успешно")
 
-      // 5. Получаем награду
-      console.log("Получаем награду...")
-      const { data: rewardData, error: rewardError } = await supabase.rpc("claim_task_reward", {
+      // Получаем награду
+      const { error: rewardError } = await supabase.rpc("claim_task_reward", {
         user_id_param: user.id,
         task_id_param: task.id,
       })
 
       if (rewardError) throw rewardError
-      console.log("Награда получена:", rewardData)
 
       // Обновляем список заданий
       await loadTasks()
     } catch (error) {
-      console.error("Ошибка при тестировании:", error)
-      alert("Ошибка при тестировании задания: " + error.message)
-    } finally {
-      setProcessingTasks((prev) => ({ ...prev, [task.id]: false }))
+      console.error("Ошибка при получении награды:", error)
+      alert("Ошибка при получении награды: " + error.message)
+    }
+  }
+
+  // Функция для рендера кнопки действия
+  const renderActionButton = (task) => {
+    const taskState = taskStates[task.id]
+
+    if (!taskState || taskState.status === "initial") {
+      return (
+        <button className="task-button execute-button" onClick={() => handleExecuteTask(task)}>
+          Выполнить
+        </button>
+      )
+    }
+
+    if (taskState.status === "verifying") {
+      return (
+        <button className="task-button verify-button" disabled>
+          Проверка ({Math.ceil(taskState.timeLeft / 1000)}с)
+        </button>
+      )
+    }
+
+    if (taskState.status === "completed") {
+      return (
+        <button className="task-button claim-button" onClick={() => handleClaimReward(task)}>
+          Получить
+        </button>
+      )
     }
   }
 
@@ -162,21 +212,7 @@ export function TasksSection({ user }) {
                 <span className="reward-icon">💎</span>
               </div>
             </div>
-            <div className="task-actions">
-              {task.link && (
-                <button className="task-button goto-button" onClick={() => window.open(task.link, "_blank")}>
-                  Перейти
-                </button>
-              )}
-              <button className="task-button start-button">Начать</button>
-              <button
-                className="task-button test-button"
-                onClick={() => testTask(task)}
-                disabled={processingTasks[task.id]}
-              >
-                {processingTasks[task.id] ? "Тестирование..." : "Тест"}
-              </button>
-            </div>
+            <div className="task-actions">{renderActionButton(task)}</div>
           </div>
         ))}
 

@@ -1810,3 +1810,37 @@ button:active {
   border-color: rgba(91, 154, 245, 0.4) !important;
 }
 
+/* Добавляем новые стили для кнопок */
+.execute-button {
+  background: linear-gradient(135deg, #5b9af5, #3b82f6) !important;
+  color: white !important;
+}
+
+.verify-button {
+  background: #2a2b2e !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+}
+
+.claim-button {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: white !important;
+}
+
+/* Анимация для кнопки проверки */
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.verify-button {
+  animation: pulse 2s infinite;
+}
+
