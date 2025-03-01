@@ -3,9 +3,21 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
-import { Progress } from "./ui/progress"
-import { Clock, Trophy, CheckCircle, Timer, Gift, Users, ExternalLink, Play } from "lucide-react"
+import { Clock, Trophy, CheckCircle, Gift, Users, ExternalLink, Play } from "lucide-react"
 import { supabase } from "../supabase"
+
+const formatTimeRemaining = (endDate) => {
+  const now = new Date()
+  const end = new Date(endDate)
+  const diff = end - now
+
+  if (diff <= 0) return "Время истекло"
+
+  const minutes = Math.floor(diff / 60000)
+  const seconds = Math.floor((diff % 60000) / 1000)
+
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`
+}
 
 export function TasksList({ tasks, type, user }) {
   const [processingTasks, setProcessingTasks] = useState({})
@@ -122,73 +134,36 @@ export function TasksList({ tasks, type, user }) {
       {tasks.map((task) => (
         <Card
           key={task.id}
-          className="group hover:shadow-lg transition-all duration-300 hover:border-primary/50 overflow-hidden"
+          className="group bg-[#1a1b1e]/80 hover:bg-[#1a1b1e] border-[#2c2e33] hover:border-primary/30 transition-all duration-300"
         >
-          <CardHeader className="relative pb-0">
-            <div className="absolute top-0 right-0 p-4">
-              <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
-                <Gift className="w-5 h-5 text-primary" />
-                <span className="text-lg font-semibold">{task.reward} 💎</span>
-              </div>
-            </div>
-            <div className="flex items-start gap-4 mb-4">
-              <div
-                className={`p-3 rounded-xl ${
-                  type === "limited"
-                    ? "bg-orange-500/10 text-orange-500"
-                    : type === "achievement"
-                      ? "bg-purple-500/10 text-purple-500"
-                      : "bg-blue-500/10 text-blue-500"
-                }`}
-              >
-                {type === "limited" ? (
-                  <Clock className="w-6 h-6" />
-                ) : type === "achievement" ? (
-                  <Trophy className="w-6 h-6" />
-                ) : (
-                  <CheckCircle className="w-6 h-6" />
+          <CardHeader className="relative pb-2">
+            <div className="flex items-start gap-4">
+              <div className="flex-1">
+                <CardTitle className="text-lg font-medium text-white/90 mb-1">{task.title}</CardTitle>
+                <CardDescription className="text-sm text-white/70">{task.description}</CardDescription>
+                {task.type === "limited" && task.end_date && (
+                  <div className="flex items-center gap-2 mt-2 text-primary">
+                    <Clock className="w-4 h-4" />
+                    <span className="text-sm font-medium">Осталось: {formatTimeRemaining(task.end_date)}</span>
+                  </div>
                 )}
               </div>
-              <div className="flex-1">
-                <CardTitle className="text-xl mb-2 pr-32">{task.title}</CardTitle>
-                <CardDescription className="text-base">{task.description}</CardDescription>
+              <div className="flex items-center gap-1 text-primary">
+                <span className="text-lg font-medium">{task.reward}</span>
+                <span className="text-sm">💎</span>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            {task.type === "limited" && task.end_date && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4 bg-muted/50 p-3 rounded-xl">
-                <Timer className="w-4 h-4 text-primary" />
-                <span>
-                  Доступно до:{" "}
-                  {new Date(task.end_date).toLocaleDateString("ru-RU", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
+          <CardContent className="pb-3">
+            <div className="flex items-center gap-4 text-sm text-white/50">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                <span>Выполнили: {task.total_completions}</span>
               </div>
-            )}
-
-            {task.type === "achievement" && (
-              <div className="space-y-2 bg-muted/50 p-3 rounded-xl">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">Прогресс выполнения</span>
-                  <span className="text-muted-foreground">0/100</span>
-                </div>
-                <Progress value={0} className="h-2" />
+              <div className="flex items-center gap-2">
+                <Gift className="w-4 h-4" />
+                <span>Получили награду: {task.total_rewards_claimed}</span>
               </div>
-            )}
-
-            {task.user_status === "active" && verificationTimers[task.id] > 0 && (
-              <div className="mt-4 bg-muted/50 p-3 rounded-xl">
-                <Progress value={(verificationTimers[task.id] / 15) * 100} className="h-2" />
-                <p className="text-center text-sm mt-2 font-medium">Проверка: {verificationTimers[task.id]} сек</p>
-              </div>
-            )}
-
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-4">
-              <Users className="w-4 h-4" />
-              <span>Выполнили: {task.total_completions}</span>
             </div>
           </CardContent>
           <CardFooter className="flex flex-wrap gap-2 pt-0">
@@ -197,7 +172,7 @@ export function TasksList({ tasks, type, user }) {
                 variant="outline"
                 onClick={() => window.open(task.link, "_blank")}
                 disabled={processingTasks[task.id]}
-                className="min-w-[120px] h-[40px]"
+                className="flex-1 h-9 bg-[#2c2e33] hover:bg-[#3c3e43] border-[#3c3e43] hover:border-primary/30 text-white/90"
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Перейти
@@ -207,7 +182,7 @@ export function TasksList({ tasks, type, user }) {
               <Button
                 onClick={() => startTask(task.id)}
                 disabled={processingTasks[task.id]}
-                className="min-w-[120px] h-[40px]"
+                className="flex-1 h-9 bg-gradient-to-r from-primary/80 to-primary hover:from-primary hover:to-primary/80"
               >
                 <Play className="w-4 h-4 mr-2" />
                 Начать
