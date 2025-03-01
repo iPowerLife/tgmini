@@ -82,7 +82,7 @@ export function UserProfile({ user }) {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]">
+      <div className="flex items-center justify-center h-[50vh]">
         <div className="animate-pulse w-8 h-8 rounded-full bg-blue-500/20" />
       </div>
     )
@@ -90,7 +90,7 @@ export function UserProfile({ user }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]">
+      <div className="flex items-center justify-center h-[50vh]">
         <div className="animate-pulse w-8 h-8 rounded-full bg-blue-500/20" />
       </div>
     )
@@ -103,49 +103,52 @@ export function UserProfile({ user }) {
   const totalMiningPower = miners.reduce((sum, miner) => sum + miner.model.mining_power * miner.quantity, 0)
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="profile-container space-y-6">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="profile-container max-w-md mx-auto h-screen flex flex-col"
+    >
       {/* Profile Header */}
       <motion.div
         variants={itemVariants}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-gray-700/50"
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-gray-700/50 mb-4"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
-        <div className="relative p-6">
-          <div className="flex items-start gap-4">
-            <div className="relative">
+        <div className="relative p-4">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-shrink-0">
               {telegramUser.photoUrl ? (
                 <img
                   src={telegramUser.photoUrl || "/placeholder.svg"}
                   alt={telegramUser.displayName}
-                  className="w-20 h-20 rounded-2xl object-cover border-2 border-gray-700/50 shadow-lg"
+                  className="w-12 h-12 rounded-xl object-cover border-2 border-gray-700/50 shadow-lg"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center border-2 border-gray-700/50 shadow-lg">
-                  <User className="w-10 h-10 text-gray-400" />
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center border-2 border-gray-700/50 shadow-lg">
+                  <User className="w-6 h-6 text-gray-400" />
                 </div>
               )}
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-gray-800 shadow-lg" />
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-800 shadow-lg" />
             </div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent truncate">
                 {telegramUser.firstName}
               </h2>
-              {telegramUser.username && <p className="text-gray-400 font-medium">@{telegramUser.username}</p>}
-              <div className="flex items-center gap-2 mt-1">
-                <Hash className="w-4 h-4 text-gray-500" />
-                <p className="text-sm text-gray-500">{telegramUser.id}</p>
-              </div>
+              {telegramUser.username && (
+                <p className="text-sm text-gray-400 font-medium truncate">@{telegramUser.username}</p>
+              )}
             </div>
           </div>
         </div>
       </motion.div>
 
       {/* Stats Grid */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
+      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3 mb-4">
         <div className="stat-card group hover:border-blue-500/30 transition-colors duration-300">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
-              <Sparkles className="w-5 h-5" />
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
+              <Sparkles className="w-4 h-4" />
             </div>
             <div className="stat-label">Баланс</div>
           </div>
@@ -155,9 +158,9 @@ export function UserProfile({ user }) {
         </div>
 
         <div className="stat-card group hover:border-purple-500/30 transition-colors duration-300">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400">
-              <Zap className="w-5 h-5" />
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
+              <Zap className="w-4 h-4" />
             </div>
             <div className="stat-label">Мощность</div>
           </div>
@@ -167,9 +170,9 @@ export function UserProfile({ user }) {
         </div>
 
         <div className="stat-card group hover:border-indigo-500/30 transition-colors duration-300">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-              <Pickaxe className="w-5 h-5" />
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
+              <Pickaxe className="w-4 h-4" />
             </div>
             <div className="stat-label">Всего добыто</div>
           </div>
@@ -179,9 +182,9 @@ export function UserProfile({ user }) {
         </div>
 
         <div className="stat-card group hover:border-cyan-500/30 transition-colors duration-300">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400">
-              <Hash className="w-5 h-5" />
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400">
+              <Hash className="w-4 h-4" />
             </div>
             <div className="stat-label">Кол-во майнингов</div>
           </div>
@@ -195,13 +198,13 @@ export function UserProfile({ user }) {
       {miners.length > 0 && (
         <motion.div
           variants={itemVariants}
-          className="miners-summary hover:border-gray-600/50 transition-colors duration-300"
+          className="miners-summary hover:border-gray-600/50 transition-colors duration-300 flex-1 overflow-auto"
         >
-          <h3 className="flex items-center gap-2 text-gray-300">
+          <h3 className="flex items-center gap-2 text-gray-300 text-sm">
             <Pickaxe className="w-4 h-4" />
             Ваши майнеры
           </h3>
-          <div className="miners-list mt-4">
+          <div className="miners-list mt-3">
             {miners.map((miner, index) => (
               <motion.div
                 key={miner.id}
@@ -214,7 +217,7 @@ export function UserProfile({ user }) {
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500">{miner.model.mining_power} ⚡</span>
-                  <span className="px-2 py-1 rounded-md bg-gray-800 text-gray-400">x{miner.quantity}</span>
+                  <span className="px-2 py-0.5 rounded-md bg-gray-800 text-gray-400 text-sm">x{miner.quantity}</span>
                 </div>
               </motion.div>
             ))}
