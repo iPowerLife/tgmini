@@ -157,10 +157,18 @@ export function TasksSection({ user, onBalanceUpdate }) {
     return <div className="tasks-error">{error}</div>
   }
 
-  const filteredTasks = tasks.filter((task) => {
-    if (activeTab === "all") return true
-    return task.type === activeTab
-  })
+  const filteredTasks = tasks
+    .filter((task) => {
+      if (activeTab === "all") return true
+      return task.type === activeTab
+    })
+    .sort((a, b) => {
+      // Сначала сортируем по статусу выполнения
+      if (a.is_completed && !b.is_completed) return 1
+      if (!a.is_completed && b.is_completed) return -1
+      // Затем по времени создания (новые сверху)
+      return new Date(b.created_at) - new Date(a.created_at)
+    })
 
   return (
     <div className="tasks-page">
