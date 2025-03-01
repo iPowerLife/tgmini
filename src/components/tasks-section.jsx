@@ -226,32 +226,21 @@ export function TasksSection({ user, onBalanceUpdate }) {
 
       <div className="tasks-list">
         {filteredTasks.map((task) => (
-          <div key={task.id} className={`task-card ${task.is_completed ? "completed" : ""} relative`}>
-            {task.type === "limited" && (
-              <div
-                className="absolute top-0 right-0 bg-red-500 text-white px-2 py-1 text-sm font-medium z-50"
-                style={{ borderRadius: "0 4px 0 4px" }}
-              >
-                ⏳ {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
-              </div>
-            )}
+          <div key={task.id} className={`task-card ${task.is_completed ? "completed" : ""}`}>
             <div className="task-header" style={{ marginBottom: "8px" }}>
-              <div className="task-info">
-                <h3 className="task-title">{task.title}</h3>
-                <p className="task-description">{task.description}</p>
-                {/*{task.type === "limited" && task.end_date && (*/}
-                {/*  <div*/}
-                {/*    className="time-remaining"*/}
-                {/*    style={{*/}
-                {/*      color: "#5b9af5",*/}
-                {/*      fontSize: "14px",*/}
-                {/*      fontWeight: "500",*/}
-                {/*      marginTop: "8px",*/}
-                {/*    }}*/}
-                {/*  >*/}
-                {/*    ⏳ Осталось: {formatTimeRemaining(task.end_date)}*/}
-                {/*  </div>*/}
-                {/*)}*/}
+              <div className="task-info flex justify-between items-start">
+                <div>
+                  <h3 className="task-title">{task.title}</h3>
+                  <p className="task-description">{task.description}</p>
+                </div>
+                {task.type === "limited" && (
+                  <div className="flex items-center gap-1 ml-2">
+                    <span className="text-white/90">⏳</span>
+                    <span className="text-white/90 font-medium">
+                      {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="task-actions">{renderActionButton(task)}</div>
