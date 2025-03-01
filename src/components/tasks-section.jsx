@@ -1,24 +1,24 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { supabase } from "../utils/supabaseClient"
+import { useState, useEffect, useCallback } from "react"
+import { supabase } from "../supabase"
 
 export function TasksSection({ user }) {
   const [tasks, setTasks] = useState([])
   const [taskStates, setTaskStates] = useState({})
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     const { data, error } = await supabase.from("tasks").select("*")
     if (error) {
       console.error("Ошибка при загрузке заданий:", error)
     } else {
       setTasks(data)
     }
-  }
+  }, [])
 
   useEffect(() => {
     loadTasks()
-  }, [])
+  }, [loadTasks])
 
   const handleClaimReward = async (task) => {
     try {
