@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
 import { initTelegram } from "../utils/telegram"
-import { TailwindTest } from "./tailwind-test"
 
 const formatTimeRemaining = (endDate) => {
   const now = new Date()
@@ -200,7 +199,6 @@ export function TasksSection({ user, onBalanceUpdate }) {
 
   return (
     <div className="tasks-page">
-      <TailwindTest /> {/* Добавьте эту строку для тестирования */}
       <div className="tasks-tabs">
         <button className={`tab-button ${activeTab === "all" ? "active" : ""}`} onClick={() => setActiveTab("all")}>
           Все
