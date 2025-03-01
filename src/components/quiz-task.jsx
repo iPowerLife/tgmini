@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
-import { Button } from "./ui/button"
-import { Progress } from "./ui/progress"
-import { supabase } from "../supabase"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import { supabase } from "../../supabase"
 
 export function QuizTask({ task, user, onComplete }) {
   const [questions, setQuestions] = useState([])
@@ -78,7 +78,7 @@ export function QuizTask({ task, user, onComplete }) {
       // Отправляем все ответы на проверку
       try {
         const { data, error } = await supabase.rpc("check_quiz_answers", {
-          user_task_id_param: task.user_task_id,
+          user_task_id_param: task.id,
           answers: JSON.stringify(answers),
         })
 
