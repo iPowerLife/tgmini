@@ -190,7 +190,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
       return task.type === activeTab
     })
     .sort((a, b) => {
-      // ��начала сортируем по статусу выполнения
+      // Сначала сортируем по статусу выполнения
       if (a.is_completed && !b.is_completed) return 1
       if (!a.is_completed && b.is_completed) return -1
       // Затем по времени создания (новые сверху)
@@ -228,52 +228,10 @@ export function TasksSection({ user, onBalanceUpdate }) {
                 <h3 className="task-title">{task.title}</h3>
                 {task.type === "limited" && (
                   <div className="flex items-center justify-center mt-3 mb-4">
-                    <div
-                      style={{
-                        background: "linear-gradient(to right, rgba(17, 17, 17, 0.95), rgba(24, 24, 27, 0.95))",
-                        padding: "8px 16px",
-                        borderRadius: "9999px",
-                        border: "1px solid rgba(147, 51, 234, 0.3)",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        boxShadow: "0 0 15px rgba(147, 51, 234, 0.1)",
-                        backdropFilter: "blur(8px)",
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: "#a855f7",
-                          animation: "pulse 2s infinite",
-                          display: "inline-block",
-                        }}
-                      >
-                        ⏳
-                      </span>
-                      <span
-                        style={{
-                          background: "linear-gradient(to right, #d8b4fe, #a855f7)",
-                          WebkitBackgroundClip: "text",
-                          WebkitTextFillColor: "transparent",
-                          fontSize: "10px",
-                          fontWeight: "500",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.1em",
-                          fontFamily: '"Orbitron", sans-serif',
-                        }}
-                      >
-                        осталось
-                      </span>
-                      <span
-                        style={{
-                          background: "linear-gradient(to right, #38bdf8, #818cf8)",
-                          WebkitBackgroundClip: "text",
-                          WebkitTextFillColor: "transparent",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          fontFamily: '"Orbitron", sans-serif',
-                        }}
-                      >
+                    <div className="timer-container">
+                      <span className="timer-icon">⏳</span>
+                      <span className="timer-text">осталось</span>
+                      <span className="timer-value">
                         {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
                       </span>
                     </div>
