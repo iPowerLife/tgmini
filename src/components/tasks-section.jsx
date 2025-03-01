@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
-import { QuizTask } from "./tasks/quiz-task"
+import { QuizTask } from "./quiz-task"
 
 export function TasksSection({ user }) {
   const [tasks, setTasks] = useState([])
