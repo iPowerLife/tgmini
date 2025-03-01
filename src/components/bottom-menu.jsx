@@ -1,18 +1,27 @@
-"use client"
-
 import { Home, ShoppingBag, Target, Trophy, User } from "lucide-react"
-import { Link, useLocation } from "react-router-dom"
+import { initTelegram } from "../utils/telegram"
 
 export function BottomMenu() {
-  const location = useLocation()
+  const tg = initTelegram()
+  const currentPath = window.location.pathname
 
-  const isActive = (path) => location.pathname === path
+  const isActive = (path) => currentPath === path
+
+  const handleNavigation = (e, path) => {
+    e.preventDefault()
+    if (tg) {
+      tg.MainButton.text = path.slice(1) || "home"
+      // Используем встроенную навигацию Telegram
+      tg.navigation.navigateTo(path)
+    }
+  }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-gray-800">
       <nav className="flex items-center justify-around h-16 max-w-md mx-auto px-4">
-        <Link
-          to="/"
+        <a
+          href="/"
+          onClick={(e) => handleNavigation(e, "/")}
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/") ? "text-blue-400" : "text-gray-400 hover:text-gray-300"
           }`}
@@ -22,10 +31,11 @@ export function BottomMenu() {
             <Home className="w-5 h-5" />
             <span className="text-xs font-medium">Главная</span>
           </div>
-        </Link>
+        </a>
 
-        <Link
-          to="/shop"
+        <a
+          href="/shop"
+          onClick={(e) => handleNavigation(e, "/shop")}
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/shop") ? "text-blue-400" : "text-gray-400 hover:text-gray-300"
           }`}
@@ -35,10 +45,11 @@ export function BottomMenu() {
             <ShoppingBag className="w-5 h-5" />
             <span className="text-xs font-medium">Магазин</span>
           </div>
-        </Link>
+        </a>
 
-        <Link
-          to="/tasks"
+        <a
+          href="/tasks"
+          onClick={(e) => handleNavigation(e, "/tasks")}
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/tasks") ? "text-blue-400" : "text-gray-400 hover:text-gray-300"
           }`}
@@ -48,10 +59,11 @@ export function BottomMenu() {
             <Target className="w-5 h-5" />
             <span className="text-xs font-medium">Задания</span>
           </div>
-        </Link>
+        </a>
 
-        <Link
-          to="/rating"
+        <a
+          href="/rating"
+          onClick={(e) => handleNavigation(e, "/rating")}
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/rating") ? "text-blue-400" : "text-gray-400 hover:text-gray-300"
           }`}
@@ -61,10 +73,11 @@ export function BottomMenu() {
             <Trophy className="w-5 h-5" />
             <span className="text-xs font-medium">Рейтинг</span>
           </div>
-        </Link>
+        </a>
 
-        <Link
-          to="/profile"
+        <a
+          href="/profile"
+          onClick={(e) => handleNavigation(e, "/profile")}
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/profile") ? "text-blue-400" : "text-gray-400 hover:text-gray-300"
           }`}
@@ -74,7 +87,7 @@ export function BottomMenu() {
             <User className="w-5 h-5" />
             <span className="text-xs font-medium">Профиль</span>
           </div>
-        </Link>
+        </a>
       </nav>
     </div>
   )
