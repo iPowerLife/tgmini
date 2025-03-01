@@ -1,21 +1,29 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { getTelegramUser } from "../utils/telegram"
 
 export function useTelegramUser() {
-  const user = getTelegramUser()
+  const [user, setUser] = useState(null)
 
-  return {
-    id: user?.id,
-    firstName: user?.first_name || "Unknown",
-    lastName: user?.last_name,
-    username: user?.username,
-    languageCode: user?.language_code,
-    photoUrl: user?.photo_url,
-    // Форматированное имя для отображения
-    displayName: user?.username
-      ? `@${user.username}`
-      : user?.first_name
-        ? `${user.first_name}${user.last_name ? ` ${user.last_name}` : ""}`
-        : "Unknown User",
-  }
+  useEffect(() => {
+    try {
+      const telegramUser = getTelegramUser()
+      if (telegramUser) {
+        setUser({
+          id: telegramUser.id,
+          username: telegramUser.username,
+          firstName: telegramUser.first_name,
+          lastName: telegramUser.last_name,
+          languageCode: telegramUser.language_code,
+          photoUrl: telegramUser.photo_url,
+        })
+      }
+    } catch (error) {
+      console.error("Error in useTelegramUser hook:", error)
+    }
+  }, [])
+
+  return user
 }
 
