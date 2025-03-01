@@ -9,7 +9,7 @@ export function TasksSection({ user }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState("all")
-  const [taskStates, setTaskStates] = useState({}) // { taskId: { status: 'initial' | 'verifying' | 'completed', timeLeft: number } }
+  const [taskStates, setTaskStates] = useState({})
 
   const loadTasks = useCallback(async () => {
     try {
@@ -22,30 +22,6 @@ export function TasksSection({ user }) {
 
       if (error) throw error
 
-      // Загружаем статусы заданий
-      const { data: userTasks, error: userTasksError } = await supabase
-        .from("user_tasks")
-        .select("task_id, status, verification_started_at")
-        .eq("user_id", user.id)
-
-      if (userTasksError) throw userTasksError
-
-      // Обновляем состояния заданий
-      const newTaskStates = {}
-      userTasks?.forEach((userTask) => {
-        if (userTask.status === "in_progress") {
-          const verificationTime = new Date(userTask.verification_started_at).getTime()
-          const now = Date.now()
-          const timeLeft = Math.max(0, 15000 - (now - verificationTime))
-
-          newTaskStates[userTask.task_id] = {
-            status: timeLeft > 0 ? "verifying" : "completed",
-            timeLeft,
-          }
-        }
-      })
-
-      setTaskStates(newTaskStates)
       setTasks(data?.tasks || [])
     } catch (err) {
       console.error("Error loading tasks:", err)
@@ -61,24 +37,20 @@ export function TasksSection({ user }) {
     }
   }, [user?.id, loadTasks])
 
-  // Обработчик для кнопки "Выполнить"
   const handleExecuteTask = async (task) => {
     try {
-      // Начинаем задание
       const { error: startError } = await supabase.rpc("start_task", {
         user_id_param: user.id,
-        task_id_param: task.id, // task.id теперь UUID из базы данных
+        task_id_param: task.id,
       })
 
       if (startError) throw startError
 
-      // Обновляем состояние задания
       setTaskStates((prev) => ({
         ...prev,
         [task.id]: { status: "verifying", timeLeft: 15000 },
       }))
 
-      // Открываем ссылку в новом окне
       if (task.link) {
         const tg = initTelegram()
         if (tg) {
@@ -88,7 +60,6 @@ export function TasksSection({ user }) {
         }
       }
 
-      // Запускаем таймер
       const interval = setInterval(() => {
         setTaskStates((prev) => {
           const taskState = prev[task.id]
@@ -113,26 +84,23 @@ export function TasksSection({ user }) {
     }
   }
 
-  // Обработчик для кнопки "Получить"
   const handleClaimReward = async (task) => {
     try {
-      // Завершаем задание
       const { error: completeError } = await supabase.rpc("complete_task", {
         user_id_param: user.id,
-        task_id_param: task.id, // task.id теперь UUID из базы данных
+        task_id_param: task.id,
       })
 
       if (completeError) throw completeError
 
-      // Получаем награду
       const { error: rewardError } = await supabase.rpc("claim_task_reward", {
         user_id_param: user.id,
-        task_id_param: task.id, // task.id теперь UUID из базы данных
+        task_id_param: task.id,
       })
 
       if (rewardError) throw rewardError
 
-      // Обновляем список заданий
+      // Обновляем список заданий после получения награды
       await loadTasks()
     } catch (error) {
       console.error("Ошибка при получении награды:", error)
@@ -140,8 +108,16 @@ export function TasksSection({ user }) {
     }
   }
 
-  // Функция для рендера кнопки действия
   const renderActionButton = (task) => {
+    // Если задание уже выполнено и награда получена
+    if (task.is_completed) {
+      return (
+        <button className="task-button completed-button" disabled>
+          Выполнено ✓
+        </button>
+      )
+    }
+
     const taskState = taskStates[task.id]
 
     if (!taskState || taskState.status === "initial") {
@@ -160,7 +136,7 @@ export function TasksSection({ user }) {
       )
     }
 
-    if (taskState.status === "completed") {
+    if (taskState.status === "completed" || task.user_status === "completed") {
       return (
         <button className="task-button claim-button" onClick={() => handleClaimReward(task)}>
           Получить
@@ -184,7 +160,6 @@ export function TasksSection({ user }) {
 
   return (
     <div className="tasks-page">
-      {/* Вкладки */}
       <div className="tasks-tabs">
         <button className={`tab-button ${activeTab === "all" ? "active" : ""}`} onClick={() => setActiveTab("all")}>
           Все
@@ -206,10 +181,9 @@ export function TasksSection({ user }) {
         </button>
       </div>
 
-      {/* Список заданий */}
       <div className="tasks-list">
         {filteredTasks.map((task) => (
-          <div key={task.id} className="task-card">
+          <div key={task.id} className={`task-card ${task.is_completed ? "completed" : ""}`}>
             <div className="task-header">
               <div className="task-info">
                 <h3 className="task-title">{task.title}</h3>
