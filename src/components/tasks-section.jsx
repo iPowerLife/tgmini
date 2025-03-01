@@ -227,10 +227,50 @@ export function TasksSection({ user, onBalanceUpdate }) {
                 <h3 className="task-title">{task.title}</h3>
                 {task.type === "limited" && (
                   <div className="flex items-center justify-center mt-3 mb-4">
-                    <div className="timer-container">
-                      <span className="timer-icon">⏳</span>
-                      <span className="timer-text">осталось:</span>
-                      <span className="timer-value">
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 16px",
+                        background: "linear-gradient(to right, rgba(17, 17, 17, 0.95), rgba(24, 24, 27, 0.95))",
+                        borderRadius: "9999px",
+                        border: "1px solid rgba(147, 51, 234, 0.3)",
+                        boxShadow: "0 0 15px rgba(147, 51, 234, 0.1)",
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: "#a855f7",
+                          animation: "pulse 2s infinite",
+                        }}
+                      >
+                        ⏳
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: "500",
+                          letterSpacing: "0.15em",
+                          textTransform: "uppercase",
+                          fontFamily: '"Orbitron", sans-serif',
+                          background: "linear-gradient(to right, #e879f9, #c084fc)",
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
+                        }}
+                      >
+                        осталось:
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: "600",
+                          fontFamily: '"Orbitron", sans-serif',
+                          background: "linear-gradient(to right, #38bdf8, #818cf8)",
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
+                        }}
+                      >
                         {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
                       </span>
                     </div>
