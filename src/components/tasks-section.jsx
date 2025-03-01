@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
 import { initTelegram } from "../utils/telegram"
-import { Timer } from "lucide-react"
 
 const formatTimeRemaining = (endDate) => {
   const now = new Date()
@@ -230,7 +229,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
                 {task.type === "limited" && (
                   <div className="flex items-center justify-center mt-3 mb-4">
                     <div className="flex items-center bg-gradient-to-r from-gray-800/50 to-gray-900/50 rounded-full px-3 py-1.5 border border-gray-700/30">
-                      <Timer className="w-3.5 h-3.5 text-blue-400 mr-1.5" />
+                      <span className="text-blue-400 mr-1.5">⏳</span>
                       <span className="text-[10px] font-medium tracking-[0.15em] text-gray-400 mr-1">ОСТАЛОСЬ:</span>
                       <span className="text-xs font-semibold text-blue-400">
                         {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
