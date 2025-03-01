@@ -9,16 +9,92 @@
 }
 
 @layer components {
-  .tasks-container {
-    @apply p-3 max-w-md mx-auto;
+  .profile-container {
+    @apply p-3;
+  }
+
+  .stat-card {
+    @apply p-3 rounded-xl bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 transition-all duration-300 hover:border-gray-600/50;
+  }
+
+  .stat-icon-wrapper {
+    @apply p-2 rounded-lg border transition-all duration-300 flex-shrink-0;
+  }
+
+  .stat-content {
+    @apply min-w-0;
+  }
+
+  .stat-label {
+    @apply text-xs font-medium text-gray-400 mb-0.5;
+  }
+
+  .stat-value {
+    @apply text-sm font-bold text-white transition-colors duration-300 flex items-center gap-1;
+  }
+
+  .stat-symbol {
+    @apply text-xs;
+  }
+
+  .miners-summary {
+    @apply rounded-xl bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 py-3;
+  }
+
+  .miners-list {
+    @apply space-y-1 px-3;
+  }
+
+  .miner-item {
+    @apply flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-800/30 transition-all duration-300;
+  }
+
+  .miner-quantity {
+    @apply px-2 py-0.5 rounded-md bg-gray-800/80 text-gray-400 text-xs font-medium border border-gray-700/50;
+  }
+
+  /* Медиа-запросы для адаптивности */
+  @screen sm {
+    .profile-container {
+      @apply p-4;
+    }
+
+    .stat-card {
+      @apply p-4;
+    }
+
+    .stat-label {
+      @apply text-sm;
+    }
+
+    .stat-value {
+      @apply text-base;
+    }
+
+    .miners-summary {
+      @apply py-4;
+    }
+
+    .miners-list {
+      @apply space-y-1.5 px-4;
+    }
+
+    .miner-item {
+      @apply py-2.5 px-4;
+    }
+  }
+
+  /* Остальные стили остаются без изменений */
+  .tasks-page {
+    @apply p-4 max-w-2xl mx-auto;
   }
 
   .tasks-list {
-    @apply space-y-2;
+    @apply space-y-4;
   }
 
   .task-card {
-    @apply bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-3 transition-all duration-200;
+    @apply bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-4 transition-all duration-200;
   }
 
   .task-card.completed {
@@ -26,45 +102,15 @@
   }
 
   .task-header {
-    @apply mb-2;
+    @apply mb-4;
   }
 
   .task-info {
-    @apply space-y-1;
+    @apply space-y-2;
   }
 
   .task-title {
-    @apply text-sm font-medium text-white;
-  }
-
-  /* Стили для кнопок задач */
-  .task-button {
-    @apply w-full flex items-center justify-between px-3 py-2 rounded-lg border transition-colors text-sm;
-  }
-
-  .task-button-default {
-    @apply bg-gray-800/80 border-gray-700/50 hover:bg-gray-800/90;
-  }
-
-  .task-button-completed {
-    @apply bg-gray-800/80 border-gray-700/50 text-gray-400 cursor-not-allowed;
-  }
-
-  .task-button-claim {
-    @apply bg-blue-600/80 border-blue-500/50 hover:bg-blue-600/90 text-white;
-  }
-
-  /* Стили для статистики профиля остаются без изменений */
-  .profile-stat {
-    @apply p-4 rounded-xl bg-gray-900/50 border border-gray-700/30;
-  }
-
-  .profile-stat-value {
-    @apply text-2xl font-bold text-white mb-1;
-  }
-
-  .profile-stat-label {
-    @apply text-xs text-gray-400 uppercase tracking-wider;
+    @apply text-lg font-semibold text-white;
   }
 }
 
