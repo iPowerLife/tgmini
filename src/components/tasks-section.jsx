@@ -226,17 +226,37 @@ export function TasksSection({ user, onBalanceUpdate }) {
             <div className="task-header">
               <div className="task-info">
                 <h3 className="task-title">{task.title}</h3>
-                {task.type === "limited" && (
-                  <div className="flex items-center justify-center mt-3 mb-4">
-                    <div className="timer-container">
-                      <span className="timer-icon">⏳</span>
-                      <span className="timer-text">осталось</span>
-                      <span className="timer-value">
-                        {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
-                      </span>
-                    </div>
-                  </div>
-                )}
+{task.type === "limited" && (
+  <div className="flex items-center justify-center mt-3 mb-4">
+    <div style={{
+      background: '#1a1a1a',
+      padding: '8px 16px',
+      borderRadius: '9999px',
+      border: '1px solid #6b21a8',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px'
+    }}>
+      <span style={{ color: '#a855f7' }}>⏳</span>
+      <span style={{
+        color: '#d8b4fe',
+        fontSize: '10px',
+        fontWeight: '500',
+        textTransform: 'uppercase',
+        letterSpacing: '0.1em'
+      }}>
+        осталось
+      </span>
+      <span style={{
+        color: '#38bdf8',
+        fontSize: '14px',
+        fontWeight: '600'
+      }}>
+        {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
+      </span>
+    </div>
+  </div>
+)}
                 <p className="task-description">{task.description}</p>
               </div>
             </div>
