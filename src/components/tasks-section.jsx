@@ -234,9 +234,9 @@ export function TasksSection({ user, onBalanceUpdate }) {
                 <div>
                   <h3 className="task-title">{task.title}</h3>
                   {task.type === "limited" && (
-                    <div className="flex items-center gap-1.5 mt-1">
+                    <div className="flex flex-col items-center gap-2 mt-2">
                       <svg
-                        className="w-3 h-3 text-blue-400/80"
+                        className="w-8 h-8 text-white"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -245,10 +245,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
                         <circle cx="12" cy="12" r="10" />
                         <path d="M12 6v6l4 2" />
                       </svg>
-                      <span
-                        className="text-[11px] font-medium tracking-tight text-blue-400/80"
-                        style={{ fontFamily: "-apple-system, BlinkMacSystemFont, system-ui, sans-serif" }}
-                      >
+                      <span className="text-xs uppercase tracking-wide text-gray-400">
                         осталось: {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
                       </span>
                     </div>
