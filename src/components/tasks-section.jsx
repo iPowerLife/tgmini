@@ -11,9 +11,13 @@ const formatTimeRemaining = (endDate) => {
 
   if (diff <= 0) return "Время истекло"
 
-  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const minutes = Math.floor((diff % 3600000) / 60000)
   const seconds = Math.floor((diff % 60000) / 1000)
 
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+  }
   return `${minutes}:${seconds.toString().padStart(2, "0")}`
 }
 
@@ -214,7 +218,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
                 alignItems: "center",
               }}
             >
-              {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
+              {task.end_date ? formatTimeRemaining(task.end_date) : "Нет времени"}
             </span>
           </div>
           <div className="flex items-center gap-2">
