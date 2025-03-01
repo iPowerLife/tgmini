@@ -1,12 +1,11 @@
-import { BrowserRouter as Router } from "react-router-dom"
 import { BottomMenu } from "./components/bottom-menu"
 
 function App() {
   return (
-    <Router>
-      {/* Your routes here */}
+    <div className="app">
+      {/* Your routes/content here */}
       <BottomMenu />
-    </Router>
+    </div>
   )
 }
 
