@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
 import { initTelegram } from "../utils/telegram"
 
-export function TasksSection({ user }) {
+export function TasksSection({ user, onBalanceUpdate }) {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -93,14 +93,19 @@ export function TasksSection({ user }) {
 
       if (completeError) throw completeError
 
-      const { error: rewardError } = await supabase.rpc("claim_task_reward", {
+      const { data: rewardData, error: rewardError } = await supabase.rpc("claim_task_reward", {
         user_id_param: user.id,
         task_id_param: task.id,
       })
 
       if (rewardError) throw rewardError
 
-      // Обновляем список заданий после получения награды
+      // Обновляем баланс в родительском компоненте
+      if (rewardData && onBalanceUpdate) {
+        onBalanceUpdate(rewardData.new_balance)
+      }
+
+      // Обновляем список заданий
       await loadTasks()
     } catch (error) {
       console.error("Ошибка при получении награды:", error)
@@ -109,7 +114,6 @@ export function TasksSection({ user }) {
   }
 
   const renderActionButton = (task) => {
-    // Если задание уже выполнено и награда получена
     if (task.is_completed) {
       return (
         <button className="task-button completed-button" disabled>

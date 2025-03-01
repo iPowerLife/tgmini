@@ -24,9 +24,11 @@ function App() {
         setLoading(true)
         setError(null)
 
+        // Инициализируем Telegram WebApp
         const telegram = initTelegram()
         console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
 
+        // Получаем данные пользователя
         const userData = getTelegramUser()
         console.log("User data:", userData)
 
@@ -34,6 +36,7 @@ function App() {
           throw new Error("Не удалось получить данные пользователя из Telegram")
         }
 
+        // Создаем или обновляем пользователя в базе
         const dbUser = await createOrUpdateUser(userData)
         console.log("Database user:", dbUser)
 
@@ -70,12 +73,60 @@ function App() {
     }
   }, [])
 
-  const renderContent = () => {
-    // Если пользователь не загружен, показываем загрузку
-    if (!user) {
-      return <div className="loading">Загрузка данных пользователя...</div>
-    }
+  // Обработчик обновления баланса
+  const handleBalanceUpdate = (newBalance) => {
+    setBalance(newBalance)
+    setUser((prev) => ({ ...prev, balance: newBalance }))
 
+    // Показываем анимацию увеличения баланса
+    setShowIncrease(true)
+    setTimeout(() => setShowIncrease(false), 1000)
+  }
+
+  // Показываем загрузку
+  if (loading) {
+    return (
+      <div className="app-wrapper">
+        <div className="app-container">
+          <div className="section-container">
+            <div className="loading">Загрузка приложения...</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Показываем ошибку
+  if (error) {
+    return (
+      <div className="app-wrapper">
+        <div className="app-container">
+          <div className="section-container error">
+            <h2>Ошибка</h2>
+            <p>{error}</p>
+            <button onClick={() => window.location.reload()} className="shop-button mt-4">
+              Попробовать снова
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Показываем загрузку, если нет пользователя
+  if (!user) {
+    return (
+      <div className="app-wrapper">
+        <div className="app-container">
+          <div className="section-container">
+            <div className="loading">Загрузка данных пользователя...</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const renderContent = () => {
     switch (activeSection) {
       case "home":
         return (
@@ -98,42 +149,16 @@ function App() {
           </>
         )
       case "shop":
-        return <Shop user={user} onPurchase={(newBalance) => setBalance(newBalance)} />
+        return <Shop user={user} onPurchase={handleBalanceUpdate} />
       case "tasks":
-        return <TasksSection user={user} />
+        return <TasksSection user={user} onBalanceUpdate={handleBalanceUpdate} />
       case "rating":
-        return <div>Раздел рейтинга в разработке</div>
+        return <div className="section-container">Раздел рейтинга в разработке</div>
       case "profile":
         return <UserProfile user={user} />
       default:
-        return <div>Выберите раздел</div>
+        return <div className="section-container">Выберите раздел</div>
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="app-wrapper">
-        <div className="app-container">
-          <div className="loading">Загрузка приложения...</div>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="app-wrapper">
-        <div className="app-container">
-          <div className="error">
-            <h2>Ошибка</h2>
-            <p>{error}</p>
-            <button onClick={() => window.location.reload()} className="shop-button mt-4">
-              Попробовать снова
-            </button>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (
