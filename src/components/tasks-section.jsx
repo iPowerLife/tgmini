@@ -50,6 +50,16 @@ export function TasksSection({ user, onBalanceUpdate }) {
     }
   }, [user?.id, loadTasks])
 
+  // Add timer update effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      // Force re-render to update timers
+      setTasks((prevTasks) => [...prevTasks])
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [])
+
   const handleExecuteTask = async (task) => {
     try {
       const { error: startError } = await supabase.rpc("start_task", {
@@ -218,7 +228,17 @@ export function TasksSection({ user, onBalanceUpdate }) {
                 <h3 className="task-title">{task.title}</h3>
                 <p className="task-description">{task.description}</p>
                 {task.type === "limited" && task.end_date && (
-                  <div className="time-remaining">⏳ Осталось: {formatTimeRemaining(task.end_date)}</div>
+                  <div
+                    className="time-remaining"
+                    style={{
+                      color: "#5b9af5",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      marginTop: "8px",
+                    }}
+                  >
+                    ⏳ Осталось: {formatTimeRemaining(task.end_date)}
+                  </div>
                 )}
               </div>
             </div>
