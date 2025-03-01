@@ -1117,8 +1117,9 @@ button:not(:disabled):active {
 
 .progress-bar {
   background: linear-gradient(90deg, rgba(99, 102, 241, 0.5), rgba(99, 102, 241, 1));
-  border-radius: 9999px;
+  height: 100%;
   transition: width 0.3s ease;
+  position: relative;
 }
 
 .progress-label {
@@ -1593,5 +1594,208 @@ button:active {
   display: flex !important;
   align-items: center !important;
   gap: 4px !important;
+}
+
+/* Сбрасываем стили */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Стили для страницы заданий */
+.tasks-page {
+  padding: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Стили для вкладок */
+.tasks-tabs {
+  display: flex;
+  gap: 8px;
+  background: #1a1b1e;
+  padding: 8px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-button.active {
+  background: #2a2b2e;
+  color: white;
+}
+
+/* Стили для списка заданий */
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Стили для карточки задания */
+.task-card {
+  background: #1a1b1e;
+  border: 1px solid #2a2b2e;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.task-info {
+  flex: 1;
+  margin-right: 16px;
+}
+
+.task-title {
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.task-description {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.task-reward {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #5b9af5;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.reward-icon {
+  font-size: 14px;
+}
+
+/* Стили для кнопок */
+.task-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.task-button {
+  flex: 1;
+  padding: 8px 16px;
+  border: 1px solid #2a2b2e;
+  border-radius: 8px;
+  background: #1a1b1e;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.task-button:hover {
+  background: #2a2b2e;
+}
+
+/* Стили для состояний загрузки и ошибок */
+.tasks-loading,
+.tasks-error,
+.no-tasks {
+  text-align: center;
+  padding: 32px;
+  color: #94a3b8;
+}
+
+.tasks-error {
+  color: #ef4444;
+}
+
+/* Медиа-запросы для адаптивности */
+@media (max-width: 480px) {
+  .tasks-page {
+    padding: 12px;
+  }
+
+  .task-card {
+    padding: 12px;
+  }
+
+  .task-actions {
+    flex-direction: column;
+  }
+
+  .task-button {
+    width: 100%;
+  }
+}
+/* Стили для вкладок */
+.tasks-tabs {
+  display: flex;
+  gap: 8px;
+  background: rgba(26, 27, 30, 0.5);
+  padding: 8px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(91, 154, 245, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.tab-button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(91, 154, 245, 0.1), transparent);
+  transition: 0.5s;
+}
+
+.tab-button:hover::before {
+  left: 100%;
+}
+
+.tab-button:hover {
+  color: white;
+  background: rgba(91, 154, 245, 0.1);
+}
+
+.tab-button.active {
+  background: linear-gradient(90deg, rgba(91, 154, 245, 0.2), rgba(91, 154, 245, 0.3));
+  color: white;
+  box-shadow: 0 0 20px rgba(91, 154, 245, 0.1);
+  border: 1px solid rgba(91, 154, 245, 0.2);
+}
+
+.tab-button:active {
+  transform: translateY(1px);
 }
 

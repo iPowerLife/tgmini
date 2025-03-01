@@ -1,9 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ExternalLink, Play, Clock } from "lucide-react"
 import { supabase } from "../supabase"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs"
 
 export function TasksSection({ user }) {
   const [tasks, setTasks] = useState([])
@@ -23,7 +21,7 @@ export function TasksSection({ user }) {
 
         if (error) throw error
 
-        setTasks(data.tasks)
+        setTasks(data.tasks || [])
       } catch (err) {
         console.error("Error loading tasks:", err)
         setError("Ошибка загрузки заданий")
@@ -38,31 +36,11 @@ export function TasksSection({ user }) {
   }, [user?.id])
 
   if (loading) {
-    return (
-      <div className="min-h-[50vh] flex items-center justify-center p-4">
-        <div className="text-white/50 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
-          Загрузка заданий...
-        </div>
-      </div>
-    )
+    return <div className="tasks-loading">Загрузка заданий...</div>
   }
 
   if (error) {
-    return (
-      <div className="min-h-[50vh] flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-red-400 text-lg font-semibold mb-2">Ошибка загрузки</p>
-          <p className="text-white/50">{error}</p>
-          <button
-            className="mt-4 px-4 py-2 bg-[#1a1b1e] text-white rounded-lg hover:bg-[#2a2b2e]"
-            onClick={() => window.location.reload()}
-          >
-            Попробовать снова
-          </button>
-        </div>
-      </div>
-    )
+    return <div className="tasks-error">{error}</div>
   }
 
   const filteredTasks = tasks.filter((task) => {
@@ -71,63 +49,56 @@ export function TasksSection({ user }) {
   })
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 py-6">
-      <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 w-full max-w-md mx-auto mb-6">
-          <TabsTrigger value="all">Все</TabsTrigger>
-          <TabsTrigger value="basic">Базовые</TabsTrigger>
-          <TabsTrigger value="limited">
-            <Clock className="w-4 h-4 mr-1" />
-            Лимит
-          </TabsTrigger>
-          <TabsTrigger value="achievement">Достижения</TabsTrigger>
-        </TabsList>
+    <div className="tasks-page">
+      {/* Вкладки */}
+      <div className="tasks-tabs">
+        <button className={`tab-button ${activeTab === "all" ? "active" : ""}`} onClick={() => setActiveTab("all")}>
+          Все
+        </button>
+        <button className={`tab-button ${activeTab === "basic" ? "active" : ""}`} onClick={() => setActiveTab("basic")}>
+          Базовые
+        </button>
+        <button
+          className={`tab-button ${activeTab === "limited" ? "active" : ""}`}
+          onClick={() => setActiveTab("limited")}
+        >
+          Лимит
+        </button>
+        <button
+          className={`tab-button ${activeTab === "achievement" ? "active" : ""}`}
+          onClick={() => setActiveTab("achievement")}
+        >
+          Достижения
+        </button>
+      </div>
 
-        <TabsContent value={activeTab}>
-          <div className="space-y-4">
-            {filteredTasks.map((task) => (
-              <div key={task.id} className="bg-[#1a1b1e] rounded-xl p-4 border border-[#2a2b2e]">
-                <div className="space-y-4">
-                  {/* Заголовок и награда */}
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-1">{task.title}</h3>
-                      <p className="text-sm text-gray-400">{task.description}</p>
-                    </div>
-                    <div className="flex items-center gap-1 text-[#5b9af5] shrink-0">
-                      <span className="text-lg font-bold">{task.reward}</span>
-                      <span>💎</span>
-                    </div>
-                  </div>
-
-                  {/* Кнопки */}
-                  <div className="flex gap-2">
-                    {task.link && (
-                      <button
-                        onClick={() => window.open(task.link, "_blank")}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#1a1b1e] hover:bg-[#2a2b2e] text-white rounded-lg border border-[#2a2b2e] transition-colors"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        Перейти
-                      </button>
-                    )}
-                    <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#1a1b1e] hover:bg-[#2a2b2e] text-white rounded-lg border border-[#2a2b2e] transition-colors">
-                      <Play className="w-4 h-4" />
-                      Начать
-                    </button>
-                  </div>
-                </div>
+      {/* Список заданий */}
+      <div className="tasks-list">
+        {filteredTasks.map((task) => (
+          <div key={task.id} className="task-card">
+            <div className="task-header">
+              <div className="task-info">
+                <h3 className="task-title">{task.title}</h3>
+                <p className="task-description">{task.description}</p>
               </div>
-            ))}
-
-            {filteredTasks.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-gray-400">В этой категории пока нет доступных заданий</p>
+              <div className="task-reward">
+                <span>{task.reward}</span>
+                <span className="reward-icon">💎</span>
               </div>
-            )}
+            </div>
+            <div className="task-actions">
+              {task.link && (
+                <button className="task-button goto-button" onClick={() => window.open(task.link, "_blank")}>
+                  Перейти
+                </button>
+              )}
+              <button className="task-button start-button">Начать</button>
+            </div>
           </div>
-        </TabsContent>
-      </Tabs>
+        ))}
+
+        {filteredTasks.length === 0 && <div className="no-tasks">В этой категории пока нет доступных заданий</div>}
+      </div>
     </div>
   )
 }
