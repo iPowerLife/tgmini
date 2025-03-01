@@ -50,10 +50,8 @@ export function TasksSection({ user, onBalanceUpdate }) {
     }
   }, [user?.id, loadTasks])
 
-  // Add timer update effect
   useEffect(() => {
     const timer = setInterval(() => {
-      // Force re-render to update timers
       setTasks((prevTasks) => [...prevTasks])
     }, 1000)
 
@@ -88,7 +86,10 @@ export function TasksSection({ user, onBalanceUpdate }) {
           const taskState = prev[task.id]
           if (!taskState || taskState.timeLeft <= 0) {
             clearInterval(interval)
-            return prev
+            return {
+              ...prev,
+              [task.id]: { status: "completed", timeLeft: 0 },
+            }
           }
 
           const newTimeLeft = taskState.timeLeft - 1000
@@ -123,12 +124,10 @@ export function TasksSection({ user, onBalanceUpdate }) {
 
       if (rewardError) throw rewardError
 
-      // Обновляем баланс в родительском компоненте
       if (rewardData && onBalanceUpdate) {
         onBalanceUpdate(rewardData.new_balance)
       }
 
-      // Обновляем список заданий
       await loadTasks()
     } catch (error) {
       console.error("Ошибка при получении награды:", error)
@@ -136,44 +135,111 @@ export function TasksSection({ user, onBalanceUpdate }) {
     }
   }
 
-  const renderActionButton = (task) => {
+  const renderTaskButton = (task) => {
+    const taskState = taskStates[task.id]
+
     if (task.is_completed) {
       return (
-        <button className="completed-button" disabled>
+        <button
+          className="w-full flex items-center justify-center px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400"
+          disabled
+        >
           Выполнено ✓
         </button>
       )
     }
 
-    const taskState = taskStates[task.id]
-
-    if (!taskState || taskState.status === "initial") {
+    if (taskState?.status === "completed") {
       return (
-        <button className="execute-button" onClick={() => handleExecuteTask(task)}>
-          Выполнить
-          <span className="reward">
-            {task.reward}
-            <span className="reward-icon">💎</span>
-          </span>
+        <button
+          onClick={() => handleClaimReward(task)}
+          className="w-full flex items-center justify-center px-4 py-3 bg-blue-600/80 rounded-lg border border-blue-500/50 hover:bg-blue-600/90 transition-colors text-white"
+        >
+          Получить
         </button>
       )
     }
 
-    if (taskState.status === "verifying") {
+    if (taskState?.status === "verifying") {
       return (
-        <button className="verify-button" disabled>
+        <button
+          className="w-full flex items-center justify-center px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400"
+          disabled
+        >
           Проверка ({Math.ceil(taskState.timeLeft / 1000)}с)
         </button>
       )
     }
 
-    if (taskState.status === "completed" || task.user_status === "completed") {
+    if (task.type === "limited") {
       return (
-        <button className="claim-button" onClick={() => handleClaimReward(task)}>
-          Получить
+        <button
+          onClick={() => handleExecuteTask(task)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 hover:bg-gray-800/90 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <span
+              style={{
+                color: "#a855f7",
+                animation: "pulse 2s infinite",
+              }}
+            >
+              ⏳
+            </span>
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: "500",
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+                fontFamily: '"Orbitron", sans-serif',
+                background: "linear-gradient(to right, #e879f9, #c084fc)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              осталось:
+            </span>
+            <span
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                fontFamily: '"Orbitron", sans-serif',
+                background: "linear-gradient(to right, #38bdf8, #818cf8)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-white">Выполнить</span>
+            <div className="flex items-center gap-1">
+              <span className="text-blue-400">{task.reward}</span>
+              <span className="text-blue-400">💎</span>
+            </div>
+          </div>
         </button>
       )
     }
+
+    return (
+      <button
+        onClick={() => handleExecuteTask(task)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 hover:bg-gray-800/90 transition-colors"
+      >
+        <span className="text-white">Выполнить</span>
+        <div className="flex items-center gap-1">
+          <span className="text-blue-400">{task.reward}</span>
+          <span className="text-blue-400">💎</span>
+        </div>
+      </button>
+    )
   }
 
   if (loading) {
@@ -190,10 +256,8 @@ export function TasksSection({ user, onBalanceUpdate }) {
       return task.type === activeTab
     })
     .sort((a, b) => {
-      // Сначала сортируем по статусу выполнения
       if (a.is_completed && !b.is_completed) return 1
       if (!a.is_completed && b.is_completed) return -1
-      // Затем по времени создания (новые сверху)
       return new Date(b.created_at) - new Date(a.created_at)
     })
 
@@ -227,56 +291,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
                 <h3 className="task-title text-lg font-semibold text-white mb-4">{task.title}</h3>
               </div>
             </div>
-            {task.type === "limited" && (
-              <button
-                onClick={() => handleExecuteTask(task)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 hover:bg-gray-800/90 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    style={{
-                      color: "#a855f7",
-                      animation: "pulse 2s infinite",
-                    }}
-                  >
-                    ⏳
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      fontWeight: "500",
-                      letterSpacing: "0.15em",
-                      textTransform: "uppercase",
-                      fontFamily: '"Orbitron", sans-serif',
-                      background: "linear-gradient(to right, #e879f9, #c084fc)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
-                    осталось:
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      fontFamily: '"Orbitron", sans-serif',
-                      background: "linear-gradient(to right, #38bdf8, #818cf8)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
-                    {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-white">Выполнить</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-blue-400">{task.reward}</span>
-                    <span className="text-blue-400">💎</span>
-                  </div>
-                </div>
-              </button>
-            )}
+            {renderTaskButton(task)}
           </div>
         ))}
 
