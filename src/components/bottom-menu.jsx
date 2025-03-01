@@ -1,14 +1,21 @@
 export function BottomMenu() {
-  const tg = window.Telegram.WebApp
+  const tg = window?.Telegram?.WebApp || window.TelegramWebApp
 
   const handleClick = (command) => {
-    tg.sendData(JSON.stringify({ command }))
+    if (tg) {
+      tg.sendData(JSON.stringify({ command: command }))
+      // Добавляем вибрацию при клике для обратной связи
+      tg.HapticFeedback.impactOccurred("light")
+    }
   }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800">
       <div className="flex justify-around items-center h-16">
-        <button onClick={() => handleClick("home")} className="flex flex-col items-center justify-center">
+        <button
+          onClick={() => handleClick("home")}
+          className="flex flex-col items-center justify-center active:opacity-60 transition-opacity"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="w-5 h-5 text-gray-400"
@@ -25,7 +32,10 @@ export function BottomMenu() {
           <span className="text-xs text-gray-400">Главная</span>
         </button>
 
-        <button onClick={() => handleClick("shop")} className="flex flex-col items-center justify-center">
+        <button
+          onClick={() => handleClick("shop")}
+          className="flex flex-col items-center justify-center active:opacity-60 transition-opacity"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="w-5 h-5 text-gray-400"
@@ -43,7 +53,10 @@ export function BottomMenu() {
           <span className="text-xs text-gray-400">Магазин</span>
         </button>
 
-        <button onClick={() => handleClick("tasks")} className="flex flex-col items-center justify-center">
+        <button
+          onClick={() => handleClick("tasks")}
+          className="flex flex-col items-center justify-center active:opacity-60 transition-opacity"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="w-5 h-5 text-gray-400"
@@ -61,7 +74,10 @@ export function BottomMenu() {
           <span className="text-xs text-gray-400">Задания</span>
         </button>
 
-        <button onClick={() => handleClick("rating")} className="flex flex-col items-center justify-center">
+        <button
+          onClick={() => handleClick("rating")}
+          className="flex flex-col items-center justify-center active:opacity-60 transition-opacity"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="w-5 h-5 text-gray-400"
@@ -80,7 +96,10 @@ export function BottomMenu() {
           <span className="text-xs text-gray-400">Рейтинг</span>
         </button>
 
-        <button onClick={() => handleClick("profile")} className="flex flex-col items-center justify-center">
+        <button
+          onClick={() => handleClick("profile")}
+          className="flex flex-col items-center justify-center active:opacity-60 transition-opacity"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="w-5 h-5 text-gray-400"
