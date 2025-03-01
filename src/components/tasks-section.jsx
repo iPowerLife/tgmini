@@ -111,7 +111,7 @@ export function TasksSection({ user }) {
       // Завершаем задание
       const { error: completeError } = await supabase.rpc("complete_task", {
         user_id_param: user.id,
-        task_id_param: task.id, // task.id теперь UUID из базы данных
+        task_id_param: task.id, // task.id is already UUID from database
       })
 
       if (completeError) throw completeError
