@@ -66,7 +66,7 @@ export function TasksSection({ user }) {
       // Начинаем задание
       const { error: startError } = await supabase.rpc("start_task", {
         user_id_param: user.id,
-        task_id_param: task.id,
+        task_id_param: task.id, // task.id теперь UUID из базы данных
       })
 
       if (startError) throw startError
@@ -111,7 +111,7 @@ export function TasksSection({ user }) {
       // Завершаем задание
       const { error: completeError } = await supabase.rpc("complete_task", {
         user_id_param: user.id,
-        task_id_param: task.id,
+        task_id_param: task.id, // task.id теперь UUID из базы данных
       })
 
       if (completeError) throw completeError
@@ -119,7 +119,7 @@ export function TasksSection({ user }) {
       // Получаем награду
       const { error: rewardError } = await supabase.rpc("claim_task_reward", {
         user_id_param: user.id,
-        task_id_param: task.id,
+        task_id_param: task.id, // task.id теперь UUID из базы данных
       })
 
       if (rewardError) throw rewardError
