@@ -229,8 +229,8 @@ export function TasksSection({ user, onBalanceUpdate }) {
                 {task.type === "limited" && (
                   <div className="flex items-center justify-center mt-3 mb-4">
                     <div className="timer-container">
-                      <span className="text-blue-400 mr-1.5">⏳</span>
-                      <span className="timer-text mr-1.5">осталось</span>
+                      <span className="timer-icon">⏳</span>
+                      <span className="timer-text">осталось</span>
                       <span className="timer-value">
                         {task.end_date ? formatTimeRemaining(task.end_date) : "10:00"}
                       </span>
