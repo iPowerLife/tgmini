@@ -1,12 +1,6 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  darkMode: ["class"],
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-    "./src/components/**/*.{js,jsx,ts,tsx}",
-    "./src/app/**/*.{js,jsx,ts,tsx}",
-    "*.{js,ts,jsx,tsx,mdx}",
-  ],
+export default {
+  content: ["./src/**/*.{js,jsx,ts,tsx}", "./src/components/**/*.{js,jsx,ts,tsx}", "./src/app/**/*.{js,jsx,ts,tsx}", "*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
@@ -44,23 +38,16 @@ module.exports = {
           foreground: "hsl(var(--card-foreground))",
         },
       },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
       fontFamily: {
-        sans: ["Montserrat", "sans-serif"],
-        orbitron: ["Orbitron", "sans-serif"],
+        orbitron: ['Orbitron', 'sans-serif'],
       },
       animation: {
-        pulse: "pulse 2s infinite",
+        pulse: 'pulse 2s infinite',
       },
       backgroundImage: {
-        "gradient-timer": "linear-gradient(to right, rgba(17, 17, 17, 0.95), rgba(24, 24, 27, 0.95))",
+        'gradient-timer': 'linear-gradient(to right, rgba(17, 17, 17, 0.95), rgba(24, 24, 27, 0.95))',
       },
     },
   },
   plugins: [require("tailwindcss-animate")],
 }
-
