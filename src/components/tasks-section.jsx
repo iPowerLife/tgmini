@@ -260,8 +260,15 @@ export function TasksSection({ user, onBalanceUpdate }) {
       return task.type === activeTab
     })
     .sort((a, b) => {
+      // Сначала сортируем limited задания наверх
+      if (a.type === "limited" && b.type !== "limited") return -1
+      if (a.type !== "limited" && b.type === "limited") return 1
+
+      // Затем по статусу выполнения
       if (a.is_completed && !b.is_completed) return 1
       if (!a.is_completed && b.is_completed) return -1
+
+      // И наконец по времени создания
       return new Date(b.created_at) - new Date(a.created_at)
     })
 
