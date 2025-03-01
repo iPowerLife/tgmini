@@ -107,6 +107,10 @@ export function QuizTask({ task, user, onComplete }) {
 
   const currentQuestionData = questions[currentQuestion]
 
+  if (!currentQuestionData) {
+    return <div className="text-center">Ошибка загрузки вопроса</div>
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -126,7 +130,7 @@ export function QuizTask({ task, user, onComplete }) {
           </div>
 
           <div className="grid gap-2">
-            {currentQuestionData.answers.map((answer) => (
+            {currentQuestionData.answers?.map((answer) => (
               <Button
                 key={answer.id}
                 variant={selectedAnswer === answer.id ? "default" : "outline"}

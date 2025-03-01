@@ -117,11 +117,13 @@ export function TasksSection({ user }) {
           <div key={task.id}>
             {activeQuiz?.taskId === task.id ? (
               <QuizTask
-                task={task}
+                task={{
+                  ...task,
+                  user_task_id: activeQuiz.user_task_id || task.user_task_id,
+                }}
                 user={user}
                 onComplete={() => {
                   setActiveQuiz(null)
-                  // Перезагружаем список заданий
                   loadTasks()
                 }}
               />
@@ -148,7 +150,13 @@ export function TasksSection({ user }) {
                     onClick={() => {
                       if (task.type === "achievement" && task.subtype === "quiz") {
                         // Для тестов показываем компонент QuizTask
-                        setActiveQuiz({ taskId: task.id })
+                        startTask(task.id).then(() => {
+                          // После успешного запуска показываем тест
+                          setActiveQuiz({
+                            taskId: task.id,
+                            user_task_id: task.user_task_id,
+                          })
+                        })
                       } else {
                         // Для обычных заданий используем существующую логику
                         startTask(task.id)
