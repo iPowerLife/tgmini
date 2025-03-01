@@ -2,8 +2,28 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
-import { User } from "lucide-react"
+import { User, Sparkles, Zap, Pickaxe, Hash } from "lucide-react"
 import { useTelegramUser } from "../utils/telegram"
+import { motion } from "framer-motion"
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      when: "beforeChildren",
+      staggerChildren: 0.1,
+    },
+  },
+}
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+  },
+}
 
 export function UserProfile({ user }) {
   const [stats, setStats] = useState(null)
@@ -20,7 +40,6 @@ export function UserProfile({ user }) {
         setLoading(true)
         setError(null)
 
-        // Загружаем статистику майнинга
         const { data: statsData, error: statsError } = await supabase
           .from("mining_stats")
           .select("*")
@@ -32,7 +51,6 @@ export function UserProfile({ user }) {
           throw statsError
         }
 
-        // Загружаем майнеры пользователя
         const { data: minersData, error: minersError } = await supabase
           .from("user_miners")
           .select(`
@@ -63,76 +81,147 @@ export function UserProfile({ user }) {
   }, [user?.id])
 
   if (!user) {
-    return <div className="section-container">Загрузка профиля...</div>
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="animate-pulse w-8 h-8 rounded-full bg-blue-500/20" />
+      </div>
+    )
   }
 
   if (loading) {
-    return <div className="section-container">Загрузка данных...</div>
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="animate-pulse w-8 h-8 rounded-full bg-blue-500/20" />
+      </div>
+    )
   }
 
   if (error) {
-    return <div className="section-container error">{error}</div>
+    return <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{error}</div>
   }
 
-  // Вычисляем общую мощность майнинга
   const totalMiningPower = miners.reduce((sum, miner) => sum + miner.model.mining_power * miner.quantity, 0)
 
   return (
-    <div className="profile-container">
-      <div className="profile-header">
-        <div className="avatar-container">
-          {telegramUser.photoUrl ? (
-            <img
-              src={telegramUser.photoUrl || "/placeholder.svg"}
-              alt={telegramUser.displayName}
-              className="avatar-image"
-            />
-          ) : (
-            <div className="avatar-placeholder">
-              <User className="avatar-icon" />
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="profile-container space-y-6">
+      {/* Profile Header */}
+      <motion.div
+        variants={itemVariants}
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-gray-700/50"
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
+        <div className="relative p-6">
+          <div className="flex items-start gap-4">
+            <div className="relative">
+              {telegramUser.photoUrl ? (
+                <img
+                  src={telegramUser.photoUrl || "/placeholder.svg"}
+                  alt={telegramUser.displayName}
+                  className="w-20 h-20 rounded-2xl object-cover border-2 border-gray-700/50 shadow-lg"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center border-2 border-gray-700/50 shadow-lg">
+                  <User className="w-10 h-10 text-gray-400" />
+                </div>
+              )}
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-gray-800 shadow-lg" />
             </div>
-          )}
-        </div>
-        <div className="user-info">
-          <h2>{telegramUser.firstName}</h2>
-          {telegramUser.username && <p className="username">@{telegramUser.username}</p>}
-          <p className="user-id">ID: {telegramUser.id}</p>
-        </div>
-      </div>
-
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-value">{user.balance.toFixed(2)}</div>
-          <div className="stat-label">Баланс 💎</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{totalMiningPower.toFixed(3)}</div>
-          <div className="stat-label">Мощность ⚡</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{stats?.total_mined?.toFixed(2) || "0.00"}</div>
-          <div className="stat-label">Всего добыто 💎</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{stats?.mining_count || "0"}</div>
-          <div className="stat-label">Кол-во майнингов</div>
-        </div>
-      </div>
-
-      {miners.length > 0 && (
-        <div className="miners-summary">
-          <h3>Ваши майнеры</h3>
-          <div className="miners-list">
-            {miners.map((miner) => (
-              <div key={miner.id} className="miner-item">
-                <span>{miner.model.display_name}</span>
-                <span>x{miner.quantity}</span>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                {telegramUser.firstName}
+              </h2>
+              {telegramUser.username && <p className="text-gray-400 font-medium">@{telegramUser.username}</p>}
+              <div className="flex items-center gap-2 mt-1">
+                <Hash className="w-4 h-4 text-gray-500" />
+                <p className="text-sm text-gray-500">{telegramUser.id}</p>
               </div>
-            ))}
+            </div>
           </div>
         </div>
+      </motion.div>
+
+      {/* Stats Grid */}
+      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
+        <div className="stat-card group hover:border-blue-500/30 transition-colors duration-300">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div className="stat-label">Баланс</div>
+          </div>
+          <div className="stat-value group-hover:text-blue-400 transition-colors duration-300">
+            {user.balance.toFixed(2)} 💎
+          </div>
+        </div>
+
+        <div className="stat-card group hover:border-purple-500/30 transition-colors duration-300">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400">
+              <Zap className="w-5 h-5" />
+            </div>
+            <div className="stat-label">Мощность</div>
+          </div>
+          <div className="stat-value group-hover:text-purple-400 transition-colors duration-300">
+            {totalMiningPower.toFixed(3)} ⚡
+          </div>
+        </div>
+
+        <div className="stat-card group hover:border-indigo-500/30 transition-colors duration-300">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+              <Pickaxe className="w-5 h-5" />
+            </div>
+            <div className="stat-label">Всего добыто</div>
+          </div>
+          <div className="stat-value group-hover:text-indigo-400 transition-colors duration-300">
+            {stats?.total_mined?.toFixed(2) || "0.00"} 💎
+          </div>
+        </div>
+
+        <div className="stat-card group hover:border-cyan-500/30 transition-colors duration-300">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400">
+              <Hash className="w-5 h-5" />
+            </div>
+            <div className="stat-label">Кол-во майнингов</div>
+          </div>
+          <div className="stat-value group-hover:text-cyan-400 transition-colors duration-300">
+            {stats?.mining_count || "0"}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Miners List */}
+      {miners.length > 0 && (
+        <motion.div
+          variants={itemVariants}
+          className="miners-summary hover:border-gray-600/50 transition-colors duration-300"
+        >
+          <h3 className="flex items-center gap-2 text-gray-300">
+            <Pickaxe className="w-4 h-4" />
+            Ваши майнеры
+          </h3>
+          <div className="miners-list mt-4">
+            {miners.map((miner, index) => (
+              <motion.div
+                key={miner.id}
+                variants={itemVariants}
+                custom={index}
+                className="miner-item group hover:bg-gray-800/30 rounded-lg transition-colors duration-300"
+              >
+                <span className="group-hover:text-blue-400 transition-colors duration-300">
+                  {miner.model.display_name}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">{miner.model.mining_power} ⚡</span>
+                  <span className="px-2 py-1 rounded-md bg-gray-800 text-gray-400">x{miner.quantity}</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   )
 }
 
