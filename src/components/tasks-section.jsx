@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { ExternalLink, Play, Clock } from "lucide-react"
 import { supabase } from "../supabase"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs"
-import { Button } from "./ui/button"
 
 export function TasksSection({ user }) {
   const [tasks, setTasks] = useState([])
@@ -55,7 +54,12 @@ export function TasksSection({ user }) {
         <div className="text-center">
           <p className="text-red-400 text-lg font-semibold mb-2">Ошибка загрузки</p>
           <p className="text-white/50">{error}</p>
-          <Button onClick={() => window.location.reload()}>Попробовать снова</Button>
+          <button
+            className="mt-4 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
+            onClick={() => window.location.reload()}
+          >
+            Попробовать снова
+          </button>
         </div>
       </div>
     )
@@ -67,7 +71,7 @@ export function TasksSection({ user }) {
   })
 
   return (
-    <div className="tasks-container w-full max-w-2xl mx-auto px-4 py-6 sm:px-6">
+    <div className="w-full max-w-2xl mx-auto px-4 py-6">
       <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-4 w-full max-w-md mx-auto mb-6">
           <TabsTrigger value="all">Все</TabsTrigger>
@@ -80,32 +84,40 @@ export function TasksSection({ user }) {
         </TabsList>
 
         <TabsContent value={activeTab}>
-          <div className="grid gap-4 animate-fadeIn">
+          <div className="space-y-4">
             {filteredTasks.map((task) => (
-              <div key={task.id} className="relative overflow-hidden bg-gray-900/80 rounded-xl p-4">
+              <div
+                key={task.id}
+                className="bg-gradient-to-b from-gray-800/50 to-gray-900/50 rounded-xl p-4 backdrop-blur-sm border border-gray-800/50"
+              >
                 <div className="space-y-4">
+                  {/* Заголовок и награда */}
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <h3 className="text-lg font-semibold text-white mb-1">{task.title}</h3>
                       <p className="text-sm text-gray-400">{task.description}</p>
                     </div>
-                    <div className="flex items-center gap-1 text-blue-400">
+                    <div className="flex items-center gap-1 text-blue-400 shrink-0">
                       <span className="text-lg font-bold">{task.reward}</span>
                       <span>💎</span>
                     </div>
                   </div>
 
+                  {/* Кнопки */}
                   <div className="flex gap-2">
                     {task.link && (
-                      <Button variant="outline" className="flex-1" onClick={() => window.open(task.link, "_blank")}>
-                        <ExternalLink className="w-4 h-4 mr-2" />
+                      <button
+                        onClick={() => window.open(task.link, "_blank")}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
                         Перейти
-                      </Button>
+                      </button>
                     )}
-                    <Button className="flex-1">
-                      <Play className="w-4 h-4 mr-2" />
+                    <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                      <Play className="w-4 h-4" />
                       Начать
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </div>
