@@ -55,7 +55,7 @@ export function TasksSection({ user }) {
           <p className="text-red-400 text-lg font-semibold mb-2">Ошибка загрузки</p>
           <p className="text-white/50">{error}</p>
           <button
-            className="mt-4 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
+            className="mt-4 px-4 py-2 bg-[#1a1b1e] text-white rounded-lg hover:bg-[#2a2b2e]"
             onClick={() => window.location.reload()}
           >
             Попробовать снова
@@ -86,10 +86,7 @@ export function TasksSection({ user }) {
         <TabsContent value={activeTab}>
           <div className="space-y-4">
             {filteredTasks.map((task) => (
-              <div
-                key={task.id}
-                className="bg-gradient-to-b from-gray-800/50 to-gray-900/50 rounded-xl p-4 backdrop-blur-sm border border-gray-800/50"
-              >
+              <div key={task.id} className="bg-[#1a1b1e] rounded-xl p-4 border border-[#2a2b2e]">
                 <div className="space-y-4">
                   {/* Заголовок и награда */}
                   <div className="flex items-start justify-between gap-4">
@@ -97,7 +94,7 @@ export function TasksSection({ user }) {
                       <h3 className="text-lg font-semibold text-white mb-1">{task.title}</h3>
                       <p className="text-sm text-gray-400">{task.description}</p>
                     </div>
-                    <div className="flex items-center gap-1 text-blue-400 shrink-0">
+                    <div className="flex items-center gap-1 text-[#5b9af5] shrink-0">
                       <span className="text-lg font-bold">{task.reward}</span>
                       <span>💎</span>
                     </div>
@@ -108,13 +105,13 @@ export function TasksSection({ user }) {
                     {task.link && (
                       <button
                         onClick={() => window.open(task.link, "_blank")}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#1a1b1e] hover:bg-[#2a2b2e] text-white rounded-lg border border-[#2a2b2e] transition-colors"
                       >
                         <ExternalLink className="w-4 h-4" />
                         Перейти
                       </button>
                     )}
-                    <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                    <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#1a1b1e] hover:bg-[#2a2b2e] text-white rounded-lg border border-[#2a2b2e] transition-colors">
                       <Play className="w-4 h-4" />
                       Начать
                     </button>

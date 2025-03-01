@@ -1538,3 +1538,60 @@ button:active {
   color: white;
 }
 
+/* Добавляем новые стили для кнопок в конец файла */
+.task-card button {
+  background-color: #1a1b1e !important;
+  color: white !important;
+  border: 1px solid #2a2b2e !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  transition: all 0.2s ease !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  width: 100% !important;
+}
+
+.task-card button:hover {
+  background-color: #2a2b2e !important;
+}
+
+.task-card button:active {
+  transform: translateY(1px) !important;
+}
+
+/* Стили для карточек заданий */
+.task-card {
+  background-color: #1a1b1e !important;
+  border: 1px solid #2a2b2e !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  margin-bottom: 16px !important;
+}
+
+.task-card h3 {
+  color: white !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  margin-bottom: 4px !important;
+}
+
+.task-card p {
+  color: #94a3b8 !important;
+  font-size: 14px !important;
+  margin-bottom: 16px !important;
+}
+
+/* Стили для наград */
+.task-reward {
+  color: #5b9af5 !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
