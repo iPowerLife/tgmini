@@ -306,11 +306,17 @@ export function TasksSection({ user, onBalanceUpdate }) {
               <div className="task-header">
                 <div className="task-info">
                   <h3
-                    className={`task-title ${
-                      task.type === "limited" && !task.is_completed
-                        ? "bg-gradient-to-r from-violet-300 via-purple-300 to-fuchsia-300 bg-clip-text text-transparent font-semibold"
-                        : "text-white"
-                    }`}
+                    style={{
+                      fontSize: "1rem",
+                      fontWeight: 600,
+                      color: task.type === "limited" && !task.is_completed ? "transparent" : "#e2e8f0",
+                      backgroundImage:
+                        task.type === "limited" && !task.is_completed
+                          ? "linear-gradient(to right, #c4b5fd, #a78bfa, #8b5cf6)"
+                          : "none",
+                      backgroundClip: task.type === "limited" && !task.is_completed ? "text" : "border-box",
+                      WebkitBackgroundClip: task.type === "limited" && !task.is_completed ? "text" : "border-box",
+                    }}
                   >
                     {task.title}
                   </h3>
