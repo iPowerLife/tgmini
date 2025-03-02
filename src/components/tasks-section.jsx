@@ -203,60 +203,15 @@ export function TasksSection({ user, onBalanceUpdate }) {
     }
 
     if (task.type === "limited") {
-      console.log("Limited task:", task)
-      console.log("End date:", task.end_date)
-
       return (
         <button
           onClick={() => handleExecuteTask(task)}
           className="w-full flex items-center justify-between px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 hover:bg-gray-800/90 transition-colors"
         >
-          <div className="flex items-center gap-2">
-            <span
-              style={{
-                color: "#a855f7",
-                animation: "pulse 2s infinite",
-              }}
-            >
-              ⏳
-            </span>
-            <span
-              style={{
-                fontSize: "11px",
-                fontWeight: "500",
-                letterSpacing: "0.15em",
-                textTransform: "uppercase",
-                fontFamily: '"Orbitron", sans-serif',
-                background: "linear-gradient(to right, #e879f9, #c084fc)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              осталось:
-            </span>
-            <span
-              style={{
-                fontSize: "14px",
-                fontWeight: "600",
-                fontFamily: '"Orbitron", sans-serif',
-                background: "linear-gradient(to right, #38bdf8, #818cf8)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              {task.end_date ? formatTimeRemaining(task.end_date) : "Нет времени"}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-white">Выполнить</span>
-            <div className="flex items-center gap-1">
-              <span className="text-blue-400">{task.reward}</span>
-              <span className="text-blue-400">💎</span>
-            </div>
+          <span className="text-white">Выполнить</span>
+          <div className="flex items-center gap-1">
+            <span className="text-blue-400">{task.reward}</span>
+            <span className="text-blue-400">💎</span>
           </div>
         </button>
       )
