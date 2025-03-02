@@ -109,6 +109,32 @@ const TimeRemaining = ({ endDate }) => {
   )
 }
 
+const VerificationTimer = ({ timeLeft, onComplete }) => {
+  const [remainingTime, setRemainingTime] = useState(timeLeft)
+
+  useEffect(() => {
+    if (remainingTime <= 0) {
+      onComplete()
+      return
+    }
+
+    const timer = setInterval(() => {
+      setRemainingTime((prev) => {
+        if (prev <= 1000) {
+          clearInterval(timer)
+          onComplete()
+          return 0
+        }
+        return prev - 1000
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [remainingTime, onComplete])
+
+  return <div className="text-center text-gray-400">Проверка ({Math.ceil(remainingTime / 1000)}с)</div>
+}
+
 export function TasksSection({ user, onBalanceUpdate }) {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
@@ -250,7 +276,15 @@ export function TasksSection({ user, onBalanceUpdate }) {
           className="w-full flex items-center justify-center px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400"
           disabled
         >
-          Проверка ({Math.ceil(taskState.timeLeft / 1000)}с)
+          <VerificationTimer
+            timeLeft={taskState.timeLeft}
+            onComplete={() => {
+              setTaskStates((prev) => ({
+                ...prev,
+                [task.id]: { status: "completed", timeLeft: 0 },
+              }))
+            }}
+          />
         </button>
       )
     }
@@ -383,6 +417,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
                   >
                     {task.title}
                   </h3>
+                  <p className="text-sm text-gray-400 mt-1">{task.description}</p>
                 </div>
               </div>
               {task.type === "limited" && !task.is_completed && <TimeRemaining endDate={task.end_date} />}
