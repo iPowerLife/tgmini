@@ -299,7 +299,9 @@ export function TasksSection({ user, onBalanceUpdate }) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className={`task-card ${task.is_completed ? "completed" : ""} ${task.type === "limited" ? "limited" : ""}`}
+              className="task-card"
+              data-type={task.type}
+              data-completed={task.is_completed}
             >
               <div className="task-header">
                 <div className="task-info">
