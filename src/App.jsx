@@ -14,9 +14,10 @@ function App() {
   const [balance, setBalance] = useState(0)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
-
+  const location = useLocation()
   useEffect(() => {
     let mounted = true
+	document.getElementById("root").scrollTo(0, 0)
 
     const initApp = async () => {
       try {
