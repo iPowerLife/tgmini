@@ -180,10 +180,14 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     if (task.is_completed) {
       return (
         <button
-          className="w-full flex items-center justify-center px-4 py-2.5 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400 opacity-75 cursor-not-allowed"
+          className="w-full flex items-center justify-between px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400 cursor-not-allowed"
           disabled
         >
-          <span className="font-medium">Задание выполнено ✓</span>
+          <span>Задание выполнено ✓</span>
+          <div className="task-reward opacity-50">
+            <span>{task.reward}</span>
+            <span>💎</span>
+          </div>
         </button>
       )
     }
@@ -191,10 +195,14 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     if (task.is_expired) {
       return (
         <button
-          className="w-full flex items-center justify-center px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400 cursor-not-allowed"
+          className="w-full flex items-center justify-between px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400 cursor-not-allowed"
           disabled
         >
-          Задание недоступно
+          <span>Задание недоступно</span>
+          <div className="task-reward opacity-50">
+            <span>{task.reward}</span>
+            <span>💎</span>
+          </div>
         </button>
       )
     }
@@ -263,17 +271,15 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         <div className="mb-2">
           <h3
             className={`
-    text-lg font-semibold
-    ${
-      task.type === "limited" && !task.is_completed && !task.is_expired
-        ? "bg-gradient-to-r from-purple-200 via-purple-100 to-purple-200 bg-clip-text text-transparent"
-        : "text-white/90"
-    }
-  `}
+text-lg font-semibold
+${
+  task.type === "limited" && !task.is_completed && !task.is_expired
+    ? "bg-gradient-to-r from-purple-200 via-purple-100 to-purple-200 bg-clip-text text-transparent"
+    : "text-white/90"
+}
+`}
           >
             {task.title}
-            {task.is_completed && <span className="ml-2 text-sm text-green-400">✓</span>}
-            {task.is_expired && <span className="ml-2 text-sm text-red-400">истекло</span>}
           </h3>
         </div>
 
