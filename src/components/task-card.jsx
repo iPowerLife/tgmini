@@ -239,12 +239,15 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
   return (
     <motion.div
-      layout // Добавляем layout анимацию
-      layoutId={`task-${task.id}`} // Добавляем уникальный layoutId
-      initial={{ opacity: 0.6, y: 20 }}
+      layout
+      layoutId={`task-${task.id}`}
+      initial={{ opacity: 0.8, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.2 }} // Уменьшаем длительность анимации
+      exit={{ opacity: 0, y: -10 }}
+      transition={{
+        duration: 0.15,
+        ease: "easeOut",
+      }}
       className={`
   relative overflow-hidden rounded-xl
   ${

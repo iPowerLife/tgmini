@@ -138,16 +138,31 @@ export function TasksSection({ user, onBalanceUpdate }) {
         </div>
 
         <div className="tasks-list space-y-2">
-          <AnimatePresence mode="popLayout">
-            {filteredTasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                user={user}
-                onBalanceUpdate={onBalanceUpdate}
-                onTaskComplete={handleTaskComplete}
-              />
-            ))}
+          <AnimatePresence
+            mode="popLayout"
+            initial={false} // Отключаем начальную анимацию при первом рендере
+          >
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                visible: {
+                  transition: {
+                    staggerChildren: 0.05, // Добавляем задержку между анимациями карточек
+                  },
+                },
+              }}
+            >
+              {filteredTasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  user={user}
+                  onBalanceUpdate={onBalanceUpdate}
+                  onTaskComplete={handleTaskComplete}
+                />
+              ))}
+            </motion.div>
           </AnimatePresence>
 
           {filteredTasks.length === 0 && (
