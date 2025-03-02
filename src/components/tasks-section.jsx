@@ -299,11 +299,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className={`task-card ${task.is_completed ? "completed" : ""} ${
-                task.type === "limited" && !task.is_completed
-                  ? "bg-gradient-to-br from-[#2d1b4d] via-[#1f1435] to-[#2d1b4d] hover:from-[#351f59] hover:via-[#25183f] hover:to-[#351f59] border-purple-500/20 shadow-lg shadow-purple-900/20 relative overflow-hidden"
-                  : "bg-gray-800/50 border-gray-700/50"
-              }`}
+              className={`task-card ${task.is_completed ? "completed" : ""} ${task.type === "limited" ? "limited" : ""}`}
             >
               <div className="task-header">
                 <div className="task-info">
