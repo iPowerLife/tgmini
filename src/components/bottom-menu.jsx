@@ -1,19 +1,18 @@
 "use client"
 
 import { Home, ShoppingBag, Target, Trophy, User } from "lucide-react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { Link, useLocation } from "react-router-dom"
 
 export function BottomMenu() {
-  const pathname = usePathname()
+  const location = useLocation()
 
-  const isActive = (path) => pathname === path
+  const isActive = (path) => location.pathname === path
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-950 to-gray-900/95 backdrop-blur-sm border-t border-gray-800/50">
       <nav className="flex items-center justify-around h-14 max-w-md mx-auto px-4">
         <Link
-          href="/"
+          to="/"
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
@@ -26,7 +25,7 @@ export function BottomMenu() {
         </Link>
 
         <Link
-          href="/shop"
+          to="/shop"
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/shop") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
@@ -39,7 +38,7 @@ export function BottomMenu() {
         </Link>
 
         <Link
-          href="/tasks"
+          to="/tasks"
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/tasks") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
@@ -52,7 +51,7 @@ export function BottomMenu() {
         </Link>
 
         <Link
-          href="/rating"
+          to="/rating"
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/rating") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
@@ -65,7 +64,7 @@ export function BottomMenu() {
         </Link>
 
         <Link
-          href="/profile"
+          to="/profile"
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/profile") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
