@@ -31,11 +31,28 @@ const TabButton = ({ active, onClick, children, icon: Icon }) => (
   </motion.button>
 )
 
+const VerificationTimer = ({ timeLeft, onComplete }) => {
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (timeLeft <= 0) {
+        clearInterval(timer)
+        onComplete()
+        return
+      }
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [timeLeft, onComplete])
+
+  return <div className="text-center text-gray-400">Проверка ({Math.ceil(timeLeft / 1000)}с)</div>
+}
+
 export function TasksSection({ user, onBalanceUpdate }) {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState("all")
+  const [taskStates, setTaskStates] = useState({})
 
   const loadTasks = useCallback(async () => {
     try {
