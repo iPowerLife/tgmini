@@ -10,6 +10,17 @@ import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
 
 function App() {
+  const location = useLocation()
+  const rootRef = useRef(null)
+
+  useEffect(() => {
+    if (rootRef.current) {
+      rootRef.current.scrollTop = 0
+    }
+  }, [])
+
+
+function App() {
   const [user, setUser] = useState(null)
   const [balance, setBalance] = useState(0)
   const [error, setError] = useState(null)
