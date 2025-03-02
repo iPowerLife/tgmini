@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { Clock, CheckCircle2, Trophy, ListTodo, Sparkles } from "lucide-react"
 import { TaskCard } from "./task-card"
 
@@ -138,34 +138,21 @@ export function TasksSection({ user, onBalanceUpdate }) {
         </div>
 
         <div className="flex flex-col gap-1">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              style={{
-                willChange: "transform, opacity",
-                transform: "translate3d(0,0,0)",
-              }}
-            >
-              {filteredTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  user={user}
-                  onBalanceUpdate={onBalanceUpdate}
-                  onTaskComplete={handleTaskComplete}
-                />
-              ))}
-            </motion.div>
-          </AnimatePresence>
+          {filteredTasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              user={user}
+              onBalanceUpdate={onBalanceUpdate}
+              onTaskComplete={handleTaskComplete}
+            />
+          ))}
 
           {filteredTasks.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="no-tasks flex flex-col items-center justify-center p-6 text-gray-400"
-            >
+            <div className="no-tasks flex flex-col items-center justify-center p-6 text-gray-400">
               <Sparkles className="w-8 h-8 mb-3 text-gray-500" />
               <p className="text-sm">В этой категории пока нет доступных заданий</p>
-            </motion.div>
+            </div>
           )}
         </div>
       </div>

@@ -238,21 +238,9 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   }
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0.98 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{
-        duration: 0.15,
-        ease: "easeOut",
-      }}
-      style={{
-        willChange: "transform, opacity",
-        transform: "translate3d(0,0,0)",
-      }}
+    <div
       className={`
-    relative overflow-hidden rounded-xl transform-gpu mb-1
+    relative overflow-hidden rounded-xl mb-1
     ${
       task.type === "limited"
         ? "bg-gradient-to-br from-purple-900/90 via-purple-800/90 to-purple-900/90 border border-purple-500/20"
@@ -286,7 +274,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
         {renderButton()}
       </div>
-    </motion.div>
+    </div>
   )
 })
 
