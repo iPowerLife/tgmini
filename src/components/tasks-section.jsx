@@ -218,7 +218,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
       return (
         <button
           onClick={() => handleExecuteTask(task)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#2e2b3d] to-[#1e1b2e] hover:from-[#332f44] hover:to-[#231e33] rounded-lg border border-[#2e2b3d] transition-all duration-300 shadow-lg shadow-purple-900/10"
+          className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#392b4d] to-[#251b35] hover:from-[#443357] hover:to-[#2b1e3d] rounded-lg border border-[#392b4d] transition-all duration-300 shadow-lg shadow-purple-900/20"
         >
           <span className="text-[#c4b5fd]">Выполнить</span>
           <div className="flex items-center gap-1">
@@ -301,7 +301,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
               exit={{ opacity: 0, y: -10 }}
               className={`task-card ${task.is_completed ? "completed" : ""} ${
                 task.type === "limited" && !task.is_completed
-                  ? "bg-gradient-to-br from-[#1a1c2e] via-[#1e1b2e] to-[#1a1c2e] hover:from-[#1e1f33] hover:via-[#231e33] hover:to-[#1e1f33] border-[#2e2b3d] shadow-lg shadow-purple-900/5"
+                  ? "bg-gradient-to-br from-[#1a1b35] via-[#251b35] to-[#1a1b35] hover:from-[#1e1f3d] hover:via-[#2b1e3d] hover:to-[#1e1f3d] border-[#392b4d] shadow-lg shadow-purple-900/20"
                   : "bg-gray-800/50 border-gray-700/50"
               }`}
             >
@@ -310,7 +310,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
                   <h3
                     className={`task-title ${
                       task.type === "limited" && !task.is_completed
-                        ? "bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent"
+                        ? "bg-gradient-to-r from-violet-300 via-purple-300 to-fuchsia-300 bg-clip-text text-transparent font-semibold"
                         : "text-white"
                     }`}
                   >
@@ -323,10 +323,10 @@ export function TasksSection({ user, onBalanceUpdate }) {
                   variants={pulseAnimation}
                   initial="initial"
                   animate="animate"
-                  className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-[#15162c] border border-[#2e2b3d]"
+                  className="flex items-center gap-2 mb-3 p-2.5 rounded-lg bg-[#12121f] border border-[#392b4d] shadow-inner shadow-purple-900/10"
                 >
-                  <span className="text-xs font-medium text-[#9d8cff]">ОСТАЛОСЬ:</span>
-                  <span className="text-sm font-mono font-medium text-[#c4b5fd]">
+                  <span className="text-xs font-medium text-[#b4a2ff]">ОСТАЛОСЬ:</span>
+                  <span className="text-sm font-mono font-medium text-[#d4c5ff]">
                     {task.end_date ? formatTimeRemaining(task.end_date) : "Время истекло"}
                   </span>
                 </motion.div>
