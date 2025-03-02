@@ -14,8 +14,8 @@ function App() {
   const [balance, setBalance] = useState(0)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
-  const location = useLocation()
-  useEffect(() => {
+	
+	useEffect(() => {
     let mounted = true
 	
 
