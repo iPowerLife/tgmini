@@ -183,7 +183,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
           className="w-full flex items-center justify-center px-4 py-2.5 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400 opacity-75 cursor-not-allowed"
           disabled
         >
-          <span className="font-medium">Выполнено ✓</span>
+          <span className="font-medium">Задание выполнено ✓</span>
         </button>
       )
     }
@@ -194,7 +194,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
           className="w-full flex items-center justify-center px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400 cursor-not-allowed"
           disabled
         >
-          Время истекло
+          Задание недоступно
         </button>
       )
     }
