@@ -100,6 +100,11 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         return
       }
 
+      if (task.is_completed) {
+        alert("Задание уже выполнено")
+        return
+      }
+
       const { error: startError } = await supabase.rpc("start_task", {
         user_id_param: user.id,
         task_id_param: task.id,
@@ -124,7 +129,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       console.error("Ошибка при выполнении:", error)
       alert("Ошибка при выполнении задания: " + error.message)
     }
-  }, [user.id, task.id, task.link, task.is_expired])
+  }, [user.id, task.id, task.link, task.is_expired, task.is_completed])
 
   const handleVerificationComplete = useCallback(async () => {
     try {
@@ -240,16 +245,16 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   return (
     <div
       className={`
-    relative overflow-hidden rounded-xl mb-1
-    ${
-      task.type === "limited"
-        ? "bg-gradient-to-br from-purple-900/80 via-purple-800/80 to-purple-900/80 border border-purple-500/20"
-        : "bg-gradient-to-br from-blue-900/80 via-blue-800/80 to-blue-900/80 border border-blue-500/20"
-    }
-    ${task.is_completed ? "opacity-60" : "hover:scale-[1.01]"}
-    transform transition-all duration-300 backdrop-blur-sm
-    shadow-lg ${task.type === "limited" ? "shadow-purple-900/20" : "shadow-blue-900/20"}
-  `}
+  relative overflow-hidden rounded-xl mb-1
+  ${
+    task.type === "limited"
+      ? "bg-gradient-to-br from-purple-900/80 via-purple-800/80 to-purple-900/80 border border-purple-500/20"
+      : "bg-gradient-to-br from-blue-900/80 via-blue-800/80 to-blue-900/80 border border-blue-500/20"
+  }
+  ${task.is_completed || task.is_expired ? "opacity-60" : "hover:scale-[1.01]"}
+  transform transition-all duration-300 backdrop-blur-sm
+  shadow-lg ${task.type === "limited" ? "shadow-purple-900/20" : "shadow-blue-900/20"}
+`}
     >
       {task.type === "limited" && !task.is_completed && (
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-purple-500/5 animate-pulse-slow" />
@@ -258,15 +263,17 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         <div className="mb-2">
           <h3
             className={`
-            text-lg font-semibold
-            ${
-              task.type === "limited" && !task.is_completed
-                ? "bg-gradient-to-r from-purple-200 via-purple-100 to-purple-200 bg-clip-text text-transparent"
-                : "text-white/90"
-            }
-          `}
+    text-lg font-semibold
+    ${
+      task.type === "limited" && !task.is_completed && !task.is_expired
+        ? "bg-gradient-to-r from-purple-200 via-purple-100 to-purple-200 bg-clip-text text-transparent"
+        : "text-white/90"
+    }
+  `}
           >
             {task.title}
+            {task.is_completed && <span className="ml-2 text-sm text-green-400">✓</span>}
+            {task.is_expired && <span className="ml-2 text-sm text-red-400">истекло</span>}
           </h3>
         </div>
 
