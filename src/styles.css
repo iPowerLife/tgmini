@@ -27,6 +27,10 @@
 }
 
 
+
+
+
+
 /* Добавьте в начало файла */
 :root {
   height: 100%;
@@ -49,13 +53,21 @@ body {
   -webkit-overflow-scrolling: touch;
   padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
 }
-
-/* Для контента страниц */
 .page-content {
   min-height: 100%;
-  padding-bottom: 80px; /* Высота меню */
+  padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
 }
 
+
+/* Для контента страниц */
+/*.page-content {
+  min-height: 100%;
+  padding-bottom: 80px; /* Высота меню */
+/*}
+/*.page-content {
+  min-height: 100%;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
+}
 
 
 
