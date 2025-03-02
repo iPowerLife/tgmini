@@ -109,39 +109,37 @@
   }
 
   .task-card {
-    @apply bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700/50 p-3 transition-all duration-300;
+    @apply relative backdrop-blur-sm rounded-lg border p-3 transition-all duration-300;
   }
 
-  .task-card.completed {
-    @apply opacity-50;
+  .task-card::before {
+    content: "";
+    @apply absolute inset-0 rounded-lg opacity-0 transition-opacity duration-300;
+    background: linear-gradient(145deg, rgba(88, 28, 135, 0.1), rgba(67, 26, 107, 0.1));
   }
 
-  /* Add glow effect for limited tasks */
+  .task-card:hover::before {
+    @apply opacity-100;
+  }
+
   .task-card[data-type="limited"]:not(.completed) {
-    @apply relative;
+    @apply shadow-lg shadow-purple-900/20;
   }
 
   .task-card[data-type="limited"]:not(.completed)::after {
     content: "";
-    @apply absolute inset-0 rounded-lg;
-    @apply bg-gradient-to-r from-purple-500/10 via-transparent to-purple-500/10;
-    @apply animate-glow;
-    filter: blur(20px);
+    @apply absolute -inset-[1px] rounded-lg opacity-0 transition-opacity duration-300;
+    background: linear-gradient(145deg, rgba(88, 28, 135, 0.5), rgba(67, 26, 107, 0.5));
+    filter: blur(8px);
     z-index: -1;
   }
 
-  @keyframes glow {
-    0%,
-    100% {
-      opacity: 0.5;
-    }
-    50% {
-      opacity: 0.8;
-    }
+  .task-card[data-type="limited"]:not(.completed):hover::after {
+    @apply opacity-20;
   }
 
-  .animate-glow {
-    animation: glow 3s ease-in-out infinite;
+  .task-card.completed {
+    @apply opacity-50 hover:opacity-60 transition-opacity duration-300;
   }
 
   .task-header {
