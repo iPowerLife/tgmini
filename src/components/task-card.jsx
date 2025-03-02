@@ -242,12 +242,15 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       className={`
-  task-card
-  ${task.type === "limited" ? "task-card-limited" : ""}
-  ${task.is_completed ? "task-card-completed" : ""}
+  relative overflow-hidden rounded-xl p-3
+  ${
+    task.type === "limited"
+      ? "bg-gradient-to-br from-[#392b4d] to-[#251b35] border border-purple-500/20"
+      : "bg-[#1542cb] border border-blue-500/20"
+  }
+  ${task.is_completed ? "opacity-60" : ""}
+  transition-all duration-300 hover:scale-[1.02]
 `}
-      data-type={task.type}
-      data-completed={task.is_completed}
     >
       <div className="p-3">
         <div className="task-header">
