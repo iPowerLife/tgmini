@@ -9,7 +9,7 @@ export function BottomMenu() {
   const isActive = (path) => location.pathname === path
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-950 to-gray-900/95 backdrop-blur-sm border-t border-gray-800/50 z-50 pb-[env(safe-area-inset-bottom,20px)]">
+    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-950 to-gray-900/95 backdrop-blur-sm border-t border-gray-800/50 z-50 pb-[env(safe-area-inset-bottom,32px)]">
       <nav className="flex items-center justify-around h-14 max-w-md mx-auto px-4">
         <Link
           to="/"
