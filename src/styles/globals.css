@@ -94,6 +94,17 @@
   }
 
   /* Обновляем стили для tasks */
+  .tasks-container {
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  @media (max-width: 640px) {
+    .tasks-container {
+      padding: 16px;
+    }
+  }
+
   .tasks-page {
     @apply p-3 max-w-xl mx-auto; /* Уменьшаем максимальную ширину и отступы */
   }
@@ -120,6 +131,10 @@
 
   .task-title {
     @apply text-base font-semibold text-white; /* Уменьшаем размер заголовка */
+  }
+
+  .miner-quantity {
+    @apply px-2 py-0.5 rounded-md text-gray-400 text-xs font-medium;
   }
 }
 
