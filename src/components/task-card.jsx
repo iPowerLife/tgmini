@@ -180,7 +180,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     if (task.is_completed) {
       return (
         <button
-          className="w-full flex items-center justify-center px-4 py-2.5 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400 opacity-75"
+          className="w-full flex items-center justify-center px-4 py-2.5 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400 opacity-75 cursor-not-allowed"
           disabled
         >
           <span className="font-medium">Выполнено ✓</span>
@@ -191,7 +191,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     if (task.is_expired) {
       return (
         <button
-          className="w-full flex items-center justify-center px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400"
+          className="w-full flex items-center justify-center px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400 cursor-not-allowed"
           disabled
         >
           Время истекло
@@ -281,14 +281,18 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
         <button
           onClick={handleExecuteTask}
+          disabled={task.is_completed || task.is_expired}
           className={`
-        task-button
-        ${
-          task.type === "limited"
+      w-full flex items-center justify-between px-4 py-3 
+      ${
+        task.is_completed || task.is_expired
+          ? "bg-gray-800/80 text-gray-400 cursor-not-allowed"
+          : task.type === "limited"
             ? "bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 border-purple-400/30"
             : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 border-blue-400/30"
-        }
-      `}
+      }
+      rounded-lg border transition-all duration-300
+    `}
         >
           <span className="text-white/90">Выполнить</span>
           <div className="task-reward">
