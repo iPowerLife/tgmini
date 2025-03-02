@@ -137,20 +137,27 @@ export function TasksSection({ user, onBalanceUpdate }) {
           </motion.div>
         </div>
 
-        <div className="tasks-list space-y-2">
-          <AnimatePresence mode="popLayout" initial={false}>
+        <div className="tasks-list space-y-2 transform-gpu">
+          <AnimatePresence mode="wait" layout="position" initial={false}>
             <motion.div
               initial="hidden"
               animate="visible"
               style={{
-                willChange: "transform",
-                transform: "translateZ(0)",
+                willChange: "transform, opacity",
+                transform: "translate3d(0,0,0)",
+                backfaceVisibility: "hidden",
+                perspective: 1000,
+                WebkitFontSmoothing: "antialiased",
+                WebkitTransform: "translate3d(0,0,0)",
               }}
               variants={{
                 visible: {
                   transition: {
-                    staggerChildren: 0.03, // Уменьшаем задержку между анимациями
-                    delayChildren: 0.1, // Добавляем небольшую начальную задержку
+                    staggerChildren: 0.02,
+                    delayChildren: 0.05,
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 30,
                   },
                 },
               }}

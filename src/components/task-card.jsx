@@ -241,19 +241,27 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     <motion.div
       layout
       layoutId={`task-${task.id}`}
-      initial={{ opacity: 0.95 }} // Увеличиваем начальную прозрачность
+      initial={{ opacity: 0.98 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{
-        duration: 0.2,
-        ease: [0.4, 0, 0.2, 1], // Используем оптимизированную кривую анимации
+        duration: 0.15,
+        ease: [0.4, 0, 0.2, 1],
+        layout: {
+          duration: 0.2,
+          ease: "easeOut",
+        },
       }}
       style={{
-        willChange: "transform", // Подсказка браузеру об оптимизации
-        transform: "translateZ(0)", // Принудительная GPU-акселерация
+        willChange: "transform, opacity",
+        transform: "translate3d(0,0,0)",
+        backfaceVisibility: "hidden",
+        WebkitFontSmoothing: "antialiased",
+        WebkitTransform: "translate3d(0,0,0)",
+        perspective: 1000,
       }}
       className={`
-  relative overflow-hidden rounded-xl
+  relative overflow-hidden rounded-xl transform-gpu
   ${
     task.type === "limited"
       ? "bg-gradient-to-br from-purple-900/90 via-purple-800/90 to-purple-900/90 border border-purple-500/20"
