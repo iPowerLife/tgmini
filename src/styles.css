@@ -36,7 +36,6 @@ body {
   height: 100dvh;
   overflow: hidden;
   overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
 }
 
 #root {
@@ -44,7 +43,13 @@ body {
   height: 100dvh;
 }
 
+/* Для плавного скролла на iOS */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Остальные стили оставьте как есть */
+
 
 
 
