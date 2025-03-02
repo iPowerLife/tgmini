@@ -15,9 +15,8 @@ function App() {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
 
-
   useEffect(() => {
-    document.getElementById("root").scrollTo(0, 0)
+    let mounted = true
 
     const initApp = async () => {
       try {
