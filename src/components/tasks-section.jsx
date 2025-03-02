@@ -118,21 +118,21 @@ export function TasksSection({ user, onBalanceUpdate }) {
     })
 
   return (
-    <div className="min-h-[100vh] pb-[80px]">
-      <div className="px-4">
-        <div className="flex items-center justify-between p-2 mb-2 bg-gray-800/50 rounded-lg backdrop-blur-sm border border-gray-700/50">
-          <motion.div className="flex gap-1" initial={false}>
+    <div className="min-h-[100vh] pb-[70px]">
+      <div className="px-3">
+        <div className="flex items-center justify-between p-1.5 mb-2 bg-gray-800/50 rounded-lg backdrop-blur-sm border border-gray-700/50">
+          <motion.div className="flex gap-0.5" initial={false}>
             <TabButton active={activeTab === "all"} onClick={() => setActiveTab("all")} icon={ListTodo}>
-              <span className="text-sm">Все</span>
+              <span className="text-xs">Все</span>
             </TabButton>
             <TabButton active={activeTab === "basic"} onClick={() => setActiveTab("basic")} icon={CheckCircle2}>
-              <span className="text-sm">Базовые</span>
+              <span className="text-xs">Базовые</span>
             </TabButton>
             <TabButton active={activeTab === "limited"} onClick={() => setActiveTab("limited")} icon={Clock}>
-              <span className="text-sm">Лимит</span>
+              <span className="text-xs">Лимит</span>
             </TabButton>
             <TabButton active={activeTab === "achievement"} onClick={() => setActiveTab("achievement")} icon={Trophy}>
-              <span className="text-sm">Достижения</span>
+              <span className="text-xs">Достижения</span>
             </TabButton>
           </motion.div>
         </div>
@@ -149,9 +149,9 @@ export function TasksSection({ user, onBalanceUpdate }) {
           ))}
 
           {filteredTasks.length === 0 && (
-            <div className="no-tasks flex flex-col items-center justify-center p-6 text-gray-400">
-              <Sparkles className="w-8 h-8 mb-3 text-gray-500" />
-              <p className="text-sm">В этой категории пока нет доступных заданий</p>
+            <div className="flex flex-col items-center justify-center p-4 text-gray-400">
+              <Sparkles className="w-6 h-6 mb-2 text-gray-500" />
+              <p className="text-xs">В этой категории пока нет доступных заданий</p>
             </div>
           )}
         </div>

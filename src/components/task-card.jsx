@@ -243,10 +243,10 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     relative overflow-hidden rounded-xl mb-1
     ${
       task.type === "limited"
-        ? "bg-gradient-to-br from-purple-900/90 via-purple-800/90 to-purple-900/90 border border-purple-500/20"
-        : "bg-gradient-to-br from-blue-900/90 via-blue-800/90 to-blue-900/90 border border-blue-500/20"
+        ? "bg-gradient-to-br from-purple-900/80 via-purple-800/80 to-purple-900/80 border border-purple-500/20"
+        : "bg-gradient-to-br from-blue-900/80 via-blue-800/80 to-blue-900/80 border border-blue-500/20"
     }
-    ${task.is_completed ? "opacity-60" : "hover:scale-[1.02]"}
+    ${task.is_completed ? "opacity-60" : "hover:scale-[1.01]"}
     transform transition-all duration-300 backdrop-blur-sm
     shadow-lg ${task.type === "limited" ? "shadow-purple-900/20" : "shadow-blue-900/20"}
   `}
@@ -254,7 +254,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       {task.type === "limited" && !task.is_completed && (
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-purple-500/5 animate-pulse-slow" />
       )}
-      <div className="p-4">
+      <div className="p-3">
         <div className="mb-2">
           <h3
             className={`
@@ -272,7 +272,23 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
         {task.type === "limited" && !task.is_completed && <TimeRemaining endDate={task.end_date} />}
 
-        {renderButton()}
+        <button
+          onClick={handleExecuteTask}
+          className={`
+        task-button
+        ${
+          task.type === "limited"
+            ? "bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 border-purple-400/30"
+            : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 border-blue-400/30"
+        }
+      `}
+        >
+          <span className="text-white/90">Выполнить</span>
+          <div className="task-reward">
+            <span>{task.reward}</span>
+            <span>💎</span>
+          </div>
+        </button>
       </div>
     </div>
   )

@@ -1,10 +1,12 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-gray-900 text-white h-full pb-16;
+    @apply bg-gray-900 text-white h-full pb-14 font-sans text-[15px];
   }
 
   html {
@@ -136,9 +138,23 @@
   }
 
   .task-title {
-    font-size: 0.9375rem !important;
-    line-height: 1.25rem !important;
-    font-weight: 500 !important;
+    @apply text-[0.9375rem] leading-5 font-medium;
+  }
+
+  .task-description {
+    @apply text-sm text-gray-300;
+  }
+
+  .task-button {
+    @apply w-full flex items-center justify-between px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-300;
+  }
+
+  .task-reward {
+    @apply flex items-center gap-1 text-sm;
+  }
+
+  .task-timer {
+    @apply flex items-center gap-2 mb-3 p-2.5 rounded-lg text-xs;
   }
 
   .miner-quantity {
@@ -151,7 +167,7 @@
 
   /* Добавляем стили для карточек заданий */
   .task-card {
-    @apply relative overflow-hidden rounded-xl transition-all duration-300;
+    @apply relative overflow-hidden rounded-lg mb-1 transform transition-all duration-300 backdrop-blur-sm;
   }
 
   .task-card::before {
@@ -182,10 +198,18 @@
   /* Добавляем новые стили */
   @supports (-webkit-touch-callout: none) {
     .task-card {
-      margin-bottom: 4px; /* Минимальный отступ для iOS */
       transform: translate3d(0, 0, 0);
       -webkit-transform: translate3d(0, 0, 0);
+      margin-bottom: 4px; /* Минимальный отступ для iOS */
     }
+  }
+}
+
+/* Оптимизации для iOS */
+@supports (-webkit-touch-callout: none) {
+  .task-card {
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
   }
 }
 
