@@ -60,6 +60,30 @@ const TabButton = ({ active, onClick, children, icon: Icon }) => (
   </motion.button>
 )
 
+const TimeRemaining = ({ endDate }) => {
+  const [timeLeft, setTimeLeft] = useState(formatTimeRemaining(endDate))
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(formatTimeRemaining(endDate))
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [endDate])
+
+  return (
+    <motion.div
+      className="flex items-center gap-2 mb-3 p-2.5 rounded-lg bg-[#1a1225]/80 border border-purple-500/20 shadow-inner shadow-purple-900/10"
+      variants={pulseAnimation}
+      initial="initial"
+      animate="animate"
+    >
+      <span className="text-xs font-medium text-[#b4a2ff]">ОСТАЛОСЬ:</span>
+      <span className="text-sm font-mono font-medium text-[#d4c5ff]">{timeLeft}</span>
+    </motion.div>
+  )
+}
+
 export function TasksSection({ user, onBalanceUpdate }) {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
@@ -351,19 +375,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
                   </h3>
                 </div>
               </div>
-              {task.type === "limited" && !task.is_completed && (
-                <motion.div
-                  className="flex items-center gap-2 mb-3 p-2.5 rounded-lg bg-[#1a1225]/80 border border-purple-500/20 shadow-inner shadow-purple-900/10"
-                  variants={pulseAnimation}
-                  initial="initial"
-                  animate="animate"
-                >
-                  <span className="text-xs font-medium text-[#b4a2ff]">ОСТАЛОСЬ:</span>
-                  <span className="text-sm font-mono font-medium text-[#d4c5ff]">
-                    {task.end_date ? formatTimeRemaining(task.end_date) : "Время истекло"}
-                  </span>
-                </motion.div>
-              )}
+              {task.type === "limited" && !task.is_completed && <TimeRemaining endDate={task.end_date} />}
               {renderTaskButton(task)}
             </TaskCard>
           ))}
