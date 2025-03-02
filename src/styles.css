@@ -26,6 +26,31 @@
   --radius: 0.5rem;
 }
 
+
+/* Добавьте в начало файла */
+html,
+body {
+  position: fixed;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+#root {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Остальные стили оставьте как есть */
+
+
+
+
+
+
 button {
   position: relative;
   overflow: hidden;
