@@ -94,6 +94,11 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
   const handleExecuteTask = useCallback(async () => {
     try {
+      if (task.is_expired) {
+        alert("Время выполнения задания истекло")
+        return
+      }
+
       const { error: startError } = await supabase.rpc("start_task", {
         user_id_param: user.id,
         task_id_param: task.id,
@@ -118,7 +123,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       console.error("Ошибка при выполнении:", error)
       alert("Ошибка при выполнении задания: " + error.message)
     }
-  }, [user.id, task.id, task.link])
+  }, [user.id, task.id, task.link, task.is_expired])
 
   const handleVerificationComplete = useCallback(async () => {
     try {
@@ -173,6 +178,17 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
           disabled
         >
           Выполнено ✓
+        </button>
+      )
+    }
+
+    if (task.is_expired) {
+      return (
+        <button
+          className="w-full flex items-center justify-center px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400"
+          disabled
+        >
+          Время истекло
         </button>
       )
     }
