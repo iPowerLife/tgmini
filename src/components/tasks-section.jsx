@@ -306,60 +306,62 @@ export function TasksSection({ user, onBalanceUpdate }) {
     })
 
   return (
-    <div className="tasks-container">
-      <div className="flex items-center justify-between p-2 mb-2 bg-gray-800/50 rounded-lg backdrop-blur-sm border border-gray-700/50">
-        <motion.div className="flex gap-1" initial={false}>
-          <TabButton active={activeTab === "all"} onClick={() => setActiveTab("all")} icon={ListTodo}>
-            <span className="text-sm">Все</span>
-          </TabButton>
-          <TabButton active={activeTab === "basic"} onClick={() => setActiveTab("basic")} icon={CheckCircle2}>
-            <span className="text-sm">Базовые</span>
-          </TabButton>
-          <TabButton active={activeTab === "limited"} onClick={() => setActiveTab("limited")} icon={Clock}>
-            <span className="text-sm">Лимит</span>
-          </TabButton>
-          <TabButton active={activeTab === "achievement"} onClick={() => setActiveTab("achievement")} icon={Trophy}>
-            <span className="text-sm">Достижения</span>
-          </TabButton>
-        </motion.div>
-      </div>
-
-      <div className="tasks-list space-y-2">
-        {filteredTasks.map((task) => (
-          <motion.div
-            key={task.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`task-card ${task.is_completed ? "completed" : ""}`}
-          >
-            <div className="task-header">
-              <div className="task-info">
-                <h3 className="task-title">{task.title}</h3>
-              </div>
-            </div>
-            {task.type === "limited" && !task.is_completed && (
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs font-medium text-gray-400">ОСТАЛОСЬ:</span>
-                <span className="text-sm font-mono font-medium text-blue-400">
-                  {task.end_date ? formatTimeRemaining(task.end_date) : "Время истекло"}
-                </span>
-              </div>
-            )}
-            {renderTaskButton(task)}
+    <div className="min-h-[100vh] pb-[80px]">
+      <div className="px-4">
+        <div className="flex items-center justify-between p-2 mb-2 bg-gray-800/50 rounded-lg backdrop-blur-sm border border-gray-700/50">
+          <motion.div className="flex gap-1" initial={false}>
+            <TabButton active={activeTab === "all"} onClick={() => setActiveTab("all")} icon={ListTodo}>
+              <span className="text-sm">Все</span>
+            </TabButton>
+            <TabButton active={activeTab === "basic"} onClick={() => setActiveTab("basic")} icon={CheckCircle2}>
+              <span className="text-sm">Базовые</span>
+            </TabButton>
+            <TabButton active={activeTab === "limited"} onClick={() => setActiveTab("limited")} icon={Clock}>
+              <span className="text-sm">Лимит</span>
+            </TabButton>
+            <TabButton active={activeTab === "achievement"} onClick={() => setActiveTab("achievement")} icon={Trophy}>
+              <span className="text-sm">Достижения</span>
+            </TabButton>
           </motion.div>
-        ))}
+        </div>
 
-        {filteredTasks.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="no-tasks flex flex-col items-center justify-center p-6 text-gray-400"
-          >
-            <Sparkles className="w-8 h-8 mb-3 text-gray-500" />
-            <p className="text-sm">В этой категории пока нет доступных заданий</p>
-          </motion.div>
-        )}
+        <div className="tasks-list space-y-2">
+          {filteredTasks.map((task) => (
+            <motion.div
+              key={task.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className={`task-card ${task.is_completed ? "completed" : ""}`}
+            >
+              <div className="task-header">
+                <div className="task-info">
+                  <h3 className="task-title">{task.title}</h3>
+                </div>
+              </div>
+              {task.type === "limited" && !task.is_completed && (
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs font-medium text-gray-400">ОСТАЛОСЬ:</span>
+                  <span className="text-sm font-mono font-medium text-blue-400">
+                    {task.end_date ? formatTimeRemaining(task.end_date) : "Время истекло"}
+                  </span>
+                </div>
+              )}
+              {renderTaskButton(task)}
+            </motion.div>
+          ))}
+
+          {filteredTasks.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="no-tasks flex flex-col items-center justify-center p-6 text-gray-400"
+            >
+              <Sparkles className="w-8 h-8 mb-3 text-gray-500" />
+              <p className="text-sm">В этой категории пока нет доступных заданий</p>
+            </motion.div>
+          )}
+        </div>
       </div>
     </div>
   )

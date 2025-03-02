@@ -94,11 +94,6 @@
   }
 
   /* Обновляем стили для tasks */
-  .tasks-container {
-    min-height: 100vh;
-    padding-bottom: 80px;
-  }
-
   @media (max-width: 640px) {
     .tasks-container {
       padding: 16px;
