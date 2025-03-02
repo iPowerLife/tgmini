@@ -301,7 +301,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
               exit={{ opacity: 0, y: -10 }}
               className={`task-card ${task.is_completed ? "completed" : ""} ${
                 task.type === "limited" && !task.is_completed
-                  ? "bg-gradient-to-br from-purple-900/20 via-purple-800/20 to-purple-900/20 hover:from-purple-900/30 hover:via-purple-800/30 hover:to-purple-900/30 border-purple-500/20 shadow-lg shadow-purple-900/20 relative overflow-hidden"
+                  ? "bg-gradient-to-br from-[#2d1b4d] via-[#1f1435] to-[#2d1b4d] hover:from-[#351f59] hover:via-[#25183f] hover:to-[#351f59] border-purple-500/20 shadow-lg shadow-purple-900/20 relative overflow-hidden"
                   : "bg-gray-800/50 border-gray-700/50"
               }`}
             >
@@ -323,10 +323,10 @@ export function TasksSection({ user, onBalanceUpdate }) {
               )}
               {task.type === "limited" && !task.is_completed && (
                 <motion.div
+                  className="flex items-center gap-2 mb-3 p-2.5 rounded-lg bg-[#1a1225]/80 border border-purple-500/20 shadow-inner shadow-purple-900/10"
                   variants={pulseAnimation}
                   initial="initial"
                   animate="animate"
-                  className="flex items-center gap-2 mb-3 p-2.5 rounded-lg bg-purple-950/30 border border-purple-500/20 shadow-inner shadow-purple-900/10"
                 >
                   <span className="text-xs font-medium text-[#b4a2ff]">ОСТАЛОСЬ:</span>
                   <span className="text-sm font-mono font-medium text-[#d4c5ff]">
