@@ -124,7 +124,7 @@
   }
 
   .tasks-list {
-    @apply space-y-2; /* Уменьшаем отступы между заданиями */
+    /* Удаляем все стили */
   }
 
   .task-header {
@@ -177,6 +177,15 @@
 
   .task-button:hover::after {
     @apply opacity-100;
+  }
+
+  /* Добавляем новые стили */
+  @supports (-webkit-touch-callout: none) {
+    .task-card {
+      margin-bottom: 4px; /* Минимальный отступ для iOS */
+      transform: translate3d(0, 0, 0);
+      -webkit-transform: translate3d(0, 0, 0);
+    }
   }
 }
 

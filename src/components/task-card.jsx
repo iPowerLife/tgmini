@@ -240,37 +240,28 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   return (
     <motion.div
       layout
-      layoutId={`task-${task.id}`}
       initial={{ opacity: 0.98 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{
         duration: 0.15,
-        ease: [0.4, 0, 0.2, 1],
-        layout: {
-          duration: 0.2,
-          ease: "easeOut",
-        },
+        ease: "easeOut",
       }}
       style={{
         willChange: "transform, opacity",
         transform: "translate3d(0,0,0)",
-        backfaceVisibility: "hidden",
-        WebkitFontSmoothing: "antialiased",
-        WebkitTransform: "translate3d(0,0,0)",
-        perspective: 1000,
       }}
       className={`
-  relative overflow-hidden rounded-xl transform-gpu
-  ${
-    task.type === "limited"
-      ? "bg-gradient-to-br from-purple-900/90 via-purple-800/90 to-purple-900/90 border border-purple-500/20"
-      : "bg-gradient-to-br from-blue-900/90 via-blue-800/90 to-blue-900/90 border border-blue-500/20"
-  }
-  ${task.is_completed ? "opacity-60" : "hover:scale-[1.02]"}
-  transform transition-all duration-300 backdrop-blur-sm
-  shadow-lg ${task.type === "limited" ? "shadow-purple-900/20" : "shadow-blue-900/20"}
-`}
+    relative overflow-hidden rounded-xl transform-gpu mb-1
+    ${
+      task.type === "limited"
+        ? "bg-gradient-to-br from-purple-900/90 via-purple-800/90 to-purple-900/90 border border-purple-500/20"
+        : "bg-gradient-to-br from-blue-900/90 via-blue-800/90 to-blue-900/90 border border-blue-500/20"
+    }
+    ${task.is_completed ? "opacity-60" : "hover:scale-[1.02]"}
+    transform transition-all duration-300 backdrop-blur-sm
+    shadow-lg ${task.type === "limited" ? "shadow-purple-900/20" : "shadow-blue-900/20"}
+  `}
     >
       {task.type === "limited" && !task.is_completed && (
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-purple-500/5 animate-pulse-slow" />

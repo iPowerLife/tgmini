@@ -137,29 +137,12 @@ export function TasksSection({ user, onBalanceUpdate }) {
           </motion.div>
         </div>
 
-        <div className="tasks-list space-y-2 transform-gpu">
-          <AnimatePresence mode="wait" layout="position" initial={false}>
+        <div className="flex flex-col gap-1">
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              initial="hidden"
-              animate="visible"
               style={{
                 willChange: "transform, opacity",
                 transform: "translate3d(0,0,0)",
-                backfaceVisibility: "hidden",
-                perspective: 1000,
-                WebkitFontSmoothing: "antialiased",
-                WebkitTransform: "translate3d(0,0,0)",
-              }}
-              variants={{
-                visible: {
-                  transition: {
-                    staggerChildren: 0.02,
-                    delayChildren: 0.05,
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 30,
-                  },
-                },
               }}
             >
               {filteredTasks.map((task) => (
