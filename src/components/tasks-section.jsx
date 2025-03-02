@@ -62,14 +62,39 @@ const TabButton = ({ active, onClick, children, icon: Icon }) => (
 
 const TimeRemaining = ({ endDate }) => {
   const [timeLeft, setTimeLeft] = useState(formatTimeRemaining(endDate))
+  const [isExpired, setIsExpired] = useState(false)
 
   useEffect(() => {
+    const checkExpiration = () => {
+      const now = new Date()
+      const end = new Date(endDate)
+      const diff = end - now
+
+      if (diff <= 0) {
+        setIsExpired(true)
+        return "Время истекло"
+      }
+
+      return formatTimeRemaining(endDate)
+    }
+
+    setTimeLeft(checkExpiration())
+
     const timer = setInterval(() => {
-      setTimeLeft(formatTimeRemaining(endDate))
+      const newTimeLeft = checkExpiration()
+      setTimeLeft(newTimeLeft)
+
+      if (isExpired) {
+        clearInterval(timer)
+      }
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [endDate])
+  }, [endDate, isExpired])
+
+  if (isExpired) {
+    return null
+  }
 
   return (
     <motion.div
@@ -116,21 +141,6 @@ export function TasksSection({ user, onBalanceUpdate }) {
       loadTasks()
     }
   }, [user?.id, loadTasks])
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTasks((prevTasks) => {
-        // Обновляем только если есть лимитированные задания
-        const hasLimitedTasks = prevTasks.some((task) => task.type === "limited" && !task.is_completed)
-        if (!hasLimitedTasks) return prevTasks
-
-        // Возвращаем новый массив только если есть лимитированные задания
-        return [...prevTasks]
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [])
 
   const handleExecuteTask = async (task) => {
     try {
