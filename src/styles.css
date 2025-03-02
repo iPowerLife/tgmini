@@ -28,27 +28,33 @@
 
 
 /* Добавьте в начало файла */
-html,
+:root {
+  height: 100%;
+}
+
 body {
+  height: 100%;
+  overflow: hidden;
   position: fixed;
   width: 100%;
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
+  background-color: #1a1b1e;
 }
 
 #root {
-  height: 100vh;
-  height: 100dvh;
-}
-
-/* Для плавного скролла на iOS */
-.overflow-y-auto {
+  height: 100%;
+  overflow-y: auto;
+  position: relative;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
 }
 
-/* Остальные стили оставьте как есть */
+/* Для контента страниц */
+.page-content {
+  min-height: 100%;
+  padding-bottom: 80px; /* Высота меню */
+}
 
 
 
