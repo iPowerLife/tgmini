@@ -109,37 +109,64 @@
   }
 
   .task-card {
-    @apply relative backdrop-blur-sm rounded-lg border p-3 transition-all duration-300;
+    opacity: 0.9;
+    background-color: rgba(67, 56, 202, 0.15); /* Более насыщенный индиго с прозрачностью */
+    transform: scale(0.95);
+    margin-bottom: 8px !important;
+    padding: 12px !important;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(99, 102, 241, 0.1);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 6px -1px rgba(67, 56, 202, 0.1), 0 2px 4px -1px rgba(67, 56, 202, 0.06);
   }
 
-  .task-card::before {
-    content: "";
-    @apply absolute inset-0 rounded-lg opacity-0 transition-opacity duration-300;
-    background: linear-gradient(145deg, rgba(88, 28, 135, 0.1), rgba(67, 26, 107, 0.1));
+  .task-card:hover {
+    background-color: rgba(67, 56, 202, 0.2);
+    transform: scale(0.97);
+    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 8px 12px -2px rgba(67, 56, 202, 0.15), 0 4px 6px -2px rgba(67, 56, 202, 0.1);
   }
 
-  .task-card:hover::before {
-    @apply opacity-100;
+  .task-card.limited {
+    background-color: rgba(147, 51, 234, 0.15); /* Более насыщенный пурпурный для лимитированных заданий */
+    border-color: rgba(147, 51, 234, 0.2);
   }
 
+  .task-card.limited:hover {
+    background-color: rgba(147, 51, 234, 0.2);
+    border-color: rgba(147, 51, 234, 0.3);
+  }
+
+  .task-card.completed {
+    @apply opacity-50;
+  }
+
+  /* Add glow effect for limited tasks */
   .task-card[data-type="limited"]:not(.completed) {
-    @apply shadow-lg shadow-purple-900/20;
+    @apply relative;
   }
 
   .task-card[data-type="limited"]:not(.completed)::after {
     content: "";
-    @apply absolute -inset-[1px] rounded-lg opacity-0 transition-opacity duration-300;
-    background: linear-gradient(145deg, rgba(88, 28, 135, 0.5), rgba(67, 26, 107, 0.5));
-    filter: blur(8px);
+    @apply absolute inset-0 rounded-lg;
+    @apply bg-gradient-to-r from-purple-500/10 via-transparent to-purple-500/10;
+    @apply animate-glow;
+    filter: blur(20px);
     z-index: -1;
   }
 
-  .task-card[data-type="limited"]:not(.completed):hover::after {
-    @apply opacity-20;
+  @keyframes glow {
+    0%,
+    100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.8;
+    }
   }
 
-  .task-card.completed {
-    @apply opacity-50 hover:opacity-60 transition-opacity duration-300;
+  .animate-glow {
+    animation: glow 3s ease-in-out infinite;
   }
 
   .task-header {
