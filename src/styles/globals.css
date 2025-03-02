@@ -109,11 +109,39 @@
   }
 
   .task-card {
-    @apply bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700/50 p-3 transition-all duration-200;
+    @apply bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700/50 p-3 transition-all duration-300;
   }
 
   .task-card.completed {
     @apply opacity-50;
+  }
+
+  /* Add glow effect for limited tasks */
+  .task-card[data-type="limited"]:not(.completed) {
+    @apply relative;
+  }
+
+  .task-card[data-type="limited"]:not(.completed)::after {
+    content: "";
+    @apply absolute inset-0 rounded-lg;
+    @apply bg-gradient-to-r from-purple-500/10 via-transparent to-purple-500/10;
+    @apply animate-glow;
+    filter: blur(20px);
+    z-index: -1;
+  }
+
+  @keyframes glow {
+    0%,
+    100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  .animate-glow {
+    animation: glow 3s ease-in-out infinite;
   }
 
   .task-header {

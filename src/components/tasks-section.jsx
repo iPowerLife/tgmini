@@ -218,12 +218,12 @@ export function TasksSection({ user, onBalanceUpdate }) {
       return (
         <button
           onClick={() => handleExecuteTask(task)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 hover:bg-gray-800/90 transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#2e2b3d] to-[#1e1b2e] hover:from-[#332f44] hover:to-[#231e33] rounded-lg border border-[#2e2b3d] transition-all duration-300 shadow-lg shadow-purple-900/10"
         >
-          <span className="text-white">Выполнить</span>
+          <span className="text-[#c4b5fd]">Выполнить</span>
           <div className="flex items-center gap-1">
-            <span className="text-blue-400">{task.reward}</span>
-            <span className="text-blue-400">💎</span>
+            <span className="text-[#9d8cff]">{task.reward}</span>
+            <span className="text-[#9d8cff]">💎</span>
           </div>
         </button>
       )
@@ -301,7 +301,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
               exit={{ opacity: 0, y: -10 }}
               className={`task-card ${task.is_completed ? "completed" : ""} ${
                 task.type === "limited" && !task.is_completed
-                  ? "bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 hover:from-blue-500/20 hover:via-purple-500/20 hover:to-pink-500/20 border-purple-500/30 animate-pulse-slow"
+                  ? "bg-gradient-to-br from-[#1a1c2e] via-[#1e1b2e] to-[#1a1c2e] hover:from-[#1e1f33] hover:via-[#231e33] hover:to-[#1e1f33] border-[#2e2b3d] shadow-lg shadow-purple-900/5"
                   : "bg-gray-800/50 border-gray-700/50"
               }`}
             >
@@ -323,10 +323,10 @@ export function TasksSection({ user, onBalanceUpdate }) {
                   variants={pulseAnimation}
                   initial="initial"
                   animate="animate"
-                  className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 border border-purple-500/20"
+                  className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-[#15162c] border border-[#2e2b3d]"
                 >
-                  <span className="text-xs font-medium text-purple-300">ОСТАЛОСЬ:</span>
-                  <span className="text-sm font-mono font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                  <span className="text-xs font-medium text-[#9d8cff]">ОСТАЛОСЬ:</span>
+                  <span className="text-sm font-mono font-medium text-[#c4b5fd]">
                     {task.end_date ? formatTimeRemaining(task.end_date) : "Время истекло"}
                   </span>
                 </motion.div>
