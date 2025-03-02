@@ -221,7 +221,19 @@ export function TasksSection({ user, onBalanceUpdate }) {
           {tasks
             .filter((task) => task.type === "limited")
             .map((task) => (
-              <div key={task.id} className={`task-card ${task.is_completed ? "completed" : ""}`} data-type={task.type}>
+              <div
+                key={task.id}
+                className={`task-card ${task.is_completed ? "completed" : ""} ${
+                  task.type === "limited" && !task.is_completed
+                    ? "bg-[#0f0a19] hover:bg-[#150d24] border-[#261b38]"
+                    : "bg-gray-800/50 border-gray-700/50"
+                }`}
+              >
+                {task.type === "limited" && !task.is_completed && (
+                  <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-[#1a1332] border border-[#261b38]">
+                    {task.time_status}
+                  </div>
+                )}
                 <div className="task-header">
                   <h3 className="task-title">{task.title}</h3>
                   <p className="text-sm text-gray-400">{task.description}</p>
