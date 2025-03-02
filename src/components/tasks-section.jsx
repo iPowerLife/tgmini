@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { supabase } from "../supabase"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Clock, CheckCircle2, Trophy, ListTodo, Sparkles } from "lucide-react"
 import { TaskCard } from "./task-card"
 
@@ -138,15 +138,17 @@ export function TasksSection({ user, onBalanceUpdate }) {
         </div>
 
         <div className="tasks-list space-y-2">
-          {filteredTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              user={user}
-              onBalanceUpdate={onBalanceUpdate}
-              onTaskComplete={handleTaskComplete}
-            />
-          ))}
+          <AnimatePresence mode="popLayout">
+            {filteredTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                user={user}
+                onBalanceUpdate={onBalanceUpdate}
+                onTaskComplete={handleTaskComplete}
+              />
+            ))}
+          </AnimatePresence>
 
           {filteredTasks.length === 0 && (
             <motion.div
