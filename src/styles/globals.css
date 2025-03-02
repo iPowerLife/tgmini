@@ -108,17 +108,15 @@
     @apply space-y-2; /* Уменьшаем отступы между заданиями */
   }
 
-  .task-card {
-    opacity: 0.9;
-    transform: scale(0.95);
-    margin-bottom: 8px;
-    padding: 12px;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(99, 102, 241, 0.1);
-    background-color: #1542cbe3;
-    border-radius: 12px;
-    position: relative;
-  }
+.task-card {
+    opacity: .9;
+    /* background-color: #1542cbe3; */
+    transform: scale(.95);
+    margin-bottom: 8px!important;
+    padding: 12px!important;
+    transition: all .3s ease;
+    border: 1px solid rgba(99,102,241,.1)
+}
 
   .task-card:hover {
     opacity: 1;
