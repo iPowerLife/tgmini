@@ -301,7 +301,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
               exit={{ opacity: 0, y: -10 }}
               className="task-card"
               data-type={task.type}
-              data-completed={task.is_completed}
+              data-completed={task.is_completed ? "true" : "false"}
             >
               <div className="task-header">
                 <div className="task-info">
