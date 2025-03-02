@@ -95,7 +95,14 @@ export function TasksSection({ user, onBalanceUpdate }) {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTasks((prevTasks) => [...prevTasks])
+      setTasks((prevTasks) => {
+        // Обновляем только если есть лимитированные задания
+        const hasLimitedTasks = prevTasks.some((task) => task.type === "limited" && !task.is_completed)
+        if (!hasLimitedTasks) return prevTasks
+
+        // Возвращаем новый массив только если есть лимитированные задания
+        return [...prevTasks]
+      })
     }, 1000)
 
     return () => clearInterval(timer)
