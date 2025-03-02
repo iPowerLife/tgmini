@@ -272,6 +272,36 @@ export function TasksSection({ user, onBalanceUpdate }) {
       return new Date(b.created_at) - new Date(a.created_at)
     })
 
+  const TaskCard = ({ task, children }) => (
+    <motion.div
+      key={task.id}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      style={{
+        opacity: 0.9,
+        transform: "scale(0.95)",
+        marginBottom: "8px",
+        padding: "12px",
+        transition: "all 0.3s ease",
+        border: "1px solid rgba(99, 102, 241, 0.1)",
+        background: task.type === "limited" ? "linear-gradient(135deg, #392b4d 0%, #251b35 100%)" : "#1542cb",
+        borderRadius: "12px",
+        position: "relative",
+        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+      }}
+      whileHover={{
+        opacity: 1,
+        transform: "scale(1)",
+        background: task.type === "limited" ? "linear-gradient(135deg, #443357 0%, #2b1e3d 100%)" : "#1845d4",
+        borderColor: task.type === "limited" ? "rgba(147, 51, 234, 0.25)" : "rgba(99, 102, 241, 0.2)",
+        boxShadow: "0 8px 12px -2px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.1)",
+      }}
+    >
+      {children}
+    </motion.div>
+  )
+
   return (
     <div className="min-h-[100vh] pb-[80px]">
       <div className="px-4">
@@ -294,15 +324,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
 
         <div className="tasks-list space-y-2">
           {filteredTasks.map((task) => (
-            <motion.div
-              key={task.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="task-card"
-              data-type={task.type}
-              data-completed={task.is_completed ? "true" : "false"}
-            >
+            <TaskCard key={task.id} task={task}>
               <div className="task-header">
                 <div className="task-info">
                   <h3
@@ -323,9 +345,6 @@ export function TasksSection({ user, onBalanceUpdate }) {
                 </div>
               </div>
               {task.type === "limited" && !task.is_completed && (
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-fuchsia-500/5 to-purple-500/5 animate-pulse-slow" />
-              )}
-              {task.type === "limited" && !task.is_completed && (
                 <motion.div
                   className="flex items-center gap-2 mb-3 p-2.5 rounded-lg bg-[#1a1225]/80 border border-purple-500/20 shadow-inner shadow-purple-900/10"
                   variants={pulseAnimation}
@@ -339,7 +358,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
                 </motion.div>
               )}
               {renderTaskButton(task)}
-            </motion.div>
+            </TaskCard>
           ))}
 
           {filteredTasks.length === 0 && (
