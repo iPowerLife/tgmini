@@ -180,7 +180,17 @@
   }
 
   .task-title {
-    @apply text-base font-semibold text-white; /* Уменьшаем размер заголовка */
+    @apply text-base font-semibold !important;
+    color: #e2e8f0 !important; /* светло-серый цвет для обычных заданий */
+  }
+
+  /* Отдельный стиль для лимитированных заданий остается прежним */
+  .task-card[data-type="limited"] .task-title {
+    background: linear-gradient(to right, #c4b5fd, #a78bfa, #8b5cf6) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    color: transparent !important;
+    font-weight: 600 !important;
   }
 
   .miner-quantity {
