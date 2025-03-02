@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
-import { User, Sparkles, Zap, Pickaxe, Hash } from "lucide-react"
+import { User, Hash, Zap, Pickaxe } from "lucide-react"
 import { useTelegramUser } from "../utils/telegram"
 import { motion } from "framer-motion"
 
@@ -103,133 +103,135 @@ export function UserProfile({ user }) {
   const totalMiningPower = miners.reduce((sum, miner) => sum + miner.model.mining_power * miner.quantity, 0)
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="profile-container max-w-md mx-auto flex flex-col h-full min-h-0"
-    >
-      {/* Profile Header */}
+    <div className="min-h-screen bg-[#0d1117]">
       <motion.div
-        variants={itemVariants}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-gray-700/50 mb-3 flex-shrink-0"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="max-w-md mx-auto p-4 flex flex-col gap-4"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
-        <div className="relative p-3">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-shrink-0 group">
-              {telegramUser.photoUrl ? (
-                <img
-                  src={telegramUser.photoUrl || "/placeholder.svg"}
-                  alt={telegramUser.displayName}
-                  className="w-14 h-14 rounded-xl object-cover border-2 border-gray-700/50 shadow-lg transform transition-transform duration-300 group-hover:scale-105"
-                />
-              ) : (
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center border-2 border-gray-700/50 shadow-lg transform transition-transform duration-300 group-hover:scale-105">
-                  <User className="w-7 h-7 text-gray-400" />
-                </div>
-              )}
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-800 shadow-lg" />
-            </div>
-
-            <div className="flex-1 min-w-0 flex items-center w-full">
-              <div className="w-full p-2.5 rounded-lg bg-gray-800/50 border border-gray-700/50 backdrop-blur-sm">
-                <h2 className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent truncate mb-0.5">
-                  {telegramUser.firstName}
-                </h2>
-                {telegramUser.username && (
-                  <p className="text-sm text-gray-400 font-medium truncate mb-1.5">@{telegramUser.username}</p>
+        {/* Profile Card */}
+        <motion.div
+          variants={itemVariants}
+          className="relative overflow-hidden rounded-2xl bg-[#161b22] border border-[#30363d]"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5" />
+          <div className="relative p-6">
+            <div className="flex items-center gap-4">
+              <div className="relative flex-shrink-0">
+                {telegramUser.photoUrl ? (
+                  <img
+                    src={telegramUser.photoUrl || "/placeholder.svg"}
+                    alt="Profile"
+                    className="w-16 h-16 rounded-xl object-cover border-2 border-[#30363d]"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-[#21262d] flex items-center justify-center border-2 border-[#30363d]">
+                    <User className="w-8 h-8 text-[#8b949e]" />
+                  </div>
                 )}
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/20 w-fit">
-                  <Hash className="w-3.5 h-3.5 text-indigo-400" />
-                  <span className="font-mono text-xs font-medium text-indigo-300">{telegramUser.id}</span>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-[#0d1117]" />
+              </div>
+
+              <div className="flex-1">
+                <h2 className="text-xl font-bold text-white mb-1">{telegramUser.firstName}</h2>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#21262d] w-fit">
+                  <Hash className="w-4 h-4 text-[#8b949e]" />
+                  <span className="font-mono text-sm font-medium text-[#8b949e]">{telegramUser.id}</span>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Stats Grid */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-2.5 mb-3 flex-shrink-0">
-        <div className="stat-card group">
-          <div className="flex items-center gap-2">
-            <div className="stat-icon-wrapper bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-blue-500/20">
-              <Sparkles className="w-4 h-4 text-blue-400" />
-            </div>
-            <div className="stat-content">
-              <div className="stat-label">Баланс</div>
-              <div className="stat-value group-hover:text-blue-400">
-                {user.balance.toFixed(2)} <span className="stat-symbol">💎</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="stat-card group">
-          <div className="flex items-center gap-2">
-            <div className="stat-icon-wrapper bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-purple-500/20">
-              <Zap className="w-4 h-4 text-purple-400" />
-            </div>
-            <div className="stat-content">
-              <div className="stat-label">Мощность</div>
-              <div className="stat-value group-hover:text-purple-400">
-                {totalMiningPower.toFixed(3)} <span className="stat-symbol">⚡</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="stat-card group">
-          <div className="flex items-center gap-2">
-            <div className="stat-icon-wrapper bg-gradient-to-br from-indigo-500/20 to-blue-500/20 border-indigo-500/20">
-              <Pickaxe className="w-4 h-4 text-indigo-400" />
-            </div>
-            <div className="stat-content">
-              <div className="stat-label">Всего добыто</div>
-              <div className="stat-value group-hover:text-indigo-400">
-                {stats?.total_mined?.toFixed(2) || "0.00"} <span className="stat-symbol">💎</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="stat-card group">
-          <div className="flex items-center gap-2">
-            <div className="stat-icon-wrapper bg-gradient-to-br from-cyan-500/20 to-teal-500/20 border-cyan-500/20">
-              <Hash className="w-4 h-4 text-cyan-400" />
-            </div>
-            <div className="stat-content">
-              <div className="stat-label">Кол-во майнингов</div>
-              <div className="stat-value group-hover:text-cyan-400">{stats?.mining_count || "0"}</div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Miners List */}
-      {miners.length > 0 && (
-        <motion.div variants={itemVariants} className="miners-summary flex-1 min-h-0 flex flex-col">
-          <div className="flex items-center gap-2 mb-3 px-3 flex-shrink-0">
-            <div className="p-1.5 rounded-lg bg-gray-800/80 border border-gray-700/50">
-              <Pickaxe className="w-4 h-4 text-gray-400" />
-            </div>
-            <h3 className="text-sm font-medium text-gray-300">Ваши майнеры</h3>
-          </div>
-          <div className="miners-list flex-1 overflow-y-auto">
-            {miners.map((miner, index) => (
-              <motion.div key={miner.id} variants={itemVariants} custom={index} className="miner-item group">
-                <span className="font-medium group-hover:text-blue-400">{miner.model.display_name}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">{miner.model.mining_power} ⚡</span>
-                  <span className="miner-quantity">x{miner.quantity}</span>
-                </div>
-              </motion.div>
-            ))}
           </div>
         </motion.div>
-      )}
-    </motion.div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-4">
+          <motion.div
+            variants={itemVariants}
+            className="p-4 rounded-xl bg-[#161b22] border border-[#30363d] relative overflow-hidden group"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="text-[#8b949e] text-sm mb-2">Баланс</div>
+              <div className="text-2xl font-bold text-white flex items-center gap-2">
+                {user.balance.toFixed(2)}
+                <span className="text-lg">💎</span>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            variants={itemVariants}
+            className="p-4 rounded-xl bg-[#161b22] border border-[#30363d] relative overflow-hidden group"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="text-[#8b949e] text-sm mb-2">Мощность</div>
+              <div className="text-2xl font-bold text-white flex items-center gap-2">
+                {totalMiningPower.toFixed(3)}
+                <span className="text-lg">⚡</span>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            variants={itemVariants}
+            className="p-4 rounded-xl bg-[#161b22] border border-[#30363d] relative overflow-hidden group"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="text-[#8b949e] text-sm mb-2">Всего добыто</div>
+              <div className="text-2xl font-bold text-white flex items-center gap-2">
+                {stats?.total_mined?.toFixed(2) || "0.00"}
+                <span className="text-lg">💎</span>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            variants={itemVariants}
+            className="p-4 rounded-xl bg-[#161b22] border border-[#30363d] relative overflow-hidden group"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="text-[#8b949e] text-sm mb-2">Майнингов</div>
+              <div className="text-2xl font-bold text-white">{stats?.mining_count || "0"}</div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Miners List */}
+        {miners.length > 0 && (
+          <motion.div
+            variants={itemVariants}
+            className="rounded-xl bg-[#161b22] border border-[#30363d] overflow-hidden"
+          >
+            <div className="p-4 border-b border-[#30363d] flex items-center gap-3">
+              <Pickaxe className="w-5 h-5 text-[#8b949e]" />
+              <h3 className="font-medium text-white">Ваши майнеры</h3>
+            </div>
+            <div className="divide-y divide-[#30363d]">
+              {miners.map((miner) => (
+                <motion.div
+                  key={miner.id}
+                  variants={itemVariants}
+                  className="p-4 flex items-center justify-between hover:bg-[#21262d] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Zap className="w-4 h-4 text-[#8b949e]" />
+                    <span className="text-white">{miner.model.display_name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[#8b949e]">{miner.model.mining_power} ⚡</span>
+                    <span className="px-2 py-1 rounded-md bg-[#21262d] text-[#8b949e] text-sm">x{miner.quantity}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </motion.div>
+    </div>
   )
 }
 
