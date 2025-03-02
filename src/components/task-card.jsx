@@ -62,15 +62,16 @@ const TimeRemaining = memo(({ endDate }) => {
 
   return (
     <motion.div
-      className="flex items-center gap-2 mb-3 p-2.5 rounded-lg bg-[#1a1225]/80 border border-purple-500/20 shadow-inner shadow-purple-900/10"
+      className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-purple-900/30 border border-purple-500/30 backdrop-blur-sm"
       initial={{ opacity: 0.5 }}
       animate={{
         opacity: [0.5, 1, 0.5],
-        transition: { duration: 2, repeat: Number.POSITIVE_INFINITY },
+        scale: [1, 1.02, 1],
+        transition: { duration: 3, repeat: Number.POSITIVE_INFINITY },
       }}
     >
-      <span className="text-xs font-medium text-[#b4a2ff]">ОСТАЛОСЬ:</span>
-      <span className="text-sm font-mono font-medium text-[#d4c5ff]">{timeLeft}</span>
+      <span className="text-xs font-medium text-purple-200/90">ОСТАЛОСЬ:</span>
+      <span className="text-sm font-mono font-medium text-purple-100">{timeLeft}</span>
     </motion.div>
   )
 })
@@ -211,9 +212,9 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       return (
         <button
           onClick={handleExecuteTask}
-          className="w-full flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-purple-600/90 to-purple-700/90 hover:from-purple-600 hover:to-purple-700 rounded-lg border border-purple-500/30 transition-all duration-300 shadow-lg shadow-purple-900/20"
+          className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600 via-purple-500 to-purple-600 hover:from-purple-500 hover:via-purple-400 hover:to-purple-500 rounded-lg border border-purple-400/30 transition-all duration-300 shadow-lg shadow-purple-900/20 group"
         >
-          <span className="text-purple-100 font-medium">Выполнить</span>
+          <span className="text-white/90 font-medium group-hover:text-white transition-colors">Выполнить</span>
           <div className="flex items-center gap-1">
             <span className="text-purple-100">{task.reward}</span>
             <span className="text-purple-100">💎</span>
@@ -225,9 +226,9 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     return (
       <button
         onClick={handleExecuteTask}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-600 hover:to-blue-700 rounded-lg border border-blue-500/30 transition-all duration-300 shadow-lg shadow-blue-900/20"
+        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-500 hover:via-blue-400 hover:to-blue-500 rounded-lg border border-blue-400/30 transition-all duration-300 shadow-lg shadow-blue-900/20 group"
       >
-        <span className="text-blue-100 font-medium">Выполнить</span>
+        <span className="text-white/90 font-medium group-hover:text-white transition-colors">Выполнить</span>
         <div className="flex items-center gap-1">
           <span className="text-blue-100">{task.reward}</span>
           <span className="text-blue-100">💎</span>
@@ -242,32 +243,35 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       className={`
-  relative overflow-hidden rounded-xl p-3
+  relative overflow-hidden rounded-xl
   ${
     task.type === "limited"
-      ? "bg-gradient-to-br from-[#392b4d] to-[#251b35] border border-purple-500/20"
-      : "bg-[#1542cb] border border-blue-500/20"
+      ? "bg-gradient-to-br from-purple-900/90 via-purple-800/90 to-purple-900/90 border border-purple-500/20"
+      : "bg-gradient-to-br from-blue-900/90 via-blue-800/90 to-blue-900/90 border border-blue-500/20"
   }
-  ${task.is_completed ? "opacity-60" : ""}
-  transition-all duration-300 hover:scale-[1.02]
+  ${task.is_completed ? "opacity-60" : "hover:scale-[1.02]"}
+  transform transition-all duration-300 backdrop-blur-sm
+  shadow-lg ${task.type === "limited" ? "shadow-purple-900/20" : "shadow-blue-900/20"}
 `}
     >
-      <div className="p-3">
-        <div className="task-header">
-          <div className="task-info">
-            <h3
-              className={`
-    text-base font-semibold
-    ${
-      task.type === "limited" && !task.is_completed
-        ? "bg-gradient-to-r from-[#c4b5fd] via-[#a78bfa] to-[#8b5cf6] bg-clip-text text-transparent"
-        : "text-gray-100"
-    }
-  `}
-            >
-              {task.title}
-            </h3>
-          </div>
+      {task.type === "limited" && !task.is_completed && (
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-purple-500/5 animate-pulse-slow" />
+      )}
+      <div className="p-4">
+        <div className="mb-3">
+          <h3
+            className={`
+            text-lg font-semibold
+            ${
+              task.type === "limited" && !task.is_completed
+                ? "bg-gradient-to-r from-purple-200 via-purple-100 to-purple-200 bg-clip-text text-transparent"
+                : "text-white/90"
+            }
+          `}
+          >
+            {task.title}
+          </h3>
+          <p className="text-sm text-gray-300/80 mt-1">{task.description}</p>
         </div>
 
         {task.type === "limited" && !task.is_completed && <TimeRemaining endDate={task.end_date} />}
