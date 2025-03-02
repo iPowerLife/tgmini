@@ -258,7 +258,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-purple-500/5 animate-pulse-slow" />
       )}
       <div className="p-4">
-        <div className="mb-3">
+        <div className="mb-2">
           <h3
             className={`
             text-lg font-semibold
@@ -271,7 +271,6 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
           >
             {task.title}
           </h3>
-          <p className="text-sm text-gray-300/80 mt-1">{task.description}</p>
         </div>
 
         {task.type === "limited" && !task.is_completed && <TimeRemaining endDate={task.end_date} />}
