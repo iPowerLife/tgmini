@@ -6,6 +6,18 @@ import { initTelegram } from "../utils/telegram"
 import { motion } from "framer-motion"
 import { Clock, CheckCircle2, Trophy, ListTodo, Sparkles } from "lucide-react"
 
+const pulseAnimation = {
+  initial: { opacity: 0.5 },
+  animate: {
+    opacity: 1,
+    transition: {
+      duration: 2,
+      repeat: Number.POSITIVE_INFINITY,
+      repeatType: "reverse",
+    },
+  },
+}
+
 const formatTimeRemaining = (endDate) => {
   const now = new Date()
   const end = new Date(endDate)
@@ -287,20 +299,37 @@ export function TasksSection({ user, onBalanceUpdate }) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className={`task-card ${task.is_completed ? "completed" : ""}`}
+              className={`task-card ${task.is_completed ? "completed" : ""} ${
+                task.type === "limited" && !task.is_completed
+                  ? "bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 hover:from-blue-500/20 hover:via-purple-500/20 hover:to-pink-500/20 border-purple-500/30 animate-pulse-slow"
+                  : "bg-gray-800/50 border-gray-700/50"
+              }`}
             >
               <div className="task-header">
                 <div className="task-info">
-                  <h3 className="task-title">{task.title}</h3>
+                  <h3
+                    className={`task-title ${
+                      task.type === "limited" && !task.is_completed
+                        ? "bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent"
+                        : "text-white"
+                    }`}
+                  >
+                    {task.title}
+                  </h3>
                 </div>
               </div>
               {task.type === "limited" && !task.is_completed && (
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs font-medium text-gray-400">ОСТАЛОСЬ:</span>
-                  <span className="text-sm font-mono font-medium text-blue-400">
+                <motion.div
+                  variants={pulseAnimation}
+                  initial="initial"
+                  animate="animate"
+                  className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 border border-purple-500/20"
+                >
+                  <span className="text-xs font-medium text-purple-300">ОСТАЛОСЬ:</span>
+                  <span className="text-sm font-mono font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                     {task.end_date ? formatTimeRemaining(task.end_date) : "Время истекло"}
                   </span>
-                </div>
+                </motion.div>
               )}
               {renderTaskButton(task)}
             </motion.div>
