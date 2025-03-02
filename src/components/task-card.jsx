@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, memo } from "react"
+import { useState, useCallback, memo, useEffect } from "react"
 import { motion } from "framer-motion"
 import { supabase } from "../supabase"
 import { initTelegram } from "../utils/telegram"
@@ -8,7 +8,7 @@ import { initTelegram } from "../utils/telegram"
 const VerificationTimer = memo(({ timeLeft, onComplete }) => {
   const [remainingTime, setRemainingTime] = useState(timeLeft)
 
-  useState(() => {
+  useEffect(() => {
     if (remainingTime <= 0) {
       onComplete()
       return
@@ -27,6 +27,11 @@ const VerificationTimer = memo(({ timeLeft, onComplete }) => {
 
     return () => clearInterval(timer)
   }, [remainingTime, onComplete])
+
+  // Обновляем оставшееся время при изменении входного параметра
+  useEffect(() => {
+    setRemainingTime(timeLeft)
+  }, [timeLeft])
 
   return <div className="text-center text-gray-400">Проверка ({Math.ceil(remainingTime / 1000)}с)</div>
 })
@@ -112,6 +117,10 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
       if (startError) throw startError
 
+      // Сохраняем время начала верификации
+      const verificationStartTime = Date.now()
+      localStorage.setItem(`task_verification_${task.id}`, verificationStartTime.toString())
+
       setVerificationState({
         isVerifying: true,
         timeLeft: 15000,
@@ -140,6 +149,9 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
       if (completeError) throw completeError
 
+      // Очищаем сохраненное время верификации
+      localStorage.removeItem(`task_verification_${task.id}`)
+
       setVerificationState({
         isVerifying: false,
         timeLeft: 0,
@@ -153,6 +165,28 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       alert("Ошибка при завершении верификации: " + error.message)
     }
   }, [user.id, task.id, onTaskComplete])
+
+  useEffect(() => {
+    // Проверяем сохраненное время начала верификации
+    const savedStartTime = localStorage.getItem(`task_verification_${task.id}`)
+
+    if (savedStartTime && task.user_status === "in_progress") {
+      const startTime = Number.parseInt(savedStartTime)
+      const now = Date.now()
+      const elapsed = now - startTime
+      const remainingTime = Math.max(15000 - elapsed, 0)
+
+      if (remainingTime > 0) {
+        setVerificationState({
+          isVerifying: true,
+          timeLeft: remainingTime,
+        })
+      } else {
+        // Если время вышло, автоматически завершаем верификацию
+        handleVerificationComplete()
+      }
+    }
+  }, [task.id, task.user_status, handleVerificationComplete])
 
   const handleClaimReward = useCallback(async () => {
     try {
