@@ -221,6 +221,21 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       )
     }
 
+    if (task.user_status === "completed" && !task.reward_claimed) {
+      return (
+        <button
+          onClick={handleClaimReward}
+          className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 rounded-lg border border-green-400/30 transition-all duration-300 shadow-lg shadow-green-900/20"
+        >
+          <span className="text-white/90 font-medium">Забрать награду</span>
+          <div className="flex items-center gap-1">
+            <span className="text-green-100">{task.reward}</span>
+            <span className="text-green-100">💎</span>
+          </div>
+        </button>
+      )
+    }
+
     if (task.type === "limited") {
       return (
         <button
@@ -285,27 +300,7 @@ ${
 
         {task.type === "limited" && !task.is_completed && <TimeRemaining endDate={task.end_date} />}
 
-        <button
-          onClick={handleExecuteTask}
-          disabled={task.is_completed || task.is_expired}
-          className={`
-      w-full flex items-center justify-between px-4 py-3 
-      ${
-        task.is_completed || task.is_expired
-          ? "bg-gray-800/80 text-gray-400 cursor-not-allowed"
-          : task.type === "limited"
-            ? "bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 border-purple-400/30"
-            : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 border-blue-400/30"
-      }
-      rounded-lg border transition-all duration-300
-    `}
-        >
-          <span className="text-white/90">Выполнить</span>
-          <div className="task-reward">
-            <span>{task.reward}</span>
-            <span>💎</span>
-          </div>
-        </button>
+        {renderButton()}
       </div>
     </div>
   )
