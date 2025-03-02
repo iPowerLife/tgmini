@@ -109,7 +109,7 @@ function App() {
         <div className="decorative-circle-1" />
         <div className="decorative-circle-2" />
 
-        <div className="app-container">
+        <div className="app-container pb-14">
           <Routes>
             <Route
               path="/"
