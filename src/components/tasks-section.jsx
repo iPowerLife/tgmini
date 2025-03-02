@@ -138,17 +138,19 @@ export function TasksSection({ user, onBalanceUpdate }) {
         </div>
 
         <div className="tasks-list space-y-2">
-          <AnimatePresence
-            mode="popLayout"
-            initial={false} // Отключаем начальную анимацию при первом рендере
-          >
+          <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
               initial="hidden"
               animate="visible"
+              style={{
+                willChange: "transform",
+                transform: "translateZ(0)",
+              }}
               variants={{
                 visible: {
                   transition: {
-                    staggerChildren: 0.05, // Добавляем задержку между анимациями карточек
+                    staggerChildren: 0.03, // Уменьшаем задержку между анимациями
+                    delayChildren: 0.1, // Добавляем небольшую начальную задержку
                   },
                 },
               }}

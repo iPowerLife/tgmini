@@ -15,6 +15,15 @@
   main {
     @apply h-full;
   }
+
+  /* Добавляем оптимизации для iOS */
+  @supports (-webkit-touch-callout: none) {
+    .tasks-list {
+      -webkit-transform: translateZ(0);
+      -webkit-backface-visibility: hidden;
+      -webkit-perspective: 1000;
+    }
+  }
 }
 
 @layer components {
