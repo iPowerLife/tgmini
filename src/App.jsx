@@ -10,6 +10,7 @@ import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
 import { supabase } from "./supabase"
 import { RatingSection } from "./components/rating-section"
+import { Toast } from "./components/toast" // Мы создадим этот компонент
 
 // Компонент для содержимого приложения
 function AppContent({
@@ -21,12 +22,26 @@ function AppContent({
   tasksData,
   handleTaskComplete,
   ratingData,
+  notifications,
+  removeNotification,
 }) {
   const location = useLocation()
 
   return (
     <div className="root-container">
       <div className="page-container">
+        {/* Уведомления */}
+        <div className="notifications-container">
+          {notifications.map((notification) => (
+            <Toast
+              key={notification.id}
+              message={notification.message}
+              type={notification.type}
+              onClose={() => removeNotification(notification.id)}
+            />
+          ))}
+        </div>
+
         <Routes>
           <Route
             path="/"
@@ -85,12 +100,57 @@ function App() {
   const [balance, setBalance] = useState(0)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [notifications, setNotifications] = useState([])
 
   // Состояния для данных
   const [shopData, setShopData] = useState({ categories: [], models: [] })
   const [minersData, setMinersData] = useState({ miners: [], totalPower: 0 })
   const [tasksData, setTasksData] = useState({ tasks: [] })
   const [ratingData, setRatingData] = useState({ users: [] })
+
+  // Функция для добавления уведомлений
+  const addNotification = useCallback((message, type = "info") => {
+    const id = Date.now()
+    setNotifications((prev) => [...prev, { id, message, type }])
+
+    // Автоматически удаляем уведомление через 5 секунд
+    setTimeout(() => {
+      removeNotification(id)
+    }, 5000)
+
+    return id
+  }, [])
+
+  // Функция для удаления уведомлений
+  const removeNotification = useCallback((id) => {
+    setNotifications((prev) => prev.filter((notification) => notification.id !== id))
+  }, [])
+
+  // Функция для обновления баланса пользователя
+  const updateUserBalance = useCallback(async (userId, amount) => {
+    try {
+      // Получаем текущий баланс пользователя
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("balance")
+        .eq("id", userId)
+        .single()
+
+      if (userError) throw userError
+
+      const newBalance = userData.balance + amount
+
+      // Обновляем баланс пользователя
+      const { error: updateError } = await supabase.from("users").update({ balance: newBalance }).eq("id", userId)
+
+      if (updateError) throw updateError
+
+      return newBalance
+    } catch (error) {
+      console.error("Error updating user balance:", error)
+      return null
+    }
+  }, [])
 
   // Загрузка данных магазина
   const loadShopData = useCallback(async () => {
@@ -216,7 +276,7 @@ function App() {
               // Получаем ID пользователя-реферера из базы данных
               const { data: referrerData, error: referrerError } = await supabase
                 .from("users")
-                .select("id")
+                .select("id, telegram_id, display_name")
                 .eq("telegram_id", startParam)
                 .single()
 
@@ -228,7 +288,7 @@ function App() {
               // Получаем ID текущего пользователя из базы данных
               const { data: userData, error: userError } = await supabase
                 .from("users")
-                .select("id")
+                .select("id, telegram_id, display_name")
                 .eq("telegram_id", telegramUser.id)
                 .single()
 
@@ -250,18 +310,39 @@ function App() {
                 return
               }
 
+              // Определяем награду за реферала
+              const REFERRAL_REWARD = 10 // Награда за реферала (10 кристаллов)
+
               // Регистрируем нового реферала
               const { error: insertError } = await supabase.from("referral_users").insert({
                 referrer_id: referrerData.id,
                 referred_id: userData.id,
                 status: "active",
+                reward: REFERRAL_REWARD,
               })
 
               if (insertError) {
                 console.error("Error registering referral:", insertError)
               } else {
                 console.log("Referral successfully registered")
-                // Можно показать уведомление пользователю
+
+                // Начисляем награду рефереру
+                const newBalance = await updateUserBalance(referrerData.id, REFERRAL_REWARD)
+
+                if (newBalance !== null) {
+                  // Отправляем уведомление рефереру (если это текущий пользователь)
+                  if (referrerData.telegram_id === telegramUser.id) {
+                    addNotification(`Вы получили ${REFERRAL_REWARD} 💎 за приглашение пользователя!`, "success")
+                  }
+
+                  // Записываем в лог транзакцию
+                  await supabase.from("transactions").insert({
+                    user_id: referrerData.id,
+                    amount: REFERRAL_REWARD,
+                    type: "referral_reward",
+                    description: `Награда за приглашение пользователя ID:${userData.id}`,
+                  })
+                }
               }
             }
           } catch (error) {
@@ -295,6 +376,42 @@ function App() {
           setBalance(dbUser.balance)
           console.log("User initialized:", userWithDisplay)
 
+          // Проверяем, есть ли новые рефералы
+          const checkNewReferrals = async () => {
+            try {
+              const { data: newReferrals, error } = await supabase
+                .from("referral_users")
+                .select(`
+                  id,
+                  referred:referred_id(id, display_name),
+                  created_at
+                `)
+                .eq("referrer_id", dbUser.id)
+                .eq("status", "active")
+                .eq("notified", false)
+                .order("created_at", { ascending: false })
+
+              if (error) throw error
+
+              if (newReferrals && newReferrals.length > 0) {
+                // Отмечаем рефералов как уведомленных
+                const referralIds = newReferrals.map((ref) => ref.id)
+                await supabase.from("referral_users").update({ notified: true }).in("id", referralIds)
+
+                // Показываем уведомления о новых рефералах
+                newReferrals.forEach((referral) => {
+                  const referredName = referral.referred?.display_name || "Новый пользователь"
+                  addNotification(`${referredName} присоединился по вашей ссылке! +10 💎`, "success")
+                })
+              }
+            } catch (error) {
+              console.error("Error checking new referrals:", error)
+            }
+          }
+
+          // Проверяем новых рефералов
+          checkNewReferrals()
+
           // Загружаем все данные сразу после инициализации пользователя
           await Promise.all([loadShopData(), loadMinersData(), loadTasksData(), loadRatingData()])
           console.log("All data loaded successfully")
@@ -316,7 +433,7 @@ function App() {
     return () => {
       mounted = false
     }
-  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData])
+  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData, addNotification, updateUserBalance])
 
   // Обработчик обновления баланса
   const handleBalanceUpdate = useCallback(
@@ -378,6 +495,8 @@ function App() {
         tasksData={tasksData}
         handleTaskComplete={handleTaskComplete}
         ratingData={ratingData}
+        notifications={notifications}
+        removeNotification={removeNotification}
       />
     </Router>
   )

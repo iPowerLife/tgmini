@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Users, Share2 } from "lucide-react"
+import { Users, Share2, Gift } from "lucide-react"
 import { supabase } from "../supabase"
 
 export function UserProfile({ user, miners, totalPower }) {
@@ -13,6 +13,7 @@ export function UserProfile({ user, miners, totalPower }) {
     referral_rewards: 0, // Будет обновляться из базы данных
     referral_count: 0,
   })
+  const [referrals, setReferrals] = useState([])
 
   useEffect(() => {
     async function getTelegramUser() {
@@ -48,16 +49,39 @@ export function UserProfile({ user, miners, totalPower }) {
         const { data: referralStats, error: referralError } = await supabase
           .from("referral_users")
           .select(`
+            id,
             referrer_id,
-            referred_id
+            referred_id,
+            status,
+            reward,
+            created_at,
+            referred:referred_id(id, telegram_id, display_name)
           `)
           .eq("referrer_id", userData.id)
           .eq("status", "active")
+          .order("created_at", { ascending: false })
 
         if (!referralError && referralStats) {
+          setReferrals(referralStats)
           setStats((prev) => ({
             ...prev,
             referral_count: referralStats.length || 0,
+            referral_rewards: referralStats.reduce((sum, ref) => sum + (ref.reward || 0), 0),
+          }))
+        }
+
+        // Получаем сумму всех наград за рефералов
+        const { data: rewardsData, error: rewardsError } = await supabase
+          .from("transactions")
+          .select("amount")
+          .eq("user_id", userData.id)
+          .eq("type", "referral_reward")
+
+        if (!rewardsError && rewardsData) {
+          const totalRewards = rewardsData.reduce((sum, tx) => sum + tx.amount, 0)
+          setStats((prev) => ({
+            ...prev,
+            referral_rewards: totalRewards,
           }))
         }
       }
@@ -120,7 +144,7 @@ export function UserProfile({ user, miners, totalPower }) {
         </div>
 
         {/* Список майнеров */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/50">
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/50 mb-6">
           <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Ваши майнеры</h3>
           <div className="space-y-2">
             {miners.map((miner) => (
@@ -194,22 +218,52 @@ export function UserProfile({ user, miners, totalPower }) {
             </div>
             <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700/30">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">💎</span>
+                <Gift className="w-4 h-4 text-yellow-400" />
                 <span className="text-xs text-gray-400">Награды</span>
               </div>
-              <span className="text-xl font-bold text-white">{stats.referral_rewards || 0}</span>
+              <span className="text-xl font-bold text-white">{stats.referral_rewards || 0} 💎</span>
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 mb-4">
             <div className="text-xs text-gray-400">Реферальная ссылка</div>
             <div className="p-2 text-sm bg-gray-900/50 rounded border border-gray-700/30 text-gray-300 font-mono break-all">
               {getReferralLink()}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Приглашайте друзей и получайте награды за каждого активного реферала
+              Приглашайте друзей и получайте 10 💎 за каждого активного реферала
             </p>
           </div>
+
+          {/* Список рефералов */}
+          {referrals.length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-sm font-medium text-gray-400 mb-2">Ваши рефералы</h4>
+              <div className="space-y-2">
+                {referrals.map((referral) => (
+                  <div
+                    key={referral.id}
+                    className="flex items-center justify-between py-2 px-3 bg-gray-800/30 rounded-lg border border-gray-700/30"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gray-700/50 flex items-center justify-center">
+                        <span className="text-sm font-bold text-gray-400">
+                          {referral.referred?.display_name?.[0] || "?"}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="text-sm text-white">{referral.referred?.display_name || "Пользователь"}</div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(referral.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-sm font-medium text-yellow-400">+{referral.reward || 10} 💎</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
