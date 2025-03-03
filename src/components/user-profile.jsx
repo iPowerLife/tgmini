@@ -33,6 +33,7 @@ export function UserProfile({ user, miners, totalPower }) {
       if (telegramUser?.id) {
         console.log("DEBUG: Fetching referral stats for telegram_id:", telegramUser.id)
         console.log("DEBUG: telegramUser object:", telegramUser)
+
         // Получаем id пользователя по его telegram_id
         const { data: userData, error: userError } = await supabase
           .from("users")
@@ -44,6 +45,8 @@ export function UserProfile({ user, miners, totalPower }) {
           console.error("Error fetching user:", userError)
           return
         }
+
+        console.log("DEBUG: Found user ID:", userData.id)
 
         // Получаем статистику рефералов
         const { data: referralStats, error: referralError } = await supabase
@@ -61,6 +64,8 @@ export function UserProfile({ user, miners, totalPower }) {
           .eq("status", "active")
           .order("created_at", { ascending: false })
 
+        console.log("DEBUG: Referral stats query result:", referralStats, "Error:", referralError)
+
         if (!referralError && referralStats) {
           setReferrals(referralStats)
           setStats((prev) => ({
@@ -76,6 +81,8 @@ export function UserProfile({ user, miners, totalPower }) {
           .select("amount")
           .eq("user_id", userData.id)
           .eq("type", "referral_reward")
+
+        console.log("DEBUG: Rewards data query result:", rewardsData, "Error:", rewardsError)
 
         if (!rewardsError && rewardsData) {
           const totalRewards = rewardsData.reduce((sum, tx) => sum + tx.amount, 0)
