@@ -7,12 +7,38 @@ import { initTelegram } from "../utils/telegram"
 export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
   const [verificationState, setVerificationState] = useState({
     isVerifying: false,
-    timeLeft: 15000, // 15 секунд
+    timeLeft: 15000,
+    taskStatus: null, // Добавляем отслеживание статуса
   })
+
+  // Функция для проверки статуса задания
+  const checkTaskStatus = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("user_tasks")
+        .select("status")
+        .eq("user_id", user.id)
+        .eq("task_id", task.id)
+        .single()
+
+      if (error) {
+        console.error("Ошибка при проверке статуса:", error)
+        return null
+      }
+
+      console.log("Текущий статус задания:", data?.status)
+      return data?.status
+    } catch (error) {
+      console.error("Ошибка при проверке статуса:", error)
+      return null
+    }
+  }, [user.id, task.id])
 
   // Обработчик выполнения задания
   const handleExecuteTask = useCallback(async () => {
     try {
+      console.log("Начинаем выполнение задания:", task.id)
+
       if (task.is_expired) {
         alert("Время выполнения задания истекло")
         return
@@ -20,6 +46,20 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
 
       if (task.is_completed) {
         alert("Задание уже выполнено")
+        return
+      }
+
+      // Проверяем текущий статус перед началом
+      const currentStatus = await checkTaskStatus()
+      console.log("Статус перед началом:", currentStatus)
+
+      if (currentStatus === "in_progress") {
+        console.log("Задание уже выполняется")
+        setVerificationState({
+          isVerifying: true,
+          timeLeft: 15000,
+          taskStatus: "in_progress",
+        })
         return
       }
 
@@ -35,13 +75,12 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
         return
       }
 
-      // Сохраняем время начала верификации
-      const verificationStartTime = Date.now()
-      localStorage.setItem(`task_verification_${task.id}`, verificationStartTime.toString())
+      console.log("Задание успешно начато")
 
       setVerificationState({
         isVerifying: true,
         timeLeft: 15000,
+        taskStatus: "in_progress",
       })
 
       // Открываем ссылку задания
@@ -57,25 +96,19 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
       console.error("Ошибка при выполнении:", error)
       alert(`Ошибка при выполнении задания: ${error.message}`)
     }
-  }, [user.id, task.id, task.link, task.is_expired, task.is_completed])
+  }, [user.id, task.id, task.link, task.is_expired, task.is_completed, checkTaskStatus])
 
   // Обработчик завершения верификации
   const handleVerificationComplete = useCallback(async () => {
     try {
-      // Проверяем статус задания перед завершением
-      const { data: taskStatus, error: statusError } = await supabase
-        .from("user_tasks")
-        .select("status")
-        .eq("user_id", user.id)
-        .eq("task_id", task.id)
-        .single()
+      console.log("Начинаем завершение верификации")
 
-      if (statusError) {
-        throw statusError
-      }
+      // Проверяем текущий статус
+      const currentStatus = await checkTaskStatus()
+      console.log("Текущий статус при завершении:", currentStatus)
 
-      if (!taskStatus || taskStatus.status !== "in_progress") {
-        throw new Error("Задание не находится в процессе выполнения")
+      if (currentStatus !== "in_progress") {
+        throw new Error("Неверный статус задания: " + currentStatus)
       }
 
       // Завершаем задание
@@ -88,12 +121,12 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
         throw completeError
       }
 
-      // Очищаем сохраненное время верификации
-      localStorage.removeItem(`task_verification_${task.id}`)
+      console.log("Задание успешно завершено")
 
       setVerificationState({
         isVerifying: false,
         timeLeft: 0,
+        taskStatus: "completed",
       })
 
       if (onTaskComplete) {
@@ -103,9 +136,17 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
       alert("Задание успешно выполнено!")
     } catch (error) {
       console.error("Ошибка при завершении верификации:", error)
+
+      // Сбрасываем состояние верификации при ошибке
+      setVerificationState({
+        isVerifying: false,
+        timeLeft: 0,
+        taskStatus: null,
+      })
+
       alert(`Ошибка при завершении верификации: ${error.message}`)
     }
-  }, [user.id, task.id, onTaskComplete])
+  }, [user.id, task.id, onTaskComplete, checkTaskStatus])
 
   // Эффект для обработки таймера
   useEffect(() => {
@@ -118,6 +159,7 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
         }))
       }, 1000)
     } else if (verificationState.timeLeft <= 0 && verificationState.isVerifying) {
+      console.log("Таймер завершен, начинаем верификацию")
       handleVerificationComplete()
     }
 
@@ -125,6 +167,23 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
       if (timer) clearInterval(timer)
     }
   }, [verificationState.isVerifying, verificationState.timeLeft, handleVerificationComplete])
+
+  // При монтировании компонента проверяем статус
+  useEffect(() => {
+    const checkInitialStatus = async () => {
+      const status = await checkTaskStatus()
+      if (status === "in_progress") {
+        console.log("Обнаружено незавершенное задание")
+        setVerificationState({
+          isVerifying: true,
+          timeLeft: 15000,
+          taskStatus: status,
+        })
+      }
+    }
+
+    checkInitialStatus()
+  }, [checkTaskStatus])
 
   // Рендер кнопки в зависимости от состояния
   const renderButton = () => {
@@ -172,30 +231,17 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
       )
     }
 
-    if (task.type === "limited") {
-      return (
-        <button
-          onClick={handleExecuteTask}
-          className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 rounded-lg border border-purple-400/30 transition-all duration-300 shadow-lg shadow-purple-900/20"
-        >
-          <span className="text-white/90 font-medium">Выполнить</span>
-          <div className="flex items-center gap-1">
-            <span className="text-purple-100">{task.reward}</span>
-            <span className="text-purple-100">💎</span>
-          </div>
-        </button>
-      )
-    }
+    const buttonClass =
+      task.type === "limited"
+        ? "w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 rounded-lg border border-purple-400/30 transition-all duration-300 shadow-lg shadow-purple-900/20"
+        : "w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 rounded-lg border border-blue-400/30 transition-all duration-300 shadow-lg shadow-blue-900/20"
 
     return (
-      <button
-        onClick={handleExecuteTask}
-        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 rounded-lg border border-blue-400/30 transition-all duration-300 shadow-lg shadow-blue-900/20"
-      >
+      <button onClick={handleExecuteTask} className={buttonClass}>
         <span className="text-white/90 font-medium">Выполнить</span>
         <div className="flex items-center gap-1">
-          <span className="text-blue-100">{task.reward}</span>
-          <span className="text-blue-100">💎</span>
+          <span className={task.type === "limited" ? "text-purple-100" : "text-blue-100"}>{task.reward}</span>
+          <span className={task.type === "limited" ? "text-purple-100" : "text-blue-100"}>💎</span>
         </div>
       </button>
     )
