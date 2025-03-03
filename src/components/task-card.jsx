@@ -1,60 +1,16 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { Card, Button, Progress } from "antd"
-import { initTelegram } from "../helpers/telegram"
-import { useSupabaseClient } from "@supabase/auth-helpers-react"
+import { useState, useCallback, useEffect } from "react"
+import { supabase } from "../supabase"
+import { initTelegram } from "../utils/telegram"
 
-const TaskCard = ({ task, user, onTaskComplete }) => {
+export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
   const [verificationState, setVerificationState] = useState({
     isVerifying: false,
-    timeLeft: 0,
+    timeLeft: 15000, // 15 секунд
   })
-  const supabase = useSupabaseClient()
 
-  useEffect(() => {
-    let intervalId
-
-    if (verificationState.isVerifying) {
-      // Проверяем, есть ли сохраненное время начала верификации в localStorage
-      const storedStartTime = localStorage.getItem(`task_verification_${task.id}`)
-      if (storedStartTime) {
-        const startTime = Number.parseInt(storedStartTime, 10)
-        const elapsedTime = Date.now() - startTime
-        const timeLeft = Math.max(15000 - elapsedTime, 0)
-
-        setVerificationState((prevState) => ({
-          ...prevState,
-          timeLeft: timeLeft,
-        }))
-
-        intervalId = setInterval(() => {
-          setVerificationState((prevState) => {
-            const newTimeLeft = Math.max(prevState.timeLeft - 1000, 0)
-            return {
-              ...prevState,
-              timeLeft: newTimeLeft,
-            }
-          })
-        }, 1000)
-      } else {
-        // Если время начала не сохранено, останавливаем верификацию
-        setVerificationState({ isVerifying: false, timeLeft: 0 })
-      }
-    }
-
-    return () => clearInterval(intervalId)
-  }, [verificationState.isVerifying, task.id])
-
-  useEffect(() => {
-    if (verificationState.timeLeft <= 0 && verificationState.isVerifying) {
-      setVerificationState({
-        isVerifying: false,
-        timeLeft: 0,
-      })
-    }
-  }, [verificationState.timeLeft, verificationState.isVerifying])
-
+  // Обработчик выполнения задания
   const handleExecuteTask = useCallback(async () => {
     try {
       if (task.is_expired) {
@@ -67,6 +23,7 @@ const TaskCard = ({ task, user, onTaskComplete }) => {
         return
       }
 
+      // Начинаем выполнение задания
       const { error: startError } = await supabase.rpc("start_task", {
         user_id_param: user.id,
         task_id_param: task.id,
@@ -74,7 +31,7 @@ const TaskCard = ({ task, user, onTaskComplete }) => {
 
       if (startError) {
         console.error("Ошибка при начале задания:", startError)
-        alert("Ошибка при начале задания: " + startError.message)
+        alert(`Ошибка при начале задания: ${startError.message}`)
         return
       }
 
@@ -87,6 +44,7 @@ const TaskCard = ({ task, user, onTaskComplete }) => {
         timeLeft: 15000,
       })
 
+      // Открываем ссылку задания
       if (task.link) {
         const tg = initTelegram()
         if (tg) {
@@ -97,21 +55,37 @@ const TaskCard = ({ task, user, onTaskComplete }) => {
       }
     } catch (error) {
       console.error("Ошибка при выполнении:", error)
-      alert("Ошибка при выполнении задания: " + error.message)
+      alert(`Ошибка при выполнении задания: ${error.message}`)
     }
   }, [user.id, task.id, task.link, task.is_expired, task.is_completed])
 
+  // Обработчик завершения верификации
   const handleVerificationComplete = useCallback(async () => {
     try {
+      // Проверяем статус задания перед завершением
+      const { data: taskStatus, error: statusError } = await supabase
+        .from("user_tasks")
+        .select("status")
+        .eq("user_id", user.id)
+        .eq("task_id", task.id)
+        .single()
+
+      if (statusError) {
+        throw statusError
+      }
+
+      if (!taskStatus || taskStatus.status !== "in_progress") {
+        throw new Error("Задание не находится в процессе выполнения")
+      }
+
+      // Завершаем задание
       const { error: completeError } = await supabase.rpc("complete_task", {
         user_id_param: user.id,
         task_id_param: task.id,
       })
 
       if (completeError) {
-        console.error("Ошибка при завершении задания:", completeError)
-        alert("Ошибка при завершении задания: " + completeError.message)
-        return
+        throw completeError
       }
 
       // Очищаем сохраненное время верификации
@@ -125,40 +99,130 @@ const TaskCard = ({ task, user, onTaskComplete }) => {
       if (onTaskComplete) {
         onTaskComplete(task.id)
       }
+
+      alert("Задание успешно выполнено!")
     } catch (error) {
       console.error("Ошибка при завершении верификации:", error)
-      alert("Ошибка при завершении верификации: " + error.message)
+      alert(`Ошибка при завершении верификации: ${error.message}`)
     }
   }, [user.id, task.id, onTaskComplete])
 
+  // Эффект для обработки таймера
+  useEffect(() => {
+    let timer
+    if (verificationState.isVerifying && verificationState.timeLeft > 0) {
+      timer = setInterval(() => {
+        setVerificationState((prev) => ({
+          ...prev,
+          timeLeft: prev.timeLeft - 1000,
+        }))
+      }, 1000)
+    } else if (verificationState.timeLeft <= 0 && verificationState.isVerifying) {
+      handleVerificationComplete()
+    }
+
+    return () => {
+      if (timer) clearInterval(timer)
+    }
+  }, [verificationState.isVerifying, verificationState.timeLeft, handleVerificationComplete])
+
+  // Рендер кнопки в зависимости от состояния
+  const renderButton = () => {
+    if (task.is_completed) {
+      return (
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400 cursor-not-allowed"
+          disabled
+        >
+          <span>Задание выполнено ✓</span>
+          <div className="task-reward opacity-50">
+            <span>{task.reward}</span>
+            <span>💎</span>
+          </div>
+        </button>
+      )
+    }
+
+    if (task.is_expired) {
+      return (
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400 cursor-not-allowed"
+          disabled
+        >
+          <span>Задание недоступно</span>
+          <div className="task-reward opacity-50">
+            <span>{task.reward}</span>
+            <span>💎</span>
+          </div>
+        </button>
+      )
+    }
+
+    if (verificationState.isVerifying) {
+      return (
+        <button
+          className="w-full flex items-center justify-center px-4 py-2.5 bg-gray-800/90 rounded-lg border border-gray-700/50"
+          disabled
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+            <span>Проверка... {Math.ceil(verificationState.timeLeft / 1000)}с</span>
+          </div>
+        </button>
+      )
+    }
+
+    if (task.type === "limited") {
+      return (
+        <button
+          onClick={handleExecuteTask}
+          className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 rounded-lg border border-purple-400/30 transition-all duration-300 shadow-lg shadow-purple-900/20"
+        >
+          <span className="text-white/90 font-medium">Выполнить</span>
+          <div className="flex items-center gap-1">
+            <span className="text-purple-100">{task.reward}</span>
+            <span className="text-purple-100">💎</span>
+          </div>
+        </button>
+      )
+    }
+
+    return (
+      <button
+        onClick={handleExecuteTask}
+        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 rounded-lg border border-blue-400/30 transition-all duration-300 shadow-lg shadow-blue-900/20"
+      >
+        <span className="text-white/90 font-medium">Выполнить</span>
+        <div className="flex items-center gap-1">
+          <span className="text-blue-100">{task.reward}</span>
+          <span className="text-blue-100">💎</span>
+        </div>
+      </button>
+    )
+  }
+
   return (
-    <Card
-      title={task.title}
-      extra={
-        <>
-          {verificationState.isVerifying && (
-            <Progress type="circle" percent={(verificationState.timeLeft / 15000) * 100} width={50} />
-          )}
-          {!task.is_completed && !verificationState.isVerifying && (
-            <Button type="primary" onClick={handleExecuteTask} disabled={task.is_expired}>
-              Выполнить
-            </Button>
-          )}
-          {verificationState.isVerifying && (
-            <Button type="primary" onClick={handleVerificationComplete}>
-              Подтвердить выполнение
-            </Button>
-          )}
-        </>
-      }
+    <div
+      className={`
+        relative overflow-hidden rounded-xl mb-1
+        ${
+          task.type === "limited"
+            ? "bg-gradient-to-br from-purple-900/80 via-purple-800/80 to-purple-900/80 border border-purple-500/20"
+            : "bg-gradient-to-br from-blue-900/80 via-blue-800/80 to-blue-900/80 border border-blue-500/20"
+        }
+        ${task.is_completed || task.is_expired ? "opacity-60" : "hover:scale-[1.01]"}
+        transform transition-all duration-300 backdrop-blur-sm
+        shadow-lg ${task.type === "limited" ? "shadow-purple-900/20" : "shadow-blue-900/20"}
+      `}
     >
-      <p>{task.description}</p>
-      <p>Reward: {task.reward}</p>
-      {task.is_expired && <p>Expired</p>}
-      {task.is_completed && <p>Completed</p>}
-    </Card>
+      <div className="p-3">
+        <div className="mb-2">
+          <h3 className="text-lg font-semibold text-white/90">{task.title}</h3>
+          <p className="text-sm text-gray-400">{task.description}</p>
+        </div>
+        {renderButton()}
+      </div>
+    </div>
   )
 }
-
-export default TaskCard
 
