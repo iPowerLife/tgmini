@@ -256,12 +256,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         rewardClaimed: task.reward_claimed,
       })
 
-      // Проверяем, что requiredReferrals определено
-      if (!requiredReferrals) {
-        console.error("Missing required_referrals for task:", task)
-        return null
-      }
-
+      // Убираем проверку на существование requiredReferrals
       if (task.reward_claimed) {
         return (
           <button
@@ -424,12 +419,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     const currentReferrals = Number.parseInt(user.referral_count) || 0
     const requiredReferrals = task.required_referrals
 
-    // Проверяем, что requiredReferrals определено и больше 0
-    if (!requiredReferrals) {
-      console.error("Missing required_referrals for task:", task)
-      return null
-    }
-
+    // Убираем проверку, которая блокирует рендеринг
     console.log("Referral progress:", {
       taskTitle: task.title,
       current: currentReferrals,
