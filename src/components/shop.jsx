@@ -2,86 +2,55 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
+import { Skeleton } from "./skeleton"
+
+function ShopItemSkeleton() {
+  return (
+    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+      <Skeleton className="h-6 w-3/4 mb-4" />
+      <div className="space-y-2 mb-4">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
+      </div>
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <Skeleton className="h-4" />
+        <Skeleton className="h-4" />
+      </div>
+      <Skeleton className="h-10 w-full" />
+    </div>
+  )
+}
 
 export function Shop({ user, onPurchase }) {
   const [categories, setCategories] = useState([])
   const [models, setModels] = useState([])
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
 
   useEffect(() => {
     const loadShopData = async () => {
-      if (!user?.id) {
-        console.log("No user data available")
-        return
-      }
-
       try {
-        console.log("Loading shop data for user:", user.id)
-        setLoading(true)
-        setError(null)
+        const { data: categoriesData } = await supabase.from("miner_categories").select("*").order("id")
 
-        // Загружаем категории
-        const { data: categoriesData, error: categoriesError } = await supabase
-          .from("miner_categories")
-          .select("*")
-          .order("id")
+        const { data: modelsData } = await supabase.from("miner_models").select("*").order("category_id, price")
 
-        if (categoriesError) {
-          console.error("Error loading categories:", categoriesError)
-          throw categoriesError
-        }
-
-        // Загружаем модели
-        const { data: modelsData, error: modelsError } = await supabase
-          .from("miner_models")
-          .select("*")
-          .order("category_id, price")
-
-        if (modelsError) {
-          console.error("Error loading models:", modelsError)
-          throw modelsError
-        }
-
-        console.log("Loaded categories:", categoriesData)
-        console.log("Loaded models:", modelsData)
-
-        setCategories(categoriesData)
-        setModels(modelsData)
-        if (categoriesData.length > 0) {
+        setCategories(categoriesData || [])
+        setModels(modelsData || [])
+        if (categoriesData?.length > 0) {
           setSelectedCategory(categoriesData[0].id)
         }
-      } catch (err) {
-        console.error("Error loading shop data:", err)
-        setError("Ошибка загрузки данных магазина")
+      } catch (error) {
+        console.error("Error loading shop data:", error)
       } finally {
         setLoading(false)
       }
     }
 
     loadShopData()
-  }, [user?.id])
-
-  if (!user) {
-    return <div className="section-container">Загрузка...</div>
-  }
-
-  if (loading) {
-    return <div className="section-container">Загрузка магазина...</div>
-  }
-
-  if (error) {
-    return <div className="section-container error">{error}</div>
-  }
-
-  if (!categories.length || !models.length) {
-    return <div className="section-container">Товары в магазине отсутствуют</div>
-  }
+  }, [])
 
   const handlePurchase = async (modelId) => {
     try {
-      setLoading(true)
       const { data, error } = await supabase.rpc("purchase_miner", {
         user_id_param: user.id,
         model_id_param: modelId,
@@ -92,49 +61,60 @@ export function Shop({ user, onPurchase }) {
 
       if (data.success) {
         onPurchase(data.new_balance)
-        alert("Майнер успешно куплен!")
-      } else {
-        alert(data.error || "Ошибка при покупке")
       }
     } catch (error) {
       console.error("Error purchasing miner:", error)
-      alert("Ошибка при покупке майнера")
-    } finally {
-      setLoading(false)
     }
   }
 
   return (
     <div className="shop-container">
       <div className="categories">
-        {categories.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => setSelectedCategory(category.id)}
-            className={`category-btn ${selectedCategory === category.id ? "active" : ""}`}
-          >
-            {category.display_name}
-          </button>
-        ))}
+        {loading ? (
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-24" />
+          </div>
+        ) : (
+          categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className={`category-btn ${selectedCategory === category.id ? "active" : ""}`}
+            >
+              {category.display_name}
+            </button>
+          ))
+        )}
       </div>
 
       <div className="models-grid">
-        {models
-          .filter((model) => model.category_id === selectedCategory)
-          .map((model) => (
-            <div key={model.id} className="model-card">
-              <h3>{model.display_name}</h3>
-              <p>{model.description}</p>
-              <div className="stats">
-                <div>Мощность: {model.mining_power}</div>
-                <div>Энергия: {model.energy_consumption}</div>
+        {loading ? (
+          <>
+            <ShopItemSkeleton />
+            <ShopItemSkeleton />
+            <ShopItemSkeleton />
+            <ShopItemSkeleton />
+          </>
+        ) : (
+          models
+            .filter((model) => model.category_id === selectedCategory)
+            .map((model) => (
+              <div key={model.id} className="model-card">
+                <h3>{model.display_name}</h3>
+                <p>{model.description}</p>
+                <div className="stats">
+                  <div>Мощность: {model.mining_power}</div>
+                  <div>Энергия: {model.energy_consumption}</div>
+                </div>
+                <div className="price">💎 {model.price}</div>
+                <button onClick={() => handlePurchase(model.id)} disabled={user.balance < model.price}>
+                  Купить
+                </button>
               </div>
-              <div className="price">💎 {model.price}</div>
-              <button onClick={() => handlePurchase(model.id)} disabled={loading || user.balance < model.price}>
-                {loading ? "Покупка..." : "Купить"}
-              </button>
-            </div>
-          ))}
+            ))
+        )}
       </div>
     </div>
   )
