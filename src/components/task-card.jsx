@@ -66,7 +66,17 @@ const TimeRemaining = memo(({ endDate }) => {
 
   return (
     <motion.div
-      className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-purple-900/30 border border-purple-500/30 backdrop-blur-sm"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        marginBottom: "8px",
+        padding: "6px 10px",
+        borderRadius: "8px",
+        background: "rgba(147, 51, 234, 0.1)",
+        border: "1px solid rgba(147, 51, 234, 0.2)",
+        backdropFilter: "blur(8px)",
+      }}
       initial={{ opacity: 0.5 }}
       animate={{
         opacity: [0.5, 1, 0.5],
@@ -74,8 +84,10 @@ const TimeRemaining = memo(({ endDate }) => {
         transition: { duration: 3, repeat: Number.POSITIVE_INFINITY },
       }}
     >
-      <span className="text-xs font-medium text-purple-200/90">ОСТАЛОСЬ:</span>
-      <span className="text-sm font-mono font-medium text-purple-100">{timeLeft}</span>
+      <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "rgba(243, 232, 255, 0.9)" }}>ОСТАЛОСЬ:</span>
+      <span style={{ fontSize: "0.875rem", fontFamily: "monospace", fontWeight: 500, color: "#f3e8ff" }}>
+        {timeLeft}
+      </span>
     </motion.div>
   )
 })
@@ -205,17 +217,34 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   }, [task.id, task.user_status, handleVerificationComplete])
 
   const renderButton = () => {
+    const baseButtonStyle = {
+      width: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "8px 12px",
+      borderRadius: "8px",
+      fontSize: "0.875rem",
+      fontWeight: 500,
+      transition: "all 0.2s ease",
+      border: "none",
+      cursor: "pointer",
+      outline: "none",
+    }
+
     if (task.is_completed) {
       return (
         <button
-          className="w-full flex items-center justify-between px-3 py-2 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400 cursor-not-allowed"
+          style={{
+            ...baseButtonStyle,
+            background: "rgba(31, 41, 55, 0.8)",
+            border: "1px solid rgba(75, 85, 99, 0.5)",
+            color: "rgba(156, 163, 175, 1)",
+            cursor: "not-allowed",
+          }}
           disabled
         >
           <span>Задание выполнено ✓</span>
-          <div className="task-reward opacity-50">
-            <span>{task.reward}</span>
-            <span>💎</span>
-          </div>
         </button>
       )
     }
@@ -223,14 +252,16 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     if (task.is_expired) {
       return (
         <button
-          className="w-full flex items-center justify-between px-3 py-2 bg-gray-800/80 rounded-lg border border-gray-700/50 text-gray-400 cursor-not-allowed"
+          style={{
+            ...baseButtonStyle,
+            background: "rgba(31, 41, 55, 0.8)",
+            border: "1px solid rgba(75, 85, 99, 0.5)",
+            color: "rgba(156, 163, 175, 1)",
+            cursor: "not-allowed",
+          }}
           disabled
         >
           <span>Задание недоступно</span>
-          <div className="task-reward opacity-50">
-            <span>{task.reward}</span>
-            <span>💎</span>
-          </div>
         </button>
       )
     }
@@ -238,10 +269,14 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     if (verificationState.isVerifying) {
       return (
         <button
-          className="w-full flex items-center justify-center px-3 py-2 bg-gray-800/90 rounded-lg border border-gray-700/50"
+          style={{
+            ...baseButtonStyle,
+            background: "rgba(31, 41, 55, 0.9)",
+            border: "1px solid rgba(75, 85, 99, 0.5)",
+          }}
           disabled
         >
-          <div className="flex items-center gap-2">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
             <VerificationTimer timeLeft={verificationState.timeLeft} onComplete={handleVerificationComplete} />
           </div>
@@ -253,64 +288,114 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       return (
         <button
           onClick={handleClaimReward}
-          className="w-full flex items-center justify-between px-3 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 rounded-lg border border-green-400/30 transition-all duration-300 shadow-lg shadow-green-900/20"
+          style={{
+            ...baseButtonStyle,
+            background: "linear-gradient(to right, #059669, #10b981)",
+            border: "1px solid rgba(16, 185, 129, 0.3)",
+            color: "white",
+            boxShadow: "0 2px 4px rgba(16, 185, 129, 0.1)",
+          }}
         >
-          <span className="text-white/90 font-medium">Забрать награду</span>
-          <div className="flex items-center gap-1">
-            <span className="text-green-100">{task.reward}</span>
-            <span className="text-green-100">💎</span>
-          </div>
+          <span>Забрать награду</span>
         </button>
       )
     }
 
-    const buttonClass =
+    const buttonStyle =
       task.type === "limited"
-        ? "w-full flex items-center justify-between px-3 py-2 bg-gradient-to-r from-purple-600 via-purple-500 to-purple-600 hover:from-purple-500 hover:via-purple-400 hover:to-purple-500 rounded-lg border border-purple-400/30 transition-all duration-300 shadow-lg shadow-purple-900/20 group"
-        : "w-full flex items-center justify-between px-3 py-2 bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-500 hover:via-blue-400 hover:to-blue-500 rounded-lg border border-blue-400/30 transition-all duration-300 shadow-lg shadow-blue-900/20 group"
+        ? {
+            ...baseButtonStyle,
+            background: "linear-gradient(to right, #9333ea, #a855f7)",
+            border: "1px solid rgba(168, 85, 247, 0.3)",
+            color: "white",
+            boxShadow: "0 2px 4px rgba(147, 51, 234, 0.1)",
+          }
+        : {
+            ...baseButtonStyle,
+            background: "linear-gradient(to right, #2563eb, #3b82f6)",
+            border: "1px solid rgba(59, 130, 246, 0.3)",
+            color: "white",
+            boxShadow: "0 2px 4px rgba(37, 99, 235, 0.1)",
+          }
 
     return (
-      <button onClick={handleExecuteTask} className={buttonClass}>
-        <span className="text-white/90 font-medium group-hover:text-white transition-colors">Выполнить</span>
-        <div className="flex items-center gap-1">
-          <span className={task.type === "limited" ? "text-purple-100" : "text-blue-100"}>{task.reward}</span>
-          <span className={task.type === "limited" ? "text-purple-100" : "text-blue-100"}>💎</span>
-        </div>
+      <button
+        onClick={handleExecuteTask}
+        style={buttonStyle}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "translateY(-1px)"
+          e.currentTarget.style.boxShadow =
+            task.type === "limited" ? "0 4px 6px rgba(147, 51, 234, 0.2)" : "0 4px 6px rgba(37, 99, 235, 0.2)"
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "translateY(0)"
+          e.currentTarget.style.boxShadow =
+            task.type === "limited" ? "0 2px 4px rgba(147, 51, 234, 0.1)" : "0 2px 4px rgba(37, 99, 235, 0.1)"
+        }}
+      >
+        <span>Выполнить</span>
       </button>
     )
   }
 
   return (
     <div
-      className={`
-        relative overflow-hidden rounded-xl p-2 mb-1
-        ${
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: "12px",
+        marginBottom: "8px",
+        padding: "8px",
+        background:
           task.type === "limited"
-            ? "bg-gradient-to-br from-purple-900/80 via-purple-800/80 to-purple-900/80 border border-purple-500/20"
-            : "bg-gradient-to-br from-blue-900/80 via-blue-800/80 to-blue-900/80 border border-blue-500/20"
-        }
-        ${task.is_completed || task.is_expired ? "opacity-60" : "hover:scale-[1.01]"}
-        transform transition-all duration-300 backdrop-blur-sm
-        shadow-lg ${task.type === "limited" ? "shadow-purple-900/20" : "shadow-blue-900/20"}
-      `}
+            ? "linear-gradient(135deg, rgba(147, 51, 234, 0.08) 0%, rgba(126, 34, 206, 0.08) 50%, rgba(147, 51, 234, 0.08) 100%)"
+            : "linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(29, 78, 216, 0.08) 50%, rgba(37, 99, 235, 0.08) 100%)",
+        border: task.type === "limited" ? "1px solid rgba(147, 51, 234, 0.1)" : "1px solid rgba(37, 99, 235, 0.1)",
+        opacity: task.is_completed || task.is_expired ? 0.6 : 1,
+        transition: "all 0.3s ease",
+        backdropFilter: "blur(8px)",
+        boxShadow:
+          task.type === "limited" ? "0 4px 6px -1px rgba(147, 51, 234, 0.1)" : "0 4px 6px -1px rgba(37, 99, 235, 0.1)",
+      }}
     >
       {task.type === "limited" && !task.is_completed && (
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-purple-500/5 animate-pulse-slow" />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(90deg, rgba(147, 51, 234, 0.03) 0%, transparent 50%, rgba(147, 51, 234, 0.03) 100%)",
+            animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+          }}
+        />
       )}
-      <div className="p-2" style={{ marginBottom: "0.375rem" }}>
-        <div className="mb-2">
+      <div style={{ padding: "4px" }}>
+        <div style={{ marginBottom: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h3
-            className={`
-              text-lg font-semibold
-              ${
+            style={{
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              margin: 0,
+              color:
                 task.type === "limited" && !task.is_completed && !task.is_expired
-                  ? "bg-gradient-to-r from-purple-200 via-purple-100 to-purple-200 bg-clip-text text-transparent"
-                  : "text-white/90"
-              }
-            `}
+                  ? "#f3e8ff"
+                  : "rgba(255, 255, 255, 0.9)",
+            }}
           >
             {task.title}
           </h3>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              fontSize: "0.875rem",
+              color: task.type === "limited" ? "#f3e8ff" : "#dbeafe",
+            }}
+          >
+            <span>{task.reward}</span>
+            <span>💎</span>
+          </div>
         </div>
 
         {task.type === "limited" && !task.is_completed && <TimeRemaining endDate={task.end_date} />}
