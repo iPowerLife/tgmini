@@ -19,8 +19,6 @@ export function UserProfile({ user, miners, totalPower }) {
     async function getTelegramUser() {
       if (typeof window !== "undefined" && window.Telegram?.WebApp) {
         const tgUser = window.Telegram.WebApp.initDataUnsafe?.user
-        console.log("DEBUG: Telegram user from WebApp:", tgUser)
-        console.log("DEBUG: Telegram user ID:", tgUser?.id)
         setTelegramUser(tgUser)
       }
     }
@@ -31,8 +29,6 @@ export function UserProfile({ user, miners, totalPower }) {
   useEffect(() => {
     async function fetchReferralStats() {
       if (telegramUser?.id) {
-        console.log("DEBUG: Fetching referral stats for telegram_id:", telegramUser.id)
-        console.log("DEBUG: telegramUser object:", telegramUser)
         // Получаем id пользователя по его telegram_id
         const { data: userData, error: userError } = await supabase
           .from("users")
@@ -77,7 +73,6 @@ export function UserProfile({ user, miners, totalPower }) {
   if (!user) return null
 
   const referralLink = `https://t.me/trteeeeeee_bot?start=${telegramUser?.id || ""}`
-  console.log("DEBUG: Generated referral link:", referralLink)
 
   return (
     <div className="min-h-screen pb-20">
