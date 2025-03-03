@@ -68,7 +68,12 @@ export function UserProfile({ user, miners, totalPower }) {
 
   if (!user) return null
 
-  const referralLink = `https://t.me/trteeeeeee_bot?start=${telegramUser?.id || ""}`
+  // Функция для создания реферальной ссылки
+  const getReferralLink = () => {
+    return `https://t.me/trteeeeeee_bot?start=${telegramUser?.id || ""}`
+  }
+
+  const referralLink = getReferralLink()
   console.log("DEBUG: Generated referral link:", referralLink)
 
   return (
@@ -142,15 +147,37 @@ export function UserProfile({ user, miners, totalPower }) {
               onClick={async () => {
                 const link = `https://t.me/trteeeeeee_bot?start=${telegramUser?.id || ""}`
                 try {
-                  if (window.Telegram?.WebApp?.openTelegramLink) {
-                    window.Telegram.WebApp.openTelegramLink(link)
+                  if (window.Telegram?.WebApp) {
+                    // Используем правильный метод для шаринга
+                    if (window.Telegram.WebApp.showPopup) {
+                      window.Telegram.WebApp.showPopup(
+                        {
+                          title: "Реферальная ссылка",
+                          message: "Скопируйте ссылку и отправьте друзьям",
+                          buttons: [{ type: "close" }, { type: "default", text: "Копировать", id: "copy" }],
+                        },
+                        (buttonId) => {
+                          if (buttonId === "copy") {
+                            navigator.clipboard.writeText(link)
+                          }
+                        },
+                      )
+                    } else if (window.Telegram.WebApp.openLink) {
+                      // Альтернативный вариант - открыть ссылку в браузере
+                      window.Telegram.WebApp.openLink(link)
+                    } else {
+                      // Если ничего не работает, просто копируем в буфер обмена
+                      await navigator.clipboard.writeText(link)
+                      alert("Ссылка скопирована в буфер обмена")
+                    }
                   } else {
                     await navigator.clipboard.writeText(link)
-                    // Можно добавить уведомление о копировании
+                    alert("Ссылка скопирована в буфер обмена")
                   }
                 } catch (error) {
                   console.error("Error sharing link:", error)
                   await navigator.clipboard.writeText(link)
+                  alert("Ссылка скопирована в буфер обмена")
                 }
               }}
               className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white/90 transition-colors rounded-lg bg-blue-600/90 hover:bg-blue-700/90"
@@ -180,7 +207,7 @@ export function UserProfile({ user, miners, totalPower }) {
           <div className="space-y-2">
             <div className="text-xs text-gray-400">Реферальная ссылка</div>
             <div className="p-2 text-sm bg-gray-900/50 rounded border border-gray-700/30 text-gray-300 font-mono break-all">
-              https://t.me/trteeeeeee_bot?start={telegramUser?.id || ""}
+              {referralLink}
             </div>
             <p className="text-xs text-gray-500 mt-2">
               Приглашайте друзей и получайте награды за каждого активного реферала
