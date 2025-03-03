@@ -68,13 +68,10 @@ export function UserProfile({ user, miners, totalPower }) {
 
   if (!user) return null
 
-  // Функция для создания реферальной ссылки
   const getReferralLink = () => {
-    return `https://t.me/trteeeeeee_bot?start=${telegramUser?.id || ""}`
+    return `https://t.me/trteeeeeee_bot?startapp=${telegramUser?.id || ""}`
   }
-
-  const referralLink = getReferralLink()
-  console.log("DEBUG: Generated referral link:", referralLink)
+  console.log("DEBUG: Generated referral link:", getReferralLink())
 
   return (
     <div className="min-h-screen pb-20">
@@ -145,7 +142,7 @@ export function UserProfile({ user, miners, totalPower }) {
             <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Реферальная система</h3>
             <button
               onClick={async () => {
-                const link = `https://t.me/trteeeeeee_bot?start=${telegramUser?.id || ""}`
+                const link = getReferralLink()
                 try {
                   if (window.Telegram?.WebApp) {
                     // Используем правильный метод для шаринга
@@ -207,7 +204,7 @@ export function UserProfile({ user, miners, totalPower }) {
           <div className="space-y-2">
             <div className="text-xs text-gray-400">Реферальная ссылка</div>
             <div className="p-2 text-sm bg-gray-900/50 rounded border border-gray-700/30 text-gray-300 font-mono break-all">
-              {referralLink}
+              {getReferralLink()}
             </div>
             <p className="text-xs text-gray-500 mt-2">
               Приглашайте друзей и получайте награды за каждого активного реферала
