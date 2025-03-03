@@ -338,6 +338,54 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     )
   }
 
+  // Добавляем функцию для отображения прогресса реферального задания
+  const renderReferralProgress = () => {
+    if (task.type !== "referral") return null
+
+    // Получаем текущее количество рефералов
+    const currentReferrals = user.referral_count || 0
+    const requiredReferrals = task.required_referrals
+    const progress = Math.min((currentReferrals / requiredReferrals) * 100, 100)
+
+    return (
+      <div style={{ marginTop: "8px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "4px",
+            fontSize: "0.75rem",
+            color: "rgba(255, 255, 255, 0.6)",
+          }}
+        >
+          <span>
+            {currentReferrals} из {requiredReferrals}
+          </span>
+          <span>{Math.round(progress)}%</span>
+        </div>
+        <div
+          style={{
+            width: "100%",
+            height: "4px",
+            backgroundColor: "rgba(59, 130, 246, 0.1)",
+            borderRadius: "2px",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              width: `${progress}%`,
+              height: "100%",
+              backgroundColor: "#3b82f6",
+              transition: "width 0.3s ease",
+            }}
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       style={{
@@ -347,15 +395,20 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         marginBottom: "8px",
         padding: "8px",
         background:
-          task.type === "limited"
-            ? "linear-gradient(135deg, rgba(147, 51, 234, 0.08) 0%, rgba(126, 34, 206, 0.08) 50%, rgba(147, 51, 234, 0.08) 100%)"
-            : "linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(29, 78, 216, 0.08) 50%, rgba(37, 99, 235, 0.08) 100%)",
-        border: task.type === "limited" ? "1px solid rgba(147, 51, 234, 0.1)" : "1px solid rgba(37, 99, 235, 0.1)",
+          task.type === "referral"
+            ? "linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(37, 99, 235, 0.08) 100%)"
+            : task.type === "limited"
+              ? "linear-gradient(135deg, rgba(147, 51, 234, 0.08) 0%, rgba(126, 34, 206, 0.08) 100%)"
+              : "linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(29, 78, 216, 0.08) 100%)",
+        border:
+          task.type === "referral"
+            ? "1px solid rgba(59, 130, 246, 0.1)"
+            : task.type === "limited"
+              ? "1px solid rgba(147, 51, 234, 0.1)"
+              : "1px solid rgba(37, 99, 235, 0.1)",
         opacity: task.is_completed || task.is_expired ? 0.6 : 1,
         transition: "all 0.3s ease",
         backdropFilter: "blur(8px)",
-        boxShadow:
-          task.type === "limited" ? "0 4px 6px -1px rgba(147, 51, 234, 0.1)" : "0 4px 6px -1px rgba(37, 99, 235, 0.1)",
       }}
     >
       {task.type === "limited" && !task.is_completed && (
@@ -402,6 +455,9 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
         {renderButton()}
       </div>
+
+      {/* Добавляем прогресс бар для реферальных заданий */}
+      {renderReferralProgress()}
     </div>
   )
 })
