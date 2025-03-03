@@ -4,7 +4,6 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import { useState, useEffect } from "react"
 import { AnimatePresence } from "framer-motion"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
-import { supabase } from "./utils/supabaseClient"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
@@ -12,7 +11,7 @@ import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
 import { PageTransition } from "./components/page-transition"
 
-function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, tasksData, statsData }) {
+function AppContent({ user, balance, handleBalanceUpdate }) {
   const location = useLocation()
 
   useEffect(() => {
@@ -46,7 +45,7 @@ function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, 
                         </div>
                       </div>
                     </div>
-                    <MinersList user={user} miners={minersData} />
+                    <MinersList user={user} />
                   </>
                 </PageTransition>
               }
@@ -55,7 +54,7 @@ function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, 
               path="/shop"
               element={
                 <PageTransition>
-                  <Shop user={user} onPurchase={handleBalanceUpdate} shopData={shopData} />
+                  <Shop user={user} onPurchase={handleBalanceUpdate} />
                 </PageTransition>
               }
             />
@@ -63,7 +62,7 @@ function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, 
               path="/tasks"
               element={
                 <PageTransition>
-                  <TasksSection user={user} onBalanceUpdate={handleBalanceUpdate} tasks={tasksData} />
+                  <TasksSection user={user} onBalanceUpdate={handleBalanceUpdate} />
                 </PageTransition>
               }
             />
@@ -79,7 +78,7 @@ function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, 
               path="/profile"
               element={
                 <PageTransition>
-                  <UserProfile user={user} stats={statsData} miners={minersData} />
+                  <UserProfile user={user} />
                 </PageTransition>
               }
             />
@@ -97,10 +96,6 @@ function App() {
   const [balance, setBalance] = useState(0)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [shopData, setShopData] = useState({ categories: [], models: [] })
-  const [minersData, setMinersData] = useState([])
-  const [tasksData, setTasksData] = useState([])
-  const [statsData, setStatsData] = useState(null)
 
   useEffect(() => {
     let mounted = true
@@ -127,28 +122,6 @@ function App() {
           throw new Error("Не удалось создать/обновить пользователя в базе")
         }
 
-        // Загружаем все данные параллельно
-        const [{ data: categories }, { data: models }, { data: miners }, { data: tasks }, { data: stats }] =
-          await Promise.all([
-            supabase.from("miner_categories").select("*").order("id"),
-            supabase.from("miner_models").select("*").order("category_id, price"),
-            supabase
-              .from("user_miners")
-              .select(`
-            *,
-            model:miner_models (
-              id,
-              name,
-              display_name,
-              mining_power,
-              energy_consumption
-            )
-          `)
-              .eq("user_id", dbUser.id),
-            supabase.rpc("get_available_tasks", { user_id_param: dbUser.id }),
-            supabase.from("mining_stats").select("*").eq("user_id", dbUser.id).single(),
-          ])
-
         if (mounted) {
           setUser({
             ...dbUser,
@@ -158,10 +131,6 @@ function App() {
               : userData.first_name || "Неизвестный пользователь",
           })
           setBalance(dbUser.balance)
-          setShopData({ categories: categories || [], models: models || [] })
-          setMinersData(miners || [])
-          setTasksData(tasks?.tasks || [])
-          setStatsData(stats || { total_mined: 0, mining_count: 0 })
         }
       } catch (err) {
         console.error("Ошибка инициализации:", err)
@@ -217,15 +186,7 @@ function App() {
 
   return (
     <Router>
-      <AppContent
-        user={user}
-        balance={balance}
-        handleBalanceUpdate={handleBalanceUpdate}
-        shopData={shopData}
-        minersData={minersData}
-        tasksData={tasksData}
-        statsData={statsData}
-      />
+      <AppContent user={user} balance={balance} handleBalanceUpdate={handleBalanceUpdate} />
     </Router>
   )
 }
