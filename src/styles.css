@@ -57,6 +57,7 @@ body {
   z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
+  will-change: transform;
 }
 
 /* Фоновые элементы */
@@ -167,6 +168,8 @@ body {
 
 /* Общие стили секций */
 .section-container {
+  animation: fadeIn 0.3s ease-out;
+  will-change: transform, opacity;
   background: rgba(30, 41, 59, 0.7);
   backdrop-filter: blur(10px);
   border-radius: 20px;
@@ -174,15 +177,11 @@ body {
   margin-bottom: 20px;
   border: 1px solid rgba(99, 102, 241, 0.1);
   min-height: calc(100% - 80px);
-  animation: fadeIn 0.3s ease-out forwards;
-  will-change: transform, opacity;
 }
 
 /* Состояния загрузки и ошибок */
 .loading {
-  text-align: center;
-  padding: 20px;
-  color: #94a3b8;
+  display: none;
 }
 
 .error {
@@ -2191,9 +2190,6 @@ body {
   overscroll-behavior-y: none;
   touch-action: manipulation;
 }
-
-
-
 
 /* Добавьте эти стили в конец файла */
 
