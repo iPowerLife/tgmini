@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
 
 interface Task {
   id: number
@@ -39,57 +40,48 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, user, onClaim }) => {
     }
   }
 
-  const renderClaimButton = () => {
-    // Для реферальных заданий
+  const renderReferralProgress = () => {
     if (task.type === "referral") {
       const referralCount = user?.referral_count || 0
       const requiredReferrals = task.required_referrals || Number.parseInt(task.title.match(/\d+/)?.[0] || "0")
+      const progress = Math.min((referralCount / requiredReferrals) * 100, 100)
 
-      console.log("Referral task debug:", {
-        taskId: task.id,
-        referralCount,
-        requiredReferrals,
-        isCompleted: referralCount >= requiredReferrals,
-        isClaimed: task.is_claimed,
-      })
-
-      if (referralCount >= requiredReferrals && !task.is_claimed) {
-        return (
-          <Button onClick={handleClaim} disabled={claiming} variant="contained" className="w-full mt-4">
-            {claiming ? "Получение..." : "Получить награду"}
-          </Button>
-        )
-      }
-    }
-
-    // Для других типов заданий
-    if (task.is_completed && !task.is_claimed) {
       return (
-        <Button onClick={handleClaim} disabled={claiming} variant="contained" className="w-full mt-4">
-          {claiming ? "Получение..." : "Получить награду"}
-        </Button>
+        <div className="mt-4">
+          <div className="text-sm text-gray-500 mb-2">
+            {referralCount} из {requiredReferrals}
+          </div>
+          <Progress value={progress} />
+        </div>
       )
     }
-
     return null
   }
 
-  console.log("Task card render:", {
-    taskId: task.id,
-    type: task.type,
-    title: task.title,
-    userReferralCount: user?.referral_count,
-    taskRequiredReferrals: task.required_referrals,
-    isCompleted: task.is_completed,
-    isClaimed: task.is_claimed,
-  })
+  const shouldShowClaimButton = () => {
+    if (task.type === "referral") {
+      const referralCount = user?.referral_count || 0
+      const requiredReferrals = task.required_referrals || Number.parseInt(task.title.match(/\d+/)?.[0] || "0")
+      return referralCount >= requiredReferrals && !task.is_claimed
+    }
+    return task.is_completed && !task.is_claimed
+  }
 
   return (
     <div className="border rounded-md p-4">
-      <h3 className="text-lg font-semibold">{task.title}</h3>
-      <p className="text-sm text-gray-500">{task.description}</p>
-      <p className="mt-2">Reward: {task.reward}</p>
-      {renderClaimButton()}
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="text-lg font-semibold">{task.title}</h3>
+          <p className="text-sm text-gray-500">{task.description || "В процессе..."}</p>
+        </div>
+        <div className="text-lg font-semibold text-blue-500">{task.reward} 💎</div>
+      </div>
+      {renderReferralProgress()}
+      {shouldShowClaimButton() && (
+        <Button onClick={handleClaim} disabled={claiming} className="w-full mt-4">
+          {claiming ? "Получение..." : "Получить награду"}
+        </Button>
+      )}
     </div>
   )
 }
