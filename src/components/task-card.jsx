@@ -232,6 +232,59 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       outline: "none",
     }
 
+    // Для реферальных заданий показываем особое состояние
+    if (task.type === "referral") {
+      const currentReferrals = user.referral_count || 0
+      const requiredReferrals = task.required_referrals || 0
+
+      if (currentReferrals >= requiredReferrals && !task.reward_claimed) {
+        return (
+          <button
+            onClick={handleClaimReward}
+            style={{
+              ...baseButtonStyle,
+              background: "linear-gradient(to right, #059669, #10b981)",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
+              color: "white",
+              boxShadow: "0 2px 4px rgba(16, 185, 129, 0.1)",
+            }}
+          >
+            <span>Забрать награду</span>
+          </button>
+        )
+      } else if (task.is_completed) {
+        return (
+          <button
+            style={{
+              ...baseButtonStyle,
+              background: "rgba(31, 41, 55, 0.8)",
+              border: "1px solid rgba(75, 85, 99, 0.5)",
+              color: "rgba(156, 163, 175, 1)",
+              cursor: "not-allowed",
+            }}
+            disabled
+          >
+            <span>Задание выполнено ✓</span>
+          </button>
+        )
+      } else {
+        return (
+          <button
+            style={{
+              ...baseButtonStyle,
+              background: "rgba(31, 41, 55, 0.8)",
+              border: "1px solid rgba(75, 85, 99, 0.5)",
+              color: "rgba(156, 163, 175, 1)",
+            }}
+            disabled
+          >
+            <span>В процессе...</span>
+          </button>
+        )
+      }
+    }
+
+    // Остальной код для не-реферальных заданий остается без изменений
     if (task.is_completed) {
       return (
         <button
@@ -338,39 +391,13 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     )
   }
 
-  // Добавляем функцию для отображения прогресса реферального задания
   const renderReferralProgress = () => {
     if (task.type !== "referral") return null
 
-    // Отладочная информация
-    console.log("Task data:", {
-      type: task.type,
-      requiredReferrals: task.required_referrals,
-      title: task.title,
-    })
-
-    console.log("User data:", {
-      referralCount: user.referral_count,
-      userId: user.id,
-    })
-
-    // Проверяем, что task.required_referrals существует и больше 0
-    if (!task.required_referrals || task.required_referrals <= 0) {
-      console.warn("Required referrals is not set for task:", task.id)
-      return null
-    }
-
-    const currentReferrals = Number.parseInt(user.referral_count) || 0
-    const requiredReferrals = Number.parseInt(task.required_referrals)
-
-    // Отладочная информация после преобразования
-    console.log("Processed values:", {
-      current: currentReferrals,
-      required: requiredReferrals,
-    })
-
-    const progress = Math.min((currentReferrals / requiredReferrals) * 100, 100)
-    const displayProgress = Math.round(progress)
+    const currentReferrals = user.referral_count || 0
+    const requiredReferrals = task.required_referrals || 0
+    const progress = requiredReferrals > 0 ? Math.min((currentReferrals / requiredReferrals) * 100, 100) : 0
+    const displayProgress = isNaN(progress) ? 0 : Math.round(progress)
 
     return (
       <div style={{ marginTop: "8px" }}>
