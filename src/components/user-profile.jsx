@@ -9,6 +9,9 @@ export function UserProfile({ user, miners, totalPower }) {
     mining_power: totalPower,
   }
 
+  // Форматируем имя пользователя
+  const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ")
+
   return (
     <div className="min-h-screen pb-20">
       <div className="px-4 py-6">
@@ -19,20 +22,26 @@ export function UserProfile({ user, miners, totalPower }) {
               {user.photo_url ? (
                 <img
                   src={user.photo_url || "/placeholder.svg"}
-                  alt={user.display_name}
+                  alt={fullName}
                   className="w-16 h-16 rounded-xl object-cover border-2 border-gray-700/50"
                 />
               ) : (
                 <div className="w-16 h-16 rounded-xl bg-gray-700/50 flex items-center justify-center border-2 border-gray-700/50">
-                  <span className="text-2xl font-bold text-gray-400">{user.display_name[0]}</span>
+                  <span className="text-2xl font-bold text-gray-400">{fullName[0]}</span>
                 </div>
               )}
               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-gray-800" />
             </div>
 
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-white mb-1">{user.display_name}</h2>
-              <p className="text-sm text-gray-400">ID: {user.id?.slice(-8)}</p>
+              {/* Имя пользователя */}
+              <h2 className="text-xl font-bold text-white mb-1">{fullName}</h2>
+
+              {/* Username если есть */}
+              {user.username && <p className="text-sm text-blue-400 mb-1">@{user.username}</p>}
+
+              {/* ID пользователя */}
+              <p className="text-sm text-gray-400 font-mono">ID: {user.id}</p>
             </div>
           </div>
         </div>
