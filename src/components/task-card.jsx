@@ -342,20 +342,35 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   const renderReferralProgress = () => {
     if (task.type !== "referral") return null
 
-    // Добавляем console.log для отладки
-    console.log("Task:", task)
-    console.log("User:", user)
+    // Отладочная информация
+    console.log("Task data:", {
+      type: task.type,
+      requiredReferrals: task.required_referrals,
+      title: task.title,
+    })
 
-    // Получаем текущее количество рефералов
-    const currentReferrals = user.referral_count || 0
-    const requiredReferrals = task.required_referrals || 0
+    console.log("User data:", {
+      referralCount: user.referral_count,
+      userId: user.id,
+    })
 
-    // Добавляем console.log для проверки значений
-    console.log("Current referrals:", currentReferrals)
-    console.log("Required referrals:", requiredReferrals)
+    // Проверяем, что task.required_referrals существует и больше 0
+    if (!task.required_referrals || task.required_referrals <= 0) {
+      console.warn("Required referrals is not set for task:", task.id)
+      return null
+    }
 
-    const progress = requiredReferrals > 0 ? Math.min((currentReferrals / requiredReferrals) * 100, 100) : 0
-    const displayProgress = isNaN(progress) ? 0 : Math.round(progress)
+    const currentReferrals = Number.parseInt(user.referral_count) || 0
+    const requiredReferrals = Number.parseInt(task.required_referrals)
+
+    // Отладочная информация после преобразования
+    console.log("Processed values:", {
+      current: currentReferrals,
+      required: requiredReferrals,
+    })
+
+    const progress = Math.min((currentReferrals / requiredReferrals) * 100, 100)
+    const displayProgress = Math.round(progress)
 
     return (
       <div style={{ marginTop: "8px" }}>
