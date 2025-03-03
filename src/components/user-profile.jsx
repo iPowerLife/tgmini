@@ -32,7 +32,7 @@ export function UserProfile({ user, miners, totalPower }) {
 
             <div className="flex-1">
               <h2 className="text-xl font-bold text-white mb-1">{user.first_name}</h2>
-              <p className="text-sm text-gray-400 font-mono">ID: {user.id}</p>
+              <p className="text-sm text-gray-400 font-mono">ID: {telegramUser.id}</p>
             </div>
           </div>
         </div>
