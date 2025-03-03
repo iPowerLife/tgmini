@@ -394,39 +394,14 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   const renderReferralProgress = () => {
     if (task.type !== "referral") return null
 
-    // Добавляем подробную отладочную информацию
-    console.log("Task details:", {
-      id: task.id,
-      title: task.title,
-      type: task.type,
-      required_referrals: task.required_referrals,
-      raw_task: task,
-    })
-
-    console.log("User details:", {
-      id: user.id,
-      referral_count: user.referral_count,
-      raw_user: user,
-    })
-
-    // Проверяем и конвертируем значения
-    const currentReferrals = Number.parseInt(user.referral_count) || 0
-
-    // Важно: используем значение из задания, а не хардкод
-    const requiredReferrals = Number.parseInt(task.required_referrals)
-
-    // Проверяем значение required_referrals
-    if (!requiredReferrals || isNaN(requiredReferrals)) {
-      console.error("Invalid required_referrals for task:", task.title)
-      return null
+    // Получаем требуемое количество рефералов из названия задания
+    let requiredReferrals = 5 // значение по умолчанию
+    const match = task.title.match(/Приведи (\d+) друзей/)
+    if (match) {
+      requiredReferrals = Number.parseInt(match[1])
     }
 
-    console.log("Processed values:", {
-      currentReferrals,
-      requiredReferrals,
-      progress: (currentReferrals / requiredReferrals) * 100,
-    })
-
+    const currentReferrals = user.referral_count || 0
     const progress = Math.min((currentReferrals / requiredReferrals) * 100, 100)
     const displayProgress = Math.round(progress)
 
