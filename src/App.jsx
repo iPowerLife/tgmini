@@ -1,6 +1,6 @@
 "use client"
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
@@ -8,7 +8,54 @@ import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
 import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
-import { ScrollToTop } from "./components/scroll-to-top"
+
+function AppContent({ user, balance, handleBalanceUpdate }) {
+  const location = useLocation()
+
+  useEffect(() => {
+    const appContainer = document.querySelector(".app-container")
+    if (appContainer) {
+      appContainer.scrollTop = 0
+    }
+  }, [location])
+
+  return (
+    <div className="app-wrapper">
+      <div className="background-gradient" />
+      <div className="decorative-circle-1" />
+      <div className="decorative-circle-2" />
+
+      <div className="app-container pb-14">
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <>
+                <div className="balance-card">
+                  <div className="balance-background" />
+                  <div className="balance-content">
+                    <div className="balance-label">Баланс</div>
+                    <div className="balance-amount">
+                      <span>{balance.toFixed(2)}</span>
+                      <span className="balance-currency">💎</span>
+                    </div>
+                  </div>
+                </div>
+                <MinersList user={user} />
+              </>
+            }
+          />
+          <Route path="/shop" element={<Shop user={user} onPurchase={handleBalanceUpdate} />} />
+          <Route path="/tasks" element={<TasksSection user={user} onBalanceUpdate={handleBalanceUpdate} />} />
+          <Route path="/rating" element={<div className="section-container">Раздел рейтинга в разработке</div>} />
+          <Route path="/profile" element={<UserProfile user={user} />} />
+        </Routes>
+      </div>
+
+      <BottomMenu />
+    </div>
+  )
+}
 
 function App() {
   const [user, setUser] = useState(null)
@@ -105,41 +152,7 @@ function App() {
 
   return (
     <Router>
-      <ScrollToTop />
-      <div className="app-wrapper">
-        <div className="background-gradient" />
-        <div className="decorative-circle-1" />
-        <div className="decorative-circle-2" />
-
-        <div className="app-container pb-14">
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <>
-                  <div className="balance-card">
-                    <div className="balance-background" />
-                    <div className="balance-content">
-                      <div className="balance-label">Баланс</div>
-                      <div className="balance-amount">
-                        <span>{balance.toFixed(2)}</span>
-                        <span className="balance-currency">💎</span>
-                      </div>
-                    </div>
-                  </div>
-                  <MinersList user={user} />
-                </>
-              }
-            />
-            <Route path="/shop" element={<Shop user={user} onPurchase={handleBalanceUpdate} />} />
-            <Route path="/tasks" element={<TasksSection user={user} onBalanceUpdate={handleBalanceUpdate} />} />
-            <Route path="/rating" element={<div className="section-container">Раздел рейтинга в разработке</div>} />
-            <Route path="/profile" element={<UserProfile user={user} />} />
-          </Routes>
-        </div>
-
-        <BottomMenu />
-      </div>
+      <AppContent user={user} balance={balance} handleBalanceUpdate={handleBalanceUpdate} />
     </Router>
   )
 }
