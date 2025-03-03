@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { supabase } from "../supabase"
+import { useState } from "react"
 import { motion } from "framer-motion"
 import { Clock, CheckCircle2, Trophy, ListTodo, Sparkles } from "lucide-react"
 import { TaskCard } from "./task-card"
@@ -33,55 +32,8 @@ const TabButton = ({ active, onClick, children, icon: Icon, disabled }) => (
   </motion.button>
 )
 
-export function TasksSection({ user, onBalanceUpdate }) {
-  const [tasks, setTasks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+export function TasksSection({ user, onBalanceUpdate, tasks, onTaskComplete }) {
   const [activeTab, setActiveTab] = useState("all")
-
-  // Загрузка заданий
-  const loadTasks = useCallback(async () => {
-    if (!user?.id) return
-
-    try {
-      setLoading(true)
-      setError(null)
-
-      const { data, error } = await supabase.rpc("get_available_tasks", {
-        user_id_param: user.id,
-      })
-
-      if (error) throw error
-
-      setTasks(data?.tasks || [])
-    } catch (err) {
-      console.error("Error loading tasks:", err)
-      setError("Ошибка загрузки заданий: " + err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [user?.id])
-
-  // Загрузка заданий при монтировании компонента
-  useEffect(() => {
-    loadTasks()
-  }, [loadTasks])
-
-  // Обработчик завершения задания
-  const handleTaskComplete = useCallback(
-    (taskId) => {
-      loadTasks()
-    },
-    [loadTasks],
-  )
-
-  if (loading && !tasks.length) {
-    return <div className="tasks-loading">Загрузка заданий...</div>
-  }
-
-  if (error) {
-    return <div className="tasks-error">{error}</div>
-  }
 
   const filteredTasks = tasks
     .filter((task) => {
@@ -110,36 +62,16 @@ export function TasksSection({ user, onBalanceUpdate }) {
       <div className="px-3">
         <div className="flex items-center justify-between p-1.5 mb-2 bg-gray-800/50 rounded-lg backdrop-blur-sm border border-gray-700/50">
           <motion.div className="flex gap-0.5" initial={false}>
-            <TabButton
-              active={activeTab === "all"}
-              onClick={() => setActiveTab("all")}
-              icon={ListTodo}
-              disabled={loading}
-            >
+            <TabButton active={activeTab === "all"} onClick={() => setActiveTab("all")} icon={ListTodo}>
               <span className="text-xs">Все</span>
             </TabButton>
-            <TabButton
-              active={activeTab === "basic"}
-              onClick={() => setActiveTab("basic")}
-              icon={CheckCircle2}
-              disabled={loading}
-            >
+            <TabButton active={activeTab === "basic"} onClick={() => setActiveTab("basic")} icon={CheckCircle2}>
               <span className="text-xs">Базовые</span>
             </TabButton>
-            <TabButton
-              active={activeTab === "limited"}
-              onClick={() => setActiveTab("limited")}
-              icon={Clock}
-              disabled={loading}
-            >
+            <TabButton active={activeTab === "limited"} onClick={() => setActiveTab("limited")} icon={Clock}>
               <span className="text-xs">Лимит</span>
             </TabButton>
-            <TabButton
-              active={activeTab === "achievement"}
-              onClick={() => setActiveTab("achievement")}
-              icon={Trophy}
-              disabled={loading}
-            >
+            <TabButton active={activeTab === "achievement"} onClick={() => setActiveTab("achievement")} icon={Trophy}>
               <span className="text-xs">Достижения</span>
             </TabButton>
           </motion.div>
@@ -152,11 +84,11 @@ export function TasksSection({ user, onBalanceUpdate }) {
               task={task}
               user={user}
               onBalanceUpdate={onBalanceUpdate}
-              onTaskComplete={handleTaskComplete}
+              onTaskComplete={onTaskComplete}
             />
           ))}
 
-          {!loading && filteredTasks.length === 0 && (
+          {filteredTasks.length === 0 && (
             <div className="flex flex-col items-center justify-center p-4 text-gray-400">
               <Sparkles className="w-6 h-6 mb-2 text-gray-500" />
               <p className="text-xs">В этой категории пока нет доступных заданий</p>

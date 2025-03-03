@@ -1,7 +1,7 @@
 "use client"
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { AnimatePresence } from "framer-motion"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
@@ -10,6 +10,7 @@ import { Shop } from "./components/shop"
 import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
 import { motion } from "framer-motion"
+import { supabase } from "./supabase"
 
 // Компонент для анимации страниц
 const PageTransition = ({ children }) => (
@@ -24,16 +25,18 @@ const PageTransition = ({ children }) => (
 )
 
 // Компонент для содержимого приложения
-function AppContent({ user, balance, handleBalanceUpdate }) {
+function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, tasksData, handleTaskComplete }) {
   const location = useLocation()
 
   // Сброс скролла при изменении маршрута
   useEffect(() => {
-    const appContainer = document.querySelector(".app-container")
-    if (appContainer) {
-      appContainer.scrollTop = 0
-    }
+    window.scrollTo(0, 0)
   }, [location])
+
+  // Мемоизируем отфильтрованные данные
+  const { categories, models } = useMemo(() => shopData, [shopData])
+  const { miners, totalPower } = useMemo(() => minersData, [minersData])
+  const { tasks } = useMemo(() => tasksData, [tasksData])
 
   return (
     <div className="app-wrapper">
@@ -58,7 +61,7 @@ function AppContent({ user, balance, handleBalanceUpdate }) {
                       </div>
                     </div>
                   </div>
-                  <MinersList user={user} />
+                  <MinersList user={user} miners={miners} totalPower={totalPower} />
                 </PageTransition>
               }
             />
@@ -66,7 +69,7 @@ function AppContent({ user, balance, handleBalanceUpdate }) {
               path="/shop"
               element={
                 <PageTransition>
-                  <Shop user={user} onPurchase={handleBalanceUpdate} />
+                  <Shop user={user} onPurchase={handleBalanceUpdate} categories={categories} models={models} />
                 </PageTransition>
               }
             />
@@ -74,7 +77,12 @@ function AppContent({ user, balance, handleBalanceUpdate }) {
               path="/tasks"
               element={
                 <PageTransition>
-                  <TasksSection user={user} onBalanceUpdate={handleBalanceUpdate} />
+                  <TasksSection
+                    user={user}
+                    onBalanceUpdate={handleBalanceUpdate}
+                    tasks={tasks}
+                    onTaskComplete={handleTaskComplete}
+                  />
                 </PageTransition>
               }
             />
@@ -90,7 +98,7 @@ function AppContent({ user, balance, handleBalanceUpdate }) {
               path="/profile"
               element={
                 <PageTransition>
-                  <UserProfile user={user} />
+                  <UserProfile user={user} miners={miners} totalPower={totalPower} />
                 </PageTransition>
               }
             />
@@ -108,6 +116,79 @@ function App() {
   const [balance, setBalance] = useState(0)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  // Состояния для данных
+  const [shopData, setShopData] = useState({ categories: [], models: [] })
+  const [minersData, setMinersData] = useState({ miners: [], totalPower: 0 })
+  const [tasksData, setTasksData] = useState({ tasks: [] })
+
+  // Загрузка данных магазина
+  const loadShopData = useCallback(async () => {
+    if (!user?.id) return
+
+    try {
+      const [categoriesResponse, modelsResponse] = await Promise.all([
+        supabase.from("miner_categories").select("*").order("id"),
+        supabase.from("miner_models").select("*").order("category_id, price"),
+      ])
+
+      if (categoriesResponse.error) throw categoriesResponse.error
+      if (modelsResponse.error) throw modelsResponse.error
+
+      setShopData({
+        categories: categoriesResponse.data,
+        models: modelsResponse.data,
+      })
+    } catch (error) {
+      console.error("Error loading shop data:", error)
+    }
+  }, [user?.id])
+
+  // Загрузка данных майнеров
+  const loadMinersData = useCallback(async () => {
+    if (!user?.id) return
+
+    try {
+      const { data, error } = await supabase
+        .from("user_miners")
+        .select(`
+          *,
+          model:miner_models (
+            id,
+            name,
+            display_name,
+            mining_power,
+            energy_consumption
+          )
+        `)
+        .eq("user_id", user.id)
+        .order("purchased_at")
+
+      if (error) throw error
+
+      const totalPower = data.reduce((sum, miner) => sum + miner.model.mining_power * miner.quantity, 0)
+      setMinersData({ miners: data, totalPower })
+    } catch (error) {
+      console.error("Error loading miners data:", error)
+    }
+  }, [user?.id])
+
+  // Загрузка данных заданий
+  const loadTasksData = useCallback(async () => {
+    if (!user?.id) return
+
+    try {
+      const { data, error } = await supabase.rpc("get_available_tasks", {
+        user_id_param: user.id,
+      })
+
+      if (error) throw error
+
+      setTasksData({ tasks: data?.tasks || [] })
+    } catch (error) {
+      console.error("Error loading tasks data:", error)
+    }
+  }, [user?.id])
 
   // Инициализация приложения
   useEffect(() => {
@@ -164,11 +245,31 @@ function App() {
     }
   }, [])
 
+  // Загрузка всех данных при изменении пользователя
+  useEffect(() => {
+    if (user?.id) {
+      Promise.all([loadShopData(), loadMinersData(), loadTasksData()])
+    }
+  }, [user?.id, loadShopData, loadMinersData, loadTasksData])
+
   // Обработчик обновления баланса
-  const handleBalanceUpdate = useCallback((newBalance) => {
-    setBalance(newBalance)
-    setUser((prev) => ({ ...prev, balance: newBalance }))
-  }, [])
+  const handleBalanceUpdate = useCallback(
+    (newBalance) => {
+      setBalance(newBalance)
+      setUser((prev) => ({ ...prev, balance: newBalance }))
+      // Перезагружаем данные майнеров после обновления баланса
+      loadMinersData()
+    },
+    [loadMinersData],
+  )
+
+  // Обработчик завершения задания
+  const handleTaskComplete = useCallback(
+    (taskId) => {
+      loadTasksData()
+    },
+    [loadTasksData],
+  )
 
   if (loading) {
     return (
@@ -200,7 +301,15 @@ function App() {
 
   return (
     <Router>
-      <AppContent user={user} balance={balance} handleBalanceUpdate={handleBalanceUpdate} />
+      <AppContent
+        user={user}
+        balance={balance}
+        handleBalanceUpdate={handleBalanceUpdate}
+        shopData={shopData}
+        minersData={minersData}
+        tasksData={tasksData}
+        handleTaskComplete={handleTaskComplete}
+      />
     </Router>
   )
 }

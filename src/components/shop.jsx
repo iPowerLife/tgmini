@@ -1,69 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
 import { supabase } from "../supabase"
 
-export function Shop({ user, onPurchase }) {
-  const [categories, setCategories] = useState([])
-  const [models, setModels] = useState([])
-  const [selectedCategory, setSelectedCategory] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  // Загрузка данных магазина
-  const loadShopData = useCallback(async () => {
-    if (!user?.id) {
-      console.log("No user data available")
-      return
-    }
-
-    try {
-      console.log("Loading shop data for user:", user.id)
-      setLoading(true)
-      setError(null)
-
-      // Загружаем категории
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from("miner_categories")
-        .select("*")
-        .order("id")
-
-      if (categoriesError) {
-        console.error("Error loading categories:", categoriesError)
-        throw categoriesError
-      }
-
-      // Загружаем модели
-      const { data: modelsData, error: modelsError } = await supabase
-        .from("miner_models")
-        .select("*")
-        .order("category_id, price")
-
-      if (modelsError) {
-        console.error("Error loading models:", modelsError)
-        throw modelsError
-      }
-
-      console.log("Loaded categories:", categoriesData)
-      console.log("Loaded models:", modelsData)
-
-      setCategories(categoriesData)
-      setModels(modelsData)
-      if (categoriesData.length > 0 && !selectedCategory) {
-        setSelectedCategory(categoriesData[0].id)
-      }
-    } catch (err) {
-      console.error("Error loading shop data:", err)
-      setError("Ошибка загрузки данных магазина")
-    } finally {
-      setLoading(false)
-    }
-  }, [user?.id, selectedCategory])
-
-  // Загрузка данных при монтировании компонента
-  useEffect(() => {
-    loadShopData()
-  }, [loadShopData])
+export function Shop({ user, onPurchase, categories, models }) {
+  const [selectedCategory, setSelectedCategory] = useState(categories[0]?.id || null)
+  const [loading, setLoading] = useState(false)
 
   // Обработчик покупки
   const handlePurchase = async (modelId) => {
@@ -80,8 +22,6 @@ export function Shop({ user, onPurchase }) {
       if (data.success) {
         onPurchase(data.new_balance)
         alert("Майнер успешно куплен!")
-        // Перезагружаем данные магазина
-        await loadShopData()
       } else {
         alert(data.error || "Ошибка при покупке")
       }
@@ -91,22 +31,6 @@ export function Shop({ user, onPurchase }) {
     } finally {
       setLoading(false)
     }
-  }
-
-  if (!user) {
-    return <div className="section-container">Загрузка...</div>
-  }
-
-  if (loading && !models.length) {
-    return <div className="section-container">Загрузка магазина...</div>
-  }
-
-  if (error) {
-    return <div className="section-container error">{error}</div>
-  }
-
-  if (!categories.length || !models.length) {
-    return <div className="section-container">Товары в магазине отсутствуют</div>
   }
 
   const filteredModels = models.filter((model) => model.category_id === selectedCategory)
