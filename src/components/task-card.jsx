@@ -1,45 +1,131 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, memo, useEffect } from "react"
+import { motion } from "framer-motion"
 import { supabase } from "../supabase"
 import { initTelegram } from "../utils/telegram"
 
-export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
+const VerificationTimer = memo(({ timeLeft, onComplete }) => {
+  const [remainingTime, setRemainingTime] = useState(timeLeft)
+
+  useEffect(() => {
+    if (remainingTime <= 0) {
+      onComplete()
+      return
+    }
+
+    const timer = setInterval(() => {
+      setRemainingTime((prev) => {
+        if (prev <= 1000) {
+          clearInterval(timer)
+          onComplete()
+          return 0
+        }
+        return prev - 1000
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [remainingTime, onComplete])
+
+  // Обновляем оставшееся время при изменении входного параметра
+  useEffect(() => {
+    setRemainingTime(timeLeft)
+  }, [timeLeft])
+
+  return <div className="text-center text-gray-400">Проверка ({Math.ceil(remainingTime / 1000)}с)</div>
+})
+
+const TimeRemaining = memo(({ endDate }) => {
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const now = new Date()
+    const end = new Date(endDate)
+    const diff = end - now
+    return diff > 0 ? formatTimeRemaining(diff) : null
+  })
+
+  useState(() => {
+    if (!timeLeft) return
+
+    const timer = setInterval(() => {
+      const now = new Date()
+      const end = new Date(endDate)
+      const diff = end - now
+
+      if (diff <= 0) {
+        setTimeLeft(null)
+        clearInterval(timer)
+      } else {
+        setTimeLeft(formatTimeRemaining(diff))
+      }
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [endDate])
+
+  if (!timeLeft) return null
+
+  return (
+    <motion.div
+      className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-purple-900/30 border border-purple-500/30 backdrop-blur-sm"
+      initial={{ opacity: 0.5 }}
+      animate={{
+        opacity: [0.5, 1, 0.5],
+        scale: [1, 1.02, 1],
+        transition: { duration: 3, repeat: Number.POSITIVE_INFINITY },
+      }}
+    >
+      <span className="text-xs font-medium text-purple-200/90">ОСТАЛОСЬ:</span>
+      <span className="text-sm font-mono font-medium text-purple-100">{timeLeft}</span>
+    </motion.div>
+  )
+})
+
+function formatTimeRemaining(diff) {
+  const hours = Math.floor(diff / 3600000)
+  const minutes = Math.floor((diff % 3600000) / 60000)
+  const seconds = Math.floor((diff % 60000) / 1000)
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+  }
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`
+}
+
+export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) => {
   const [verificationState, setVerificationState] = useState({
     isVerifying: false,
     timeLeft: 15000,
-    canClaim: false,
   })
 
-  // Обработчик выполнения задания
   const handleExecuteTask = useCallback(async () => {
     try {
       if (task.is_expired) {
+        alert("Время выполнения задания истекло")
         return
       }
 
       if (task.is_completed) {
+        alert("Задание уже выполнено")
         return
       }
 
-      // Начинаем выполнение задания
       const { error: startError } = await supabase.rpc("start_task", {
         user_id_param: user.id,
         task_id_param: task.id,
       })
 
-      if (startError) {
-        console.error("Ошибка при начале задания:", startError)
-        return
-      }
+      if (startError) throw startError
+
+      // Сохраняем время начала верификации
+      const verificationStartTime = Date.now()
+      localStorage.setItem(`task_verification_${task.id}`, verificationStartTime.toString())
 
       setVerificationState({
         isVerifying: true,
         timeLeft: 15000,
-        canClaim: false,
       })
 
-      // Открываем ссылку задания
       if (task.link) {
         const tg = initTelegram()
         if (tg) {
@@ -49,40 +135,69 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
         }
       }
     } catch (error) {
-      console.error(error)
+      console.error("Ошибка при выполнении:", error)
+      alert("Ошибка при выполнении задания: " + error.message)
     }
   }, [user.id, task.id, task.link, task.is_expired, task.is_completed])
 
-  // Обработчик получения награды
-  const handleClaimReward = useCallback(async () => {
+  const handleVerificationComplete = useCallback(async () => {
     try {
-      // Завершаем задание
       const { error: completeError } = await supabase.rpc("complete_task", {
         user_id_param: user.id,
         task_id_param: task.id,
       })
 
-      if (completeError) {
-        throw completeError
-      }
+      if (completeError) throw completeError
 
-      // Получаем награду
+      // Очищаем сохраненное время верификации
+      localStorage.removeItem(`task_verification_${task.id}`)
+
+      setVerificationState({
+        isVerifying: false,
+        timeLeft: 0,
+      })
+
+      if (onTaskComplete) {
+        onTaskComplete(task.id)
+      }
+    } catch (error) {
+      console.error("Ошибка при завершении верификации:", error)
+      alert("Ошибка при завершении верификации: " + error.message)
+    }
+  }, [user.id, task.id, onTaskComplete])
+
+  useEffect(() => {
+    // Проверяем сохраненное время начала верификации
+    const savedStartTime = localStorage.getItem(`task_verification_${task.id}`)
+
+    if (savedStartTime && task.user_status === "in_progress") {
+      const startTime = Number.parseInt(savedStartTime)
+      const now = Date.now()
+      const elapsed = now - startTime
+      const remainingTime = Math.max(15000 - elapsed, 0)
+
+      if (remainingTime > 0) {
+        setVerificationState({
+          isVerifying: true,
+          timeLeft: remainingTime,
+        })
+      } else {
+        // Если время вышло, автоматически завершаем верификацию
+        handleVerificationComplete()
+      }
+    }
+  }, [task.id, task.user_status, handleVerificationComplete])
+
+  const handleClaimReward = useCallback(async () => {
+    try {
       const { data: rewardData, error: rewardError } = await supabase.rpc("claim_task_reward", {
         user_id_param: user.id,
         task_id_param: task.id,
       })
 
-      if (rewardError) {
-        throw rewardError
-      }
+      if (rewardError) throw rewardError
 
-      setVerificationState({
-        isVerifying: false,
-        timeLeft: 0,
-        canClaim: false,
-      })
-
-      if (onBalanceUpdate && rewardData?.new_balance) {
+      if (rewardData && onBalanceUpdate) {
         onBalanceUpdate(rewardData.new_balance)
       }
 
@@ -90,34 +205,11 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
         onTaskComplete(task.id)
       }
     } catch (error) {
-      console.error(error)
+      console.error("Ошибка при получении награды:", error)
+      alert("Ошибка при получении награды: " + error.message)
     }
   }, [user.id, task.id, onBalanceUpdate, onTaskComplete])
 
-  // Эффект для обработки таймера
-  useEffect(() => {
-    let timer
-    if (verificationState.isVerifying && verificationState.timeLeft > 0) {
-      timer = setInterval(() => {
-        setVerificationState((prev) => ({
-          ...prev,
-          timeLeft: prev.timeLeft - 1000,
-        }))
-      }, 1000)
-    } else if (verificationState.timeLeft <= 0 && verificationState.isVerifying) {
-      setVerificationState((prev) => ({
-        ...prev,
-        isVerifying: false,
-        canClaim: true,
-      }))
-    }
-
-    return () => {
-      if (timer) clearInterval(timer)
-    }
-  }, [verificationState.isVerifying, verificationState.timeLeft])
-
-  // Рендер кнопки в зависимости от состояния
   const renderButton = () => {
     if (task.is_completed) {
       return (
@@ -157,19 +249,19 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
         >
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
-            <span>Проверка... {Math.ceil(verificationState.timeLeft / 1000)}с</span>
+            <VerificationTimer timeLeft={verificationState.timeLeft} onComplete={handleVerificationComplete} />
           </div>
         </button>
       )
     }
 
-    if (verificationState.canClaim) {
+    if (task.user_status === "completed" && !task.reward_claimed) {
       return (
         <button
           onClick={handleClaimReward}
           className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 rounded-lg border border-green-400/30 transition-all duration-300 shadow-lg shadow-green-900/20"
         >
-          <span className="text-white/90 font-medium">Получить награду</span>
+          <span className="text-white/90 font-medium">Забрать награду</span>
           <div className="flex items-center gap-1">
             <span className="text-green-100">{task.reward}</span>
             <span className="text-green-100">💎</span>
@@ -178,17 +270,30 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
       )
     }
 
-    const buttonClass =
-      task.type === "limited"
-        ? "w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 rounded-lg border border-purple-400/30 transition-all duration-300 shadow-lg shadow-purple-900/20"
-        : "w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 rounded-lg border border-blue-400/30 transition-all duration-300 shadow-lg shadow-blue-900/20"
+    if (task.type === "limited") {
+      return (
+        <button
+          onClick={handleExecuteTask}
+          className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600 via-purple-500 to-purple-600 hover:from-purple-500 hover:via-purple-400 hover:to-purple-500 rounded-lg border border-purple-400/30 transition-all duration-300 shadow-lg shadow-purple-900/20 group"
+        >
+          <span className="text-white/90 font-medium group-hover:text-white transition-colors">Выполнить</span>
+          <div className="flex items-center gap-1">
+            <span className="text-purple-100">{task.reward}</span>
+            <span className="text-purple-100">💎</span>
+          </div>
+        </button>
+      )
+    }
 
     return (
-      <button onClick={handleExecuteTask} className={buttonClass}>
-        <span className="text-white/90 font-medium">Выполнить</span>
+      <button
+        onClick={handleExecuteTask}
+        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-500 hover:via-blue-400 hover:to-blue-500 rounded-lg border border-blue-400/30 transition-all duration-300 shadow-lg shadow-blue-900/20 group"
+      >
+        <span className="text-white/90 font-medium group-hover:text-white transition-colors">Выполнить</span>
         <div className="flex items-center gap-1">
-          <span className={task.type === "limited" ? "text-purple-100" : "text-blue-100"}>{task.reward}</span>
-          <span className={task.type === "limited" ? "text-purple-100" : "text-blue-100"}>💎</span>
+          <span className="text-blue-100">{task.reward}</span>
+          <span className="text-blue-100">💎</span>
         </div>
       </button>
     )
@@ -197,25 +302,41 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
   return (
     <div
       className={`
-        relative overflow-hidden rounded-xl mb-1
-        ${
-          task.type === "limited"
-            ? "bg-gradient-to-br from-purple-900/80 via-purple-800/80 to-purple-900/80 border border-purple-500/20"
-            : "bg-gradient-to-br from-blue-900/80 via-blue-800/80 to-blue-900/80 border border-blue-500/20"
-        }
-        ${task.is_completed || task.is_expired ? "opacity-60" : "hover:scale-[1.01]"}
-        transform transition-all duration-300 backdrop-blur-sm
-        shadow-lg ${task.type === "limited" ? "shadow-purple-900/20" : "shadow-blue-900/20"}
-      `}
+  relative overflow-hidden rounded-xl mb-1
+  ${
+    task.type === "limited"
+      ? "bg-gradient-to-br from-purple-900/80 via-purple-800/80 to-purple-900/80 border border-purple-500/20"
+      : "bg-gradient-to-br from-blue-900/80 via-blue-800/80 to-blue-900/80 border border-blue-500/20"
+  }
+  ${task.is_completed || task.is_expired ? "opacity-60" : "hover:scale-[1.01]"}
+  transform transition-all duration-300 backdrop-blur-sm
+  shadow-lg ${task.type === "limited" ? "shadow-purple-900/20" : "shadow-blue-900/20"}
+`}
     >
+      {task.type === "limited" && !task.is_completed && (
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-purple-500/5 animate-pulse-slow" />
+      )}
       <div className="p-3">
         <div className="mb-2">
-          <h3 className="text-lg font-semibold text-white/90">{task.title}</h3>
-          <p className="text-sm text-gray-400">{task.description}</p>
+          <h3
+            className={`
+text-lg font-semibold
+${
+  task.type === "limited" && !task.is_completed && !task.is_expired
+    ? "bg-gradient-to-r from-purple-200 via-purple-100 to-purple-200 bg-clip-text text-transparent"
+    : "text-white/90"
+}
+`}
+          >
+            {task.title}
+          </h3>
         </div>
+
+        {task.type === "limited" && !task.is_completed && <TimeRemaining endDate={task.end_date} />}
+
         {renderButton()}
       </div>
     </div>
   )
-}
+})
 
