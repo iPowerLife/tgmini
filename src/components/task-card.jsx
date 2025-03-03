@@ -395,7 +395,18 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     if (task.type !== "referral") return null
 
     const currentReferrals = user.referral_count || 0
-    const requiredReferrals = task.required_referrals
+    let requiredReferrals = task.required_referrals
+
+    // Если required_referrals не определено, пробуем получить из заголовка
+    if (!requiredReferrals && task.title) {
+      const match = task.title.match(/Приведи (\d+) друзей/)
+      if (match) {
+        requiredReferrals = Number.parseInt(match[1])
+      }
+    }
+
+    // Если все еще нет значения, используем 0
+    requiredReferrals = requiredReferrals || 0
 
     const progress = Math.min((currentReferrals / requiredReferrals) * 100, 100)
     const displayProgress = Math.round(progress)
