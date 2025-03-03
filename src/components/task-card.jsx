@@ -112,6 +112,8 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       title: task.title,
       required_referrals: task.required_referrals,
       user_referrals: user.referral_count,
+      is_completed: task.is_completed,
+      reward_claimed: task.reward_claimed,
     })
   }, [task, user])
   const [verificationState, setVerificationState] = useState({
@@ -244,10 +246,17 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
     // Для реферальных заданий показываем особое состояние
     if (task.type === "referral") {
-      const currentReferrals = user.referral_count || 0
-      const requiredReferrals = task.required_referrals
+      const currentReferrals = Number.parseInt(user.referral_count) || 0
+      const requiredReferrals = Number.parseInt(task.required_referrals) || 0
 
-      if (task.is_completed) {
+      console.log("Referral task button:", {
+        currentReferrals,
+        requiredReferrals,
+        isCompleted: currentReferrals >= requiredReferrals,
+        rewardClaimed: task.reward_claimed,
+      })
+
+      if (currentReferrals >= requiredReferrals && task.reward_claimed) {
         return (
           <button
             style={{
@@ -262,7 +271,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
             <span>Задание выполнено ✓</span>
           </button>
         )
-      } else if (currentReferrals >= requiredReferrals && !task.reward_claimed) {
+      } else if (currentReferrals >= requiredReferrals) {
         return (
           <button
             onClick={handleClaimReward}
@@ -404,14 +413,20 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   const renderReferralProgress = () => {
     if (task.type !== "referral") return null
 
-    const currentReferrals = user.referral_count || 0
-    const requiredReferrals = task.required_referrals
+    const currentReferrals = Number.parseInt(user.referral_count) || 0
+    const requiredReferrals = Number.parseInt(task.required_referrals) || 0
 
     console.log("Referral progress:", {
       taskTitle: task.title,
       current: currentReferrals,
       required: requiredReferrals,
     })
+
+    // Проверяем, что requiredReferrals существует и больше 0
+    if (!requiredReferrals) {
+      console.error("Missing or invalid required_referrals for task:", task.title)
+      return null
+    }
 
     const progress = Math.min((currentReferrals / requiredReferrals) * 100, 100)
     const displayProgress = Math.round(progress)
@@ -530,7 +545,4 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     </div>
   )
 })
-
-
-
 
