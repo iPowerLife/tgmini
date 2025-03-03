@@ -2,9 +2,18 @@
 
 import { useEffect, useState } from "react"
 import { Users, Share2 } from "lucide-react"
+import { useSupabaseClient } from "@supabase/auth-helpers-react"
 
 export function UserProfile({ user, miners, totalPower }) {
   const [telegramUser, setTelegramUser] = useState(null)
+  const [stats, setStats] = useState({
+    total_mined: miners.reduce((sum, miner) => sum + (miner.total_mined || 0), 0),
+    mining_count: miners.length,
+    mining_power: totalPower,
+    referral_rewards: 0, // Будет обновляться из базы данных
+    referral_count: 0,
+  })
+  const supabase = useSupabaseClient()
 
   useEffect(() => {
     async function getTelegramUser() {
@@ -17,14 +26,41 @@ export function UserProfile({ user, miners, totalPower }) {
     getTelegramUser()
   }, [])
 
-  if (!user) return null
+  useEffect(() => {
+    async function fetchReferralStats() {
+      if (telegramUser?.id) {
+        // Получаем id пользователя по его telegram_id
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("id")
+          .eq("telegram_id", telegramUser.id)
+          .single()
 
-  const stats = {
-    total_mined: miners.reduce((sum, miner) => sum + (miner.total_mined || 0), 0),
-    mining_count: miners.length,
-    mining_power: totalPower,
-    referral_rewards: 0, // Будет обновляться из базы данных
-  }
+        if (userError || !userData) {
+          console.error("Error fetching user:", userError)
+          return
+        }
+
+        // Получаем статистику рефералов
+        const { data: referralData, error: referralError } = await supabase
+          .from("referral_users")
+          .select("*")
+          .eq("referrer_id", userData.id)
+          .eq("status", "active")
+
+        if (!referralError && referralData) {
+          setStats((prev) => ({
+            ...prev,
+            referral_count: referralData.length,
+          }))
+        }
+      }
+    }
+
+    fetchReferralStats()
+  }, [telegramUser, supabase])
+
+  if (!user) return null
 
   const referralLink = `https://t.me/trteeeeeee_bot?start=${telegramUser?.id || ""}`
 
@@ -117,7 +153,7 @@ export function UserProfile({ user, miners, totalPower }) {
                 <Users className="w-4 h-4 text-blue-400" />
                 <span className="text-xs text-gray-400">Рефералы</span>
               </div>
-              <span className="text-xl font-bold text-white">{user.referral_count || 0}</span>
+              <span className="text-xl font-bold text-white">{stats.referral_count || 0}</span>
             </div>
             <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700/30">
               <div className="flex items-center gap-2 mb-1">
