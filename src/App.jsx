@@ -8,16 +8,16 @@ import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
 import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
+import { ScrollToTop } from "./components/scroll-to-top"
 
 function App() {
   const [user, setUser] = useState(null)
   const [balance, setBalance] = useState(0)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
-	
-	useEffect(() => {
+
+  useEffect(() => {
     let mounted = true
-	
 
     const initApp = async () => {
       try {
@@ -105,6 +105,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <div className="app-wrapper">
         <div className="background-gradient" />
         <div className="decorative-circle-1" />
