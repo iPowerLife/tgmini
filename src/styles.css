@@ -22,6 +22,11 @@
 
 /* Основные стили для body и root */
 body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: #1a1b1e;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  color: white;
   height: 100%;
   overflow: hidden;
   position: fixed;
@@ -41,6 +46,11 @@ body {
 
 /* Контейнеры приложения */
 .app-wrapper {
+  min-height: 100vh;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(45deg, #0f172a, #1e293b);
   height: 100%;
   overflow: hidden;
   position: relative;
@@ -48,6 +58,12 @@ body {
 }
 
 .app-container {
+  height: 100vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 16px calc(env(safe-area-inset-bottom) + 80px);
+  position: relative;
+  z-index: 1;
   height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -156,6 +172,11 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
+  z-index: 50;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(99, 102, 241, 0.1);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
   display: flex;
   justify-content: space-around;
   align-items: center;

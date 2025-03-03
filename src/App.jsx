@@ -1,7 +1,7 @@
 "use client"
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { AnimatePresence } from "framer-motion"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
@@ -15,10 +15,11 @@ import { supabase } from "./supabase"
 // Компонент для анимации страниц
 const PageTransition = ({ children }) => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-    transition={{ duration: 0.3 }}
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.2 }}
+    className="page-content"
   >
     {children}
   </motion.div>
@@ -28,24 +29,14 @@ const PageTransition = ({ children }) => (
 function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, tasksData, handleTaskComplete }) {
   const location = useLocation()
 
-  // Сброс скролла при изменении маршрута
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [location])
-
-  // Мемоизируем отфильтрованные данные
-  const { categories, models } = useMemo(() => shopData, [shopData])
-  const { miners, totalPower } = useMemo(() => minersData, [minersData])
-  const { tasks } = useMemo(() => tasksData, [tasksData])
-
   return (
     <div className="app-wrapper">
       <div className="background-gradient" />
       <div className="decorative-circle-1" />
       <div className="decorative-circle-2" />
 
-      <div className="app-container pb-14">
-        <AnimatePresence mode="wait">
+      <div className="app-container">
+        <AnimatePresence mode="wait" initial={false}>
           <Routes location={location} key={location.pathname}>
             <Route
               path="/"
@@ -61,7 +52,7 @@ function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, 
                       </div>
                     </div>
                   </div>
-                  <MinersList user={user} miners={miners} totalPower={totalPower} />
+                  <MinersList user={user} miners={minersData.miners} totalPower={minersData.totalPower} />
                 </PageTransition>
               }
             />
@@ -69,7 +60,12 @@ function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, 
               path="/shop"
               element={
                 <PageTransition>
-                  <Shop user={user} onPurchase={handleBalanceUpdate} categories={categories} models={models} />
+                  <Shop
+                    user={user}
+                    onPurchase={handleBalanceUpdate}
+                    categories={shopData.categories}
+                    models={shopData.models}
+                  />
                 </PageTransition>
               }
             />
@@ -80,7 +76,7 @@ function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, 
                   <TasksSection
                     user={user}
                     onBalanceUpdate={handleBalanceUpdate}
-                    tasks={tasks}
+                    tasks={tasksData.tasks}
                     onTaskComplete={handleTaskComplete}
                   />
                 </PageTransition>
@@ -98,7 +94,7 @@ function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, 
               path="/profile"
               element={
                 <PageTransition>
-                  <UserProfile user={user} miners={miners} totalPower={totalPower} />
+                  <UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />
                 </PageTransition>
               }
             />
@@ -136,8 +132,8 @@ function App() {
       if (modelsResponse.error) throw modelsResponse.error
 
       setShopData({
-        categories: categoriesResponse.data,
-        models: modelsResponse.data,
+        categories: categoriesResponse.data || [],
+        models: modelsResponse.data || [],
       })
     } catch (error) {
       console.error("Error loading shop data:", error)
@@ -166,8 +162,8 @@ function App() {
 
       if (error) throw error
 
-      const totalPower = data.reduce((sum, miner) => sum + miner.model.mining_power * miner.quantity, 0)
-      setMinersData({ miners: data, totalPower })
+      const totalPower = (data || []).reduce((sum, miner) => sum + miner.model.mining_power * miner.quantity, 0)
+      setMinersData({ miners: data || [], totalPower })
     } catch (error) {
       console.error("Error loading miners data:", error)
     }
@@ -225,6 +221,9 @@ function App() {
               : userData.first_name || "Неизвестный пользователь",
           })
           setBalance(dbUser.balance)
+
+          // Загружаем все данные сразу после инициализации пользователя
+          await Promise.all([loadShopData(), loadMinersData(), loadTasksData()])
         }
       } catch (err) {
         console.error("Ошибка инициализации:", err)
@@ -243,14 +242,7 @@ function App() {
     return () => {
       mounted = false
     }
-  }, [])
-
-  // Загрузка всех данных при изменении пользователя
-  useEffect(() => {
-    if (user?.id) {
-      Promise.all([loadShopData(), loadMinersData(), loadTasksData()])
-    }
-  }, [user?.id, loadShopData, loadMinersData, loadTasksData])
+  }, [loadShopData, loadMinersData, loadTasksData])
 
   // Обработчик обновления баланса
   const handleBalanceUpdate = useCallback(
