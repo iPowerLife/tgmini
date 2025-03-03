@@ -247,7 +247,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     // Для реферальных заданий показываем особое состояние
     if (task.type === "referral") {
       const currentReferrals = Number.parseInt(user.referral_count) || 0
-      const requiredReferrals = Number.parseInt(task.required_referrals) || 0
+      const requiredReferrals = task.required_referrals
 
       console.log("Referral button state:", {
         current: currentReferrals,
@@ -256,7 +256,12 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         rewardClaimed: task.reward_claimed,
       })
 
-      // Если награда уже получена
+      // Проверяем, что requiredReferrals определено
+      if (!requiredReferrals) {
+        console.error("Missing required_referrals for task:", task)
+        return null
+      }
+
       if (task.reward_claimed) {
         return (
           <button
@@ -274,7 +279,6 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         )
       }
 
-      // Если условие выполнено, но награда еще не получена
       if (currentReferrals >= requiredReferrals) {
         return (
           <button
@@ -292,7 +296,6 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         )
       }
 
-      // Если условие не выполнено
       return (
         <button
           style={{
@@ -416,16 +419,21 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   }
 
   const renderReferralProgress = () => {
-    if (task.type !== "referral") return
+    if (task.type !== "referral") return null
 
     const currentReferrals = Number.parseInt(user.referral_count) || 0
-    const requiredReferrals = Number.parseInt(task.required_referrals) || 0
+    const requiredReferrals = task.required_referrals
+
+    // Проверяем, что requiredReferrals определено и больше 0
+    if (!requiredReferrals) {
+      console.error("Missing required_referrals for task:", task)
+      return null
+    }
 
     console.log("Referral progress:", {
       taskTitle: task.title,
       current: currentReferrals,
       required: requiredReferrals,
-      isCompleted: currentReferrals >= requiredReferrals,
     })
 
     const progress = Math.min((currentReferrals / requiredReferrals) * 100, 100)
