@@ -1,7 +1,7 @@
 "use client"
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { AnimatePresence } from "framer-motion"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
@@ -9,11 +9,25 @@ import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
 import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
-import { PageTransition } from "./components/page-transition"
+import { motion } from "framer-motion"
 
+// Компонент для анимации страниц
+const PageTransition = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.3 }}
+  >
+    {children}
+  </motion.div>
+)
+
+// Компонент для содержимого приложения
 function AppContent({ user, balance, handleBalanceUpdate }) {
   const location = useLocation()
 
+  // Сброс скролла при изменении маршрута
   useEffect(() => {
     const appContainer = document.querySelector(".app-container")
     if (appContainer) {
@@ -34,19 +48,17 @@ function AppContent({ user, balance, handleBalanceUpdate }) {
               path="/"
               element={
                 <PageTransition>
-                  <>
-                    <div className="balance-card">
-                      <div className="balance-background" />
-                      <div className="balance-content">
-                        <div className="balance-label">Баланс</div>
-                        <div className="balance-amount">
-                          <span>{balance.toFixed(2)}</span>
-                          <span className="balance-currency">💎</span>
-                        </div>
+                  <div className="balance-card">
+                    <div className="balance-background" />
+                    <div className="balance-content">
+                      <div className="balance-label">Баланс</div>
+                      <div className="balance-amount">
+                        <span>{balance.toFixed(2)}</span>
+                        <span className="balance-currency">💎</span>
                       </div>
                     </div>
-                    <MinersList user={user} />
-                  </>
+                  </div>
+                  <MinersList user={user} />
                 </PageTransition>
               }
             />
@@ -97,6 +109,7 @@ function App() {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // Инициализация приложения
   useEffect(() => {
     let mounted = true
 
@@ -151,10 +164,11 @@ function App() {
     }
   }, [])
 
-  const handleBalanceUpdate = (newBalance) => {
+  // Обработчик обновления баланса
+  const handleBalanceUpdate = useCallback((newBalance) => {
     setBalance(newBalance)
     setUser((prev) => ({ ...prev, balance: newBalance }))
-  }
+  }, [])
 
   if (loading) {
     return (

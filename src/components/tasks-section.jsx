@@ -6,14 +6,16 @@ import { motion } from "framer-motion"
 import { Clock, CheckCircle2, Trophy, ListTodo, Sparkles } from "lucide-react"
 import { TaskCard } from "./task-card"
 
-const TabButton = ({ active, onClick, children, icon: Icon }) => (
+const TabButton = ({ active, onClick, children, icon: Icon, disabled }) => (
   <motion.button
-    whileHover={{ scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
+    whileHover={{ scale: disabled ? 1 : 1.02 }}
+    whileTap={{ scale: disabled ? 1 : 0.98 }}
     onClick={onClick}
+    disabled={disabled}
     className={`
       relative px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200
       ${active ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white" : "text-gray-400 hover:text-gray-300"}
+      ${disabled ? "opacity-50 cursor-not-allowed" : ""}
     `}
   >
     <div className="flex items-center gap-1.5">
@@ -31,30 +33,16 @@ const TabButton = ({ active, onClick, children, icon: Icon }) => (
   </motion.button>
 )
 
-const VerificationTimer = ({ timeLeft, onComplete }) => {
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (timeLeft <= 0) {
-        clearInterval(timer)
-        onComplete()
-        return
-      }
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [timeLeft, onComplete])
-
-  return <div className="text-center text-gray-400">Проверка ({Math.ceil(timeLeft / 1000)}с)</div>
-}
-
 export function TasksSection({ user, onBalanceUpdate }) {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState("all")
-  const [taskStates, setTaskStates] = useState({})
 
+  // Загрузка заданий
   const loadTasks = useCallback(async () => {
+    if (!user?.id) return
+
     try {
       setLoading(true)
       setError(null)
@@ -74,12 +62,12 @@ export function TasksSection({ user, onBalanceUpdate }) {
     }
   }, [user?.id])
 
+  // Загрузка заданий при монтировании компонента
   useEffect(() => {
-    if (user?.id) {
-      loadTasks()
-    }
-  }, [user?.id, loadTasks])
+    loadTasks()
+  }, [loadTasks])
 
+  // Обработчик завершения задания
   const handleTaskComplete = useCallback(
     (taskId) => {
       loadTasks()
@@ -87,7 +75,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
     [loadTasks],
   )
 
-  if (loading) {
+  if (loading && !tasks.length) {
     return <div className="tasks-loading">Загрузка заданий...</div>
   }
 
@@ -122,16 +110,36 @@ export function TasksSection({ user, onBalanceUpdate }) {
       <div className="px-3">
         <div className="flex items-center justify-between p-1.5 mb-2 bg-gray-800/50 rounded-lg backdrop-blur-sm border border-gray-700/50">
           <motion.div className="flex gap-0.5" initial={false}>
-            <TabButton active={activeTab === "all"} onClick={() => setActiveTab("all")} icon={ListTodo}>
+            <TabButton
+              active={activeTab === "all"}
+              onClick={() => setActiveTab("all")}
+              icon={ListTodo}
+              disabled={loading}
+            >
               <span className="text-xs">Все</span>
             </TabButton>
-            <TabButton active={activeTab === "basic"} onClick={() => setActiveTab("basic")} icon={CheckCircle2}>
+            <TabButton
+              active={activeTab === "basic"}
+              onClick={() => setActiveTab("basic")}
+              icon={CheckCircle2}
+              disabled={loading}
+            >
               <span className="text-xs">Базовые</span>
             </TabButton>
-            <TabButton active={activeTab === "limited"} onClick={() => setActiveTab("limited")} icon={Clock}>
+            <TabButton
+              active={activeTab === "limited"}
+              onClick={() => setActiveTab("limited")}
+              icon={Clock}
+              disabled={loading}
+            >
               <span className="text-xs">Лимит</span>
             </TabButton>
-            <TabButton active={activeTab === "achievement"} onClick={() => setActiveTab("achievement")} icon={Trophy}>
+            <TabButton
+              active={activeTab === "achievement"}
+              onClick={() => setActiveTab("achievement")}
+              icon={Trophy}
+              disabled={loading}
+            >
               <span className="text-xs">Достижения</span>
             </TabButton>
           </motion.div>
@@ -148,7 +156,7 @@ export function TasksSection({ user, onBalanceUpdate }) {
             />
           ))}
 
-          {filteredTasks.length === 0 && (
+          {!loading && filteredTasks.length === 0 && (
             <div className="flex flex-col items-center justify-center p-4 text-gray-400">
               <Sparkles className="w-6 h-6 mb-2 text-gray-500" />
               <p className="text-xs">В этой категории пока нет доступных заданий</p>
