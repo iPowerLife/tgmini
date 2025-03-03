@@ -392,51 +392,65 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   }
 
   const renderReferralProgress = () => {
-    if (task.type !== "referral") return null
+  if (task.type !== 'referral') return null;
 
-    const currentReferrals = user.referral_count || 0
-    const requiredReferrals = task.required_referrals || 0
-    const progress = requiredReferrals > 0 ? Math.min((currentReferrals / requiredReferrals) * 100, 100) : 0
-    const displayProgress = isNaN(progress) ? 0 : Math.round(progress)
+  // Подробная отладочная информация
+  console.log('Task details:', {
+    id: task.id,
+    type: task.type,
+    title: task.title,
+    required_referrals: task.required_referrals
+  });
+  
+  console.log('User details:', {
+    id: user.id,
+    referral_count: user.referral_count,
+    raw_user: user
+  });
 
-    return (
-      <div style={{ marginTop: "8px" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "4px",
-            fontSize: "0.75rem",
-            color: "rgba(255, 255, 255, 0.6)",
-          }}
-        >
-          <span>
-            {currentReferrals} из {requiredReferrals}
-          </span>
-          <span>{displayProgress}%</span>
-        </div>
-        <div
-          style={{
-            width: "100%",
-            height: "4px",
-            backgroundColor: "rgba(59, 130, 246, 0.1)",
-            borderRadius: "2px",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              width: `${displayProgress}%`,
-              height: "100%",
-              backgroundColor: "#3b82f6",
-              transition: "width 0.3s ease",
-            }}
-          />
-        </div>
+  // Проверяем и конвертируем значения
+  const currentReferrals = parseInt(user.referral_count) || 0;
+  const requiredReferrals = parseInt(task.required_referrals) || 5; // Используем 5 как значение по умолчанию
+
+  console.log('Processed values:', {
+    currentReferrals,
+    requiredReferrals,
+    progress: (currentReferrals / requiredReferrals) * 100
+  });
+
+  const progress = Math.min((currentReferrals / requiredReferrals) * 100, 100);
+  const displayProgress = Math.round(progress);
+
+  return (
+    <div style={{ marginTop: '8px' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '4px',
+        fontSize: '0.75rem',
+        color: 'rgba(255, 255, 255, 0.6)'
+      }}>
+        <span>{currentReferrals} из {requiredReferrals}</span>
+        <span>{displayProgress}%</span>
       </div>
-    )
-  }
+      <div style={{
+        width: '100%',
+        height: '4px',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderRadius: '2px',
+        overflow: 'hidden'
+      }}>
+        <div style={{
+          width: `${displayProgress}%`,
+          height: '100%',
+          backgroundColor: '#3b82f6',
+          transition: 'width 0.3s ease'
+        }} />
+      </div>
+    </div>
+  );
+};
 
   return (
     <div
@@ -513,4 +527,3 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     </div>
   )
 })
-
