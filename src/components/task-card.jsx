@@ -15,12 +15,10 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
   const handleExecuteTask = useCallback(async () => {
     try {
       if (task.is_expired) {
-        alert("Время выполнения задания истекло")
         return
       }
 
       if (task.is_completed) {
-        alert("Задание уже выполнено")
         return
       }
 
@@ -32,7 +30,6 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
 
       if (startError) {
         console.error("Ошибка при начале задания:", startError)
-        alert(`Ошибка при начале задания: ${startError.message}`)
         return
       }
 
@@ -52,8 +49,7 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
         }
       }
     } catch (error) {
-      console.error("Ошибка при выполнении:", error)
-      alert(`Ошибка при выполнении задания: ${error.message}`)
+      console.error(error)
     }
   }, [user.id, task.id, task.link, task.is_expired, task.is_completed])
 
@@ -93,11 +89,8 @@ export const TaskCard = ({ task, user, onBalanceUpdate, onTaskComplete }) => {
       if (onTaskComplete) {
         onTaskComplete(task.id)
       }
-
-      alert("Награда успешно получена!")
     } catch (error) {
-      console.error("Ошибка при получении награды:", error)
-      alert(`Ошибка при получении награды: ${error.message}`)
+      console.error(error)
     }
   }, [user.id, task.id, onBalanceUpdate, onTaskComplete])
 
