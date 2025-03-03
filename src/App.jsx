@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import { useState, useEffect } from "react"
 import { AnimatePresence } from "framer-motion"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
-import { BottomMenu } from "./components/bottom-menu"
+import BottomMenu from "./components/bottom-menu" // Исправлен импорт
 import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
 import { UserProfile } from "./components/user-profile"
