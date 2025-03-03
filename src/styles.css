@@ -306,15 +306,6 @@ body {
   }
 }
 
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @keyframes shine {
   from {
     transform: translateX(-100%);
@@ -356,16 +347,6 @@ body {
 }
 
 /* Добавляем новые стили для анимаций */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
 /* Стили компонентов */
 .spinner {
@@ -1473,6 +1454,7 @@ button:not(:disabled):active {
   right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: 0.5s;
 }
 
 .task-card:hover {
@@ -1541,37 +1523,6 @@ button:not(:disabled):active {
 }
 
 /* Добавляем анимацию для появления карточек */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.task-card {
-  animation: fadeInUp 0.5s ease-out;
-  animation-fill-mode: both;
-}
-
-.task-card:nth-child(1) {
-  animation-delay: 0.1s;
-}
-.task-card:nth-child(2) {
-  animation-delay: 0.2s;
-}
-.task-card:nth-child(3) {
-  animation-delay: 0.3s;
-}
-.task-card:nth-child(4) {
-  animation-delay: 0.4s;
-}
-.task-card:nth-child(5) {
-  animation-delay: 0.5s;
-}
 
 /* Добавляем новые стили для мобильной версии в конец файла */
 
@@ -1584,10 +1535,6 @@ button:not(:disabled):active {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
 }
 
 /* Медиа-запросы для адаптивности */
