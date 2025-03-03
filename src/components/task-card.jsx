@@ -235,24 +235,9 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     // Для реферальных заданий показываем особое состояние
     if (task.type === "referral") {
       const currentReferrals = user.referral_count || 0
-      const requiredReferrals = task.required_referrals || 0
+      const requiredReferrals = task.required_referrals
 
-      if (currentReferrals >= requiredReferrals && !task.reward_claimed) {
-        return (
-          <button
-            onClick={handleClaimReward}
-            style={{
-              ...baseButtonStyle,
-              background: "linear-gradient(to right, #059669, #10b981)",
-              border: "1px solid rgba(16, 185, 129, 0.3)",
-              color: "white",
-              boxShadow: "0 2px 4px rgba(16, 185, 129, 0.1)",
-            }}
-          >
-            <span>Забрать награду</span>
-          </button>
-        )
-      } else if (task.is_completed) {
+      if (task.is_completed) {
         return (
           <button
             style={{
@@ -265,6 +250,21 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
             disabled
           >
             <span>Задание выполнено ✓</span>
+          </button>
+        )
+      } else if (currentReferrals >= requiredReferrals && !task.reward_claimed) {
+        return (
+          <button
+            onClick={handleClaimReward}
+            style={{
+              ...baseButtonStyle,
+              background: "linear-gradient(to right, #059669, #10b981)",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
+              color: "white",
+              boxShadow: "0 2px 4px rgba(16, 185, 129, 0.1)",
+            }}
+          >
+            <span>Забрать награду</span>
           </button>
         )
       } else {
@@ -394,14 +394,9 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   const renderReferralProgress = () => {
     if (task.type !== "referral") return null
 
-    // Получаем требуемое количество рефералов из названия задания
-    let requiredReferrals = 5 // значение по умолчанию
-    const match = task.title.match(/Приведи (\d+) друзей/)
-    if (match) {
-      requiredReferrals = Number.parseInt(match[1])
-    }
-
     const currentReferrals = user.referral_count || 0
+    const requiredReferrals = task.required_referrals
+
     const progress = Math.min((currentReferrals / requiredReferrals) * 100, 100)
     const displayProgress = Math.round(progress)
 
