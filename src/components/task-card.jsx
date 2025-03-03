@@ -342,12 +342,19 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   const renderReferralProgress = () => {
     if (task.type !== "referral") return null
 
-    // Получаем текущее количество рефералов из user.referral_count или из user.stats?.referral_count
-    const currentReferrals = user.referral_count || user.stats?.referral_count || 0
-    const requiredReferrals = task.required_referrals || 0
-    const progress = requiredReferrals > 0 ? Math.min((currentReferrals / requiredReferrals) * 100, 100) : 0
+    // Добавляем console.log для отладки
+    console.log("Task:", task)
+    console.log("User:", user)
 
-    // Проверяем, что progress не NaN
+    // Получаем текущее количество рефералов
+    const currentReferrals = user.referral_count || 0
+    const requiredReferrals = task.required_referrals || 0
+
+    // Добавляем console.log для проверки значений
+    console.log("Current referrals:", currentReferrals)
+    console.log("Required referrals:", requiredReferrals)
+
+    const progress = requiredReferrals > 0 ? Math.min((currentReferrals / requiredReferrals) * 100, 100) : 0
     const displayProgress = isNaN(progress) ? 0 : Math.round(progress)
 
     return (
