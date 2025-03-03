@@ -50,7 +50,7 @@ export function MinersList({ user }) {
   }, [user?.id])
 
   if (loading) {
-    return <div className="section-container">Загрузка майнеров...</div>
+    return <div className="section-container"></div>
   }
 
   if (error) {
