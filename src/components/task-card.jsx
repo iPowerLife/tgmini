@@ -104,6 +104,16 @@ function formatTimeRemaining(diff) {
 }
 
 export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) => {
+  // Добавляем логирование для отладки
+  useEffect(() => {
+    console.log("Task data:", {
+      id: task.id,
+      type: task.type,
+      title: task.title,
+      required_referrals: task.required_referrals,
+      user_referrals: user.referral_count,
+    })
+  }, [task, user])
   const [verificationState, setVerificationState] = useState({
     isVerifying: false,
     timeLeft: 15000,
@@ -395,18 +405,13 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     if (task.type !== "referral") return null
 
     const currentReferrals = user.referral_count || 0
-    let requiredReferrals = task.required_referrals
+    const requiredReferrals = task.required_referrals
 
-    // Если required_referrals не определено, пробуем получить из заголовка
-    if (!requiredReferrals && task.title) {
-      const match = task.title.match(/Приведи (\d+) друзей/)
-      if (match) {
-        requiredReferrals = Number.parseInt(match[1])
-      }
-    }
-
-    // Если все еще нет значения, используем 0
-    requiredReferrals = requiredReferrals || 0
+    console.log("Referral progress:", {
+      taskTitle: task.title,
+      current: currentReferrals,
+      required: requiredReferrals,
+    })
 
     const progress = Math.min((currentReferrals / requiredReferrals) * 100, 100)
     const displayProgress = Math.round(progress)
