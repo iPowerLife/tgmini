@@ -42,16 +42,26 @@ export function UserProfile({ user, miners, totalPower }) {
         }
 
         // Получаем статистику рефералов
-        const { data: referralData, error: referralError } = await supabase
+        const { data: referralStats, error: referralError } = await supabase
           .from("referral_users")
-          .select("*")
+          .select(`
+            referrer_id,
+            referral_count:referred_id(count),
+            referrals:json_agg(json_build_object(
+              'referred_id', referred_id,
+              'joined_at', joined_at,
+              'status', status
+            ))
+          `)
           .eq("referrer_id", userData.id)
           .eq("status", "active")
+          .group("referrer_id")
+          .single()
 
-        if (!referralError && referralData) {
+        if (!referralError && referralStats) {
           setStats((prev) => ({
             ...prev,
-            referral_count: referralData.length,
+            referral_count: referralStats.referral_count || 0,
           }))
         }
       }
