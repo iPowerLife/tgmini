@@ -2,14 +2,12 @@
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
 import { useState, useEffect } from "react"
-import { AnimatePresence } from "framer-motion"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
 import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
-import { PageTransition } from "./components/page-transition"
 
 function AppContent({ user, balance, handleBalanceUpdate }) {
   const location = useLocation()
@@ -28,62 +26,30 @@ function AppContent({ user, balance, handleBalanceUpdate }) {
       <div className="decorative-circle-2" />
 
       <div className="app-container pb-14">
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
-            <Route
-              path="/"
-              element={
-                <PageTransition>
-                  <>
-                    <div className="balance-card">
-                      <div className="balance-background" />
-                      <div className="balance-content">
-                        <div className="balance-label">Баланс</div>
-                        <div className="balance-amount">
-                          <span>{balance.toFixed(2)}</span>
-                          <span className="balance-currency">💎</span>
-                        </div>
-                      </div>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <>
+                <div className="balance-card">
+                  <div className="balance-background" />
+                  <div className="balance-content">
+                    <div className="balance-label">Баланс</div>
+                    <div className="balance-amount">
+                      <span>{balance.toFixed(2)}</span>
+                      <span className="balance-currency">💎</span>
                     </div>
-                    <MinersList user={user} />
-                  </>
-                </PageTransition>
-              }
-            />
-            <Route
-              path="/shop"
-              element={
-                <PageTransition>
-                  <Shop user={user} onPurchase={handleBalanceUpdate} />
-                </PageTransition>
-              }
-            />
-            <Route
-              path="/tasks"
-              element={
-                <PageTransition>
-                  <TasksSection user={user} onBalanceUpdate={handleBalanceUpdate} />
-                </PageTransition>
-              }
-            />
-            <Route
-              path="/rating"
-              element={
-                <PageTransition>
-                  <div className="section-container">Раздел рейтинга в разработке</div>
-                </PageTransition>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <PageTransition>
-                  <UserProfile user={user} />
-                </PageTransition>
-              }
-            />
-          </Routes>
-        </AnimatePresence>
+                  </div>
+                </div>
+                <MinersList user={user} />
+              </>
+            }
+          />
+          <Route path="/shop" element={<Shop user={user} onPurchase={handleBalanceUpdate} />} />
+          <Route path="/tasks" element={<TasksSection user={user} onBalanceUpdate={handleBalanceUpdate} />} />
+          <Route path="/rating" element={<div className="section-container">Раздел рейтинга в разработке</div>} />
+          <Route path="/profile" element={<UserProfile user={user} />} />
+        </Routes>
       </div>
 
       <BottomMenu />
