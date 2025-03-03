@@ -3,16 +3,22 @@
 import { Home, ShoppingBag, Target, Trophy, User } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 
-export function BottomMenu() {
+export default function BottomMenu() {
   const location = useLocation()
 
   const isActive = (path) => location.pathname === path
 
+  // Добавляем функцию для сброса скролла
+  const handleClick = () => {
+    window.scrollTo(0, 0)
+  }
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-950 to-gray-900/95 backdrop-blur-sm border-t border-gray-800/50 z-50 pb-[calc(env(safe-area-inset-bottom,0px)+15px)]">
-      <nav className="flex items-center justify-around h-14 max-w-md mx-auto px-4">
+    <div className="fixed left-0 right-0 bottom-0 bg-gradient-to-t from-gray-950 to-gray-900/95 backdrop-blur-sm border-t border-gray-800/50 z-50">
+      <nav className="flex items-center justify-around h-14 max-w-md mx-auto px-4 pb-[env(safe-area-inset-bottom)]">
         <Link
           to="/"
+          onClick={handleClick}
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
@@ -26,6 +32,7 @@ export function BottomMenu() {
 
         <Link
           to="/shop"
+          onClick={handleClick}
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/shop") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
@@ -39,6 +46,7 @@ export function BottomMenu() {
 
         <Link
           to="/tasks"
+          onClick={handleClick}
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/tasks") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
@@ -52,6 +60,7 @@ export function BottomMenu() {
 
         <Link
           to="/rating"
+          onClick={handleClick}
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/rating") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
@@ -65,6 +74,7 @@ export function BottomMenu() {
 
         <Link
           to="/profile"
+          onClick={handleClick}
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/profile") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
