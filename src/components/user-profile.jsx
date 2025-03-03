@@ -1,6 +1,21 @@
 "use client"
 
+import { useEffect, useState } from "react"
+
 export function UserProfile({ user, miners, totalPower }) {
+  const [telegramUser, setTelegramUser] = useState(null)
+
+  useEffect(() => {
+    async function getTelegramUser() {
+      if (typeof window !== "undefined" && window.Telegram?.WebApp) {
+        const tgUser = window.Telegram.WebApp.initDataUnsafe?.user
+        setTelegramUser(tgUser)
+      }
+    }
+
+    getTelegramUser()
+  }, [])
+
   if (!user) return null
 
   const stats = {
@@ -16,23 +31,23 @@ export function UserProfile({ user, miners, totalPower }) {
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-gray-700/50">
           <div className="flex items-start gap-4">
             <div className="relative">
-              {user.photo_url ? (
+              {telegramUser?.photo_url ? (
                 <img
-                  src={user.photo_url || "/placeholder.svg"}
-                  alt={user.first_name}
+                  src={telegramUser.photo_url || "/placeholder.svg"}
+                  alt={telegramUser.first_name}
                   className="w-16 h-16 rounded-xl object-cover border-2 border-gray-700/50"
                 />
               ) : (
                 <div className="w-16 h-16 rounded-xl bg-gray-700/50 flex items-center justify-center border-2 border-gray-700/50">
-                  <span className="text-2xl font-bold text-gray-400">{user.first_name?.[0]}</span>
+                  <span className="text-2xl font-bold text-gray-400">{telegramUser?.first_name?.[0]}</span>
                 </div>
               )}
               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-gray-800" />
             </div>
 
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-white mb-1">{user.first_name}</h2>
-              <p className="text-sm text-gray-400 font-mono">ID: {telegramUser.id}</p>
+              <h2 className="text-xl font-bold text-white mb-1">{telegramUser?.first_name}</h2>
+              <p className="text-sm text-gray-400 font-mono">ID: {telegramUser?.id}</p>
             </div>
           </div>
         </div>
