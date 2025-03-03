@@ -49,22 +49,15 @@ export function UserProfile({ user, miners, totalPower }) {
           .from("referral_users")
           .select(`
             referrer_id,
-            referral_count:referred_id(count),
-            referrals:json_agg(json_build_object(
-              'referred_id', referred_id,
-              'joined_at', joined_at,
-              'status', status
-            ))
+            referred_id
           `)
           .eq("referrer_id", userData.id)
           .eq("status", "active")
-          .group("referrer_id")
-          .single()
 
         if (!referralError && referralStats) {
           setStats((prev) => ({
             ...prev,
-            referral_count: referralStats.referral_count || 0,
+            referral_count: referralStats.length || 0,
           }))
         }
       }
@@ -148,9 +141,15 @@ export function UserProfile({ user, miners, totalPower }) {
             <button
               onClick={async () => {
                 const link = `https://t.me/trteeeeeee_bot?start=${telegramUser?.id || ""}`
-                if (window.Telegram?.WebApp) {
-                  window.Telegram.WebApp.shareUrl(link)
-                } else {
+                try {
+                  if (window.Telegram?.WebApp?.openTelegramLink) {
+                    window.Telegram.WebApp.openTelegramLink(link)
+                  } else {
+                    await navigator.clipboard.writeText(link)
+                    // Можно добавить уведомление о копировании
+                  }
+                } catch (error) {
+                  console.error("Error sharing link:", error)
                   await navigator.clipboard.writeText(link)
                 }
               }}
