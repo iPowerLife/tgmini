@@ -342,10 +342,13 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   const renderReferralProgress = () => {
     if (task.type !== "referral") return null
 
-    // Получаем текущее количество рефералов
-    const currentReferrals = user.referral_count || 0
-    const requiredReferrals = task.required_referrals
-    const progress = Math.min((currentReferrals / requiredReferrals) * 100, 100)
+    // Получаем текущее количество рефералов из user.referral_count или из user.stats?.referral_count
+    const currentReferrals = user.referral_count || user.stats?.referral_count || 0
+    const requiredReferrals = task.required_referrals || 0
+    const progress = requiredReferrals > 0 ? Math.min((currentReferrals / requiredReferrals) * 100, 100) : 0
+
+    // Проверяем, что progress не NaN
+    const displayProgress = isNaN(progress) ? 0 : Math.round(progress)
 
     return (
       <div style={{ marginTop: "8px" }}>
@@ -362,7 +365,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
           <span>
             {currentReferrals} из {requiredReferrals}
           </span>
-          <span>{Math.round(progress)}%</span>
+          <span>{displayProgress}%</span>
         </div>
         <div
           style={{
@@ -375,7 +378,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         >
           <div
             style={{
-              width: `${progress}%`,
+              width: `${displayProgress}%`,
               height: "100%",
               backgroundColor: "#3b82f6",
               transition: "width 0.3s ease",
