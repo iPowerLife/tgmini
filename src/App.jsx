@@ -9,9 +9,19 @@ import { Shop } from "./components/shop"
 import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
 import { supabase } from "./supabase"
+import { RatingSection } from "./components/rating-section"
 
 // Компонент для содержимого приложения
-function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, tasksData, handleTaskComplete }) {
+function AppContent({
+  user,
+  balance,
+  handleBalanceUpdate,
+  shopData,
+  minersData,
+  tasksData,
+  handleTaskComplete,
+  ratingData,
+}) {
   const location = useLocation()
 
   return (
@@ -58,7 +68,7 @@ function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, 
               />
             }
           />
-          <Route path="/rating" element={<div className="section-container">Раздел рейтинга в разработке</div>} />
+          <Route path="/rating" element={<RatingSection currentUserId={user?.id} users={ratingData.users} />} />
           <Route
             path="/profile"
             element={<UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />}
@@ -80,6 +90,7 @@ function App() {
   const [shopData, setShopData] = useState({ categories: [], models: [] })
   const [minersData, setMinersData] = useState({ miners: [], totalPower: 0 })
   const [tasksData, setTasksData] = useState({ tasks: [] })
+  const [ratingData, setRatingData] = useState({ users: [] })
 
   // Загрузка данных магазина
   const loadShopData = useCallback(async () => {
@@ -155,6 +166,22 @@ function App() {
     }
   }, [user?.id])
 
+  const loadRatingData = useCallback(async () => {
+    if (!user?.id) return
+
+    try {
+      console.log("Loading rating data...")
+      const { data, error } = await supabase.rpc("get_users_rating")
+
+      if (error) throw error
+
+      setRatingData({ users: data || [] })
+      console.log("Rating data loaded successfully")
+    } catch (error) {
+      console.error("Error loading rating data:", error)
+    }
+  }, [user?.id])
+
   // Инициализация приложения
   useEffect(() => {
     let mounted = true
@@ -196,7 +223,7 @@ function App() {
           console.log("User initialized:", userWithDisplay)
 
           // Загружаем все данные сразу после инициализации пользователя
-          await Promise.all([loadShopData(), loadMinersData(), loadTasksData()])
+          await Promise.all([loadShopData(), loadMinersData(), loadTasksData(), loadRatingData()])
           console.log("All data loaded successfully")
         }
       } catch (err) {
@@ -216,7 +243,7 @@ function App() {
     return () => {
       mounted = false
     }
-  }, [loadShopData, loadMinersData, loadTasksData])
+  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData])
 
   // Обработчик обновления баланса
   const handleBalanceUpdate = useCallback(
@@ -277,6 +304,7 @@ function App() {
         minersData={minersData}
         tasksData={tasksData}
         handleTaskComplete={handleTaskComplete}
+        ratingData={ratingData}
       />
     </Router>
   )
