@@ -1,14 +1,37 @@
-/* Базовые стили и переменные */
+/* Добавляем базовые цвета для компонентов */
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+  --radius: 0.5rem;
+}
 
+
+/* Добавьте в начало файла */
 :root {
   height: 100%;
 }
 
-/* Основные стили для body и root */
 body {
   height: 100%;
   overflow: hidden;
@@ -17,204 +40,27 @@ body {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: none;
   background-color: #1a1b1e;
-  font-family: system-ui, -apple-system, sans-serif;
-  color: white;
-  touch-action: manipulation;
 }
 
 #root {
   height: 100%;
-  overflow: hidden;
-}
-
-/* Контейнеры приложения */
-.app-wrapper {
-  height: 100%;
-  overflow: hidden;
-  position: relative;
-  background: linear-gradient(45deg, #0f172a, #1e293b);
-}
-
-.app-container {
-  height: 100%;
   overflow-y: auto;
+  position: relative;
   -webkit-overflow-scrolling: touch;
-  padding: 20px;
   padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
-  position: relative;
-  z-index: 1;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
-/* Фоновые элементы */
-.background-gradient {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 50% 0%, rgba(91, 154, 245, 0.1), transparent 50%);
-  pointer-events: none;
+/* Для контента страниц */
+.page-content {
+  min-height: 100%;
+  padding-bottom: 80px; /* Высота меню */
 }
 
-.decorative-circle-1 {
-  position: absolute;
-  top: 10%;
-  left: 10%;
-  width: 200px;
-  height: 200px;
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  border-radius: 50%;
-  animation: rotate 20s linear infinite;
-  z-index: 1;
-}
 
-.decorative-circle-2 {
-  position: absolute;
-  bottom: 10%;
-  right: 10%;
-  width: 150px;
-  height: 150px;
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  border-radius: 50%;
-  animation: rotate 15s linear infinite reverse;
-  z-index: 1;
-}
 
-/* Карточка баланса */
-.balance-card {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(10px);
-  padding: 30px;
-  border-radius: 20px;
-  margin-bottom: 30px;
-  width: 100%;
-  max-width: 300px;
-  margin-left: auto;
-  margin-right: auto;
-  box-shadow: 20px 20px 60px #1a1b1e, -20px -20px 60px #1e293b;
-  border: 1px solid rgba(99, 102, 241, 0.1);
-  position: relative;
-  overflow: hidden;
-}
 
-.balance-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, rgba(99, 102, 241, 0.05), rgba(99, 102, 241, 0.1));
-  z-index: 1;
-}
 
-.balance-content {
-  position: relative;
-  z-index: 2;
-}
 
-.balance-label {
-  font-size: 0.9em;
-  color: #94a3b8;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
-
-.balance-amount {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 2.5em;
-  font-weight: bold;
-  color: #f8fafc;
-  text-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-}
-
-.balance-currency {
-  font-size: 0.8em;
-}
-
-/* Нижнее меню */
-.bottom-menu {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  background: rgba(30, 41, 59, 0.95);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(99, 102, 241, 0.1);
-  padding: 8px 0;
-  z-index: 1000;
-}
-
-/* Общие стили секций */
-.section-container {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 24px;
-  margin-bottom: 20px;
-  border: 1px solid rgba(99, 102, 241, 0.1);
-  min-height: calc(100% - 80px);
-}
-
-/* Состояния загрузки и ошибок */
-.loading {
-  text-align: center;
-  padding: 20px;
-  color: #94a3b8;
-}
-
-.error {
-  text-align: center;
-  padding: 20px;
-  color: #ef4444;
-}
-
-.error h2 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
-}
-
-/* Анимации */
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Медиа-запросы */
-@media (max-width: 480px) {
-  .app-container {
-    padding: 16px;
-  }
-
-  .balance-card {
-    padding: 20px;
-  }
-
-  .section-container {
-    padding: 16px;
-  }
-}
-
-/* Сброс стилей */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
 
 button {
   position: relative;
@@ -306,6 +152,15 @@ body {
   }
 }
 
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes shine {
   from {
     transform: translateX(-100%);
@@ -347,6 +202,16 @@ body {
 }
 
 /* Добавляем новые стили для анимаций */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 /* Стили компонентов */
 .spinner {
@@ -1454,7 +1319,6 @@ button:not(:disabled):active {
   right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  transition: 0.5s;
 }
 
 .task-card:hover {
@@ -1523,6 +1387,37 @@ button:not(:disabled):active {
 }
 
 /* Добавляем анимацию для появления карточек */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.task-card {
+  animation: fadeInUp 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+.task-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.task-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.task-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.task-card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+.task-card:nth-child(5) {
+  animation-delay: 0.5s;
+}
 
 /* Добавляем новые стили для мобильной версии в конец файла */
 
@@ -1535,6 +1430,10 @@ button:not(:disabled):active {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
 }
 
 /* Медиа-запросы для адаптивности */
