@@ -11,6 +11,8 @@ import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
 import { PageTransition } from "./components/page-transition"
 
+
+
 function AppContent({ user, balance, handleBalanceUpdate }) {
   const location = useLocation()
 
