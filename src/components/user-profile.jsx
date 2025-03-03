@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Users, Share2 } from "lucide-react"
-import { useSupabaseClient } from "@supabase/auth-helpers-react"
+import { supabase } from "../supabase"
 
 export function UserProfile({ user, miners, totalPower }) {
   const [telegramUser, setTelegramUser] = useState(null)
@@ -13,7 +13,6 @@ export function UserProfile({ user, miners, totalPower }) {
     referral_rewards: 0, // Будет обновляться из базы данных
     referral_count: 0,
   })
-  const supabase = useSupabaseClient()
 
   useEffect(() => {
     async function getTelegramUser() {
@@ -72,7 +71,7 @@ export function UserProfile({ user, miners, totalPower }) {
     }
 
     fetchReferralStats()
-  }, [telegramUser, supabase])
+  }, [telegramUser])
 
   if (!user) return null
 
