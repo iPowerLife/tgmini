@@ -104,6 +104,14 @@ function formatTimeRemaining(diff) {
 }
 
 export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) => {
+  const [verificationState, setVerificationState] = useState({
+    isVerifying: false,
+    timeLeft: 15000,
+  })
+  // Пропускаем рендеринг реферальных заданий
+  if (task.type === "referral") {
+    return null
+  }
   // Добавляем логирование для отладки
   useEffect(() => {
     console.log("Task data:", {
@@ -112,14 +120,8 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       title: task.title,
       required_referrals: task.required_referrals,
       user_referrals: user.referral_count,
-      is_completed: task.is_completed,
-      reward_claimed: task.reward_claimed,
     })
   }, [task, user])
-  const [verificationState, setVerificationState] = useState({
-    isVerifying: false,
-    timeLeft: 15000,
-  })
 
   const handleExecuteTask = useCallback(async () => {
     try {
@@ -246,18 +248,10 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
     // Для реферальных заданий показываем особое состояние
     if (task.type === "referral") {
-      const currentReferrals = Number.parseInt(user.referral_count) || 0
+      const currentReferrals = user.referral_count || 0
       const requiredReferrals = task.required_referrals
 
-      console.log("Referral button state:", {
-        current: currentReferrals,
-        required: requiredReferrals,
-        isCompleted: currentReferrals >= requiredReferrals,
-        rewardClaimed: task.reward_claimed,
-      })
-
-      // Убираем проверку на существование requiredReferrals
-      if (task.reward_claimed) {
+      if (task.is_completed) {
         return (
           <button
             style={{
@@ -272,9 +266,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
             <span>Задание выполнено ✓</span>
           </button>
         )
-      }
-
-      if (currentReferrals >= requiredReferrals) {
+      } else if (currentReferrals >= requiredReferrals && !task.reward_claimed) {
         return (
           <button
             onClick={handleClaimReward}
@@ -289,21 +281,21 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
             <span>Забрать награду</span>
           </button>
         )
+      } else {
+        return (
+          <button
+            style={{
+              ...baseButtonStyle,
+              background: "rgba(31, 41, 55, 0.8)",
+              border: "1px solid rgba(75, 85, 99, 0.5)",
+              color: "rgba(156, 163, 175, 1)",
+            }}
+            disabled
+          >
+            <span>В процессе...</span>
+          </button>
+        )
       }
-
-      return (
-        <button
-          style={{
-            ...baseButtonStyle,
-            background: "rgba(31, 41, 55, 0.8)",
-            border: "1px solid rgba(75, 85, 99, 0.5)",
-            color: "rgba(156, 163, 175, 1)",
-          }}
-          disabled
-        >
-          <span>В процессе...</span>
-        </button>
-      )
     }
 
     // Остальной код для не-реферальных заданий остается без изменений
@@ -416,10 +408,9 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   const renderReferralProgress = () => {
     if (task.type !== "referral") return null
 
-    const currentReferrals = Number.parseInt(user.referral_count) || 0
+    const currentReferrals = user.referral_count || 0
     const requiredReferrals = task.required_referrals
 
-    // Убираем проверку, которая блокирует рендеринг
     console.log("Referral progress:", {
       taskTitle: task.title,
       current: currentReferrals,
@@ -538,6 +529,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         {renderButton()}
       </div>
 
+      {/* Добавляем прогресс бар для реферальных заданий */}
       {renderReferralProgress()}
     </div>
   )
