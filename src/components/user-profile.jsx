@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { Users, Share2 } from "lucide-react"
 
 export function UserProfile({ user, miners, totalPower }) {
   const [telegramUser, setTelegramUser] = useState(null)
@@ -22,6 +23,7 @@ export function UserProfile({ user, miners, totalPower }) {
     total_mined: miners.reduce((sum, miner) => sum + (miner.total_mined || 0), 0),
     mining_count: miners.length,
     mining_power: totalPower,
+    referral_rewards: 0, // Будет обновляться из базы данных
   }
 
   return (
@@ -84,6 +86,54 @@ export function UserProfile({ user, miners, totalPower }) {
               </div>
             ))}
             {miners.length === 0 && <div className="text-gray-500 text-sm">У вас пока нет майнеров</div>}
+          </div>
+        </div>
+
+        {/* Реферальная система */}
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/50">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Реферальная система</h3>
+            <button
+              onClick={async () => {
+                const link = `https://t.me/trteeeeeee_bot?start=${user.id}`
+                if (window.Telegram?.WebApp) {
+                  window.Telegram.WebApp.shareUrl(link)
+                } else {
+                  await navigator.clipboard.writeText(link)
+                }
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white/90 transition-colors rounded-lg bg-blue-600/90 hover:bg-blue-700/90"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              Пригласить
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700/30">
+              <div className="flex items-center gap-2 mb-1">
+                <Users className="w-4 h-4 text-blue-400" />
+                <span className="text-xs text-gray-400">Рефералы</span>
+              </div>
+              <span className="text-xl font-bold text-white">{user.referral_count || 0}</span>
+            </div>
+            <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700/30">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">💎</span>
+                <span className="text-xs text-gray-400">Награды</span>
+              </div>
+              <span className="text-xl font-bold text-white">{stats.referral_rewards || 0}</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-xs text-gray-400">Реферальная ссылка</div>
+            <div className="p-2 text-sm bg-gray-900/50 rounded border border-gray-700/30 text-gray-300 font-mono break-all">
+              https://t.me/trteeeeeee_bot?start={user.id}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Приглашайте друзей и получайте награды за каждого активного реферала
+            </p>
           </div>
         </div>
       </div>
