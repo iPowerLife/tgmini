@@ -14,13 +14,6 @@ import { supabase } from "./supabase"
 function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, tasksData, handleTaskComplete }) {
   const location = useLocation()
 
-  // Добавляем отладочный вывод
-  console.log("Rendering AppContent with path:", location.pathname)
-  console.log("User data:", user)
-  console.log("Shop data:", shopData)
-  console.log("Miners data:", minersData)
-  console.log("Tasks data:", tasksData)
-
   return (
     <div className="root-container">
       <div className="page-container">
@@ -39,7 +32,7 @@ function AppContent({ user, balance, handleBalanceUpdate, shopData, minersData, 
                     </div>
                   </div>
                 </div>
-                <MinersList user={user} miners={minersData.miners} totalPower={minersData.totalPower} />
+                <MinersList miners={minersData.miners} totalPower={minersData.totalPower} />
               </>
             }
           />

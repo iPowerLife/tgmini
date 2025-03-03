@@ -1,63 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { supabase } from "../supabase"
-
-export function MinersList({ user }) {
-  const [miners, setMiners] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [totalPower, setTotalPower] = useState(0)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    const loadMiners = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const { data, error } = await supabase
-          .from("user_miners")
-          .select(`
-          *,
-          model:miner_models (
-            id,
-            name,
-            display_name,
-            mining_power,
-            energy_consumption
-          )
-        `)
-          .eq("user_id", user.id)
-          .order("purchased_at")
-
-        if (error) throw error
-
-        setMiners(data)
-
-        const power = data.reduce((sum, miner) => sum + miner.model.mining_power * miner.quantity, 0)
-        setTotalPower(power)
-      } catch (error) {
-        console.error("Error loading miners:", error)
-        setError("Ошибка загрузки майнеров")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (user?.id) {
-      loadMiners()
-    }
-  }, [user?.id])
-
-  if (loading) {
-    return <div className="section-container"></div>
-  }
-
-  if (error) {
-    return <div className="section-container error">{error}</div>
-  }
-
-  if (!miners.length) {
+export function MinersList({ miners, totalPower }) {
+  if (!miners?.length) {
     return (
       <div className="section-container empty">
         <p>У вас пока нет майнеров</p>
