@@ -1,11 +1,9 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { motion } from "framer-motion"
 import { supabase } from "../supabase"
 import { useTelegramUser } from "../hooks/use-telegram-user"
 import { useCachedData } from "../hooks/use-cached-data"
-import { OptimizedImage } from "./optimized-image"
 
 // Типы рейтингов
 const RATING_TYPES = {
@@ -42,8 +40,6 @@ const RatingSection = () => {
   const [activeRatingType, setActiveRatingType] = useState(RATING_TYPES.MINING)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [showMyPosition, setShowMyPosition] = useState(false)
-  const [animateItems, setAnimateItems] = useState(false)
   const [currentPage, setCurrentPage] = useState(0)
 
   // Получаем данные пользователя из Telegram
@@ -161,14 +157,6 @@ const RatingSection = () => {
   useEffect(() => {
     mutate()
     setCurrentPage(0) // Сбрасываем страницу при смене типа рейтинга
-
-    // Включаем анимацию после небольшой задержки
-    setAnimateItems(false)
-    const timer = setTimeout(() => {
-      setAnimateItems(true)
-    }, 300)
-
-    return () => clearTimeout(timer)
   }, [mutate])
 
   // Функция для отображения значения в зависимости от типа рейтинга
@@ -194,36 +182,6 @@ const RatingSection = () => {
       return item.last_name ? `${item.first_name} ${item.last_name}` : item.first_name
     }
     return `User ${item.telegram_id}`
-  }
-
-  // Функция для отправки подарка пользователю
-  const handleSendGift = (userId) => {
-    // Здесь будет логика отправки подарка
-    alert(`Подарок отправлен пользователю ${userId}`)
-  }
-
-  // Функция для прокрутки к позиции текущего пользователя
-  const scrollToCurrentUser = () => {
-    if (!currentUserPosition) return
-
-    const index = ratingData.findIndex((item) => item.telegram_id === telegramUser.id || item.id === telegramUser.id)
-
-    if (index !== -1) {
-      // Вычисляем страницу, на которой находится пользователь
-      const userPage = Math.floor(index / ITEMS_PER_PAGE)
-      setCurrentPage(userPage)
-      setShowMyPosition(true)
-
-      // Скрываем выделение через 3 секунды
-      setTimeout(() => {
-        setShowMyPosition(false)
-      }, 3000)
-    }
-  }
-
-  // Обработчик изменения типа рейтинга
-  const handleRatingTypeChange = (type) => {
-    setActiveRatingType(type)
   }
 
   // Получаем данные для текущей страницы
@@ -252,6 +210,11 @@ const RatingSection = () => {
     }
   }
 
+  // Обработчик изменения типа рейтинга
+  const handleRatingTypeChange = (type) => {
+    setActiveRatingType(type)
+  }
+
   return (
     <div className="rating-section">
       <div className="rating-header">
@@ -273,11 +236,7 @@ const RatingSection = () => {
       </div>
 
       {/* Кнопка для прокрутки к позиции текущего пользователя */}
-      {currentUserPosition && (
-        <button className="find-me-btn" onClick={scrollToCurrentUser}>
-          Моя позиция ({currentUserPosition.position})
-        </button>
-      )}
+      {currentUserPosition && <button className="find-me-btn">Моя позиция ({currentUserPosition.position})</button>}
 
       {/* Состояние загрузки */}
       {isLoading && (
@@ -303,16 +262,9 @@ const RatingSection = () => {
             const isCurrentUser = telegramUser && (item.telegram_id === telegramUser.id || item.id === telegramUser.id)
 
             return (
-              <motion.div
+              <div
                 key={`${item.id || item.telegram_id}-${position}`}
-                className={`rating-item ${isCurrentUser ? "current-user" : ""} ${showMyPosition && isCurrentUser ? "highlight-position" : ""}`}
-                initial={animateItems ? { opacity: 0, y: 20 } : false}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.3,
-                  delay: index * 0.05,
-                  ease: "easeOut",
-                }}
+                className={`rating-item ${isCurrentUser ? "current-user" : ""}`}
               >
                 {/* Позиция в рейтинге */}
                 <div
@@ -326,7 +278,7 @@ const RatingSection = () => {
 
                 {/* Аватар пользователя */}
                 <div className="user-avatar">
-                  <OptimizedImage
+                  <img
                     src={item.photo_url || "/placeholder.svg?height=40&width=40"}
                     alt={getUserName(item)}
                     width={40}
@@ -350,16 +302,12 @@ const RatingSection = () => {
                 {/* Действия с пользователем */}
                 <div className="user-actions">
                   {!isCurrentUser && (
-                    <button
-                      className="gift-button"
-                      onClick={() => handleSendGift(item.id || item.telegram_id)}
-                      aria-label="Отправить подарок"
-                    >
+                    <button className="gift-button" aria-label="Отправить подарок">
                       🎁
                     </button>
                   )}
                 </div>
-              </motion.div>
+              </div>
             )
           })}
 
