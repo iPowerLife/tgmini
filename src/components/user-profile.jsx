@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Users, Share2, Gift } from "lucide-react"
+import { Users, Share2 } from "lucide-react"
 import { supabase } from "../supabase"
 
 export function UserProfile({ user, miners, totalPower }) {
@@ -13,14 +13,13 @@ export function UserProfile({ user, miners, totalPower }) {
     referral_rewards: 0, // Будет обновляться из базы данных
     referral_count: 0,
   })
-  const [referrals, setReferrals] = useState([])
 
   useEffect(() => {
     async function getTelegramUser() {
       if (typeof window !== "undefined" && window.Telegram?.WebApp) {
         const tgUser = window.Telegram.WebApp.initDataUnsafe?.user
-        console.log("DEBUG PROFILE: Telegram user from WebApp:", tgUser)
-        console.log("DEBUG PROFILE: Telegram user ID:", tgUser?.id)
+        console.log("DEBUG: Telegram user from WebApp:", tgUser)
+        console.log("DEBUG: Telegram user ID:", tgUser?.id)
         setTelegramUser(tgUser)
       }
     }
@@ -30,118 +29,49 @@ export function UserProfile({ user, miners, totalPower }) {
 
   useEffect(() => {
     async function fetchReferralStats() {
-      if (!user?.id) {
-        console.log("DEBUG PROFILE: No user ID available yet")
-        return
-      }
+      if (telegramUser?.id) {
+        console.log("DEBUG: Fetching referral stats for telegram_id:", telegramUser.id)
+        console.log("DEBUG: telegramUser object:", telegramUser)
+        // Получаем id пользователя по его telegram_id
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("id")
+          .eq("telegram_id", telegramUser.id)
+          .single()
 
-      try {
-        console.log("DEBUG PROFILE: Fetching referral stats for user ID:", user.id)
+        if (userError || !userData) {
+          console.error("Error fetching user:", userError)
+          return
+        }
 
         // Получаем статистику рефералов
         const { data: referralStats, error: referralError } = await supabase
           .from("referral_users")
           .select(`
-            id,
             referrer_id,
-            referred_id,
-            status,
-            reward,
-            created_at,
-            referred:referred_id(id, telegram_id, display_name)
+            referred_id
           `)
-          .eq("referrer_id", user.id)
+          .eq("referrer_id", userData.id)
           .eq("status", "active")
-          .order("created_at", { ascending: false })
-
-        console.log("DEBUG PROFILE: Referral stats query result:", referralStats, "Error:", referralError)
 
         if (!referralError && referralStats) {
-          setReferrals(referralStats)
           setStats((prev) => ({
             ...prev,
             referral_count: referralStats.length || 0,
           }))
         }
-
-        // Получаем сумму всех наград за рефералов
-        const { data: rewardsData, error: rewardsError } = await supabase
-          .from("transactions")
-          .select("amount")
-          .eq("user_id", user.id)
-          .eq("type", "referral_reward")
-
-        console.log("DEBUG PROFILE: Rewards data query result:", rewardsData, "Error:", rewardsError)
-
-        if (!rewardsError && rewardsData) {
-          const totalRewards = rewardsData.reduce((sum, tx) => sum + tx.amount, 0)
-          setStats((prev) => ({
-            ...prev,
-            referral_rewards: totalRewards,
-          }))
-        }
-      } catch (error) {
-        console.error("DEBUG PROFILE: Error fetching referral stats:", error)
       }
     }
 
     fetchReferralStats()
-  }, [user])
+  }, [telegramUser])
 
   if (!user) return null
 
   const getReferralLink = () => {
     return `https://t.me/trteeeeeee_bot?startapp=${telegramUser?.id || ""}`
   }
-  console.log("DEBUG PROFILE: Generated referral link:", getReferralLink())
-
-  const handleCopyReferralLink = async () => {
-    const link = getReferralLink()
-    console.log("DEBUG PROFILE: Copying referral link:", link)
-
-    try {
-      if (window.Telegram?.WebApp) {
-        // Используем правильный метод для шаринга
-        if (window.Telegram.WebApp.showPopup) {
-          window.Telegram.WebApp.showPopup(
-            {
-              title: "Реферальная ссылка",
-              message: "Скопируйте ссылку и отправьте друзьям",
-              buttons: [{ type: "close" }, { type: "default", text: "Копировать", id: "copy" }],
-            },
-            (buttonId) => {
-              if (buttonId === "copy") {
-                navigator.clipboard.writeText(link)
-                console.log("DEBUG PROFILE: Link copied via Telegram popup")
-              }
-            },
-          )
-        } else if (window.Telegram.WebApp.openLink) {
-          // Альтернативный вариант - открыть ссылку в браузере
-          window.Telegram.WebApp.openLink(link)
-          console.log("DEBUG PROFILE: Link opened via Telegram.WebApp.openLink")
-        } else {
-          // Если ничего не работает, просто копируем в буфер обмена
-          await navigator.clipboard.writeText(link)
-          alert("Ссылка скопирована в буфер обмена")
-          console.log("DEBUG PROFILE: Link copied to clipboard with alert")
-        }
-      } else {
-        await navigator.clipboard.writeText(link)
-        alert("Ссылка скопирована в буфер обмена")
-        console.log("DEBUG PROFILE: Link copied to clipboard with alert (Telegram WebApp not available)")
-      }
-    } catch (error) {
-      console.error("DEBUG PROFILE: Error sharing link:", error)
-      try {
-        await navigator.clipboard.writeText(link)
-        alert("Ссылка скопирована в буфер обмена")
-      } catch (clipboardError) {
-        console.error("DEBUG PROFILE: Error copying to clipboard:", clipboardError)
-        alert("Не удалось скопировать ссылку: " + link)
-      }
-    }
-  }
+  console.log("DEBUG: Generated referral link:", getReferralLink())
 
   return (
     <div className="min-h-screen pb-20">
@@ -190,7 +120,7 @@ export function UserProfile({ user, miners, totalPower }) {
         </div>
 
         {/* Список майнеров */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/50 mb-6">
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/50">
           <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Ваши майнеры</h3>
           <div className="space-y-2">
             {miners.map((miner) => (
@@ -211,7 +141,42 @@ export function UserProfile({ user, miners, totalPower }) {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Реферальная система</h3>
             <button
-              onClick={handleCopyReferralLink}
+              onClick={async () => {
+                const link = getReferralLink()
+                try {
+                  if (window.Telegram?.WebApp) {
+                    // Используем правильный метод для шаринга
+                    if (window.Telegram.WebApp.showPopup) {
+                      window.Telegram.WebApp.showPopup(
+                        {
+                          title: "Реферальная ссылка",
+                          message: "Скопируйте ссылку и отправьте друзьям",
+                          buttons: [{ type: "close" }, { type: "default", text: "Копировать", id: "copy" }],
+                        },
+                        (buttonId) => {
+                          if (buttonId === "copy") {
+                            navigator.clipboard.writeText(link)
+                          }
+                        },
+                      )
+                    } else if (window.Telegram.WebApp.openLink) {
+                      // Альтернативный вариант - открыть ссылку в браузере
+                      window.Telegram.WebApp.openLink(link)
+                    } else {
+                      // Если ничего не работает, просто копируем в буфер обмена
+                      await navigator.clipboard.writeText(link)
+                      alert("Ссылка скопирована в буфер обмена")
+                    }
+                  } else {
+                    await navigator.clipboard.writeText(link)
+                    alert("Ссылка скопирована в буфер обмена")
+                  }
+                } catch (error) {
+                  console.error("Error sharing link:", error)
+                  await navigator.clipboard.writeText(link)
+                  alert("Ссылка скопирована в буфер обмена")
+                }
+              }}
               className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white/90 transition-colors rounded-lg bg-blue-600/90 hover:bg-blue-700/90"
             >
               <Share2 className="w-3.5 h-3.5" />
@@ -229,52 +194,22 @@ export function UserProfile({ user, miners, totalPower }) {
             </div>
             <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700/30">
               <div className="flex items-center gap-2 mb-1">
-                <Gift className="w-4 h-4 text-yellow-400" />
+                <span className="text-lg">💎</span>
                 <span className="text-xs text-gray-400">Награды</span>
               </div>
-              <span className="text-xl font-bold text-white">{stats.referral_rewards || 0} 💎</span>
+              <span className="text-xl font-bold text-white">{stats.referral_rewards || 0}</span>
             </div>
           </div>
 
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2">
             <div className="text-xs text-gray-400">Реферальная ссылка</div>
             <div className="p-2 text-sm bg-gray-900/50 rounded border border-gray-700/30 text-gray-300 font-mono break-all">
               {getReferralLink()}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Приглашайте друзей и получайте 10 💎 за каждого активного реферала
+              Приглашайте друзей и получайте награды за каждого активного реферала
             </p>
           </div>
-
-          {/* Список рефералов */}
-          {referrals.length > 0 && (
-            <div className="mt-4">
-              <h4 className="text-sm font-medium text-gray-400 mb-2">Ваши рефералы</h4>
-              <div className="space-y-2">
-                {referrals.map((referral) => (
-                  <div
-                    key={referral.id}
-                    className="flex items-center justify-between py-2 px-3 bg-gray-800/30 rounded-lg border border-gray-700/30"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-gray-700/50 flex items-center justify-center">
-                        <span className="text-sm font-bold text-gray-400">
-                          {referral.referred?.display_name?.[0] || "?"}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="text-sm text-white">{referral.referred?.display_name || "Пользователь"}</div>
-                        <div className="text-xs text-gray-500">
-                          {new Date(referral.created_at).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-sm font-medium text-yellow-400">+{referral.reward || 10} 💎</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
