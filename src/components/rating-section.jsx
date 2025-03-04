@@ -199,17 +199,20 @@ export function RatingSection() {
 
   // Основной рендер компонента
   return (
-    <div className="min-h-screen pb-12">
-      <div className="px-4 py-4 max-w-md mx-auto">
+    <div className="min-h-screen pb-12 bg-[#1A1B1E]">
+      {/* Добавляем максимальную ширину и центрирование */}
+      <div className="w-full max-w-[380px] mx-auto px-2 py-4 sm:px-4">
         {/* Заголовок и навигация */}
-        <div className="mb-4 bg-gradient-to-b from-[#1E2235] to-[#1A1C2E] p-4 rounded-2xl shadow-lg border border-gray-800/50">
-          <h1 className="text-2xl font-light tracking-wider text-white/90 text-center mb-4">Рейтинг Игроков</h1>
+        <div className="mb-4 bg-gradient-to-b from-[#1E2235] to-[#1A1C2E] p-3 sm:p-4 rounded-2xl shadow-lg border border-gray-800/50">
+          <h1 className="text-xl sm:text-2xl font-light tracking-wider text-white/90 text-center mb-3">
+            Рейтинг Игроков
+          </h1>
 
           {/* Кнопки навигации */}
           <div className="flex gap-1 p-1 bg-[#1E2235]/50 rounded-xl">
             <button
               onClick={() => setActiveTab("balance")}
-              className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm transition-all flex-1 relative overflow-hidden ${
+              className={`group flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm transition-all flex-1 relative overflow-hidden ${
                 activeTab === "balance"
                   ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_15px_rgba(91,156,230,0.25)]"
                   : "text-gray-400 hover:text-gray-300"
@@ -221,7 +224,7 @@ export function RatingSection() {
 
             <button
               onClick={() => setActiveTab("referrals")}
-              className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm transition-all flex-1 relative overflow-hidden ${
+              className={`group flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm transition-all flex-1 relative overflow-hidden ${
                 activeTab === "referrals"
                   ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_15px_rgba(91,156,230,0.25)]"
                   : "text-gray-400 hover:text-gray-300"
@@ -234,9 +237,9 @@ export function RatingSection() {
 
           {/* Позиция пользователя */}
           {currentUserPosition && currentUserPosition > 0 && currentUser && (
-            <div className="mt-4 pt-4 border-t border-gray-700/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 bg-[#2B2D35]/80 px-3 py-2 rounded-xl">
+            <div className="mt-3 pt-3 border-t border-gray-700/30">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 bg-[#2B2D35]/80 px-3 py-2 rounded-xl flex-1">
                   <Sparkles className="w-4 h-4 text-[#5B9CE6]" />
                   <span className="text-sm text-white/90">
                     {currentUserPosition} место из {sortedUsers.length}
