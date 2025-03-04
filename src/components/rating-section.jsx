@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { Trophy, Users, ChevronLeft, ChevronRight, Award, Crown, Star, Sparkles, Clock } from "lucide-react"
+import { Trophy, Users, ChevronLeft, ChevronRight, Award, Crown, Star, Sparkles } from "lucide-react"
 import { supabase } from "../supabase"
 import { useTelegramUser } from "../hooks/use-telegram-user"
 import {
@@ -247,59 +247,43 @@ export function RatingSection() {
 
   // Основной рендер компонента
   return (
-    <div className="min-h-screen pb-12 bg-gradient-to-b from-gray-900 to-gray-800">
-      <div className="px-2 py-3">
-        {/* Заголовок с анимированным градиентом */}
-        <div className="relative mb-4 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 animate-gradient-x opacity-20 rounded-lg"></div>
-          <div className="relative z-10 py-3 px-3 text-center">
-            <h1 className="text-xl font-bold text-white mb-1">Рейтинг игроков</h1>
-            <div className="text-sm font-medium text-blue-400">
-              {activeTab === "balance" ? "По количеству монет" : "По количеству рефералов"}
-            </div>
+    <div className="min-h-screen pb-12 bg-[#17181C]">
+      <div className="px-4 py-4">
+        {/* Заголовок */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-white mb-1">Рейтинг игроков</h1>
+          <div className="text-[#5B9CE6] text-sm font-medium">
+            {activeTab === "balance" ? "По количеству монет" : "По количеству рефералов"}
+          </div>
 
-            {/* Информация о последнем обновлении */}
-            <div className="flex items-center justify-center mt-2 text-xs text-gray-400">
-              <Clock className="w-3 h-3 mr-1" />
-              <span>Обновлено: {lastUpdateTime}</span>
-              <span className="ml-2 text-blue-400">(обновляется раз в 12 часов)</span>
-            </div>
+          {/* Информация об обновлении */}
+          <div className="flex items-center mt-2 text-xs">
+            <div className="text-gray-400">Обновлено: {lastUpdateTime}</div>
+            <div className="text-[#5B9CE6] ml-2">(обновляется раз в 12 часов)</div>
           </div>
         </div>
 
         {/* Вкладки */}
-        <div className="flex justify-center mb-4">
-          <div className="bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur-sm rounded-lg p-1 flex shadow-lg">
-            <button
-              onClick={() => setActiveTab("balance")}
-              className={`relative flex items-center gap-1 px-3 py-2 rounded-md font-medium transition-all duration-300 overflow-hidden ${
-                activeTab === "balance" ? "text-white" : "text-gray-300 hover:text-white"
-              }`}
-            >
-              {activeTab === "balance" && (
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 animate-pulse-slow"></div>
-              )}
-              <div className="relative z-10 flex items-center gap-1">
-                <Trophy className="w-4 h-4" />
-                <span className="text-sm">По балансу</span>
-              </div>
-            </button>
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setActiveTab("balance")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+              activeTab === "balance" ? "bg-[#5B9CE6] text-white" : "bg-[#2B2D35] text-gray-400 hover:bg-[#3B3D45]"
+            }`}
+          >
+            <Trophy className="w-4 h-4" />
+            <span>По балансу</span>
+          </button>
 
-            <button
-              onClick={() => setActiveTab("referrals")}
-              className={`relative flex items-center gap-1 px-3 py-2 rounded-md font-medium transition-all duration-300 overflow-hidden ${
-                activeTab === "referrals" ? "text-white" : "text-gray-300 hover:text-white"
-              }`}
-            >
-              {activeTab === "referrals" && (
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 animate-pulse-slow"></div>
-              )}
-              <div className="relative z-10 flex items-center gap-1">
-                <Users className="w-4 h-4" />
-                <span className="text-sm">По рефералам</span>
-              </div>
-            </button>
-          </div>
+          <button
+            onClick={() => setActiveTab("referrals")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+              activeTab === "referrals" ? "bg-[#5B9CE6] text-white" : "bg-[#2B2D35] text-gray-400 hover:bg-[#3B3D45]"
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>По рефералам</span>
+          </button>
         </div>
 
         {/* Позиция текущего пользователя */}
