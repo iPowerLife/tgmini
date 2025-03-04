@@ -201,59 +201,56 @@ export function RatingSection() {
   return (
     <div className="min-h-screen pb-12">
       <div className="px-4 py-4">
-        {/* Заголовок */}
+        {/* Заголовок и навигация */}
         <div className="mb-6 bg-[#1E2235] p-4 rounded-xl shadow-lg">
-          <h1 className="text-3xl font-light tracking-wide text-white leading-none text-center">
+          <h1 className="text-3xl font-light tracking-wide text-white leading-none text-center mb-4">
             Рейтинг
             <br />
             Игроков
           </h1>
-        </div>
 
-        {/* Вкладки */}
-        <div className="flex gap-2 mb-4 bg-[#1E2235] p-1 rounded-xl shadow-lg">
-          <button
-            onClick={() => setActiveTab("balance")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all flex-1 ${
-              activeTab === "balance" ? "bg-[#5B9CE6] text-white" : "text-gray-400 hover:bg-[#2B2D35]"
-            }`}
-          >
-            <Trophy className="w-4 h-4" />
-            <span>По балансу</span>
-          </button>
+          {/* Кнопки навигации */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab("balance")}
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all flex-1 ${
+                activeTab === "balance" ? "bg-[#5B9CE6] text-white" : "bg-[#2B2D35] text-gray-400 hover:bg-[#2F3139]"
+              }`}
+            >
+              <Trophy className="w-4 h-4" />
+              <span>По балансу</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab("referrals")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all flex-1 ${
-              activeTab === "referrals" ? "bg-[#5B9CE6] text-white" : "text-gray-400 hover:bg-[#2B2D35]"
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>По рефералам</span>
-          </button>
-        </div>
+            <button
+              onClick={() => setActiveTab("referrals")}
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all flex-1 ${
+                activeTab === "referrals" ? "bg-[#5B9CE6] text-white" : "bg-[#2B2D35] text-gray-400 hover:bg-[#2F3139]"
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>По рефералам</span>
+            </button>
+          </div>
 
-        {/* Позиция текущего пользователя */}
-        {currentUserPosition && currentUserPosition > 0 && currentUser && (
-          <div className="relative overflow-hidden rounded-xl mb-3 group bg-[#1E2235] shadow-lg">
-            <div className="relative z-10 p-3">
-              <div className="text-xs text-blue-300 mb-0.5 flex items-center">
-                <Sparkles className="w-3 h-3 mr-1 animate-pulse" />
-                <span>Ваша позиция в рейтинге</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="text-lg font-bold text-white">{currentUserPosition} место</div>
-                  <div className="ml-1 text-xs text-gray-400">из {sortedUsers.length}</div>
+          {/* Позиция пользователя */}
+          {currentUserPosition && currentUserPosition > 0 && currentUser && (
+            <div className="mt-4 pt-4 border-t border-gray-700/30">
+              <div className="flex items-center justify-between text-sm text-[#5B9CE6]">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-3 h-3" />
+                  <span>
+                    {currentUserPosition} место из {sortedUsers.length}
+                  </span>
                 </div>
-                <div className="flex items-center bg-blue-900/50 px-2 py-1 rounded-full border border-blue-500/30">
-                  <span className="text-sm text-white font-medium">{getMetricValue(currentUser)}</span>
-                  <span className="ml-1 text-blue-300">{getMetricIcon()}</span>
+                <div className="flex items-center gap-1 bg-[#2B2D35] px-2 py-1 rounded-lg">
+                  <span>{getMetricValue(currentUser)}</span>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Остальной контент остается тем же ... */}
 
         {/* Список пользователей */}
         <div className="bg-[#1E2235] rounded-xl overflow-hidden mb-3 shadow-lg">
