@@ -2,71 +2,96 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Trophy, Users, ChevronLeft, ChevronRight, Award, Crown, Star, Sparkles } from "lucide-react"
+import { supabase } from "../supabase"
+import { useTelegramUser } from "../hooks/use-telegram-user"
 
-// Изменим компонент для лучшей адаптации под Telegram Mini App
-
-// Изменим размеры и отступы для более компактного отображения
-export function RatingSection({ currentUserId, users = [] }) {
+export function RatingSection() {
   const [activeTab, setActiveTab] = useState("balance")
   const [sortedUsers, setSortedUsers] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
-  const [isLoading, setIsLoading] = useState(false)
-  const [showConfetti, setShowConfetti] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
   const usersPerPage = 10
   const maxUsers = 100 // Ограничиваем до топ-100
   const containerRef = useRef(null)
 
-  // Фильтрация и сортировка пользователей
+  // Получаем данные пользователя из Telegram
+  const { user: telegramUser } = useTelegramUser()
+  const currentUserId = telegramUser?.id
+
+  // Загрузка данных пользователей
   useEffect(() => {
-    setIsLoading(true)
+    async function fetchUsers() {
+      try {
+        setIsLoading(true)
+        setError(null)
 
-    // Имитация задержки загрузки для анимации
-    setTimeout(() => {
-      let filtered = [...users]
+        let query
 
-      // Сортируем пользователей в зависимости от активной вкладки
-      switch (activeTab) {
-        case "balance":
-          filtered.sort((a, b) => b.balance - a.balance)
-          break
-        case "referrals":
-          filtered.sort((a, b) => b.referral_count - a.referral_count)
-          break
-        default:
-          filtered.sort((a, b) => b.balance - a.balance)
-          break
+        if (activeTab === "balance") {
+          // Запрос для рейтинга по балансу
+          query = supabase
+            .from("users")
+            .select("id, telegram_id, username, first_name, last_name, photo_url, balance, level")
+            .order("balance", { ascending: false })
+            .limit(maxUsers)
+        } else {
+          // Запрос для рейтинга по рефералам
+          query = supabase
+            .from("users")
+            .select("id, telegram_id, username, first_name, last_name, photo_url, referral_count, level")
+            .order("referral_count", { ascending: false })
+            .limit(maxUsers)
+        }
+
+        const { data, error: supabaseError } = await query
+
+        if (supabaseError) {
+          throw supabaseError
+        }
+
+        // Преобразуем данные для отображения
+        const processedData = data.map((user) => ({
+          id: user.telegram_id || user.id,
+          display_name: getUserDisplayName(user),
+          photo_url: user.photo_url,
+          balance: user.balance || 0,
+          referral_count: user.referral_count || 0,
+          level: user.level || 1,
+        }))
+
+        setSortedUsers(processedData)
+      } catch (err) {
+        console.error("Ошибка при загрузке данных:", err)
+        setError("Не удалось загрузить данные рейтинга")
+      } finally {
+        setIsLoading(false)
       }
-
-      // Ограничиваем до топ-100
-      filtered = filtered.slice(0, maxUsers)
-
-      setSortedUsers(filtered)
-      setCurrentPage(1) // Сбрасываем на первую страницу при изменении фильтров
-      setIsLoading(false)
-    }, 300)
-  }, [activeTab, users])
-
-  // Находим позицию текущего пользователя в полном списке (не только в топ-100)
-  const findUserRealPosition = useCallback(() => {
-    const allUsers = [...users]
-
-    // Сортируем всех пользователей
-    if (activeTab === "balance") {
-      allUsers.sort((a, b) => b.balance - a.balance)
-    } else {
-      allUsers.sort((a, b) => b.referral_count - a.referral_count)
     }
 
+    fetchUsers()
+  }, [activeTab])
+
+  // Функция для получения отображаемого имени пользователя
+  function getUserDisplayName(user) {
+    if (user.username) return `@${user.username}`
+    if (user.first_name) {
+      return user.last_name ? `${user.first_name} ${user.last_name}` : user.first_name
+    }
+    return `Пользователь ${user.telegram_id || user.id}`
+  }
+
+  // Находим позицию текущего пользователя в полном списке
+  const findUserRealPosition = useCallback(() => {
+    if (!currentUserId || sortedUsers.length === 0) return null
+
     // Находим позицию текущего пользователя
-    const position = allUsers.findIndex((user) => user.id === currentUserId) + 1
-    return position
-  }, [activeTab, users, currentUserId])
+    const position = sortedUsers.findIndex((user) => user.id === currentUserId) + 1
+    return position > 0 ? position : null
+  }, [sortedUsers, currentUserId])
 
   // Находим позицию текущего пользователя в топ-100
-  const currentUserPosition = sortedUsers.findIndex((user) => user.id === currentUserId) + 1
-
-  // Получаем реальную позицию пользователя
-  const realPosition = findUserRealPosition()
+  const currentUserPosition = findUserRealPosition()
 
   // Получаем пользователей для текущей страницы
   const getCurrentPageUsers = useCallback(() => {
@@ -157,10 +182,16 @@ export function RatingSection({ currentUserId, users = [] }) {
     return null
   }
 
+  // Получаем текущего пользователя
+  const currentUser = currentUserId ? sortedUsers.find((user) => user.id === currentUserId) : null
+
+  // Получаем пользователя на последнем месте в топ-100
+  const lastTopUser = sortedUsers.length > 0 ? sortedUsers[sortedUsers.length - 1] : null
+
   return (
     <div className="min-h-screen pb-12 bg-gradient-to-b from-gray-900 to-gray-800">
       <div className="px-2 py-3">
-        {/* Заголовок с анимированным градиентом - уменьшаем размеры */}
+        {/* Заголовок с анимированным градиентом */}
         <div className="relative mb-4 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 animate-gradient-x opacity-20 rounded-lg"></div>
           <div className="relative z-10 py-3 px-3 text-center">
@@ -171,7 +202,7 @@ export function RatingSection({ currentUserId, users = [] }) {
           </div>
         </div>
 
-        {/* Вкладки - делаем более компактными */}
+        {/* Вкладки */}
         <div className="flex justify-center mb-4">
           <div className="bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur-sm rounded-lg p-1 flex shadow-lg">
             <button
@@ -206,8 +237,8 @@ export function RatingSection({ currentUserId, users = [] }) {
           </div>
         </div>
 
-        {/* Позиция текущего пользователя - делаем более компактной */}
-        {currentUserPosition > 0 && (
+        {/* Позиция текущего пользователя */}
+        {currentUserPosition && currentUserPosition > 0 && currentUser && (
           <div className="relative overflow-hidden rounded-lg mb-3 group">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600/30 via-purple-600/30 to-blue-600/30 animate-gradient-x"></div>
             <div className="absolute inset-0 bg-gray-900/50"></div>
@@ -222,9 +253,7 @@ export function RatingSection({ currentUserId, users = [] }) {
                   <div className="ml-1 text-xs text-gray-400">из {sortedUsers.length}</div>
                 </div>
                 <div className="flex items-center bg-blue-900/50 px-2 py-1 rounded-full border border-blue-500/30">
-                  <span className="text-sm text-white font-medium">
-                    {getMetricValue(sortedUsers[currentUserPosition - 1])}
-                  </span>
+                  <span className="text-sm text-white font-medium">{getMetricValue(currentUser)}</span>
                   <span className="ml-1 text-blue-300">{getMetricIcon()}</span>
                 </div>
               </div>
@@ -232,7 +261,7 @@ export function RatingSection({ currentUserId, users = [] }) {
           </div>
         )}
 
-        {/* Список пользователей - уменьшаем высоту и делаем более компактным */}
+        {/* Список пользователей */}
         <div className="bg-gradient-to-b from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-lg overflow-hidden mb-3 border border-gray-700/50 shadow-lg">
           {isLoading ? (
             <div className="p-6 flex flex-col items-center justify-center">
@@ -242,6 +271,16 @@ export function RatingSection({ currentUserId, users = [] }) {
                 <div className="absolute inset-4 rounded-full border-t-2 border-b-2 border-pink-500 animate-spin-reverse"></div>
               </div>
               <div className="mt-3 text-sm text-blue-400">Загрузка рейтинга...</div>
+            </div>
+          ) : error ? (
+            <div className="p-6 text-center">
+              <div className="text-red-400 mb-2">{error}</div>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm"
+              >
+                Попробовать снова
+              </button>
             </div>
           ) : sortedUsers.length > 0 ? (
             <div ref={containerRef} className="max-h-[50vh] overflow-y-auto scrollbar-hide">
@@ -271,7 +310,7 @@ export function RatingSection({ currentUserId, users = [] }) {
                         ></div>
                       )}
 
-                      {/* Номер позиции - уменьшаем размер */}
+                      {/* Номер позиции */}
                       <div
                         className={`relative flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full font-bold ${
                           isTopThree ? "bg-gradient-to-r " + getPositionColor(actualIndex) : "bg-gray-800"
@@ -280,7 +319,7 @@ export function RatingSection({ currentUserId, users = [] }) {
                         {actualIndex + 1}
                       </div>
 
-                      {/* Аватар пользователя - уменьшаем размер */}
+                      {/* Аватар пользователя */}
                       <div className="flex-shrink-0 ml-2 relative">
                         {user.photo_url ? (
                           <div className="relative">
@@ -299,7 +338,7 @@ export function RatingSection({ currentUserId, users = [] }) {
                               }}
                             ></div>
                             <img
-                              src={user.photo_url || "/placeholder.svg"}
+                              src={user.photo_url || "/placeholder.svg?height=32&width=32"}
                               alt={user.display_name}
                               className={`w-8 h-8 rounded-full object-cover border-2 ${
                                 actualIndex === 0
@@ -345,7 +384,7 @@ export function RatingSection({ currentUserId, users = [] }) {
                         )}
                       </div>
 
-                      {/* Информация о пользователе - уменьшаем размеры текста */}
+                      {/* Информация о пользователе */}
                       <div className="ml-2 flex-1 min-w-0">
                         <div className="font-medium text-white flex items-center text-sm truncate">
                           {user.display_name}
@@ -371,7 +410,7 @@ export function RatingSection({ currentUserId, users = [] }) {
           )}
         </div>
 
-        {/* Пагинация - делаем более компактной */}
+        {/* Пагинация */}
         {totalPages > 1 && (
           <div className="flex justify-between items-center mb-3">
             <button
@@ -406,17 +445,17 @@ export function RatingSection({ currentUserId, users = [] }) {
           </div>
         )}
 
-        {/* Реальная позиция пользователя - делаем более компактной */}
-        {realPosition > maxUsers && (
+        {/* Реальная позиция пользователя, если он не в топ-100 */}
+        {currentUser && currentUserPosition === null && lastTopUser && (
           <div className="bg-gradient-to-r from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50 shadow-lg">
             <div className="text-center">
-              <div className="text-xs text-gray-400 mb-1">Ваша реальная позиция в общем рейтинге</div>
-              <div className="text-lg font-bold text-white mb-0.5">{realPosition} место</div>
+              <div className="text-xs text-gray-400 mb-1">Ваша позиция в общем рейтинге</div>
+              <div className="text-lg font-bold text-white mb-0.5">Ниже топ-100</div>
               <div className="text-xs text-blue-400">
                 Вам нужно{" "}
                 {activeTab === "balance"
-                  ? `набрать еще ${(users[maxUsers - 1]?.balance || 0) - (users.find((u) => u.id === currentUserId)?.balance || 0)} монет`
-                  : `привлечь еще ${(users[maxUsers - 1]?.referral_count || 0) - (users.find((u) => u.id === currentUserId)?.referral_count || 0)} рефералов`}
+                  ? `набрать еще ${(lastTopUser.balance || 0) - (currentUser.balance || 0)} монет`
+                  : `привлечь еще ${(lastTopUser.referral_count || 0) - (currentUser.referral_count || 0)} рефералов`}
                 , чтобы попасть в топ-100
               </div>
             </div>
