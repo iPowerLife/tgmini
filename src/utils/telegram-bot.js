@@ -2,6 +2,21 @@
 const TELEGRAM_BOT_TOKEN = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN
 
 /**
+ * Проверяет, может ли бот отправлять сообщения пользователю
+ * @param {number} chatId - ID чата/пользователя в Telegram
+ * @returns {Promise<boolean>} - true, если бот может отправлять сообщения
+ */
+export async function canBotMessageUser(chatId) {
+  try {
+    const { canMessage } = await checkBotStatus(chatId)
+    return canMessage
+  } catch (error) {
+    console.error("Error checking if bot can message user:", error)
+    return false
+  }
+}
+
+/**
  * Проверяет статус бота и его возможность отправлять сообщения
  * @param {number} chatId - ID чата/пользователя в Telegram
  * @returns {Promise<{canMessage: boolean, error?: string}>}
