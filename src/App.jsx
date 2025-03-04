@@ -399,6 +399,35 @@ function App() {
     }
   }, [loadShopData, loadMinersData, loadTasksData, loadRatingData])
 
+  // Добавляем эффект для перенаправления на главную страницу при обновлении
+  useEffect(() => {
+    // Проверяем, была ли страница перезагружена
+    const handlePageLoad = () => {
+      // Перенаправляем на главную страницу
+      window.history.pushState(null, "", "/")
+    }
+
+    // Вызываем обработчик при монтировании компонента
+    if (window.performance) {
+      // Используем performance API для определения типа навигации
+      const navEntries = performance.getEntriesByType("navigation")
+      if (navEntries.length > 0 && navEntries[0].type === "reload") {
+        handlePageLoad()
+      } else if (window.performance.navigation && window.performance.navigation.type === 1) {
+        // Запасной вариант для старых браузеров
+        handlePageLoad()
+      }
+    }
+
+    // Добавляем обработчик события загрузки страницы
+    window.addEventListener("load", handlePageLoad)
+
+    // Очищаем обработчик при размонтировании
+    return () => {
+      window.removeEventListener("load", handlePageLoad)
+    }
+  }, [])
+
   // Обработчик обновления баланса
   const handleBalanceUpdate = useCallback(
     (newBalance) => {
