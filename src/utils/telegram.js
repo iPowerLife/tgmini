@@ -1,3 +1,5 @@
+import { registerBotUser } from "./notifications"
+
 let tg = null
 
 export function initTelegram() {
@@ -82,27 +84,66 @@ export function getTelegramUser() {
 
 import { supabase } from "../supabase"
 
-export async function createOrUpdateUser(userData) {
+export async function createOrUpdateUser(telegramUser) {
+  if (!telegramUser || !telegramUser.id) {
+    console.error("Invalid Telegram user data:", telegramUser)
+    return null
+  }
+
   try {
-    const { data, error } = await supabase
+    // Проверяем, существует ли пользователь
+    const { data: existingUser, error: checkError } = await supabase
       .from("users")
-      .upsert(
-        {
-          telegram_id: userData.id,
-          username: userData.username,
-          first_name: userData.first_name,
-        },
-        { onConflict: "telegram_id" },
-      )
+      .select("*")
+      .eq("telegram_id", telegramUser.id)
+      .single()
+
+    // Добавьте эту строку для регистрации пользователя в системе уведомлений
+    await registerBotUser(telegramUser)
+
+    // Остальной код функции остается без изменений...
+    if (checkError && checkError.code !== "PGRST116") {
+      console.error("Ошибка при проверке пользователя:", checkError)
+
+      // Создаем нового пользователя
+      const { data: newUser, error: createError } = await supabase
+        .from("users")
+        .insert({
+          telegram_id: telegramUser.id,
+          username: telegramUser.username,
+          first_name: telegramUser.first_name,
+          balance: 0,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single()
+
+      if (createError) {
+        console.error("Ошибка при создании пользователя:", createError)
+        return null
+      }
+
+      return newUser
+    }
+
+    // Обновляем существующего пользователя
+    const { data: updatedUser, error: updateError } = await supabase
+      .from("users")
+      .update({
+        username: telegramUser.username,
+        first_name: telegramUser.first_name,
+        last_active: new Date().toISOString(),
+      })
+      .eq("telegram_id", telegramUser.id)
       .select()
       .single()
 
-    if (error) {
-      console.error("Ошибка при создании/обновлении пользователя:", error)
-      return null
+    if (updateError) {
+      console.error("Ошибка при обновлении пользователя:", updateError)
+      return existingUser
     }
 
-    return data
+    return updatedUser || existingUser
   } catch (error) {
     console.error("Ошибка при создании/обновлении пользователя:", error)
     return null

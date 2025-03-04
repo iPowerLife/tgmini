@@ -10,6 +10,8 @@ import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
 import { supabase } from "./supabase"
 import { RatingSection } from "./components/rating-section"
+// Добавьте импорт компонента AdminPanel
+import { AdminPanel } from "./components/admin-panel"
 
 // Компонент для содержимого приложения
 function AppContent({
@@ -28,6 +30,7 @@ function AppContent({
     <div className="root-container">
       <div className="page-container">
         <Routes>
+          {/* Существующие маршруты */}
           <Route
             path="/"
             element={
@@ -73,6 +76,8 @@ function AppContent({
             path="/profile"
             element={<UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />}
           />
+          {/* Новый маршрут для админ-панели */}
+          <Route path="/admin" element={<AdminPanel />} />
         </Routes>
       </div>
       <BottomMenu />
@@ -289,26 +294,7 @@ function App() {
                   })
                 }
 
-                // Начисляем награду приглашенному пользователю
-                const { error: referredUpdateError } = await supabase.rpc("increment_user_balance", {
-                  user_id_param: userData.id,
-                  amount_param: REFERRED_REWARD,
-                })
-
-                if (referredUpdateError) {
-                  console.error("Error rewarding referred user:", referredUpdateError)
-                } else {
-                  console.log(`Referred user rewarded with ${REFERRED_REWARD} diamonds`)
-
-                  // Записываем награду в историю транзакций
-                  await supabase.from("transactions").insert({
-                    user_id: userData.id,
-                    amount: REFERRED_REWARD,
-                    type: "referral_bonus",
-                    description: `Bonus for joining via referral link`,
-                    created_at: new Date().toISOString(),
-                  })
-                }
+                // В функции handleReferral удалите весь блок кода, связанный с отправкой уведомлений:
               }
             }
           } catch (error) {
