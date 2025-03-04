@@ -8,6 +8,31 @@ export function BottomMenu() {
 
   const isActive = (path) => location.pathname === path
 
+  // Функция для сброса прокрутки при клике на пункт меню
+  const handleNavClick = () => {
+    // Сбрасываем прокрутку несколькими способами для максимальной совместимости
+    window.scrollTo(0, 0)
+    document.body.scrollTop = 0
+    document.documentElement.scrollTop = 0
+
+    // Для Telegram Mini App
+    if (window.Telegram?.WebApp) {
+      try {
+        window.Telegram.WebApp.setViewportHeight?.(window.innerHeight)
+        window.Telegram.WebApp.expand?.()
+      } catch (e) {
+        console.error("Error using Telegram WebApp API:", e)
+      }
+    }
+
+    // Дополнительная попытка сброса прокрутки с задержкой
+    setTimeout(() => {
+      window.scrollTo(0, 0)
+      document.body.scrollTop = 0
+      document.documentElement.scrollTop = 0
+    }, 50)
+  }
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-950 to-gray-900/95 backdrop-blur-sm border-t border-gray-800/50 z-50 pb-[calc(env(safe-area-inset-bottom,0px)+15px)]">
       <nav className="flex items-center justify-around h-14 max-w-md mx-auto px-4">
@@ -16,6 +41,7 @@ export function BottomMenu() {
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
+          onClick={handleNavClick}
         >
           {isActive("/") && <div className="absolute inset-0 bg-blue-400/5 rounded-xl blur-md" />}
           <div className="relative flex flex-col items-center">
@@ -29,6 +55,7 @@ export function BottomMenu() {
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/shop") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
+          onClick={handleNavClick}
         >
           {isActive("/shop") && <div className="absolute inset-0 bg-blue-400/5 rounded-xl blur-md" />}
           <div className="relative flex flex-col items-center">
@@ -42,6 +69,7 @@ export function BottomMenu() {
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/tasks") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
+          onClick={handleNavClick}
         >
           {isActive("/tasks") && <div className="absolute inset-0 bg-blue-400/5 rounded-xl blur-md" />}
           <div className="relative flex flex-col items-center">
@@ -55,6 +83,7 @@ export function BottomMenu() {
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/rating") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
+          onClick={handleNavClick}
         >
           {isActive("/rating") && <div className="absolute inset-0 bg-blue-400/5 rounded-xl blur-md" />}
           <div className="relative flex flex-col items-center">
@@ -68,6 +97,7 @@ export function BottomMenu() {
           className={`flex flex-col items-center justify-center space-y-1 relative group ${
             isActive("/profile") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
           }`}
+          onClick={handleNavClick}
         >
           {isActive("/profile") && <div className="absolute inset-0 bg-blue-400/5 rounded-xl blur-md" />}
           <div className="relative flex flex-col items-center">

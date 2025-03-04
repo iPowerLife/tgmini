@@ -1,7 +1,7 @@
 "use client"
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from "react"
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useLayoutEffect } from "react"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
@@ -30,35 +30,37 @@ const LoadingFallback = () => (
   </div>
 )
 
-// Компонент-обертка для страниц, который сбрасывает прокрутку
-function PageWrapper({ children }) {
-  const wrapperRef = useRef(null)
-  const location = useLocation()
+// Компонент для сброса прокрутки
+function ScrollToTop() {
+  const { pathname } = useLocation()
 
-  // Сбрасываем прокрутку при изменении маршрута
-  useEffect(() => {
-    if (wrapperRef.current) {
-      wrapperRef.current.scrollTop = 0
+  // Используем useLayoutEffect для более раннего сброса прокрутки
+  useLayoutEffect(() => {
+    // Сбрасываем прокрутку несколькими способами для максимальной совместимости
+    window.scrollTo(0, 0)
+    document.body.scrollTop = 0
+    document.documentElement.scrollTop = 0
+
+    // Для Telegram Mini App
+    if (window.Telegram?.WebApp) {
+      try {
+        // Некоторые версии Telegram WebApp могут иметь API для управления прокруткой
+        window.Telegram.WebApp.setViewportHeight?.(window.innerHeight)
+        window.Telegram.WebApp.expand?.()
+      } catch (e) {
+        console.error("Error using Telegram WebApp API:", e)
+      }
     }
 
-    // Также сбрасываем прокрутку окна
-    window.scrollTo(0, 0)
-  }, [location.pathname])
+    // Дополнительная попытка сброса прокрутки с задержкой
+    setTimeout(() => {
+      window.scrollTo(0, 0)
+      document.body.scrollTop = 0
+      document.documentElement.scrollTop = 0
+    }, 50)
+  }, [])
 
-  return (
-    <div
-      ref={wrapperRef}
-      className="page-wrapper"
-      style={{
-        height: "calc(100vh - 56px)", // Высота экрана минус высота нижнего меню
-        overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
-        position: "relative",
-      }}
-    >
-      {children}
-    </div>
-  )
+  return null
 }
 
 // Компонент для содержимого приложения
@@ -72,16 +74,15 @@ function AppContent({
   handleTaskComplete,
   ratingData,
 }) {
-  const location = useLocation()
-
   return (
     <div className="root-container">
+      <ScrollToTop />
       <div className="page-container">
         <Routes>
           <Route
             path="/"
             element={
-              <PageWrapper key="home">
+              <div className="page-content" key="home">
                 <div className="balance-card">
                   <div className="balance-background" />
                   <div className="balance-content">
@@ -93,13 +94,13 @@ function AppContent({
                   </div>
                 </div>
                 <MinersList miners={minersData.miners} totalPower={minersData.totalPower} />
-              </PageWrapper>
+              </div>
             }
           />
           <Route
             path="/shop"
             element={
-              <PageWrapper key="shop">
+              <div className="page-content" key="shop">
                 <Suspense fallback={<LoadingFallback />}>
                   <Shop
                     user={user}
@@ -108,13 +109,13 @@ function AppContent({
                     models={shopData.models}
                   />
                 </Suspense>
-              </PageWrapper>
+              </div>
             }
           />
           <Route
             path="/tasks"
             element={
-              <PageWrapper key="tasks">
+              <div className="page-content" key="tasks">
                 <Suspense fallback={<LoadingFallback />}>
                   <TasksSection
                     user={user}
@@ -123,27 +124,27 @@ function AppContent({
                     onTaskComplete={handleTaskComplete}
                   />
                 </Suspense>
-              </PageWrapper>
+              </div>
             }
           />
           <Route
             path="/rating"
             element={
-              <PageWrapper key="rating">
+              <div className="page-content" key="rating">
                 <Suspense fallback={<LoadingFallback />}>
                   <RatingSection currentUserId={user?.id} users={ratingData.users} />
                 </Suspense>
-              </PageWrapper>
+              </div>
             }
           />
           <Route
             path="/profile"
             element={
-              <PageWrapper key="profile">
+              <div className="page-content" key="profile">
                 <Suspense fallback={<LoadingFallback />}>
                   <UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />
                 </Suspense>
-              </PageWrapper>
+              </div>
             }
           />
         </Routes>
