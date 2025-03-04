@@ -2785,4 +2785,111 @@ body {
   transform: translateY(0);
 }
 
+/* Стили для адаптации под Telegram Mini App */
+@media (max-width: 390px) {
+  /* Уменьшаем размеры для очень маленьких экранов */
+  .rating-item {
+    padding: 8px 10px;
+  }
+
+  .position {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+    font-size: 12px;
+  }
+
+  .avatar-image {
+    width: 32px;
+    height: 32px;
+  }
+
+  .username {
+    font-size: 13px;
+  }
+
+  .user-level {
+    font-size: 10px;
+  }
+
+  .rating-value {
+    font-size: 13px;
+    margin: 0 8px;
+  }
+
+  .pagination-button {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
+
+/* Оптимизация для Telegram Mini App */
+.tg-app {
+  /* Используем переменные Telegram для цветов */
+  --tg-theme-bg-color: var(--tg-theme-bg-color, #ffffff);
+  --tg-theme-text-color: var(--tg-theme-text-color, #000000);
+  --tg-theme-hint-color: var(--tg-theme-hint-color, #999999);
+  --tg-theme-link-color: var(--tg-theme-link-color, #2481cc);
+  --tg-theme-button-color: var(--tg-theme-button-color, #3390ec);
+  --tg-theme-button-text-color: var(--tg-theme-button-text-color, #ffffff);
+  --tg-theme-secondary-bg-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+
+  /* Оптимизация для мобильных устройств */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: contain;
+}
+
+/* Улучшенная поддержка темной темы Telegram */
+.dark-theme {
+  --tg-theme-bg-color: #18222d;
+  --tg-theme-text-color: #ffffff;
+  --tg-theme-hint-color: #7d8b99;
+  --tg-theme-link-color: #64aaed;
+  --tg-theme-button-color: #2ea6ff;
+  --tg-theme-button-text-color: #ffffff;
+  --tg-theme-secondary-bg-color: #232e3c;
+}
+
+/* Оптимизация для быстрой прокрутки */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Оптимизация для тач-интерфейса */
+.touch-target {
+  min-height: 44px; /* Минимальная высота для удобного нажатия */
+}
+
+/* Улучшенная анимация для мобильных устройств */
+@media (prefers-reduced-motion: reduce) {
+  .animate-gradient-x,
+  .animate-pulse-slow,
+  .animate-spin-slow,
+  .animate-spin-reverse,
+  .animate-bounce-slow,
+  .animate-pulse-glow {
+    animation: none !important;
+  }
+}
+
+/* Оптимизация для экономии батареи */
+.battery-saving {
+  animation-duration: 3s !important;
+}
+
+/* Улучшенная поддержка жестов */
+.swipe-area {
+  touch-action: pan-y;
+}
+
+/* Оптимизация для Telegram Mini App */
+.telegram-app {
+  max-width: 100vw;
+  overflow-x: hidden;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-top: env(safe-area-inset-top, 0);
+}
+
 

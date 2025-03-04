@@ -3,7 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Trophy, Users, ChevronLeft, ChevronRight, Award, Crown, Star, Sparkles } from "lucide-react"
 
-export function RatingSection({ currentUserId, users = [] }) {
+// Изменим компонент для лучшей адаптации под Telegram Mini App
+
+// Изменим размеры и отступы для более компактного отображения
+const RatingSection = ({ currentUserId, users = [] }) => {
   const [activeTab, setActiveTab] = useState("balance")
   const [sortedUsers, setSortedUsers] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
@@ -155,71 +158,73 @@ export function RatingSection({ currentUserId, users = [] }) {
   }
 
   return (
-    <div className="min-h-screen pb-20 bg-gradient-to-b from-gray-900 to-gray-800">
-      <div className="px-4 py-6">
-        {/* Заголовок с анимированным градиентом */}
-        <div className="relative mb-8 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 animate-gradient-x opacity-20 rounded-xl"></div>
-          <div className="relative z-10 py-6 px-4 text-center">
-            <h1 className="text-3xl font-bold text-white mb-2">Рейтинг игроков</h1>
-            <div className="text-lg font-medium text-blue-400">
+    <div className="min-h-screen pb-12 bg-gradient-to-b from-gray-900 to-gray-800">
+      <div className="px-2 py-3">
+        {/* Заголовок с анимированным градиентом - уменьшаем размеры */}
+        <div className="relative mb-4 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 animate-gradient-x opacity-20 rounded-lg"></div>
+          <div className="relative z-10 py-3 px-3 text-center">
+            <h1 className="text-xl font-bold text-white mb-1">Рейтинг игроков</h1>
+            <div className="text-sm font-medium text-blue-400">
               {activeTab === "balance" ? "По количеству монет" : "По количеству рефералов"}
             </div>
           </div>
         </div>
 
-        {/* Вкладки */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur-sm rounded-xl p-1.5 flex shadow-xl">
+        {/* Вкладки - делаем более компактными */}
+        <div className="flex justify-center mb-4">
+          <div className="bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur-sm rounded-lg p-1 flex shadow-lg">
             <button
               onClick={() => setActiveTab("balance")}
-              className={`relative flex items-center gap-2 px-5 py-3 rounded-lg font-medium transition-all duration-300 overflow-hidden ${
+              className={`relative flex items-center gap-1 px-3 py-2 rounded-md font-medium transition-all duration-300 overflow-hidden ${
                 activeTab === "balance" ? "text-white" : "text-gray-300 hover:text-white"
               }`}
             >
               {activeTab === "balance" && (
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 animate-pulse-slow"></div>
               )}
-              <div className="relative z-10 flex items-center gap-2">
-                <Trophy className="w-5 h-5" />
-                <span>По балансу</span>
+              <div className="relative z-10 flex items-center gap-1">
+                <Trophy className="w-4 h-4" />
+                <span className="text-sm">По балансу</span>
               </div>
             </button>
 
             <button
               onClick={() => setActiveTab("referrals")}
-              className={`relative flex items-center gap-2 px-5 py-3 rounded-lg font-medium transition-all duration-300 overflow-hidden ${
+              className={`relative flex items-center gap-1 px-3 py-2 rounded-md font-medium transition-all duration-300 overflow-hidden ${
                 activeTab === "referrals" ? "text-white" : "text-gray-300 hover:text-white"
               }`}
             >
               {activeTab === "referrals" && (
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 animate-pulse-slow"></div>
               )}
-              <div className="relative z-10 flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                <span>По рефералам</span>
+              <div className="relative z-10 flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                <span className="text-sm">По рефералам</span>
               </div>
             </button>
           </div>
         </div>
 
-        {/* Позиция текущего пользователя */}
+        {/* Позиция текущего пользователя - делаем более компактной */}
         {currentUserPosition > 0 && (
-          <div className="relative overflow-hidden rounded-xl mb-6 group">
+          <div className="relative overflow-hidden rounded-lg mb-3 group">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600/30 via-purple-600/30 to-blue-600/30 animate-gradient-x"></div>
             <div className="absolute inset-0 bg-gray-900/50"></div>
-            <div className="relative z-10 p-4 border border-blue-500/30">
-              <div className="text-sm text-blue-300 mb-1 flex items-center">
-                <Sparkles className="w-4 h-4 mr-1 animate-pulse" />
+            <div className="relative z-10 p-2 border border-blue-500/30">
+              <div className="text-xs text-blue-300 mb-0.5 flex items-center">
+                <Sparkles className="w-3 h-3 mr-1 animate-pulse" />
                 <span>Ваша позиция в рейтинге</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <div className="text-2xl font-bold text-white">{currentUserPosition} место</div>
-                  <div className="ml-2 text-sm text-gray-400">из {sortedUsers.length}</div>
+                  <div className="text-lg font-bold text-white">{currentUserPosition} место</div>
+                  <div className="ml-1 text-xs text-gray-400">из {sortedUsers.length}</div>
                 </div>
-                <div className="flex items-center bg-blue-900/50 px-3 py-1.5 rounded-full border border-blue-500/30">
-                  <span className="text-white font-medium">{getMetricValue(sortedUsers[currentUserPosition - 1])}</span>
+                <div className="flex items-center bg-blue-900/50 px-2 py-1 rounded-full border border-blue-500/30">
+                  <span className="text-sm text-white font-medium">
+                    {getMetricValue(sortedUsers[currentUserPosition - 1])}
+                  </span>
                   <span className="ml-1 text-blue-300">{getMetricIcon()}</span>
                 </div>
               </div>
@@ -227,19 +232,19 @@ export function RatingSection({ currentUserId, users = [] }) {
           </div>
         )}
 
-        {/* Список пользователей */}
-        <div className="bg-gradient-to-b from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-xl overflow-hidden mb-6 border border-gray-700/50 shadow-xl">
+        {/* Список пользователей - уменьшаем высоту и делаем более компактным */}
+        <div className="bg-gradient-to-b from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-lg overflow-hidden mb-3 border border-gray-700/50 shadow-lg">
           {isLoading ? (
-            <div className="p-12 flex flex-col items-center justify-center">
-              <div className="relative w-16 h-16">
+            <div className="p-6 flex flex-col items-center justify-center">
+              <div className="relative w-12 h-12">
                 <div className="absolute inset-0 rounded-full border-t-2 border-b-2 border-blue-500 animate-spin"></div>
                 <div className="absolute inset-2 rounded-full border-t-2 border-b-2 border-purple-500 animate-spin-slow"></div>
                 <div className="absolute inset-4 rounded-full border-t-2 border-b-2 border-pink-500 animate-spin-reverse"></div>
               </div>
-              <div className="mt-4 text-blue-400">Загрузка рейтинга...</div>
+              <div className="mt-3 text-sm text-blue-400">Загрузка рейтинга...</div>
             </div>
           ) : sortedUsers.length > 0 ? (
-            <div ref={containerRef} className="max-h-[60vh] overflow-y-auto scrollbar-hide">
+            <div ref={containerRef} className="max-h-[50vh] overflow-y-auto scrollbar-hide">
               <div className="divide-y divide-gray-700/30">
                 {getCurrentPageUsers().map((user, index) => {
                   const actualIndex = (currentPage - 1) * usersPerPage + index
@@ -250,9 +255,9 @@ export function RatingSection({ currentUserId, users = [] }) {
                   return (
                     <div
                       key={user.id}
-                      className={`relative flex items-center p-4 transition-all duration-300 fade-in ${
+                      className={`relative flex items-center p-2 transition-all duration-300 fade-in ${
                         isCurrentUser
-                          ? "bg-blue-900/20 border-l-4 border-blue-500 current-user"
+                          ? "bg-blue-900/20 border-l-2 border-blue-500 current-user"
                           : isTopThree
                             ? `bg-gradient-to-r from-gray-800/50 to-gray-900/50 top-position`
                             : "hover:bg-gray-800/30"
@@ -266,24 +271,24 @@ export function RatingSection({ currentUserId, users = [] }) {
                         ></div>
                       )}
 
-                      {/* Номер позиции */}
+                      {/* Номер позиции - уменьшаем размер */}
                       <div
-                        className={`relative flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full font-bold ${
+                        className={`relative flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full font-bold ${
                           isTopThree ? "bg-gradient-to-r " + getPositionColor(actualIndex) : "bg-gray-800"
-                        } text-white`}
+                        } text-white text-xs`}
                       >
                         {actualIndex + 1}
                       </div>
 
-                      {/* Аватар пользователя */}
-                      <div className="flex-shrink-0 ml-3 relative">
+                      {/* Аватар пользователя - уменьшаем размер */}
+                      <div className="flex-shrink-0 ml-2 relative">
                         {user.photo_url ? (
                           <div className="relative">
                             <div
                               className={`absolute inset-0 rounded-full ${isTopThree ? "animate-pulse-glow" : ""}`}
                               style={{
                                 boxShadow: isTopThree
-                                  ? `0 0 15px 2px rgba(${
+                                  ? `0 0 10px 2px rgba(${
                                       actualIndex === 0
                                         ? "255, 215, 0"
                                         : actualIndex === 1
@@ -296,7 +301,7 @@ export function RatingSection({ currentUserId, users = [] }) {
                             <img
                               src={user.photo_url || "/placeholder.svg"}
                               alt={user.display_name}
-                              className={`w-10 h-10 rounded-full object-cover border-2 ${
+                              className={`w-8 h-8 rounded-full object-cover border-2 ${
                                 actualIndex === 0
                                   ? "border-yellow-400"
                                   : actualIndex === 1
@@ -309,7 +314,7 @@ export function RatingSection({ currentUserId, users = [] }) {
                           </div>
                         ) : (
                           <div
-                            className={`w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center border-2 ${
+                            className={`w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center border-2 ${
                               actualIndex === 0
                                 ? "border-yellow-400"
                                 : actualIndex === 1
@@ -319,12 +324,12 @@ export function RatingSection({ currentUserId, users = [] }) {
                                     : "border-transparent"
                             }`}
                           >
-                            <span className="text-lg font-bold text-gray-300">{user.display_name?.[0] || "?"}</span>
+                            <span className="text-sm font-bold text-gray-300">{user.display_name?.[0] || "?"}</span>
                           </div>
                         )}
 
                         {isTopThree && (
-                          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold">
+                          <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold">
                             {actualIndex === 0 && <span className="text-yellow-400 animate-bounce-slow">🥇</span>}
                             {actualIndex === 1 && (
                               <span className="text-gray-300 animate-bounce-slow" style={{ animationDelay: "0.1s" }}>
@@ -340,18 +345,18 @@ export function RatingSection({ currentUserId, users = [] }) {
                         )}
                       </div>
 
-                      {/* Информация о пользователе */}
-                      <div className="ml-4 flex-1">
-                        <div className="font-medium text-white flex items-center">
+                      {/* Информация о пользователе - уменьшаем размеры текста */}
+                      <div className="ml-2 flex-1 min-w-0">
+                        <div className="font-medium text-white flex items-center text-sm truncate">
                           {user.display_name}
                           {achievement && (
-                            <div className="ml-2 flex items-center text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-900/50 to-purple-900/50 text-blue-300">
+                            <div className="ml-1 flex items-center text-xs px-1.5 py-0.5 rounded-full bg-gradient-to-r from-blue-900/50 to-purple-900/50 text-blue-300">
                               {getPositionIcon(actualIndex)}
-                              <span className="ml-1">{achievement}</span>
+                              <span className="ml-0.5 text-[10px]">{achievement}</span>
                             </div>
                           )}
                         </div>
-                        <div className="text-sm text-gray-400 flex items-center">
+                        <div className="text-xs text-gray-400 flex items-center">
                           <span className="mr-1">{getMetricValue(user)}</span>
                           <span>{getMetricIcon()}</span>
                         </div>
@@ -362,52 +367,52 @@ export function RatingSection({ currentUserId, users = [] }) {
               </div>
             </div>
           ) : (
-            <div className="p-8 text-center text-gray-400">Нет данных для отображения</div>
+            <div className="p-4 text-center text-gray-400 text-sm">Нет данных для отображения</div>
           )}
         </div>
 
-        {/* Пагинация */}
+        {/* Пагинация - делаем более компактной */}
         {totalPages > 1 && (
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-3">
             <button
               onClick={prevPage}
               disabled={currentPage === 1}
-              className={`flex items-center gap-1 px-4 py-2 rounded-lg pagination-button ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-md pagination-button text-sm ${
                 currentPage === 1
                   ? "bg-gray-800/30 text-gray-500 cursor-not-allowed"
                   : "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-gray-300 hover:from-blue-600/30 hover:to-purple-600/30"
               }`}
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3 h-3" />
               <span>Назад</span>
             </button>
 
-            <div className="text-sm text-blue-400 bg-gray-800/50 px-3 py-1 rounded-full">
-              Страница {currentPage} из {totalPages}
+            <div className="text-xs text-blue-400 bg-gray-800/50 px-2 py-1 rounded-full">
+              {currentPage} из {totalPages}
             </div>
 
             <button
               onClick={nextPage}
               disabled={currentPage === totalPages}
-              className={`flex items-center gap-1 px-4 py-2 rounded-lg pagination-button ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-md pagination-button text-sm ${
                 currentPage === totalPages
                   ? "bg-gray-800/30 text-gray-500 cursor-not-allowed"
                   : "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-gray-300 hover:from-blue-600/30 hover:to-purple-600/30"
               }`}
             >
               <span>Вперед</span>
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3 h-3" />
             </button>
           </div>
         )}
 
-        {/* Реальная позиция пользователя, если он не в топ-100 */}
+        {/* Реальная позиция пользователя - делаем более компактной */}
         {realPosition > maxUsers && (
-          <div className="bg-gradient-to-r from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-xl p-4 border border-gray-700/50 shadow-xl">
+          <div className="bg-gradient-to-r from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50 shadow-lg">
             <div className="text-center">
-              <div className="text-sm text-gray-400 mb-2">Ваша реальная позиция в общем рейтинге</div>
-              <div className="text-2xl font-bold text-white mb-1">{realPosition} место</div>
-              <div className="text-sm text-blue-400">
+              <div className="text-xs text-gray-400 mb-1">Ваша реальная позиция в общем рейтинге</div>
+              <div className="text-lg font-bold text-white mb-0.5">{realPosition} место</div>
+              <div className="text-xs text-blue-400">
                 Вам нужно{" "}
                 {activeTab === "balance"
                   ? `набрать еще ${(users[maxUsers - 1]?.balance || 0) - (users.find((u) => u.id === currentUserId)?.balance || 0)} монет`
