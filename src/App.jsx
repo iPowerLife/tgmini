@@ -30,6 +30,17 @@ const LoadingFallback = () => (
   </div>
 )
 
+// Компонент для прокрутки страницы вверх при изменении маршрута
+function ScrollToTop() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+
+  return null
+}
+
 // Компонент для содержимого приложения
 function AppContent({
   user,
@@ -45,6 +56,7 @@ function AppContent({
 
   return (
     <div className="root-container">
+      <ScrollToTop />
       <div className="page-container">
         <Routes>
           <Route
