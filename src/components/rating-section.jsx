@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { Trophy, Users, ChevronLeft, ChevronRight, Award, Crown, Star, Sparkles } from "lucide-react"
+import { Trophy, Users, Award, Crown, Star, Sparkles } from "lucide-react"
 import { supabase } from "../supabase"
 import { useTelegramUser } from "../hooks/use-telegram-user"
 import {
@@ -15,11 +15,8 @@ import {
 export function RatingSection() {
   const [activeTab, setActiveTab] = useState("balance")
   const [sortedUsers, setSortedUsers] = useState([])
-  const [currentPage, setCurrentPage] = useState(1)
-  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdateTime, setLastUpdateTime] = useState("Загрузка...")
-  const usersPerPage = 10
   const maxUsers = 100
   const containerRef = useRef(null)
 
@@ -35,35 +32,29 @@ export function RatingSection() {
 
   // Загрузка данных пользователей
   useEffect(() => {
-    async function fetchUsers(forceUpdate = false) {
+    async function fetchUsers() {
       try {
         // Проверяем наличие кэша и его актуальность
-        const shouldUpdate = forceUpdate || shouldUpdateCache()
+        const shouldUpdate = shouldUpdateCache()
         const cachedData = getCachedRating(activeTab)
 
-        // Если кэш актуален и данные есть, используем их без показа загрузки
+        // Если кэш актуален и данные есть, используем их
         if (!shouldUpdate && cachedData) {
           setSortedUsers(cachedData)
           setLastUpdateTime(getLastUpdateTime())
           return
         }
 
-        // Только если нет кэшированных данных, показываем загрузку
-        setIsLoading(true)
-        setError(null)
-
         // Если кэш устарел или отсутствует, делаем запрос к базе данных
         let query
 
         if (activeTab === "balance") {
-          // Запрос для рейтинга по балансу
           query = supabase
             .from("users")
             .select("id, telegram_id, username, first_name, last_name, photo_url, balance, level")
             .order("balance", { ascending: false })
             .limit(maxUsers)
         } else {
-          // Запрос для рейтинга по рефералам
           query = supabase
             .from("users")
             .select("id, telegram_id, username, first_name, last_name, photo_url, referral_count, level")
@@ -83,7 +74,6 @@ export function RatingSection() {
 
         // Преобразуем данные для отображения
         const processedData = data.map((user) => {
-          // Получаем имя для отображения
           const displayName = getUserDisplayName(user)
 
           return {
@@ -105,8 +95,6 @@ export function RatingSection() {
       } catch (err) {
         console.error("Ошибка при загрузке данных:", err)
         setError(err.message || "Не удалось загрузить данные рейтинга")
-      } finally {
-        setIsLoading(false)
       }
     }
 
@@ -117,17 +105,14 @@ export function RatingSection() {
   function getUserDisplayName(user) {
     if (!user) return "Неизвестный пользователь"
 
-    // Используем только first_name, если оно есть
     if (user.first_name) {
       return user.first_name
     }
 
-    // Если first_name нет, используем username без @
     if (user.username) {
       return user.username.replace("@", "")
     }
 
-    // Если ничего нет, возвращаем ID
     return `Пользователь ${user.telegram_id || user.id}`
   }
 
@@ -142,48 +127,7 @@ export function RatingSection() {
   // Находим позицию текущего пользователя
   const currentUserPosition = findUserRealPosition()
 
-  // Получаем пользователей для текущей страницы
-  const getCurrentPageUsers = useCallback(() => {
-    const startIndex = (currentPage - 1) * usersPerPage
-    return sortedUsers.slice(startIndex, startIndex + usersPerPage)
-  }, [currentPage, sortedUsers])
-
-  // Общее количество страниц
-  const totalPages = Math.ceil(sortedUsers.length / usersPerPage)
-
-  // Функция для перехода на следующую страницу
-  const nextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1)
-      if (containerRef.current) {
-        containerRef.current.scrollTo({ top: 0, behavior: "smooth" })
-      }
-    }
-  }
-
-  // Функция для перехода на предыдущую страницу
-  const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1)
-      if (containerRef.current) {
-        containerRef.current.scrollTo({ top: 0, behavior: "smooth" })
-      }
-    }
-  }
-
   // Получаем метрику в зависимости от активной вкладки
-  const getMetricLabel = () => {
-    switch (activeTab) {
-      case "balance":
-        return "монет"
-      case "referrals":
-        return "рефералов"
-      default:
-        return "монет"
-    }
-  }
-
-  // Получаем иконку для метрики
   const getMetricIcon = () => {
     switch (activeTab) {
       case "balance":
@@ -229,21 +173,6 @@ export function RatingSection() {
 
   // Получаем пользователя на последнем месте в топ-100
   const lastTopUser = sortedUsers.length > 0 ? sortedUsers[sortedUsers.length - 1] : null
-
-  // Если данные Telegram не загружены, показываем загрузку
-  if (isLoading && !telegramUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 to-gray-800">
-        <div className="text-center">
-          <div className="relative w-12 h-12 mx-auto mb-4">
-            <div className="absolute inset-0 rounded-full border-t-2 border-b-2 border-blue-500 animate-spin"></div>
-            <div className="absolute inset-2 rounded-full border-t-2 border-b-2 border-purple-500 animate-spin-slow"></div>
-          </div>
-          <div className="text-blue-400">Загрузка данных...</div>
-        </div>
-      </div>
-    )
-  }
 
   // Основной рендер компонента
   return (
@@ -310,25 +239,15 @@ export function RatingSection() {
 
         {/* Список пользователей */}
         <div className="bg-[#1E2235] rounded-xl overflow-hidden mb-3 shadow-lg">
-          {isLoading ? (
-            <div className="p-6 flex flex-col items-center justify-center">
-              <div className="relative w-12 h-12">
-                <div className="absolute inset-0 rounded-full border-t-2 border-b-2 border-blue-500 animate-spin"></div>
-                <div className="absolute inset-2 rounded-full border-t-2 border-b-2 border-purple-500 animate-spin-slow"></div>
-                <div className="absolute inset-4 rounded-full border-t-2 border-b-2 border-pink-500 animate-spin-reverse"></div>
-              </div>
-              <div className="mt-3 text-sm text-blue-400">Загрузка рейтинга...</div>
-            </div>
-          ) : error ? (
+          {error ? (
             <div className="p-6 text-center">
               <div className="text-red-400 mb-2">{error}</div>
             </div>
           ) : sortedUsers.length > 0 ? (
-            <div ref={containerRef} className="max-h-[50vh] overflow-y-auto scrollbar-hide">
+            <div ref={containerRef} className="max-h-[70vh] overflow-y-auto scrollbar-hide">
               <div className="divide-y divide-gray-700/30">
-                {getCurrentPageUsers().map((user, index) => {
-                  const actualIndex = (currentPage - 1) * usersPerPage + index
-                  const isTopThree = actualIndex < 3
+                {sortedUsers.map((user, index) => {
+                  const isTopThree = index < 3
                   const isCurrentUser = currentUserId && String(user.id) === String(currentUserId)
 
                   return (
@@ -345,17 +264,17 @@ export function RatingSection() {
                       {/* Фоновый градиент для топ-3 */}
                       {isTopThree && (
                         <div
-                          className={`absolute inset-0 bg-gradient-to-r ${getPositionColor(actualIndex)} opacity-10`}
+                          className={`absolute inset-0 bg-gradient-to-r ${getPositionColor(index)} opacity-10`}
                         ></div>
                       )}
 
                       {/* Номер позиции */}
                       <div
                         className={`relative flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full font-bold ${
-                          isTopThree ? "bg-gradient-to-r " + getPositionColor(actualIndex) : "bg-gray-800"
+                          isTopThree ? "bg-gradient-to-r " + getPositionColor(index) : "bg-gray-800"
                         } text-white text-xs`}
                       >
-                        {actualIndex + 1}
+                        {index + 1}
                       </div>
 
                       {/* Аватар пользователя */}
@@ -366,11 +285,11 @@ export function RatingSection() {
                               src={user.photo_url || "/placeholder.svg?height=32&width=32"}
                               alt={user.display_name}
                               className={`w-8 h-8 rounded-full object-cover border-2 ${
-                                actualIndex === 0
+                                index === 0
                                   ? "border-yellow-400"
-                                  : actualIndex === 1
+                                  : index === 1
                                     ? "border-gray-300"
-                                    : actualIndex === 2
+                                    : index === 2
                                       ? "border-amber-600"
                                       : "border-transparent"
                               }`}
@@ -379,11 +298,11 @@ export function RatingSection() {
                         ) : (
                           <div
                             className={`w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center border-2 ${
-                              actualIndex === 0
+                              index === 0
                                 ? "border-yellow-400"
-                                : actualIndex === 1
+                                : index === 1
                                   ? "border-gray-300"
-                                  : actualIndex === 2
+                                  : index === 2
                                     ? "border-amber-600"
                                     : "border-transparent"
                             }`}
@@ -394,9 +313,9 @@ export function RatingSection() {
 
                         {isTopThree && (
                           <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold">
-                            {actualIndex === 0 && <span className="text-yellow-400">🥇</span>}
-                            {actualIndex === 1 && <span className="text-gray-300">🥈</span>}
-                            {actualIndex === 2 && <span className="text-amber-600">🥉</span>}
+                            {index === 0 && <span className="text-yellow-400">🥇</span>}
+                            {index === 1 && <span className="text-gray-300">🥈</span>}
+                            {index === 2 && <span className="text-amber-600">🥉</span>}
                           </div>
                         )}
                       </div>
@@ -419,39 +338,6 @@ export function RatingSection() {
           ) : (
             <div className="p-4 text-center text-gray-400 text-sm">Нет данных для отображения</div>
           )}
-        </div>
-
-        {/* Пагинация */}
-        <div className="flex justify-between items-center mb-3 bg-[#1E2235] p-2 rounded-xl shadow-lg">
-          <button
-            onClick={prevPage}
-            disabled={currentPage === 1}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-xl pagination-button text-sm ${
-              currentPage === 1
-                ? "bg-gray-800/30 text-gray-500 cursor-not-allowed"
-                : "bg-[#2B2D35] text-gray-300 hover:bg-[#3B3D45]"
-            }`}
-          >
-            <ChevronLeft className="w-3 h-3" />
-            <span>Назад</span>
-          </button>
-
-          <div className="text-xs text-blue-400 bg-gray-800/50 px-2 py-1 rounded-full">
-            {currentPage} из {totalPages}
-          </div>
-
-          <button
-            onClick={nextPage}
-            disabled={currentPage === totalPages}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-md pagination-button text-sm ${
-              currentPage === totalPages
-                ? "bg-gray-800/30 text-gray-500 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-gray-300 hover:from-blue-600/30 hover:to-purple-600/30"
-            }`}
-          >
-            <span>Вперед</span>
-            <ChevronRight className="w-3 h-3" />
-          </button>
         </div>
 
         {/* Реальная позиция пользователя, если он не в топ-100 */}
