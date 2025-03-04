@@ -10,15 +10,28 @@ export function BottomMenu() {
 
   // Функция для сброса прокрутки при клике на пункт меню
   const handleNavClick = () => {
+    // Логируем действие
+    console.log("🔄 Navigation menu click, scrolling to top")
+
     // Сбрасываем прокрутку несколькими способами для максимальной совместимости
     window.scrollTo(0, 0)
     document.body.scrollTop = 0
     document.documentElement.scrollTop = 0
 
+    // Пытаемся найти основной контейнер и сбросить его прокрутку
+    const mainContainer = document.querySelector("#root")
+    if (mainContainer) {
+      mainContainer.scrollTop = 0
+    }
+
+    // Форсируем сброс прокрутки для всех потенциальных контейнеров
+    Array.from(document.querySelectorAll(".page-content")).forEach((el) => {
+      el.scrollTop = 0
+    })
+
     // Для Telegram Mini App
     if (window.Telegram?.WebApp) {
       try {
-        window.Telegram.WebApp.setViewportHeight?.(window.innerHeight)
         window.Telegram.WebApp.expand?.()
       } catch (e) {
         console.error("Error using Telegram WebApp API:", e)
@@ -30,6 +43,11 @@ export function BottomMenu() {
       window.scrollTo(0, 0)
       document.body.scrollTop = 0
       document.documentElement.scrollTop = 0
+
+      // Форсируем сброс прокрутки для всех потенциальных контейнеров
+      Array.from(document.querySelectorAll(".page-content")).forEach((el) => {
+        el.scrollTop = 0
+      })
     }, 50)
   }
 

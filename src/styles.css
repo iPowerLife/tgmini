@@ -2891,7 +2891,7 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0);
   padding-top: env(safe-area-inset-top, 0);
 }
-/* Обновляем стили */
+/* Обновляем стили для решения проблемы с прокруткой */
 :root {
   height: 100%;
 }
@@ -2904,19 +2904,59 @@ body {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: none;
   background-color: #1a1b1e;
+  touch-action: pan-y;
 }
 
 #root {
   height: 100%;
+  width: 100%;
   position: relative;
-  -webkit-overflow-scrolling: touch;
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  background-color: #1a1b1e;
 }
 
 /* Для контента страниц */
 .page-content {
   min-height: 100%;
   padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
+  width: 100%;
+  position: relative;
 }
+
+/* Добавляем стили для плавного перехода между страницами */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Скрываем скроллбар, но сохраняем функциональность */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE и Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+
 
