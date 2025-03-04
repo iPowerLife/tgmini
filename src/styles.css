@@ -3126,5 +3126,32 @@ body {
   scrollbar-width: none; /* Firefox */
 }
 
+/* Profile Styles */
+.profile-container {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 24px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
 
+.section-container {
+  animation: fadeIn 0.3s ease-out;
+  will-change: transform, opacity;
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  min-height: auto;
+}
+
+.profile-page {
+  padding: 16px;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 60px);
+}
 
