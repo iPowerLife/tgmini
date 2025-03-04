@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { Trophy, Users, ChevronLeft, ChevronRight, Award, Crown, Star, Sparkles, RefreshCw, Clock } from "lucide-react"
+import { Trophy, Users, ChevronLeft, ChevronRight, Award, Crown, Star, Sparkles, Clock } from "lucide-react"
 import { supabase } from "../supabase"
 import { useTelegramUser } from "../hooks/use-telegram-user"
 import {
@@ -19,7 +19,6 @@ export function RatingSection() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdateTime, setLastUpdateTime] = useState("Загрузка...")
-  const [isForceUpdating, setIsForceUpdating] = useState(false)
   const usersPerPage = 10
   const maxUsers = 100
   const containerRef = useRef(null)
@@ -38,20 +37,20 @@ export function RatingSection() {
   useEffect(() => {
     async function fetchUsers(forceUpdate = false) {
       try {
-        setIsLoading(true)
-        setError(null)
-
         // Проверяем наличие кэша и его актуальность
         const shouldUpdate = forceUpdate || shouldUpdateCache()
         const cachedData = getCachedRating(activeTab)
 
-        // Если кэш актуален и данные есть, используем их
+        // Если кэш актуален и данные есть, используем их без показа загрузки
         if (!shouldUpdate && cachedData) {
           setSortedUsers(cachedData)
           setLastUpdateTime(getLastUpdateTime())
-          setIsLoading(false)
           return
         }
+
+        // Только если нет кэшированных данных, показываем загрузку
+        setIsLoading(true)
+        setError(null)
 
         // Если кэш устарел или отсутствует, делаем запрос к базе данных
         let query
@@ -108,19 +107,11 @@ export function RatingSection() {
         setError(err.message || "Не удалось загрузить данные рейтинга")
       } finally {
         setIsLoading(false)
-        setIsForceUpdating(false)
       }
     }
 
-    fetchUsers(isForceUpdating)
-  }, [activeTab, isForceUpdating])
-
-  // Функция для принудительного обновления данных
-  const forceUpdate = () => {
-    // Очищаем кэш перед принудительным обновлением
-    clearRatingCache()
-    setIsForceUpdating(true)
-  }
+    fetchUsers()
+  }, [activeTab])
 
   // Функция для получения отображаемого имени пользователя
   function getUserDisplayName(user) {
@@ -271,14 +262,7 @@ export function RatingSection() {
             <div className="flex items-center justify-center mt-2 text-xs text-gray-400">
               <Clock className="w-3 h-3 mr-1" />
               <span>Обновлено: {lastUpdateTime}</span>
-              <button
-                onClick={forceUpdate}
-                disabled={isLoading || isForceUpdating}
-                className="ml-2 text-blue-400 hover:text-blue-300 transition-colors"
-                title="Обновить данные"
-              >
-                <RefreshCw className={`w-3 h-3 ${isForceUpdating ? "animate-spin" : ""}`} />
-              </button>
+              <span className="ml-2 text-blue-400">(обновляется раз в 12 часов)</span>
             </div>
           </div>
         </div>
@@ -356,9 +340,6 @@ export function RatingSection() {
           ) : error ? (
             <div className="p-6 text-center">
               <div className="text-red-400 mb-2">{error}</div>
-              <button onClick={forceUpdate} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm">
-                Попробовать снова
-              </button>
             </div>
           ) : sortedUsers.length > 0 ? (
             <div ref={containerRef} className="max-h-[50vh] overflow-y-auto scrollbar-hide">
