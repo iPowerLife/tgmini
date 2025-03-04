@@ -30,17 +30,6 @@ const LoadingFallback = () => (
   </div>
 )
 
-// Компонент для прокрутки страницы вверх при изменении маршрута
-function ScrollToTop() {
-  const { pathname } = useLocation()
-
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [pathname])
-
-  return null
-}
-
 // Компонент для содержимого приложения
 function AppContent({
   user,
@@ -54,9 +43,22 @@ function AppContent({
 }) {
   const location = useLocation()
 
+  // Прокручиваем страницу вверх при изменении маршрута
+  useEffect(() => {
+    window.scrollTo(0, 0)
+
+    // Дополнительная проверка для надежности - прокрутка с небольшой задержкой
+    const timeoutId = setTimeout(() => {
+      window.scrollTo(0, 0)
+      document.body.scrollTop = 0
+      document.documentElement.scrollTop = 0
+    }, 100)
+
+    return () => clearTimeout(timeoutId)
+  }, [location])
+
   return (
     <div className="root-container">
-      <ScrollToTop />
       <div className="page-container">
         <Routes>
           <Route
