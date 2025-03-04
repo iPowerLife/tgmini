@@ -1,6 +1,8 @@
 "use client"
+import { memo } from "react"
+import { MinerItem } from "./miner-item"
 
-export function MinersList({ miners, totalPower }) {
+export const MinersList = memo(function MinersList({ miners, totalPower }) {
   if (!miners?.length) {
     return (
       <div className="section-container empty">
@@ -16,18 +18,10 @@ export function MinersList({ miners, totalPower }) {
 
       <div className="miners-grid">
         {miners.map((miner) => (
-          <div key={miner.id} className="miner-card">
-            <h3>{miner.model.display_name}</h3>
-            <div className="stats">
-              <div>Количество: {miner.quantity}</div>
-              <div>Мощность: {miner.model.mining_power}</div>
-              <div>Энергия: {miner.model.energy_consumption}</div>
-              <div>Добыто: {miner.total_mined.toFixed(2)}</div>
-            </div>
-          </div>
+          <MinerItem key={miner.id} miner={miner} />
         ))}
       </div>
     </div>
   )
-}
+})
 

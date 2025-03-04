@@ -1,38 +1,42 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback, memo } from "react"
 import { supabase } from "../supabase"
 
-export function Shop({ user, onPurchase, categories, models }) {
+export const Shop = memo(function Shop({ user, onPurchase, categories, models }) {
   const [selectedCategory, setSelectedCategory] = useState(categories[0]?.id || null)
   const [loading, setLoading] = useState(false)
 
-  // Обработчик покупки
-  const handlePurchase = async (modelId) => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase.rpc("purchase_miner", {
-        user_id_param: user.id,
-        model_id_param: modelId,
-        quantity_param: 1,
-      })
+  // Оптимизируем обработчик покупки с useCallback
+  const handlePurchase = useCallback(
+    async (modelId) => {
+      try {
+        setLoading(true)
+        const { data, error } = await supabase.rpc("purchase_miner", {
+          user_id_param: user.id,
+          model_id_param: modelId,
+          quantity_param: 1,
+        })
 
-      if (error) throw error
+        if (error) throw error
 
-      if (data.success) {
-        onPurchase(data.new_balance)
-        alert("Майнер успешно куплен!")
-      } else {
-        alert(data.error || "Ошибка при покупке")
+        if (data.success) {
+          onPurchase(data.new_balance)
+          alert("Майнер успешно куплен!")
+        } else {
+          alert(data.error || "Ошибка при покупке")
+        }
+      } catch (error) {
+        console.error("Error purchasing miner:", error)
+        alert("Ошибка при покупке майнера")
+      } finally {
+        setLoading(false)
       }
-    } catch (error) {
-      console.error("Error purchasing miner:", error)
-      alert("Ошибка при покупке майнера")
-    } finally {
-      setLoading(false)
-    }
-  }
+    },
+    [user.id, onPurchase],
+  )
 
+  // Фильтруем модели только при изменении зависимостей
   const filteredModels = models.filter((model) => model.category_id === selectedCategory)
 
   return (
@@ -72,5 +76,5 @@ export function Shop({ user, onPurchase, categories, models }) {
       </div>
     </div>
   )
-}
+})
 

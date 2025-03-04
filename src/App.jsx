@@ -1,15 +1,34 @@
 "use client"
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
-import { Shop } from "./components/shop"
-import { UserProfile } from "./components/user-profile"
-import { TasksSection } from "./components/tasks-section"
+// import { Shop } from "./components/shop"
+// import { UserProfile } from "./components/user-profile"
+// import { TasksSection } from "./components/tasks-section"
 import { supabase } from "./supabase"
-import { RatingSection } from "./components/rating-section"
+// import { RatingSection } from "./components/rating-section"
+
+// Ленивая загрузка тяжелых компонентов
+const Shop = lazy(() => import("./components/shop").then((module) => ({ default: module.Shop })))
+const TasksSection = lazy(() =>
+  import("./components/tasks-section").then((module) => ({ default: module.TasksSection })),
+)
+const RatingSection = lazy(() =>
+  import("./components/rating-section").then((module) => ({ default: module.RatingSection })),
+)
+const UserProfile = lazy(() => import("./components/user-profile").then((module) => ({ default: module.UserProfile })))
+
+// Компонент для отображения во время загрузки
+const LoadingFallback = () => (
+  <div className="section-container">
+    <div className="flex justify-center items-center h-64">
+      <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+    </div>
+  </div>
+)
 
 // Компонент для содержимого приложения
 function AppContent({
@@ -49,29 +68,44 @@ function AppContent({
           <Route
             path="/shop"
             element={
-              <Shop
-                user={user}
-                onPurchase={handleBalanceUpdate}
-                categories={shopData.categories}
-                models={shopData.models}
-              />
+              <Suspense fallback={<LoadingFallback />}>
+                <Shop
+                  user={user}
+                  onPurchase={handleBalanceUpdate}
+                  categories={shopData.categories}
+                  models={shopData.models}
+                />
+              </Suspense>
             }
           />
           <Route
             path="/tasks"
             element={
-              <TasksSection
-                user={user}
-                onBalanceUpdate={handleBalanceUpdate}
-                tasks={tasksData.tasks}
-                onTaskComplete={handleTaskComplete}
-              />
+              <Suspense fallback={<LoadingFallback />}>
+                <TasksSection
+                  user={user}
+                  onBalanceUpdate={handleBalanceUpdate}
+                  tasks={tasksData.tasks}
+                  onTaskComplete={handleTaskComplete}
+                />
+              </Suspense>
             }
           />
-          <Route path="/rating" element={<RatingSection currentUserId={user?.id} users={ratingData.users} />} />
+          <Route
+            path="/rating"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <RatingSection currentUserId={user?.id} users={ratingData.users} />
+              </Suspense>
+            }
+          />
           <Route
             path="/profile"
-            element={<UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />}
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />
+              </Suspense>
+            }
           />
         </Routes>
       </div>
@@ -386,6 +420,22 @@ function App() {
     [loadTasksData],
   )
 
+  // Мемоизируем AppContent для предотвращения лишних рендеров
+  const MemoizedAppContent = useMemo(() => {
+    return (
+      <AppContent
+        user={user}
+        balance={balance}
+        handleBalanceUpdate={handleBalanceUpdate}
+        shopData={shopData}
+        minersData={minersData}
+        tasksData={tasksData}
+        handleTaskComplete={handleTaskComplete}
+        ratingData={ratingData}
+      />
+    )
+  }, [user, balance, handleBalanceUpdate, shopData, minersData, tasksData, handleTaskComplete, ratingData])
+
   if (loading) {
     return (
       <div className="root-container">
@@ -414,20 +464,7 @@ function App() {
     )
   }
 
-  return (
-    <Router>
-      <AppContent
-        user={user}
-        balance={balance}
-        handleBalanceUpdate={handleBalanceUpdate}
-        shopData={shopData}
-        minersData={minersData}
-        tasksData={tasksData}
-        handleTaskComplete={handleTaskComplete}
-        ratingData={ratingData}
-      />
-    </Router>
-  )
+  return <Router>{MemoizedAppContent}</Router>
 }
 
 export default App
