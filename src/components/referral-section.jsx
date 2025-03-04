@@ -87,6 +87,8 @@ export const ReferralSection = ({ user }) => {
           <div className="flex items-center gap-3 mb-2">
             <Users className="w-5 h-5 text-blue-400" />
             <span className="text-sm text-gray-400">Всего рефералов</span>
+            />
+            <span className="text-sm text-gray-400">Всего рефералов</span>
           </div>
           <span className="text-2xl font-bold text-white">{referralStats.totalReferrals}</span>
         </motion.div>
