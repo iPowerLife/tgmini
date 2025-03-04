@@ -202,48 +202,55 @@ export function RatingSection() {
     <div className="min-h-screen pb-12">
       <div className="px-4 py-4">
         {/* Заголовок и навигация */}
-        <div className="mb-6 bg-[#1E2235] p-4 rounded-xl shadow-lg">
-          <h1 className="text-3xl font-light tracking-wide text-white leading-none text-center mb-4">
-            Рейтинг
-            <br />
-            Игроков
-          </h1>
+        <div className="mb-6 bg-gradient-to-b from-[#1E2235] to-[#1A1C2E] p-4 rounded-xl shadow-lg border border-gray-800/50">
+          <h1 className="text-2xl font-light tracking-wider text-white/90 text-center mb-4">Рейтинг Игроков</h1>
 
           {/* Кнопки навигации */}
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab("balance")}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all flex-1 ${
-                activeTab === "balance" ? "bg-[#5B9CE6] text-white" : "bg-[#2B2D35] text-gray-400 hover:bg-[#2F3139]"
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex-1 relative overflow-hidden ${
+                activeTab === "balance"
+                  ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_20px_rgba(91,156,230,0.3)]"
+                  : "bg-[#2B2D35] text-gray-400 hover:bg-[#2F3139] hover:text-gray-300"
               }`}
             >
-              <Trophy className="w-4 h-4" />
-              <span>По балансу</span>
+              <div
+                className={`absolute inset-0 ${activeTab === "balance" ? "bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3Atb3BhY2l0eT0iMC4wNSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1vcGFjaXR5PSIwIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==')] opacity-50" : ""}`}
+              />
+              <Trophy className={`w-4 h-4 ${activeTab === "balance" ? "text-white" : "text-gray-500"}`} />
+              <span className="relative z-10">По балансу</span>
             </button>
 
             <button
               onClick={() => setActiveTab("referrals")}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all flex-1 ${
-                activeTab === "referrals" ? "bg-[#5B9CE6] text-white" : "bg-[#2B2D35] text-gray-400 hover:bg-[#2F3139]"
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex-1 relative overflow-hidden ${
+                activeTab === "referrals"
+                  ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_20px_rgba(91,156,230,0.3)]"
+                  : "bg-[#2B2D35] text-gray-400 hover:bg-[#2F3139] hover:text-gray-300"
               }`}
             >
-              <Users className="w-4 h-4" />
-              <span>По рефералам</span>
+              <div
+                className={`absolute inset-0 ${activeTab === "referrals" ? "bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3Atb3BhY2l0eT0iMC4wNSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1vcGFjaXR5PSIwIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==')] opacity-50" : ""}`}
+              />
+              <Users className={`w-4 h-4 ${activeTab === "referrals" ? "text-white" : "text-gray-500"}`} />
+              <span className="relative z-10">По рефералам</span>
             </button>
           </div>
 
           {/* Позиция пользователя */}
           {currentUserPosition && currentUserPosition > 0 && currentUser && (
             <div className="mt-4 pt-4 border-t border-gray-700/30">
-              <div className="flex items-center justify-between text-sm text-[#5B9CE6]">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2 text-[#5B9CE6]/90">
                   <Sparkles className="w-3 h-3" />
                   <span>
                     {currentUserPosition} место из {sortedUsers.length}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 bg-[#2B2D35] px-2 py-1 rounded-lg">
+                <div className="flex items-center gap-1.5 bg-[#2B2D35] px-2.5 py-1 rounded-lg text-white/90">
                   <span>{getMetricValue(currentUser)}</span>
+                  <span className="text-[#5B9CE6]">{getMetricIcon()}</span>
                 </div>
               </div>
             </div>
