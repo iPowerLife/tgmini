@@ -19,8 +19,8 @@ export function UserProfile({ user, miners, totalPower }) {
     async function getTelegramUser() {
       if (typeof window !== "undefined" && window.Telegram?.WebApp) {
         const tgUser = window.Telegram.WebApp.initDataUnsafe?.user
-        console.log("DEBUG: Telegram user from WebApp:", tgUser)
-        console.log("DEBUG: Telegram user ID:", tgUser?.id)
+        console.log("DEBUG PROFILE: Telegram user from WebApp:", tgUser)
+        console.log("DEBUG PROFILE: Telegram user ID:", tgUser?.id)
         setTelegramUser(tgUser)
       }
     }
@@ -30,23 +30,13 @@ export function UserProfile({ user, miners, totalPower }) {
 
   useEffect(() => {
     async function fetchReferralStats() {
-      if (telegramUser?.id) {
-        console.log("DEBUG: Fetching referral stats for telegram_id:", telegramUser.id)
-        console.log("DEBUG: telegramUser object:", telegramUser)
+      if (!user?.id) {
+        console.log("DEBUG PROFILE: No user ID available yet")
+        return
+      }
 
-        // Получаем id пользователя по его telegram_id
-        const { data: userData, error: userError } = await supabase
-          .from("users")
-          .select("id")
-          .eq("telegram_id", telegramUser.id)
-          .single()
-
-        if (userError || !userData) {
-          console.error("Error fetching user:", userError)
-          return
-        }
-
-        console.log("DEBUG: Found user ID:", userData.id)
+      try {
+        console.log("DEBUG PROFILE: Fetching referral stats for user ID:", user.id)
 
         // Получаем статистику рефералов
         const { data: referralStats, error: referralError } = await supabase
@@ -60,18 +50,17 @@ export function UserProfile({ user, miners, totalPower }) {
             created_at,
             referred:referred_id(id, telegram_id, display_name)
           `)
-          .eq("referrer_id", userData.id)
+          .eq("referrer_id", user.id)
           .eq("status", "active")
           .order("created_at", { ascending: false })
 
-        console.log("DEBUG: Referral stats query result:", referralStats, "Error:", referralError)
+        console.log("DEBUG PROFILE: Referral stats query result:", referralStats, "Error:", referralError)
 
         if (!referralError && referralStats) {
           setReferrals(referralStats)
           setStats((prev) => ({
             ...prev,
             referral_count: referralStats.length || 0,
-            referral_rewards: referralStats.reduce((sum, ref) => sum + (ref.reward || 0), 0),
           }))
         }
 
@@ -79,10 +68,10 @@ export function UserProfile({ user, miners, totalPower }) {
         const { data: rewardsData, error: rewardsError } = await supabase
           .from("transactions")
           .select("amount")
-          .eq("user_id", userData.id)
+          .eq("user_id", user.id)
           .eq("type", "referral_reward")
 
-        console.log("DEBUG: Rewards data query result:", rewardsData, "Error:", rewardsError)
+        console.log("DEBUG PROFILE: Rewards data query result:", rewardsData, "Error:", rewardsError)
 
         if (!rewardsError && rewardsData) {
           const totalRewards = rewardsData.reduce((sum, tx) => sum + tx.amount, 0)
@@ -91,18 +80,68 @@ export function UserProfile({ user, miners, totalPower }) {
             referral_rewards: totalRewards,
           }))
         }
+      } catch (error) {
+        console.error("DEBUG PROFILE: Error fetching referral stats:", error)
       }
     }
 
     fetchReferralStats()
-  }, [telegramUser])
+  }, [user])
 
   if (!user) return null
 
   const getReferralLink = () => {
     return `https://t.me/trteeeeeee_bot?startapp=${telegramUser?.id || ""}`
   }
-  console.log("DEBUG: Generated referral link:", getReferralLink())
+  console.log("DEBUG PROFILE: Generated referral link:", getReferralLink())
+
+  const handleCopyReferralLink = async () => {
+    const link = getReferralLink()
+    console.log("DEBUG PROFILE: Copying referral link:", link)
+
+    try {
+      if (window.Telegram?.WebApp) {
+        // Используем правильный метод для шаринга
+        if (window.Telegram.WebApp.showPopup) {
+          window.Telegram.WebApp.showPopup(
+            {
+              title: "Реферальная ссылка",
+              message: "Скопируйте ссылку и отправьте друзьям",
+              buttons: [{ type: "close" }, { type: "default", text: "Копировать", id: "copy" }],
+            },
+            (buttonId) => {
+              if (buttonId === "copy") {
+                navigator.clipboard.writeText(link)
+                console.log("DEBUG PROFILE: Link copied via Telegram popup")
+              }
+            },
+          )
+        } else if (window.Telegram.WebApp.openLink) {
+          // Альтернативный вариант - открыть ссылку в браузере
+          window.Telegram.WebApp.openLink(link)
+          console.log("DEBUG PROFILE: Link opened via Telegram.WebApp.openLink")
+        } else {
+          // Если ничего не работает, просто копируем в буфер обмена
+          await navigator.clipboard.writeText(link)
+          alert("Ссылка скопирована в буфер обмена")
+          console.log("DEBUG PROFILE: Link copied to clipboard with alert")
+        }
+      } else {
+        await navigator.clipboard.writeText(link)
+        alert("Ссылка скопирована в буфер обмена")
+        console.log("DEBUG PROFILE: Link copied to clipboard with alert (Telegram WebApp not available)")
+      }
+    } catch (error) {
+      console.error("DEBUG PROFILE: Error sharing link:", error)
+      try {
+        await navigator.clipboard.writeText(link)
+        alert("Ссылка скопирована в буфер обмена")
+      } catch (clipboardError) {
+        console.error("DEBUG PROFILE: Error copying to clipboard:", clipboardError)
+        alert("Не удалось скопировать ссылку: " + link)
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen pb-20">
@@ -172,42 +211,7 @@ export function UserProfile({ user, miners, totalPower }) {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Реферальная система</h3>
             <button
-              onClick={async () => {
-                const link = getReferralLink()
-                try {
-                  if (window.Telegram?.WebApp) {
-                    // Используем правильный метод для шаринга
-                    if (window.Telegram.WebApp.showPopup) {
-                      window.Telegram.WebApp.showPopup(
-                        {
-                          title: "Реферальная ссылка",
-                          message: "Скопируйте ссылку и отправьте друзьям",
-                          buttons: [{ type: "close" }, { type: "default", text: "Копировать", id: "copy" }],
-                        },
-                        (buttonId) => {
-                          if (buttonId === "copy") {
-                            navigator.clipboard.writeText(link)
-                          }
-                        },
-                      )
-                    } else if (window.Telegram.WebApp.openLink) {
-                      // Альтернативный вариант - открыть ссылку в браузере
-                      window.Telegram.WebApp.openLink(link)
-                    } else {
-                      // Если ничего не работает, просто копируем в буфер обмена
-                      await navigator.clipboard.writeText(link)
-                      alert("Ссылка скопирована в буфер обмена")
-                    }
-                  } else {
-                    await navigator.clipboard.writeText(link)
-                    alert("Ссылка скопирована в буфер обмена")
-                  }
-                } catch (error) {
-                  console.error("Error sharing link:", error)
-                  await navigator.clipboard.writeText(link)
-                  alert("Ссылка скопирована в буфер обмена")
-                }
-              }}
+              onClick={handleCopyReferralLink}
               className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white/90 transition-colors rounded-lg bg-blue-600/90 hover:bg-blue-700/90"
             >
               <Share2 className="w-3.5 h-3.5" />

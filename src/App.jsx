@@ -10,7 +10,7 @@ import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
 import { supabase } from "./supabase"
 import { RatingSection } from "./components/rating-section"
-import { Toast } from "./components/toast" // Мы создадим этот компонент
+import { Toast } from "./components/toast"
 
 // Компонент для содержимого приложения
 function AppContent({
@@ -242,6 +242,122 @@ function App() {
     }
   }, [user?.id])
 
+  // Функция для обработки рефералов - вынесем её отдельно
+  const processReferral = useCallback(
+    async (startParam, currentUser) => {
+      if (!startParam || !currentUser || !currentUser.id) {
+        console.log("DEBUG REFERRAL: Missing start param or current user")
+        return
+      }
+
+      console.log("DEBUG REFERRAL: Processing referral. Param:", startParam, "Current user:", currentUser.id)
+
+      try {
+        // Проверяем, что пользователь не регистрирует сам себя
+        if (startParam === currentUser.id.toString()) {
+          console.log("DEBUG REFERRAL: User tried to refer themselves")
+          return
+        }
+
+        // Получаем пользователя-реферера по telegram_id из параметра
+        const { data: referrerData, error: referrerError } = await supabase
+          .from("users")
+          .select("id, telegram_id, display_name")
+          .eq("telegram_id", startParam)
+          .single()
+
+        console.log("DEBUG REFERRAL: Referrer data:", referrerData, "Error:", referrerError)
+
+        if (referrerError || !referrerData) {
+          console.error("DEBUG REFERRAL: Referrer not found:", referrerError)
+          return
+        }
+
+        // Получаем текущего пользователя из базы данных
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("id, telegram_id, display_name")
+          .eq("telegram_id", currentUser.id)
+          .single()
+
+        console.log("DEBUG REFERRAL: Current user data:", userData, "Error:", userError)
+
+        if (userError || !userData) {
+          console.error("DEBUG REFERRAL: Current user not found:", userError)
+          return
+        }
+
+        // Проверяем, не зарегистрирован ли уже этот реферал
+        const { data: existingReferral, error: existingError } = await supabase
+          .from("referral_users")
+          .select("id")
+          .eq("referrer_id", referrerData.id)
+          .eq("referred_id", userData.id)
+          .single()
+
+        console.log("DEBUG REFERRAL: Existing referral:", existingReferral, "Error:", existingError)
+
+        // PGRST116 - это код ошибки "не найдено"
+        if (!existingError || (existingError.code !== "PGRST116" && existingReferral)) {
+          console.log("DEBUG REFERRAL: Referral already exists")
+          return
+        }
+
+        // Определяем награду за реферала
+        const REFERRAL_REWARD = 10 // Награда за реферала (10 кристаллов)
+
+        // Регистрируем нового реферала
+        const { data: insertData, error: insertError } = await supabase
+          .from("referral_users")
+          .insert({
+            referrer_id: referrerData.id,
+            referred_id: userData.id,
+            status: "active",
+            reward: REFERRAL_REWARD,
+            notified: false,
+          })
+          .select()
+
+        console.log("DEBUG REFERRAL: Insert result:", insertData, "Error:", insertError)
+
+        if (insertError) {
+          console.error("DEBUG REFERRAL: Error registering referral:", insertError)
+          return
+        }
+
+        console.log("DEBUG REFERRAL: Referral successfully registered")
+
+        // Начисляем награду рефереру
+        const newBalance = await updateUserBalance(referrerData.id, REFERRAL_REWARD)
+
+        console.log("DEBUG REFERRAL: New balance after reward:", newBalance)
+
+        if (newBalance !== null) {
+          // Отправляем уведомление рефереру (если это текущий пользователь)
+          if (referrerData.telegram_id === currentUser.id) {
+            addNotification(`Вы получили ${REFERRAL_REWARD} 💎 за приглашение пользователя!`, "success")
+          }
+
+          // Записываем в лог транзакцию
+          const { data: transactionData, error: transactionError } = await supabase
+            .from("transactions")
+            .insert({
+              user_id: referrerData.id,
+              amount: REFERRAL_REWARD,
+              type: "referral_reward",
+              description: `Награда за приглашение пользователя ID:${userData.id}`,
+            })
+            .select()
+
+          console.log("DEBUG REFERRAL: Transaction record:", transactionData, "Error:", transactionError)
+        }
+      } catch (error) {
+        console.error("DEBUG REFERRAL: Error processing referral:", error)
+      }
+    },
+    [addNotification, updateUserBalance],
+  )
+
   // Инициализация приложения
   useEffect(() => {
     let mounted = true
@@ -252,132 +368,34 @@ function App() {
         setError(null)
 
         console.log("Initializing app...")
+
+        // Инициализируем Telegram WebApp
         const telegram = initTelegram()
         console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
 
+        // Получаем данные пользователя
         const userData = getTelegramUser()
         console.log("User data:", userData)
-
-        // Обработка реферальной ссылки
-        const handleReferral = async (telegramUser) => {
-          try {
-            // Получаем параметр startapp
-            const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param
-
-            console.log("DEBUG: Checking referral parameter:", startParam)
-            console.log("DEBUG: Current user:", telegramUser)
-
-            if (startParam) {
-              console.log("DEBUG: Referral parameter detected:", startParam)
-
-              // Проверяем, что пользователь не регистрирует сам себя
-              if (startParam === telegramUser.id.toString()) {
-                console.log("User tried to refer themselves")
-                return
-              }
-
-              // Получаем ID пользователя-реферера из базы данных
-              const { data: referrerData, error: referrerError } = await supabase
-                .from("users")
-                .select("id, telegram_id, display_name")
-                .eq("telegram_id", startParam)
-                .single()
-
-              console.log("DEBUG: Referrer data:", referrerData, "Error:", referrerError)
-
-              if (referrerError || !referrerData) {
-                console.error("Referrer not found:", referrerError)
-                return
-              }
-
-              // Получаем ID текущего пользователя из базы данных
-              const { data: userData, error: userError } = await supabase
-                .from("users")
-                .select("id, telegram_id, display_name")
-                .eq("telegram_id", telegramUser.id)
-                .single()
-
-              console.log("DEBUG: User data:", userData, "Error:", userError)
-
-              if (userError || !userData) {
-                console.error("User not found:", userError)
-                return
-              }
-
-              // Проверяем, не зарегистрирован ли уже этот реферал
-              const { data: existingReferral, error: existingError } = await supabase
-                .from("referral_users")
-                .select("id")
-                .eq("referrer_id", referrerData.id)
-                .eq("referred_id", userData.id)
-                .single()
-
-              console.log("DEBUG: Existing referral check:", existingReferral, "Error:", existingError)
-
-              if (!existingError && existingReferral) {
-                console.log("Referral already exists")
-                return
-              }
-
-              // Определяем награду за реферала
-              const REFERRAL_REWARD = 10 // Награда за реферала (10 кристаллов)
-
-              // Регистрируем нового реферала
-              const { error: insertError } = await supabase.from("referral_users").insert({
-                referrer_id: referrerData.id,
-                referred_id: userData.id,
-                status: "active",
-                reward: REFERRAL_REWARD,
-                notified: false, // Убедимся, что поле notified установлено в false
-              })
-
-              console.log("DEBUG: Insert referral result:", "Error:", insertError)
-
-              if (insertError) {
-                console.error("Error registering referral:", insertError)
-              } else {
-                console.log("Referral successfully registered")
-
-                // Начисляем награду рефереру
-                const newBalance = await updateUserBalance(referrerData.id, REFERRAL_REWARD)
-                console.log("DEBUG: New balance after reward:", newBalance)
-
-                if (newBalance !== null) {
-                  // Отправляем уведомление рефереру (если это текущий пользователь)
-                  if (referrerData.telegram_id === telegramUser.id) {
-                    addNotification(`Вы получили ${REFERRAL_REWARD} 💎 за приглашение пользователя!`, "success")
-                  }
-
-                  // Записываем в лог транзакцию
-                  const { data: transactionData, error: transactionError } = await supabase
-                    .from("transactions")
-                    .insert({
-                      user_id: referrerData.id,
-                      amount: REFERRAL_REWARD,
-                      type: "referral_reward",
-                      description: `Награда за приглашение пользователя ID:${userData.id}`,
-                    })
-
-                  console.log("DEBUG: Transaction record:", transactionData, "Error:", transactionError)
-                }
-              }
-            }
-          } catch (error) {
-            console.error("Error processing referral:", error)
-          }
-        }
-
-        await handleReferral(userData)
 
         if (!userData) {
           throw new Error("Не удалось получить данные пользователя из Telegram")
         }
 
+        // Создаем/обновляем пользователя в базе данных
         const dbUser = await createOrUpdateUser(userData)
         console.log("Database user:", dbUser)
 
         if (!dbUser) {
           throw new Error("Не удалось создать/обновить пользователя в базе")
+        }
+
+        // Получаем параметр startapp из URL
+        const startParam = telegram?.initDataUnsafe?.start_param
+        console.log("Start param from Telegram:", startParam)
+
+        // Обрабатываем реферальную ссылку, если она есть
+        if (startParam) {
+          await processReferral(startParam, userData)
         }
 
         if (mounted) {
@@ -393,9 +411,7 @@ function App() {
           setBalance(dbUser.balance)
           console.log("User initialized:", userWithDisplay)
 
-          // Проверим и исправим функцию checkNewReferrals
-
-          // В функции initApp, после инициализации пользователя, добавим более подробное логирование для проверки новых рефералов
+          // Проверяем, есть ли новые рефералы
           const checkNewReferrals = async () => {
             try {
               console.log("DEBUG: Checking new referrals for user ID:", dbUser.id)
@@ -464,7 +480,7 @@ function App() {
     return () => {
       mounted = false
     }
-  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData, addNotification, updateUserBalance])
+  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData, addNotification, processReferral])
 
   // Обработчик обновления баланса
   const handleBalanceUpdate = useCallback(
