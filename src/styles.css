@@ -212,18 +212,19 @@ body {
   background: linear-gradient(45deg, #0f172a, #1e293b);
 }
 
+/* app container */
 .app-container {
   height: 100vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 16px 16px calc(env(safe-area-inset-bottom) + 80px);
+  padding: 16px 16px calc(env(safe-area-inset-bottom) + 20px);
   position: relative;
   z-index: 1;
   height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: 20px;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 20px);
   position: relative;
   z-index: 1;
   max-width: 1200px;
