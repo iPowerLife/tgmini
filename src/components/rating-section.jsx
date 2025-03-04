@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { supabase } from "../supabase"
-import { useTelegramUser } from "../hooks/use-telegram-user"
-import { useCachedData } from "../hooks/use-cached-data"
 
 // Типы рейтингов
 const RATING_TYPES = {
@@ -41,30 +39,16 @@ const RatingSection = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [currentPage, setCurrentPage] = useState(0)
+  const [ratingData, setRatingData] = useState([])
+  const [telegramUser, setTelegramUser] = useState(null)
 
   // Получаем данные пользователя из Telegram
-  const { user: telegramUser } = useTelegramUser()
-
-  // Используем хук для кэширования данных рейтинга
-  const {
-    data: ratingData,
-    isLoading: isDataLoading,
-    error: dataError,
-    mutate,
-  } = useCachedData(`ratings_${activeRatingType}`, () => fetchRatingData(activeRatingType), {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    refreshInterval: 60000, // Обновляем данные каждую минуту
-  })
-
-  // Получаем позицию текущего пользователя
-  const currentUserPosition = useMemo(() => {
-    if (!ratingData || !telegramUser) return null
-
-    const index = ratingData.findIndex((item) => item.telegram_id === telegramUser.id || item.id === telegramUser.id)
-
-    return index !== -1 ? { ...ratingData[index], position: index + 1 } : null
-  }, [ratingData, telegramUser])
+  useEffect(() => {
+    const telegram = window.Telegram?.WebApp
+    if (telegram) {
+      setTelegramUser(telegram.initDataUnsafe?.user || null)
+    }
+  }, [])
 
   // Функция для получения данных рейтинга из Supabase
   const fetchRatingData = useCallback(async (type) => {
@@ -101,7 +85,6 @@ const RatingSection = () => {
           break
 
         case RATING_TYPES.TASKS:
-          // Для рейтинга по заданиям нужно сделать более сложный запрос с подсчетом выполненных заданий
           query = supabase
             .from("user_tasks")
             .select("user_id, users:user_id(id, telegram_id, username, first_name, last_name, photo_url, level)")
@@ -117,13 +100,11 @@ const RatingSection = () => {
             .limit(100)
       }
 
-      const { data, error } = await query
+      const { data, error: queryError } = await query
 
-      if (error) throw error
+      if (queryError) throw queryError
 
-      // Обработка данных для рейтинга по заданиям
       if (type === RATING_TYPES.TASKS) {
-        // Группируем задания по пользователям и считаем количество
         const userTasksCount = data.reduce((acc, item) => {
           const userId = item.user_id
           if (!acc[userId]) {
@@ -137,82 +118,100 @@ const RatingSection = () => {
           return acc
         }, {})
 
-        // Преобразуем в массив и сортируем
         const processedData = Object.values(userTasksCount).sort((a, b) => b.tasks_completed - a.tasks_completed)
-
-        return processedData
+        setRatingData(processedData)
+      } else {
+        setRatingData(data)
       }
-
-      return data
     } catch (err) {
       setError(err.message)
       console.error("Error fetching rating data:", err)
-      return []
     } finally {
       setIsLoading(false)
     }
   }, [])
 
-  // Эффект для загрузки данных при изменении типа рейтинга
+  // Загружаем данные при изменении типа рейтинга
   useEffect(() => {
-    mutate()
-    setCurrentPage(0) // Сбрасываем страницу при смене типа рейтинга
-  }, [mutate])
+    fetchRatingData(activeRatingType)
+  }, [activeRatingType, fetchRatingData])
+
+  // Получаем позицию текущего пользователя
+  const currentUserPosition = useMemo(() => {
+    if (!ratingData?.length || !telegramUser) return null
+
+    const index = ratingData.findIndex((item) => item.telegram_id === telegramUser.id || item.id === telegramUser.id)
+
+    return index !== -1 ? { ...ratingData[index], position: index + 1 } : null
+  }, [ratingData, telegramUser])
 
   // Функция для отображения значения в зависимости от типа рейтинга
-  const getRatingValue = (item) => {
-    switch (activeRatingType) {
-      case RATING_TYPES.MINING:
-        return `${item.mining_power || 0} ⚡`
-      case RATING_TYPES.REFERRALS:
-        return `${item.referral_count || 0} 👥`
-      case RATING_TYPES.LEVEL:
-        return `Ур. ${item.level || 1}`
-      case RATING_TYPES.TASKS:
-        return `${item.tasks_completed || 0} ✅`
-      default:
-        return `${item.mining_power || 0} ⚡`
-    }
-  }
+  const getRatingValue = useCallback(
+    (item) => {
+      switch (activeRatingType) {
+        case RATING_TYPES.MINING:
+          return `${item.mining_power || 0} ⚡`
+        case RATING_TYPES.REFERRALS:
+          return `${item.referral_count || 0} 👥`
+        case RATING_TYPES.LEVEL:
+          return `Ур. ${item.level || 1}`
+        case RATING_TYPES.TASKS:
+          return `${item.tasks_completed || 0} ✅`
+        default:
+          return `${item.mining_power || 0} ⚡`
+      }
+    },
+    [activeRatingType],
+  )
 
   // Функция для отображения имени пользователя
-  const getUserName = (item) => {
+  const getUserName = useCallback((item) => {
     if (item.username) return `@${item.username}`
     if (item.first_name) {
       return item.last_name ? `${item.first_name} ${item.last_name}` : item.first_name
     }
     return `User ${item.telegram_id}`
-  }
+  }, [])
 
   // Получаем данные для текущей страницы
   const currentPageData = useMemo(() => {
-    if (!ratingData) return []
+    if (!ratingData?.length) return []
     const startIndex = currentPage * ITEMS_PER_PAGE
     return ratingData.slice(startIndex, startIndex + ITEMS_PER_PAGE)
   }, [ratingData, currentPage])
 
   // Общее количество страниц
   const totalPages = useMemo(() => {
-    if (!ratingData) return 0
+    if (!ratingData?.length) return 0
     return Math.ceil(ratingData.length / ITEMS_PER_PAGE)
   }, [ratingData])
 
   // Обработчики пагинации
-  const goToNextPage = () => {
+  const goToNextPage = useCallback(() => {
     if (currentPage < totalPages - 1) {
-      setCurrentPage(currentPage + 1)
+      setCurrentPage((prev) => prev + 1)
     }
-  }
+  }, [currentPage, totalPages])
 
-  const goToPrevPage = () => {
+  const goToPrevPage = useCallback(() => {
     if (currentPage > 0) {
-      setCurrentPage(currentPage - 1)
+      setCurrentPage((prev) => prev - 1)
     }
-  }
+  }, [currentPage])
 
   // Обработчик изменения типа рейтинга
-  const handleRatingTypeChange = (type) => {
+  const handleRatingTypeChange = useCallback((type) => {
     setActiveRatingType(type)
+    setCurrentPage(0)
+  }, [])
+
+  if (error) {
+    return (
+      <div className="error-state">
+        <p>Произошла ошибка при загрузке рейтинга</p>
+        <button onClick={() => fetchRatingData(activeRatingType)}>Попробовать снова</button>
+      </div>
+    )
   }
 
   return (
@@ -220,7 +219,6 @@ const RatingSection = () => {
       <div className="rating-header">
         <h2 className="rating-title">Рейтинг игроков</h2>
 
-        {/* Фильтры типов рейтинга */}
         <div className="rating-filters">
           {Object.values(RATING_TYPES).map((type) => (
             <button
@@ -235,27 +233,14 @@ const RatingSection = () => {
         </div>
       </div>
 
-      {/* Кнопка для прокрутки к позиции текущего пользователя */}
       {currentUserPosition && <button className="find-me-btn">Моя позиция ({currentUserPosition.position})</button>}
 
-      {/* Состояние загрузки */}
-      {isLoading && (
+      {isLoading ? (
         <div className="loading-state">
           <div className="spinner"></div>
           <p>Загрузка рейтинга...</p>
         </div>
-      )}
-
-      {/* Сообщение об ошибке */}
-      {error && (
-        <div className="error-state">
-          <p>Произошла ошибка при загрузке рейтинга</p>
-          <button onClick={() => mutate()}>Попробовать снова</button>
-        </div>
-      )}
-
-      {/* Список рейтинга с пагинацией */}
-      {!isLoading && !error && ratingData && (
+      ) : (
         <div className="rating-list-container">
           {currentPageData.map((item, index) => {
             const position = currentPage * ITEMS_PER_PAGE + index + 1
@@ -266,7 +251,6 @@ const RatingSection = () => {
                 key={`${item.id || item.telegram_id}-${position}`}
                 className={`rating-item ${isCurrentUser ? "current-user" : ""}`}
               >
-                {/* Позиция в рейтинге */}
                 <div
                   className="position"
                   style={{
@@ -276,7 +260,6 @@ const RatingSection = () => {
                   {position}
                 </div>
 
-                {/* Аватар пользователя */}
                 <div className="user-avatar">
                   <img
                     src={item.photo_url || "/placeholder.svg?height=40&width=40"}
@@ -290,16 +273,13 @@ const RatingSection = () => {
                   )}
                 </div>
 
-                {/* Информация о пользователе */}
                 <div className="user-info">
                   <span className="username">{getUserName(item)}</span>
                   <span className="user-level">Уровень {item.level || 1}</span>
                 </div>
 
-                {/* Значение рейтинга */}
                 <div className="rating-value">{getRatingValue(item)}</div>
 
-                {/* Действия с пользователем */}
                 <div className="user-actions">
                   {!isCurrentUser && (
                     <button className="gift-button" aria-label="Отправить подарок">
@@ -311,7 +291,6 @@ const RatingSection = () => {
             )
           })}
 
-          {/* Пагинация */}
           {totalPages > 1 && (
             <div className="pagination">
               <button className="pagination-btn" onClick={goToPrevPage} disabled={currentPage === 0}>
@@ -328,7 +307,6 @@ const RatingSection = () => {
         </div>
       )}
 
-      {/* Информация о текущем пользователе */}
       {currentUserPosition && (
         <div className="current-user-info">
           <div className="user-position">
