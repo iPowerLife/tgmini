@@ -48,16 +48,22 @@ export function UserProfile({ user, miners, totalPower }) {
         const { data: referralStats, error: referralError } = await supabase
           .from("referral_users")
           .select(`
-            referrer_id,
-            referred_id
-          `)
+        referrer_id,
+        referred_id
+      `)
           .eq("referrer_id", userData.id)
           .eq("status", "active")
 
         if (!referralError && referralStats) {
+          // Получаем сумму наград за рефералов
+          const { data: rewardsData, error: rewardsError } = await supabase.rpc("get_referral_rewards", {
+            user_id_param: userData.id,
+          })
+
           setStats((prev) => ({
             ...prev,
             referral_count: referralStats.length || 0,
+            referral_rewards: rewardsError ? 0 : rewardsData || 0,
           }))
         }
       }
