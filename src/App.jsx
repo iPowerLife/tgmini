@@ -2,7 +2,7 @@
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
 import { useState, useEffect, useCallback } from "react"
-import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
+import { initTelegram, getTelegramUser, createOrUpdateUser, canBotMessageUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
@@ -303,8 +303,24 @@ function App() {
                 if (!referrerTelegramError && referrerTelegramData?.telegram_id) {
                   console.log(`Preparing to send notification to telegram_id: ${referrerTelegramData.telegram_id}`)
 
-                  // Формируем текст уведомления
-                  const notificationText = `
+                  // Проверяем, может ли бот отправлять сообщения пользователю
+                  const canMessage = await canBotMessageUser(referrerTelegramData.telegram_id)
+
+                  if (!canMessage) {
+                    console.log(
+                      `Bot cannot send messages to user ${referrerTelegramData.telegram_id}. User may need to start the bot first.`,
+                    )
+
+                    // Сохраняем уведомление в базе данных для отправки позже
+                    await supabase.from("pending_notifications").insert({
+                      user_id: referrerData.id,
+                      telegram_id: referrerTelegramData.telegram_id,
+                      message: `Пользователь ${telegramUser.first_name || "Новый пользователь"} присоединился по вашей реферальной ссылке. Вы получили награду: ${REFERRER_REWARD} алмазов`,
+                      created_at: new Date().toISOString(),
+                    })
+                  } else {
+                    // Формируем текст уведомления
+                    const notificationText = `
 <b>🎉 У вас новый реферал!</b>
 
 Пользователь <b>${telegramUser.first_name || "Новый пользователь"}</b> присоединился по вашей реферальной ссылке.
@@ -314,17 +330,26 @@ function App() {
 Продолжайте приглашать друзей и получать бонусы!
 `
 
-                  // Отправляем уведомление рефоводу
-                  try {
-                    const result = await sendTelegramMessage(referrerTelegramData.telegram_id, notificationText)
-                    console.log("Send message result:", result)
-                    if (result) {
-                      console.log(`Notification sent to referrer (${referrerTelegramData.telegram_id})`)
-                    } else {
-                      console.error(`Failed to send notification to referrer (${referrerTelegramData.telegram_id})`)
+                    // Отправляем уведомление рефоводу
+                    try {
+                      const result = await sendTelegramMessage(referrerTelegramData.telegram_id, notificationText)
+                      console.log("Send message result:", result)
+                      if (result) {
+                        console.log(`Notification sent to referrer (${referrerTelegramData.telegram_id})`)
+                      } else {
+                        console.error(`Failed to send notification to referrer (${referrerTelegramData.telegram_id})`)
+
+                        // Сохраняем уведомление в базе данных для отправки позже
+                        await supabase.from("pending_notifications").insert({
+                          user_id: referrerData.id,
+                          telegram_id: referrerTelegramData.telegram_id,
+                          message: `Пользователь ${telegramUser.first_name || "Новый пользователь"} присоединился по вашей реферальной ссылке. Вы получили награду: ${REFERRER_REWARD} алмазов`,
+                          created_at: new Date().toISOString(),
+                        })
+                      }
+                    } catch (notificationError) {
+                      console.error("Error sending notification:", notificationError)
                     }
-                  } catch (notificationError) {
-                    console.error("Error sending notification:", notificationError)
                   }
                 } else {
                   console.error("Cannot send notification: referrer telegram_id not found")

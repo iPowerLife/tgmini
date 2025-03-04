@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Users, Share2 } from "lucide-react"
 import { supabase } from "../supabase"
+import { testSendMessage } from "../utils/telegram-bot"
 
 export function UserProfile({ user, miners, totalPower }) {
   const [telegramUser, setTelegramUser] = useState(null)
@@ -215,7 +216,27 @@ export function UserProfile({ user, miners, totalPower }) {
             <p className="text-xs text-gray-500 mt-2">
               Приглашайте друзей и получайте награды за каждого активного реферала
             </p>
+            <p className="text-xs text-yellow-500 mt-1">
+              ⚠️ Важно: Чтобы получать уведомления о новых рефералах, отправьте команду /start боту @trteeeeeee_bot
+            </p>
           </div>
+          <button
+            onClick={async () => {
+              if (telegramUser?.id) {
+                const result = await testSendMessage(telegramUser.id)
+                if (result) {
+                  alert("Тестовое сообщение отправлено успешно!")
+                } else {
+                  alert(
+                    "Не удалось отправить тестовое сообщение. Возможно, вам нужно сначала отправить команду /start боту.",
+                  )
+                }
+              }
+            }}
+            className="w-full mt-3 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg"
+          >
+            Проверить уведомления
+          </button>
         </div>
       </div>
     </div>
