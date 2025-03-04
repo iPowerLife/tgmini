@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Trophy, Zap, Diamond, Users, Search, ChevronLeft, ChevronRight, Award } from "lucide-react"
 
-export function RatingSection({ currentUserId, users = [] }) {
+const RatingSection = ({ currentUserId, users = [] }) => {
   const [activeTab, setActiveTab] = useState("mining")
   const [sortedUsers, setSortedUsers] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -356,8 +356,5 @@ export function RatingSection({ currentUserId, users = [] }) {
   )
 }
 
-// Добавьте этот стиль в ваш CSS файл
-// .animate-pulse-slow {
-//   animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-// }
+export default RatingSection
 
