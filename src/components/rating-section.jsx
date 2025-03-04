@@ -203,7 +203,7 @@ export function RatingSection() {
       <div className="px-4 py-4">
         {/* Заголовок */}
         <div className="mb-6 bg-[#1E2235] p-4 rounded-xl shadow-lg">
-          <h1 className="text-3xl font-light tracking-wide text-white text-center">Рейтинг игроков</h1>
+          <h1 className="text-3xl font-light tracking-wide text-white text-center">Рейтинг Игроков</h1>
         </div>
 
         {/* Остальной код компонента остается тем же */}
