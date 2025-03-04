@@ -2,6 +2,60 @@
 const TELEGRAM_BOT_TOKEN = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN
 
 /**
+ * Проверяет статус бота и его возможность отправлять сообщения
+ * @param {number} chatId - ID чата/пользователя в Telegram
+ * @returns {Promise<{canMessage: boolean, error?: string}>}
+ */
+export async function checkBotStatus(chatId) {
+  try {
+    // Проверяем, что токен существует
+    if (!TELEGRAM_BOT_TOKEN) {
+      return {
+        canMessage: false,
+        error: "BOT_TOKEN_MISSING",
+      }
+    }
+
+    const numericChatId = Number(chatId)
+    if (isNaN(numericChatId)) {
+      return {
+        canMessage: false,
+        error: "INVALID_CHAT_ID",
+      }
+    }
+
+    // Проверяем статус бота через getChat
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: numericChatId,
+      }),
+    })
+
+    const data = await response.json()
+    console.log("Bot status check response:", data)
+
+    if (!data.ok) {
+      return {
+        canMessage: false,
+        error: data.description || "TELEGRAM_API_ERROR",
+      }
+    }
+
+    return { canMessage: true }
+  } catch (error) {
+    console.error("Error checking bot status:", error)
+    return {
+      canMessage: false,
+      error: "NETWORK_ERROR",
+    }
+  }
+}
+
+/**
  * Отправляет сообщение пользователю через Telegram Bot API
  * @param {number} chatId - ID чата/пользователя в Telegram
  * @param {string} text - Текст сообщения
@@ -12,23 +66,16 @@ export async function sendTelegramMessage(chatId, text, options = {}) {
   try {
     console.log(`Attempting to send message to chat ID: ${chatId}`)
 
-    // Убедитесь, что chatId - это число, а не строка
-    const numericChatId = Number(chatId)
+    // Сначала проверяем статус бота
+    const { canMessage, error } = await checkBotStatus(chatId)
 
-    if (isNaN(numericChatId)) {
-      console.error(`Invalid chat ID: ${chatId} is not a number`)
-      return null
-    }
-
-    console.log(`Using token: ${TELEGRAM_BOT_TOKEN ? "Token exists" : "Token is missing"}`)
-
-    if (!TELEGRAM_BOT_TOKEN) {
-      console.error("TELEGRAM_BOT_TOKEN is not defined")
-      return null
+    if (!canMessage) {
+      console.error(`Cannot send message to ${chatId}. Error:`, error)
+      throw new Error(error)
     }
 
     const requestBody = {
-      chat_id: numericChatId,
+      chat_id: chatId,
       text: text,
       parse_mode: "HTML",
       ...options,
@@ -48,66 +95,68 @@ export async function sendTelegramMessage(chatId, text, options = {}) {
     console.log("Telegram API response:", data)
 
     if (!data.ok) {
-      console.error("Error sending Telegram message:", data.description)
-      return null
+      // Обрабатываем специфические ошибки Telegram
+      if (data.error_code === 403) {
+        throw new Error("BOT_BLOCKED")
+      }
+      if (data.error_code === 400 && data.description.includes("chat not found")) {
+        throw new Error("CHAT_NOT_FOUND")
+      }
+      throw new Error(data.description || "TELEGRAM_API_ERROR")
     }
 
-    console.log("Message sent successfully to", numericChatId)
+    console.log("Message sent successfully to", chatId)
     return data.result
   } catch (error) {
     console.error("Error sending Telegram message:", error)
-    return null
+    throw error
   }
 }
 
-// Функция для проверки, может ли бот отправлять сообщения пользователю
-export async function canBotMessageUser(chatId) {
-  try {
-    const numericChatId = Number(chatId)
-
-    if (isNaN(numericChatId)) {
-      return false
-    }
-
-    if (!TELEGRAM_BOT_TOKEN) {
-      return false
-    }
-
-    // Отправляем запрос getChat для проверки доступа к пользователю
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        chat_id: numericChatId,
-      }),
-    })
-
-    const data = await response.json()
-
-    // Если запрос успешен, значит бот имеет доступ к чату
-    return data.ok
-  } catch (error) {
-    console.error("Error checking bot access:", error)
-    return false
-  }
-}
-
-// Тестовая функция для проверки отправки сообщений
+/**
+ * Тестирует отправку сообщения и возвращает понятную ошибку
+ * @param {number} chatId - ID чата/пользователя в Telegram
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
 export async function testSendMessage(chatId) {
-  // Сначала проверяем, может ли бот отправлять сообщения
-  const canMessage = await canBotMessageUser(chatId)
+  try {
+    const result = await sendTelegramMessage(
+      chatId,
+      "<b>🔔 Тестовое сообщение</b>\n\nЕсли вы видите это сообщение, значит уведомления работают правильно!",
+    )
 
-  if (!canMessage) {
-    console.error(`Bot cannot send messages to user ${chatId}. User may need to start the bot first.`)
-    return null
+    return {
+      success: true,
+      message: "Тестовое сообщение успешно отправлено!",
+    }
+  } catch (error) {
+    console.error("Test message error:", error)
+
+    // Возвращаем понятное пользователю сообщение об ошибке
+    let userMessage = "Не удалось отправить тестовое сообщение. "
+
+    switch (error.message) {
+      case "BOT_TOKEN_MISSING":
+        userMessage += "Ошибка конфигурации бота."
+        break
+      case "INVALID_CHAT_ID":
+        userMessage += "Неверный ID пользователя."
+        break
+      case "BOT_BLOCKED":
+        userMessage += "Бот заблокирован пользователем."
+        break
+      case "CHAT_NOT_FOUND":
+        userMessage +=
+          "Для получения уведомлений, пожалуйста:\n1. Перейдите к боту @trteeeeeee_bot\n2. Отправьте команду /start\n3. Попробуйте снова"
+        break
+      default:
+        userMessage += "Произошла неизвестная ошибка. Пожалуйста, попробуйте позже."
+    }
+
+    return {
+      success: false,
+      message: userMessage,
+    }
   }
-
-  const result = await sendTelegramMessage(
-    chatId,
-    "<b>Тестовое сообщение</b>\n\nЕсли вы видите это сообщение, значит бот настроен правильно.",
-  )
-  return result
 }
 

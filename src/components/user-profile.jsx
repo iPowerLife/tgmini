@@ -223,13 +223,15 @@ export function UserProfile({ user, miners, totalPower }) {
           <button
             onClick={async () => {
               if (telegramUser?.id) {
-                const result = await testSendMessage(telegramUser.id)
-                if (result) {
-                  alert("Тестовое сообщение отправлено успешно!")
+                const { success, message } = await testSendMessage(telegramUser.id)
+                if (window.Telegram?.WebApp?.showPopup) {
+                  window.Telegram.WebApp.showPopup({
+                    title: success ? "Успех" : "Ошибка",
+                    message: message,
+                    buttons: [{ type: "close" }],
+                  })
                 } else {
-                  alert(
-                    "Не удалось отправить тестовое сообщение. Возможно, вам нужно сначала отправить команду /start боту.",
-                  )
+                  alert(message)
                 }
               }
             }}
