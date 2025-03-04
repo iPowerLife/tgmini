@@ -10,7 +10,6 @@ import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
 import { supabase } from "./supabase"
 import { RatingSection } from "./components/rating-section"
-import { Toast } from "./components/toast"
 
 // Компонент для содержимого приложения
 function AppContent({
@@ -22,26 +21,12 @@ function AppContent({
   tasksData,
   handleTaskComplete,
   ratingData,
-  notifications,
-  removeNotification,
 }) {
   const location = useLocation()
 
   return (
     <div className="root-container">
       <div className="page-container">
-        {/* Уведомления */}
-        <div className="notifications-container">
-          {notifications.map((notification) => (
-            <Toast
-              key={notification.id}
-              message={notification.message}
-              type={notification.type}
-              onClose={() => removeNotification(notification.id)}
-            />
-          ))}
-        </div>
-
         <Routes>
           <Route
             path="/"
@@ -100,57 +85,12 @@ function App() {
   const [balance, setBalance] = useState(0)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [notifications, setNotifications] = useState([])
 
   // Состояния для данных
   const [shopData, setShopData] = useState({ categories: [], models: [] })
   const [minersData, setMinersData] = useState({ miners: [], totalPower: 0 })
   const [tasksData, setTasksData] = useState({ tasks: [] })
   const [ratingData, setRatingData] = useState({ users: [] })
-
-  // Функция для добавления уведомлений
-  const addNotification = useCallback((message, type = "info") => {
-    const id = Date.now()
-    setNotifications((prev) => [...prev, { id, message, type }])
-
-    // Автоматически удаляем уведомление через 5 секунд
-    setTimeout(() => {
-      removeNotification(id)
-    }, 5000)
-
-    return id
-  }, [])
-
-  // Функция для удаления уведомлений
-  const removeNotification = useCallback((id) => {
-    setNotifications((prev) => prev.filter((notification) => notification.id !== id))
-  }, [])
-
-  // Функция для обновления баланса пользователя
-  const updateUserBalance = useCallback(async (userId, amount) => {
-    try {
-      // Получаем текущий баланс пользователя
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("balance")
-        .eq("id", userId)
-        .single()
-
-      if (userError) throw userError
-
-      const newBalance = userData.balance + amount
-
-      // Обновляем баланс пользователя
-      const { error: updateError } = await supabase.from("users").update({ balance: newBalance }).eq("id", userId)
-
-      if (updateError) throw updateError
-
-      return newBalance
-    } catch (error) {
-      console.error("Error updating user balance:", error)
-      return null
-    }
-  }, [])
 
   // Загрузка данных магазина
   const loadShopData = useCallback(async () => {
@@ -242,122 +182,6 @@ function App() {
     }
   }, [user?.id])
 
-  // Функция для обработки рефералов - вынесем её отдельно
-  const processReferral = useCallback(
-    async (startParam, currentUser) => {
-      if (!startParam || !currentUser || !currentUser.id) {
-        console.log("DEBUG REFERRAL: Missing start param or current user")
-        return
-      }
-
-      console.log("DEBUG REFERRAL: Processing referral. Param:", startParam, "Current user:", currentUser.id)
-
-      try {
-        // Проверяем, что пользователь не регистрирует сам себя
-        if (startParam === currentUser.id.toString()) {
-          console.log("DEBUG REFERRAL: User tried to refer themselves")
-          return
-        }
-
-        // Получаем пользователя-реферера по telegram_id из параметра
-        const { data: referrerData, error: referrerError } = await supabase
-          .from("users")
-          .select("id, telegram_id, display_name")
-          .eq("telegram_id", startParam)
-          .single()
-
-        console.log("DEBUG REFERRAL: Referrer data:", referrerData, "Error:", referrerError)
-
-        if (referrerError || !referrerData) {
-          console.error("DEBUG REFERRAL: Referrer not found:", referrerError)
-          return
-        }
-
-        // Получаем текущего пользователя из базы данных
-        const { data: userData, error: userError } = await supabase
-          .from("users")
-          .select("id, telegram_id, display_name")
-          .eq("telegram_id", currentUser.id)
-          .single()
-
-        console.log("DEBUG REFERRAL: Current user data:", userData, "Error:", userError)
-
-        if (userError || !userData) {
-          console.error("DEBUG REFERRAL: Current user not found:", userError)
-          return
-        }
-
-        // Проверяем, не зарегистрирован ли уже этот реферал
-        const { data: existingReferral, error: existingError } = await supabase
-          .from("referral_users")
-          .select("id")
-          .eq("referrer_id", referrerData.id)
-          .eq("referred_id", userData.id)
-          .single()
-
-        console.log("DEBUG REFERRAL: Existing referral:", existingReferral, "Error:", existingError)
-
-        // PGRST116 - это код ошибки "не найдено"
-        if (!existingError || (existingError.code !== "PGRST116" && existingReferral)) {
-          console.log("DEBUG REFERRAL: Referral already exists")
-          return
-        }
-
-        // Определяем награду за реферала
-        const REFERRAL_REWARD = 10 // Награда за реферала (10 кристаллов)
-
-        // Регистрируем нового реферала
-        const { data: insertData, error: insertError } = await supabase
-          .from("referral_users")
-          .insert({
-            referrer_id: referrerData.id,
-            referred_id: userData.id,
-            status: "active",
-            reward: REFERRAL_REWARD,
-            notified: false,
-          })
-          .select()
-
-        console.log("DEBUG REFERRAL: Insert result:", insertData, "Error:", insertError)
-
-        if (insertError) {
-          console.error("DEBUG REFERRAL: Error registering referral:", insertError)
-          return
-        }
-
-        console.log("DEBUG REFERRAL: Referral successfully registered")
-
-        // Начисляем награду рефереру
-        const newBalance = await updateUserBalance(referrerData.id, REFERRAL_REWARD)
-
-        console.log("DEBUG REFERRAL: New balance after reward:", newBalance)
-
-        if (newBalance !== null) {
-          // Отправляем уведомление рефереру (если это текущий пользователь)
-          if (referrerData.telegram_id === currentUser.id) {
-            addNotification(`Вы получили ${REFERRAL_REWARD} 💎 за приглашение пользователя!`, "success")
-          }
-
-          // Записываем в лог транзакцию
-          const { data: transactionData, error: transactionError } = await supabase
-            .from("transactions")
-            .insert({
-              user_id: referrerData.id,
-              amount: REFERRAL_REWARD,
-              type: "referral_reward",
-              description: `Награда за приглашение пользователя ID:${userData.id}`,
-            })
-            .select()
-
-          console.log("DEBUG REFERRAL: Transaction record:", transactionData, "Error:", transactionError)
-        }
-      } catch (error) {
-        console.error("DEBUG REFERRAL: Error processing referral:", error)
-      }
-    },
-    [addNotification, updateUserBalance],
-  )
-
   // Инициализация приложения
   useEffect(() => {
     let mounted = true
@@ -368,34 +192,94 @@ function App() {
         setError(null)
 
         console.log("Initializing app...")
-
-        // Инициализируем Telegram WebApp
         const telegram = initTelegram()
         console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
 
-        // Получаем данные пользователя
         const userData = getTelegramUser()
         console.log("User data:", userData)
+
+        // Обработка реферальной ссылки
+        const handleReferral = async (telegramUser) => {
+          try {
+            // Получаем параметр startapp
+            const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param
+
+            if (startParam) {
+              console.log("DEBUG: Referral parameter detected:", startParam)
+
+              // Проверяем, что пользователь не регистрирует сам себя
+              if (startParam === telegramUser.id.toString()) {
+                console.log("User tried to refer themselves")
+                return
+              }
+
+              // Получаем ID пользователя-реферера из базы данных
+              const { data: referrerData, error: referrerError } = await supabase
+                .from("users")
+                .select("id")
+                .eq("telegram_id", startParam)
+                .single()
+
+              if (referrerError || !referrerData) {
+                console.error("Referrer not found:", referrerError)
+                return
+              }
+
+              // Получаем ID текущего пользователя из базы данных
+              const { data: userData, error: userError } = await supabase
+                .from("users")
+                .select("id")
+                .eq("telegram_id", telegramUser.id)
+                .single()
+
+              if (userError || !userData) {
+                console.error("User not found:", userError)
+                return
+              }
+
+              // Проверяем, не зарегистрирован ли уже этот реферал
+              const { data: existingReferral, error: existingError } = await supabase
+                .from("referral_users")
+                .select("id")
+                .eq("referrer_id", referrerData.id)
+                .eq("referred_id", userData.id)
+                .single()
+
+              if (!existingError && existingReferral) {
+                console.log("Referral already exists")
+                return
+              }
+
+              // Регистрируем нового реферала
+              const { error: insertError } = await supabase.from("referral_users").insert({
+                referrer_id: referrerData.id,
+                referred_id: userData.id,
+                status: "active",
+              })
+
+              if (insertError) {
+                console.error("Error registering referral:", insertError)
+              } else {
+                console.log("Referral successfully registered")
+                // Можно показать уведомление пользователю
+              }
+            }
+          } catch (error) {
+            console.error("Error processing referral:", error)
+          }
+        }
+
+        await handleReferral(userData)
 
         if (!userData) {
           throw new Error("Не удалось получить данные пользователя из Telegram")
         }
 
-        // Создаем/обновляем пользователя в базе данных
         const dbUser = await createOrUpdateUser(userData)
         console.log("Database user:", dbUser)
 
         if (!dbUser) {
           throw new Error("Не удалось создать/обновить пользователя в базе")
-        }
-
-        // Получаем параметр startapp из URL
-        const startParam = telegram?.initDataUnsafe?.start_param
-        console.log("Start param from Telegram:", startParam)
-
-        // Обрабатываем реферальную ссылку, если она есть
-        if (startParam) {
-          await processReferral(startParam, userData)
         }
 
         if (mounted) {
@@ -410,54 +294,6 @@ function App() {
           setUser(userWithDisplay)
           setBalance(dbUser.balance)
           console.log("User initialized:", userWithDisplay)
-
-          // Проверяем, есть ли новые рефералы
-          const checkNewReferrals = async () => {
-            try {
-              console.log("DEBUG: Checking new referrals for user ID:", dbUser.id)
-
-              const { data: newReferrals, error } = await supabase
-                .from("referral_users")
-                .select(`
-                  id,
-                  referred:referred_id(id, display_name),
-                  created_at,
-                  reward
-                `)
-                .eq("referrer_id", dbUser.id)
-                .eq("status", "active")
-                .eq("notified", false)
-                .order("created_at", { ascending: false })
-
-              console.log("DEBUG: New referrals query result:", newReferrals, "Error:", error)
-
-              if (error) throw error
-
-              if (newReferrals && newReferrals.length > 0) {
-                // Отмечаем рефералов как уведомленных
-                const referralIds = newReferrals.map((ref) => ref.id)
-
-                const { data: updateData, error: updateError } = await supabase
-                  .from("referral_users")
-                  .update({ notified: true })
-                  .in("id", referralIds)
-
-                console.log("DEBUG: Update notified status result:", updateData, "Error:", updateError)
-
-                // Показываем уведомления о новых рефералах
-                newReferrals.forEach((referral) => {
-                  const referredName = referral.referred?.display_name || "Новый пользователь"
-                  const reward = referral.reward || 10
-                  addNotification(`${referredName} присоединился по вашей ссылке! +${reward} 💎`, "success")
-                })
-              }
-            } catch (error) {
-              console.error("Error checking new referrals:", error)
-            }
-          }
-
-          // Проверяем новых рефералов
-          await checkNewReferrals()
 
           // Загружаем все данные сразу после инициализации пользователя
           await Promise.all([loadShopData(), loadMinersData(), loadTasksData(), loadRatingData()])
@@ -480,7 +316,7 @@ function App() {
     return () => {
       mounted = false
     }
-  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData, addNotification, processReferral])
+  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData])
 
   // Обработчик обновления баланса
   const handleBalanceUpdate = useCallback(
@@ -542,8 +378,6 @@ function App() {
         tasksData={tasksData}
         handleTaskComplete={handleTaskComplete}
         ratingData={ratingData}
-        notifications={notifications}
-        removeNotification={removeNotification}
       />
     </Router>
   )
