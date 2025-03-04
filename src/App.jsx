@@ -297,7 +297,12 @@ function App() {
                   .eq("id", referrerData.id)
                   .single()
 
+                console.log("Referrer telegram data:", referrerTelegramData)
+                console.log("Referrer telegram error:", referrerTelegramError)
+
                 if (!referrerTelegramError && referrerTelegramData?.telegram_id) {
+                  console.log(`Preparing to send notification to telegram_id: ${referrerTelegramData.telegram_id}`)
+
                   // Формируем текст уведомления
                   const notificationText = `
 <b>🎉 У вас новый реферал!</b>
@@ -310,11 +315,20 @@ function App() {
 `
 
                   // Отправляем уведомление рефоводу
-                  sendTelegramMessage(referrerTelegramData.telegram_id, notificationText).then((result) => {
+                  try {
+                    const result = await sendTelegramMessage(referrerTelegramData.telegram_id, notificationText)
+                    console.log("Send message result:", result)
                     if (result) {
                       console.log(`Notification sent to referrer (${referrerTelegramData.telegram_id})`)
+                    } else {
+                      console.error(`Failed to send notification to referrer (${referrerTelegramData.telegram_id})`)
                     }
-                  })
+                  } catch (notificationError) {
+                    console.error("Error sending notification:", notificationError)
+                  }
+                } else {
+                  console.error("Cannot send notification: referrer telegram_id not found")
+                  console.error("Referrer data:", referrerData)
                 }
 
                 // Начисляем награду приглашенному пользователю
