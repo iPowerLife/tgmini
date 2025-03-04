@@ -2,6 +2,33 @@
 const TELEGRAM_BOT_TOKEN = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN
 
 /**
+ * Проверяет валидность токена бота
+ * @returns {Promise<boolean>}
+ */
+async function validateBotToken() {
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.error("TELEGRAM_BOT_TOKEN is not defined")
+    return false
+  }
+
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`)
+    const data = await response.json()
+
+    if (!data.ok) {
+      console.error("Invalid bot token:", data.description)
+      return false
+    }
+
+    console.log("Bot token validated successfully:", data.result.username)
+    return true
+  } catch (error) {
+    console.error("Error validating bot token:", error)
+    return false
+  }
+}
+
+/**
  * Проверяет, может ли бот отправлять сообщения пользователю
  * @param {number} chatId - ID чата/пользователя в Telegram
  * @returns {Promise<boolean>} - true, если бот может отправлять сообщения
@@ -23,11 +50,12 @@ export async function canBotMessageUser(chatId) {
  */
 export async function checkBotStatus(chatId) {
   try {
-    // Проверяем, что токен существует
-    if (!TELEGRAM_BOT_TOKEN) {
+    // Сначала проверяем валидность токена
+    const isValidToken = await validateBotToken()
+    if (!isValidToken) {
       return {
         canMessage: false,
-        error: "BOT_TOKEN_MISSING",
+        error: "BOT_TOKEN_INVALID",
       }
     }
 
@@ -81,7 +109,13 @@ export async function sendTelegramMessage(chatId, text, options = {}) {
   try {
     console.log(`Attempting to send message to chat ID: ${chatId}`)
 
-    // Сначала проверяем статус бота
+    // Сначала проверяем валидность токена
+    const isValidToken = await validateBotToken()
+    if (!isValidToken) {
+      throw new Error("BOT_TOKEN_INVALID")
+    }
+
+    // Затем проверяем статус бота
     const { canMessage, error } = await checkBotStatus(chatId)
 
     if (!canMessage) {
@@ -135,6 +169,15 @@ export async function sendTelegramMessage(chatId, text, options = {}) {
  */
 export async function testSendMessage(chatId) {
   try {
+    // Сначала проверяем валидность токена
+    const isValidToken = await validateBotToken()
+    if (!isValidToken) {
+      return {
+        success: false,
+        message: "Ошибка конфигурации бота. Пожалуйста, обратитесь к администратору.",
+      }
+    }
+
     const result = await sendTelegramMessage(
       chatId,
       "<b>🔔 Тестовое сообщение</b>\n\nЕсли вы видите это сообщение, значит уведомления работают правильно!",
@@ -151,8 +194,8 @@ export async function testSendMessage(chatId) {
     let userMessage = "Не удалось отправить тестовое сообщение. "
 
     switch (error.message) {
-      case "BOT_TOKEN_MISSING":
-        userMessage += "Ошибка конфигурации бота."
+      case "BOT_TOKEN_INVALID":
+        userMessage += "Ошибка конфигурации бота. Пожалуйста, обратитесь к администратору."
         break
       case "INVALID_CHAT_ID":
         userMessage += "Неверный ID пользователя."
