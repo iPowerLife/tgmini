@@ -234,10 +234,7 @@ export function RatingSection() {
 
   // Получаем достижение для топ-игрока
   const getAchievement = (index) => {
-    if (index === 0) return "Лидер рейтинга"
-    if (index === 1) return "Серебряный призер"
-    if (index === 2) return "Бронзовый призер"
-    return null
+    return null // Убираем все надписи достижений
   }
 
   // Получаем цвет для топ-позиций
@@ -489,12 +486,6 @@ export function RatingSection() {
                       <div className="ml-2 flex-1 min-w-0">
                         <div className="font-medium text-white flex items-center text-sm truncate">
                           {user.display_name}
-                          {achievement && (
-                            <div className="ml-1 flex items-center text-xs px-1.5 py-0.5 rounded-full bg-gradient-to-r from-blue-900/50 to-purple-900/50 text-blue-300">
-                              {getPositionIcon(actualIndex)}
-                              <span className="ml-0.5 text-[10px]">{achievement}</span>
-                            </div>
-                          )}
                         </div>
                         <div className="text-xs text-gray-400 flex items-center">
                           <span className="mr-1">{getMetricValue(user)}</span>
