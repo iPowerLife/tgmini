@@ -261,7 +261,54 @@ function App() {
                 console.error("Error registering referral:", insertError)
               } else {
                 console.log("Referral successfully registered")
-                // Можно показать уведомление пользователю
+
+                // Добавьте здесь код для начисления наград:
+
+                // Константы с размерами наград (можете изменить на нужные значения)
+                const REFERRER_REWARD = 50 // Награда пригласившему
+                const REFERRED_REWARD = 25 // Награда приглашенному
+
+                // Начисляем награду рефоводу (пригласившему)
+                const { error: referrerUpdateError } = await supabase.rpc("increment_user_balance", {
+                  user_id_param: referrerData.id,
+                  amount_param: REFERRER_REWARD,
+                })
+
+                if (referrerUpdateError) {
+                  console.error("Error rewarding referrer:", referrerUpdateError)
+                } else {
+                  console.log(`Referrer rewarded with ${REFERRER_REWARD} diamonds`)
+
+                  // Записываем награду в историю транзакций (если есть такая таблица)
+                  await supabase.from("transactions").insert({
+                    user_id: referrerData.id,
+                    amount: REFERRER_REWARD,
+                    type: "referral_reward",
+                    description: `Reward for inviting user ${userData.id}`,
+                    created_at: new Date().toISOString(),
+                  })
+                }
+
+                // Начисляем награду приглашенному пользователю
+                const { error: referredUpdateError } = await supabase.rpc("increment_user_balance", {
+                  user_id_param: userData.id,
+                  amount_param: REFERRED_REWARD,
+                })
+
+                if (referredUpdateError) {
+                  console.error("Error rewarding referred user:", referredUpdateError)
+                } else {
+                  console.log(`Referred user rewarded with ${REFERRED_REWARD} diamonds`)
+
+                  // Записываем награду в историю транзакций
+                  await supabase.from("transactions").insert({
+                    user_id: userData.id,
+                    amount: REFERRED_REWARD,
+                    type: "referral_bonus",
+                    description: `Bonus for joining via referral link`,
+                    created_at: new Date().toISOString(),
+                  })
+                }
               }
             }
           } catch (error) {

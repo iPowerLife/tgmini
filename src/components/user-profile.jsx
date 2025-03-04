@@ -48,9 +48,9 @@ export function UserProfile({ user, miners, totalPower }) {
         const { data: referralStats, error: referralError } = await supabase
           .from("referral_users")
           .select(`
-        referrer_id,
-        referred_id
-      `)
+            referrer_id,
+            referred_id
+          `)
           .eq("referrer_id", userData.id)
           .eq("status", "active")
 
