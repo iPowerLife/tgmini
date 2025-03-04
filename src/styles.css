@@ -3089,7 +3089,7 @@ body {
 /* Для контента страниц */
 .page-content {
   min-height: 100%;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
   width: 100%;
   position: relative;
 }
