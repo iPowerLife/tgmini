@@ -4,7 +4,13 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { Trophy, Users, ChevronLeft, ChevronRight, Award, Crown, Star, Sparkles, RefreshCw, Clock } from "lucide-react"
 import { supabase } from "../supabase"
 import { useTelegramUser } from "../hooks/use-telegram-user"
-import { shouldUpdateCache, getCachedRating, cacheRating, getLastUpdateTime } from "../utils/cache-manager"
+import {
+  shouldUpdateCache,
+  getCachedRating,
+  cacheRating,
+  getLastUpdateTime,
+  clearRatingCache,
+} from "../utils/cache-manager"
 
 export function RatingSection() {
   const [activeTab, setActiveTab] = useState("balance")
@@ -21,6 +27,12 @@ export function RatingSection() {
   // Получаем данные пользователя из Telegram
   const telegramUser = useTelegramUser()
   const currentUserId = telegramUser?.id || null
+
+  // При первой загрузке компонента очищаем кэш, чтобы применить новую логику отображения имен
+  useEffect(() => {
+    // Очищаем кэш при первой загрузке компонента
+    clearRatingCache()
+  }, [])
 
   // Загрузка данных пользователей
   useEffect(() => {
@@ -48,14 +60,14 @@ export function RatingSection() {
           // Запрос для рейтинга по балансу
           query = supabase
             .from("users")
-            .select("id, telegram_id, username, first_name, last_name, photo_url, balance, level, nickname")
+            .select("id, telegram_id, username, first_name, last_name, photo_url, balance, level")
             .order("balance", { ascending: false })
             .limit(maxUsers)
         } else {
           // Запрос для рейтинга по рефералам
           query = supabase
             .from("users")
-            .select("id, telegram_id, username, first_name, last_name, photo_url, referral_count, level, nickname")
+            .select("id, telegram_id, username, first_name, last_name, photo_url, referral_count, level")
             .order("referral_count", { ascending: false })
             .limit(maxUsers)
         }
@@ -70,16 +82,35 @@ export function RatingSection() {
           throw new Error("Нет данных")
         }
 
+        // Отладочная информация
+        console.log("Данные из базы:", data.slice(0, 3))
+
         // Преобразуем данные для отображения
-        const processedData = data.map((user) => ({
-          id: user.telegram_id || user.id,
-          display_name: getUserDisplayName(user),
-          photo_url: user.photo_url,
-          balance: user.balance || 0,
-          referral_count: user.referral_count || 0,
-          level: user.level || 1,
-          nickname: user.nickname, // Добавляем nickname в обработанные данные
-        }))
+        const processedData = data.map((user) => {
+          // Сохраняем оригинальные данные для отладки
+          const originalUser = { ...user }
+
+          // Получаем имя для отображения
+          const displayName = getUserDisplayName(user)
+
+          // Отладочная информация для первых нескольких пользователей
+          if (data.indexOf(user) < 3) {
+            console.log(
+              `Пользователь ${user.id}: first_name=${user.first_name}, last_name=${user.last_name}, username=${user.username}, отображаемое имя=${displayName}`,
+            )
+          }
+
+          return {
+            id: user.telegram_id || user.id,
+            display_name: displayName,
+            photo_url: user.photo_url,
+            balance: user.balance || 0,
+            referral_count: user.referral_count || 0,
+            level: user.level || 1,
+            // Сохраняем оригинальные данные для возможной отладки
+            original: originalUser,
+          }
+        })
 
         // Сохраняем данные в кэш
         cacheRating(activeTab, processedData)
@@ -101,6 +132,8 @@ export function RatingSection() {
 
   // Функция для принудительного обновления данных
   const forceUpdate = () => {
+    // Очищаем кэш перед принудительным обновлением
+    clearRatingCache()
     setIsForceUpdating(true)
   }
 
@@ -108,11 +141,17 @@ export function RatingSection() {
   function getUserDisplayName(user) {
     if (!user) return "Неизвестный пользователь"
 
-    // Приоритет отображения: first_name + last_name > first_name > username > id
+    // Используем только first_name, если оно есть
     if (user.first_name) {
-      return user.last_name ? `${user.first_name} ${user.last_name}` : user.first_name
+      return user.first_name
     }
-    if (user.username) return user.username // Убираем @ перед username
+
+    // Если first_name нет, используем username без @
+    if (user.username) {
+      return user.username.replace("@", "")
+    }
+
+    // Если ничего нет, возвращаем ID
     return `Пользователь ${user.telegram_id || user.id}`
   }
 
