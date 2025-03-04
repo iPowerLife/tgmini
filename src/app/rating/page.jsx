@@ -1,6 +1,4 @@
 "use client"
-
-import { Suspense } from "react"
 import dynamic from "next/dynamic"
 
 // Динамически импортируем компонент рейтинга с отключенным SSR
@@ -16,11 +14,9 @@ const LoadingFallback = () => (
 
 export default function RatingPage() {
   return (
-    <main className="rating-page">
-      <Suspense fallback={<LoadingFallback />}>
-        <RatingSection />
-      </Suspense>
-    </main>
+    <div className="rating-page">
+      <h1>Страница рейтинга</h1>
+    </div>
   )
 }
 
