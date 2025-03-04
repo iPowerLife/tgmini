@@ -48,14 +48,14 @@ export function RatingSection() {
           // Запрос для рейтинга по балансу
           query = supabase
             .from("users")
-            .select("id, telegram_id, username, first_name, last_name, photo_url, balance, level")
+            .select("id, telegram_id, username, first_name, last_name, photo_url, balance, level, nickname")
             .order("balance", { ascending: false })
             .limit(maxUsers)
         } else {
           // Запрос для рейтинга по рефералам
           query = supabase
             .from("users")
-            .select("id, telegram_id, username, first_name, last_name, photo_url, referral_count, level")
+            .select("id, telegram_id, username, first_name, last_name, photo_url, referral_count, level, nickname")
             .order("referral_count", { ascending: false })
             .limit(maxUsers)
         }
@@ -78,6 +78,7 @@ export function RatingSection() {
           balance: user.balance || 0,
           referral_count: user.referral_count || 0,
           level: user.level || 1,
+          nickname: user.nickname, // Добавляем nickname в обработанные данные
         }))
 
         // Сохраняем данные в кэш
@@ -106,10 +107,13 @@ export function RatingSection() {
   // Функция для получения отображаемого имени пользователя
   function getUserDisplayName(user) {
     if (!user) return "Неизвестный пользователь"
-    if (user.username) return `@${user.username}`
+
+    // Приоритет отображения: nickname > first_name + last_name > username > id
+    if (user.nickname) return user.nickname
     if (user.first_name) {
       return user.last_name ? `${user.first_name} ${user.last_name}` : user.first_name
     }
+    if (user.username) return `@${user.username}`
     return `Пользователь ${user.telegram_id || user.id}`
   }
 
