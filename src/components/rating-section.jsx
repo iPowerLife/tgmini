@@ -12,12 +12,12 @@ export function RatingSection() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const usersPerPage = 10
-  const maxUsers = 100 // Ограничиваем до топ-100
+  const maxUsers = 100
   const containerRef = useRef(null)
 
   // Получаем данные пользователя из Telegram
-  const { user: telegramUser } = useTelegramUser()
-  const currentUserId = telegramUser?.id
+  const telegramUser = useTelegramUser()
+  const currentUserId = telegramUser?.id || null
 
   // Загрузка данных пользователей
   useEffect(() => {
@@ -50,6 +50,10 @@ export function RatingSection() {
           throw supabaseError
         }
 
+        if (!data) {
+          throw new Error("Нет данных")
+        }
+
         // Преобразуем данные для отображения
         const processedData = data.map((user) => ({
           id: user.telegram_id || user.id,
@@ -63,7 +67,7 @@ export function RatingSection() {
         setSortedUsers(processedData)
       } catch (err) {
         console.error("Ошибка при загрузке данных:", err)
-        setError("Не удалось загрузить данные рейтинга")
+        setError(err.message || "Не удалось загрузить данные рейтинга")
       } finally {
         setIsLoading(false)
       }
@@ -74,6 +78,7 @@ export function RatingSection() {
 
   // Функция для получения отображаемого имени пользователя
   function getUserDisplayName(user) {
+    if (!user) return "Неизвестный пользователь"
     if (user.username) return `@${user.username}`
     if (user.first_name) {
       return user.last_name ? `${user.first_name} ${user.last_name}` : user.first_name
@@ -81,16 +86,15 @@ export function RatingSection() {
     return `Пользователь ${user.telegram_id || user.id}`
   }
 
-  // Находим позицию текущего пользователя в полном списке
+  // Находим позицию текущего пользователя в списке
   const findUserRealPosition = useCallback(() => {
     if (!currentUserId || sortedUsers.length === 0) return null
 
-    // Находим позицию текущего пользователя
-    const position = sortedUsers.findIndex((user) => user.id === currentUserId) + 1
+    const position = sortedUsers.findIndex((user) => String(user.id) === String(currentUserId)) + 1
     return position > 0 ? position : null
   }, [sortedUsers, currentUserId])
 
-  // Находим позицию текущего пользователя в топ-100
+  // Находим позицию текущего пользователя
   const currentUserPosition = findUserRealPosition()
 
   // Получаем пользователей для текущей страницы
@@ -148,13 +152,14 @@ export function RatingSection() {
 
   // Получаем значение метрики для пользователя
   const getMetricValue = (user) => {
+    if (!user) return "0"
     switch (activeTab) {
       case "balance":
-        return user.balance.toFixed(2)
+        return (user.balance || 0).toFixed(2)
       case "referrals":
-        return user.referral_count
+        return user.referral_count || 0
       default:
-        return user.balance.toFixed(2)
+        return (user.balance || 0).toFixed(2)
     }
   }
 
@@ -183,11 +188,27 @@ export function RatingSection() {
   }
 
   // Получаем текущего пользователя
-  const currentUser = currentUserId ? sortedUsers.find((user) => user.id === currentUserId) : null
+  const currentUser = currentUserId ? sortedUsers.find((user) => String(user.id) === String(currentUserId)) : null
 
   // Получаем пользователя на последнем месте в топ-100
   const lastTopUser = sortedUsers.length > 0 ? sortedUsers[sortedUsers.length - 1] : null
 
+  // Если данные Telegram не загружены, показываем загрузку
+  if (isLoading && !telegramUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 to-gray-800">
+        <div className="text-center">
+          <div className="relative w-12 h-12 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-t-2 border-b-2 border-blue-500 animate-spin"></div>
+            <div className="absolute inset-2 rounded-full border-t-2 border-b-2 border-purple-500 animate-spin-slow"></div>
+          </div>
+          <div className="text-blue-400">Загрузка данных...</div>
+        </div>
+      </div>
+    )
+  }
+
+  // Основной рендер компонента
   return (
     <div className="min-h-screen pb-12 bg-gradient-to-b from-gray-900 to-gray-800">
       <div className="px-2 py-3">
@@ -289,7 +310,7 @@ export function RatingSection() {
                   const actualIndex = (currentPage - 1) * usersPerPage + index
                   const achievement = getAchievement(actualIndex)
                   const isTopThree = actualIndex < 3
-                  const isCurrentUser = user.id === currentUserId
+                  const isCurrentUser = currentUserId && String(user.id) === String(currentUserId)
 
                   return (
                     <div
