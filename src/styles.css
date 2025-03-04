@@ -331,7 +331,7 @@ body {
   background: rgba(30, 41, 59, 0.95);
   backdrop-filter: blur(10px);
   border-top: 1px solid rgba(99, 102, 241, 0.1);
-  padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
 }
 
 /* Общие стили секций */
