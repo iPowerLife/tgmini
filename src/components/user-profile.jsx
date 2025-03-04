@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { Users, Share2 } from "lucide-react"
 import { supabase } from "../supabase"
-import { testSendMessage } from "../utils/telegram-bot"
 
 export function UserProfile({ user, miners, totalPower }) {
   const [telegramUser, setTelegramUser] = useState(null)
@@ -216,38 +215,7 @@ export function UserProfile({ user, miners, totalPower }) {
             <p className="text-xs text-gray-500 mt-2">
               Приглашайте друзей и получайте награды за каждого активного реферала
             </p>
-            <p className="text-xs text-yellow-500 mt-1">
-              ⚠️ Важно: Чтобы получать уведомления о новых рефералах, отправьте команду /start боту @trteeeeeee_bot
-            </p>
           </div>
-          <button
-            onClick={async () => {
-              if (telegramUser?.id) {
-                const { success, message, debug } = await testSendMessage(telegramUser.id)
-
-                // Если включен режим отладки и есть отладочная информация
-                if (debug && window.Telegram?.WebApp?.showPopup) {
-                  const debugMessage = `${message}\n\nDebug Info:\n${JSON.stringify(debug, null, 2)}`
-                  window.Telegram.WebApp.showPopup({
-                    title: success ? "Успех" : "Ошибка",
-                    message: debugMessage,
-                    buttons: [{ type: "close" }],
-                  })
-                } else if (window.Telegram?.WebApp?.showPopup) {
-                  window.Telegram.WebApp.showPopup({
-                    title: success ? "Успех" : "Ошибка",
-                    message: message,
-                    buttons: [{ type: "close" }],
-                  })
-                } else {
-                  alert(message)
-                }
-              }
-            }}
-            className="w-full mt-3 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg"
-          >
-            Проверить уведомления
-          </button>
         </div>
       </div>
     </div>
