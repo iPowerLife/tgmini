@@ -241,9 +241,7 @@ export function RatingSection() {
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 bg-[#2B2D35]/80 px-3 py-2 rounded-xl flex-1">
                   <Sparkles className="w-4 h-4 text-[#5B9CE6]" />
-                  <span className="text-sm text-white/90">
-                    {currentUserPosition} место из {sortedUsers.length}
-                  </span>
+                  <span className="text-sm text-white/90">{currentUserPosition} место</span>
                 </div>
                 <div className="flex items-center gap-2 bg-gradient-to-r from-[#2B2D35] to-[#323544] px-3 py-2 rounded-xl border border-gray-700/30">
                   <span className="text-sm font-medium text-white/90">{getMetricValue(currentUser)}</span>
