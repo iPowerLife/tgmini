@@ -2375,12 +2375,6 @@ body {
   margin-bottom: 16px;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .error-state {
   display: flex;
   flex-direction: column;
@@ -2527,6 +2521,35 @@ body {
   color: var(--tg-theme-text-color, #000000);
 }
 
+/* Стили для пагинации */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.pagination-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  background-color: var(--tg-theme-button-color, #3390ec);
+  color: var(--tg-theme-button-text-color, #ffffff);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999999);
+}
+
 /* Адаптация стилей рейтинга для темной темы Telegram */
 .dark .rating-section {
   background-color: #1a1b1e;
@@ -2583,6 +2606,18 @@ body {
   color: #f8fafc;
 }
 
+.dark .pagination {
+  border-top: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.dark .pagination-btn {
+  background-color: rgba(99, 102, 241, 0.5);
+}
+
+.dark .pagination-info {
+  color: #94a3b8;
+}
+
 /* Медиа-запросы для адаптивности рейтинга */
 @media (max-width: 480px) {
   .rating-section {
@@ -2608,6 +2643,11 @@ body {
   .find-me-btn {
     padding: 6px 12px;
     font-size: 14px;
+  }
+
+  .pagination-btn {
+    padding: 6px 12px;
+    font-size: 12px;
   }
 }
 

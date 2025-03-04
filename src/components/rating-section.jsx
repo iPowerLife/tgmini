@@ -1,7 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback, useMemo } from "react"
-import { useVirtualizer } from "@tanstack/react-virtual"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { motion } from "framer-motion"
 import { supabase } from "../supabase"
 import { useTelegramUser } from "../hooks/use-telegram-user"
@@ -35,6 +34,9 @@ const RATING_ICONS = {
 // Цвета для топ-3 позиций
 const POSITION_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"]
 
+// Количество элементов на странице
+const ITEMS_PER_PAGE = 20
+
 const RatingSection = () => {
   // Состояния
   const [activeRatingType, setActiveRatingType] = useState(RATING_TYPES.MINING)
@@ -42,6 +44,7 @@ const RatingSection = () => {
   const [error, setError] = useState(null)
   const [showMyPosition, setShowMyPosition] = useState(false)
   const [animateItems, setAnimateItems] = useState(false)
+  const [currentPage, setCurrentPage] = useState(0)
 
   // Получаем данные пользователя из Telegram
   const { user: telegramUser } = useTelegramUser()
@@ -157,6 +160,7 @@ const RatingSection = () => {
   // Эффект для загрузки данных при изменении типа рейтинга
   useEffect(() => {
     mutate()
+    setCurrentPage(0) // Сбрасываем страницу при смене типа рейтинга
 
     // Включаем анимацию после небольшой задержки
     setAnimateItems(false)
@@ -166,16 +170,6 @@ const RatingSection = () => {
 
     return () => clearTimeout(timer)
   }, [mutate])
-
-  // Настройка виртуализации списка для оптимальной производительности
-  const parentRef = React.useRef(null)
-
-  const virtualizer = useVirtualizer({
-    count: ratingData?.length || 0,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 70, // Примерная высота элемента списка
-    overscan: 5, // Количество элементов, которые будут предварительно отрендерены
-  })
 
   // Функция для отображения значения в зависимости от типа рейтинга
   const getRatingValue = (item) => {
@@ -215,7 +209,9 @@ const RatingSection = () => {
     const index = ratingData.findIndex((item) => item.telegram_id === telegramUser.id || item.id === telegramUser.id)
 
     if (index !== -1) {
-      virtualizer.scrollToIndex(index, { align: "center" })
+      // Вычисляем страницу, на которой находится пользователь
+      const userPage = Math.floor(index / ITEMS_PER_PAGE)
+      setCurrentPage(userPage)
       setShowMyPosition(true)
 
       // Скрываем выделение через 3 секунды
@@ -228,6 +224,32 @@ const RatingSection = () => {
   // Обработчик изменения типа рейтинга
   const handleRatingTypeChange = (type) => {
     setActiveRatingType(type)
+  }
+
+  // Получаем данные для текущей страницы
+  const currentPageData = useMemo(() => {
+    if (!ratingData) return []
+    const startIndex = currentPage * ITEMS_PER_PAGE
+    return ratingData.slice(startIndex, startIndex + ITEMS_PER_PAGE)
+  }, [ratingData, currentPage])
+
+  // Общее количество страниц
+  const totalPages = useMemo(() => {
+    if (!ratingData) return 0
+    return Math.ceil(ratingData.length / ITEMS_PER_PAGE)
+  }, [ratingData])
+
+  // Обработчики пагинации
+  const goToNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1)
+    }
+  }
+
+  const goToPrevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1)
+    }
   }
 
   return (
@@ -273,91 +295,88 @@ const RatingSection = () => {
         </div>
       )}
 
-      {/* Список рейтинга с виртуализацией */}
+      {/* Список рейтинга с пагинацией */}
       {!isLoading && !error && ratingData && (
-        <div ref={parentRef} className="rating-list-container">
-          <div
-            style={{
-              height: `${virtualizer.getTotalSize()}px`,
-              width: "100%",
-              position: "relative",
-            }}
-          >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const item = ratingData[virtualRow.index]
-              const position = virtualRow.index + 1
-              const isCurrentUser =
-                telegramUser && (item.telegram_id === telegramUser.id || item.id === telegramUser.id)
+        <div className="rating-list-container">
+          {currentPageData.map((item, index) => {
+            const position = currentPage * ITEMS_PER_PAGE + index + 1
+            const isCurrentUser = telegramUser && (item.telegram_id === telegramUser.id || item.id === telegramUser.id)
 
-              return (
-                <motion.div
-                  key={`${item.id || item.telegram_id}-${position}`}
-                  className={`rating-item ${isCurrentUser ? "current-user" : ""} ${showMyPosition && isCurrentUser ? "highlight-position" : ""}`}
+            return (
+              <motion.div
+                key={`${item.id || item.telegram_id}-${position}`}
+                className={`rating-item ${isCurrentUser ? "current-user" : ""} ${showMyPosition && isCurrentUser ? "highlight-position" : ""}`}
+                initial={animateItems ? { opacity: 0, y: 20 } : false}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.3,
+                  delay: index * 0.05,
+                  ease: "easeOut",
+                }}
+              >
+                {/* Позиция в рейтинге */}
+                <div
+                  className="position"
                   style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                  initial={animateItems ? { opacity: 0, y: 20 } : false}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.3,
-                    delay: virtualRow.index * 0.05,
-                    ease: "easeOut",
+                    backgroundColor: position <= 3 ? POSITION_COLORS[position - 1] : undefined,
                   }}
                 >
-                  {/* Позиция в рейтинге */}
-                  <div
-                    className="position"
-                    style={{
-                      backgroundColor: position <= 3 ? POSITION_COLORS[position - 1] : undefined,
-                    }}
-                  >
-                    {position}
-                  </div>
+                  {position}
+                </div>
 
-                  {/* Аватар пользователя */}
-                  <div className="user-avatar">
-                    <OptimizedImage
-                      src={item.photo_url || "/placeholder.svg?height=40&width=40"}
-                      alt={getUserName(item)}
-                      width={40}
-                      height={40}
-                      className="avatar-image"
-                    />
-                    {position <= 3 && (
-                      <div className="position-badge">{position === 1 ? "🥇" : position === 2 ? "🥈" : "🥉"}</div>
-                    )}
-                  </div>
+                {/* Аватар пользователя */}
+                <div className="user-avatar">
+                  <OptimizedImage
+                    src={item.photo_url || "/placeholder.svg?height=40&width=40"}
+                    alt={getUserName(item)}
+                    width={40}
+                    height={40}
+                    className="avatar-image"
+                  />
+                  {position <= 3 && (
+                    <div className="position-badge">{position === 1 ? "🥇" : position === 2 ? "🥈" : "🥉"}</div>
+                  )}
+                </div>
 
-                  {/* Информация о пользователе */}
-                  <div className="user-info">
-                    <span className="username">{getUserName(item)}</span>
-                    <span className="user-level">Уровень {item.level || 1}</span>
-                  </div>
+                {/* Информация о пользователе */}
+                <div className="user-info">
+                  <span className="username">{getUserName(item)}</span>
+                  <span className="user-level">Уровень {item.level || 1}</span>
+                </div>
 
-                  {/* Значение рейтинга */}
-                  <div className="rating-value">{getRatingValue(item)}</div>
+                {/* Значение рейтинга */}
+                <div className="rating-value">{getRatingValue(item)}</div>
 
-                  {/* Действия с пользователем */}
-                  <div className="user-actions">
-                    {!isCurrentUser && (
-                      <button
-                        className="gift-button"
-                        onClick={() => handleSendGift(item.id || item.telegram_id)}
-                        aria-label="Отправить подарок"
-                      >
-                        🎁
-                      </button>
-                    )}
-                  </div>
-                </motion.div>
-              )
-            })}
-          </div>
+                {/* Действия с пользователем */}
+                <div className="user-actions">
+                  {!isCurrentUser && (
+                    <button
+                      className="gift-button"
+                      onClick={() => handleSendGift(item.id || item.telegram_id)}
+                      aria-label="Отправить подарок"
+                    >
+                      🎁
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )
+          })}
+
+          {/* Пагинация */}
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button className="pagination-btn" onClick={goToPrevPage} disabled={currentPage === 0}>
+                &laquo; Назад
+              </button>
+              <span className="pagination-info">
+                {currentPage + 1} из {totalPages}
+              </span>
+              <button className="pagination-btn" onClick={goToNextPage} disabled={currentPage === totalPages - 1}>
+                Вперед &raquo;
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -378,7 +397,7 @@ const RatingSection = () => {
                   {activeRatingType === RATING_TYPES.REFERRALS &&
                     `${(ratingData[currentUserPosition.position - 2]?.referral_count || 0) - currentUserPosition.referral_count} 👥`}
                   {activeRatingType === RATING_TYPES.LEVEL &&
-                    `${(ratingData[currentUserPosition.position - 2]?.level || 0) - currentUserPosition.level} у��овней`}
+                    `${(ratingData[currentUserPosition.position - 2]?.level || 0) - currentUserPosition.level} уровней`}
                   {activeRatingType === RATING_TYPES.TASKS &&
                     `${(ratingData[currentUserPosition.position - 2]?.tasks_completed || 0) - currentUserPosition.tasks_completed} заданий`}
                 </span>
