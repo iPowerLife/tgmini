@@ -1,63 +1,395 @@
 "use client"
 
-export function RatingSection({ currentUserId, users }) {
+import React, { useState, useEffect, useCallback, useMemo } from "react"
+import { useVirtualizer } from "@tanstack/react-virtual"
+import { motion } from "framer-motion"
+import { supabase } from "../supabase"
+import { useTelegramUser } from "../hooks/use-telegram-user"
+import { useCachedData } from "../hooks/use-cached-data"
+import OptimizedImage from "./optimized-image"
+
+// Типы рейтингов
+const RATING_TYPES = {
+  MINING: "mining",
+  REFERRALS: "referrals",
+  LEVEL: "level",
+  TASKS: "tasks",
+}
+
+// Названия рейтингов
+const RATING_LABELS = {
+  [RATING_TYPES.MINING]: "Майнинг",
+  [RATING_TYPES.REFERRALS]: "Рефералы",
+  [RATING_TYPES.LEVEL]: "Уровень",
+  [RATING_TYPES.TASKS]: "Задания",
+}
+
+// Иконки для рейтингов
+const RATING_ICONS = {
+  [RATING_TYPES.MINING]: "⛏️",
+  [RATING_TYPES.REFERRALS]: "👥",
+  [RATING_TYPES.LEVEL]: "🏆",
+  [RATING_TYPES.TASKS]: "✅",
+}
+
+// Цвета для топ-3 позиций
+const POSITION_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"]
+
+const RatingSection = () => {
+  // Состояния
+  const [activeRatingType, setActiveRatingType] = useState(RATING_TYPES.MINING)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [showMyPosition, setShowMyPosition] = useState(false)
+  const [animateItems, setAnimateItems] = useState(false)
+
+  // Получаем данные пользователя из Telegram
+  const { user: telegramUser } = useTelegramUser()
+
+  // Используем хук для кэширования данных рейтинга
+  const {
+    data: ratingData,
+    isLoading: isDataLoading,
+    error: dataError,
+    mutate,
+  } = useCachedData(`ratings_${activeRatingType}`, () => fetchRatingData(activeRatingType), {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    refreshInterval: 60000, // Обновляем данные каждую минуту
+  })
+
+  // Получаем позицию текущего пользователя
+  const currentUserPosition = useMemo(() => {
+    if (!ratingData || !telegramUser) return null
+
+    const index = ratingData.findIndex((item) => item.telegram_id === telegramUser.id || item.id === telegramUser.id)
+
+    return index !== -1 ? { ...ratingData[index], position: index + 1 } : null
+  }, [ratingData, telegramUser])
+
+  // Функция для получения данных рейтинга из Supabase
+  const fetchRatingData = useCallback(async (type) => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      let query
+
+      switch (type) {
+        case RATING_TYPES.MINING:
+          query = supabase
+            .from("users")
+            .select("id, telegram_id, username, first_name, last_name, photo_url, mining_power, level")
+            .order("mining_power", { ascending: false })
+            .limit(100)
+          break
+
+        case RATING_TYPES.REFERRALS:
+          query = supabase
+            .from("users")
+            .select("id, telegram_id, username, first_name, last_name, photo_url, referral_count, level")
+            .order("referral_count", { ascending: false })
+            .limit(100)
+          break
+
+        case RATING_TYPES.LEVEL:
+          query = supabase
+            .from("users")
+            .select("id, telegram_id, username, first_name, last_name, photo_url, level, experience")
+            .order("level", { ascending: false })
+            .order("experience", { ascending: false })
+            .limit(100)
+          break
+
+        case RATING_TYPES.TASKS:
+          // Для рейтинга по заданиям нужно сделать более сложный запрос с подсчетом выполненных заданий
+          query = supabase
+            .from("user_tasks")
+            .select("user_id, users:user_id(id, telegram_id, username, first_name, last_name, photo_url, level)")
+            .eq("status", "completed")
+            .limit(500)
+          break
+
+        default:
+          query = supabase
+            .from("users")
+            .select("id, telegram_id, username, first_name, last_name, photo_url, mining_power, level")
+            .order("mining_power", { ascending: false })
+            .limit(100)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      // Обработка данных для рейтинга по заданиям
+      if (type === RATING_TYPES.TASKS) {
+        // Группируем задания по пользователям и считаем количество
+        const userTasksCount = data.reduce((acc, item) => {
+          const userId = item.user_id
+          if (!acc[userId]) {
+            acc[userId] = {
+              ...item.users,
+              tasks_completed: 1,
+            }
+          } else {
+            acc[userId].tasks_completed += 1
+          }
+          return acc
+        }, {})
+
+        // Преобразуем в массив и сортируем
+        const processedData = Object.values(userTasksCount).sort((a, b) => b.tasks_completed - a.tasks_completed)
+
+        return processedData
+      }
+
+      return data
+    } catch (err) {
+      setError(err.message)
+      console.error("Error fetching rating data:", err)
+      return []
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  // Эффект для загрузки данных при изменении типа рейтинга
+  useEffect(() => {
+    mutate()
+
+    // Включаем анимацию после небольшой задержки
+    setAnimateItems(false)
+    const timer = setTimeout(() => {
+      setAnimateItems(true)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [mutate])
+
+  // Настройка виртуализации списка для оптимальной производительности
+  const parentRef = React.useRef(null)
+
+  const virtualizer = useVirtualizer({
+    count: ratingData?.length || 0,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 70, // Примерная высота элемента списка
+    overscan: 5, // Количество элементов, которые будут предварительно отрендерены
+  })
+
+  // Функция для отображения значения в зависимости от типа рейтинга
+  const getRatingValue = (item) => {
+    switch (activeRatingType) {
+      case RATING_TYPES.MINING:
+        return `${item.mining_power || 0} ⚡`
+      case RATING_TYPES.REFERRALS:
+        return `${item.referral_count || 0} 👥`
+      case RATING_TYPES.LEVEL:
+        return `Ур. ${item.level || 1}`
+      case RATING_TYPES.TASKS:
+        return `${item.tasks_completed || 0} ✅`
+      default:
+        return `${item.mining_power || 0} ⚡`
+    }
+  }
+
+  // Функция для отображения имени пользователя
+  const getUserName = (item) => {
+    if (item.username) return `@${item.username}`
+    if (item.first_name) {
+      return item.last_name ? `${item.first_name} ${item.last_name}` : item.first_name
+    }
+    return `User ${item.telegram_id}`
+  }
+
+  // Функция для отправки подарка пользователю
+  const handleSendGift = (userId) => {
+    // Здесь будет логика отправки подарка
+    alert(`Подарок отправлен пользователю ${userId}`)
+  }
+
+  // Функция для прокрутки к позиции текущего пользователя
+  const scrollToCurrentUser = () => {
+    if (!currentUserPosition) return
+
+    const index = ratingData.findIndex((item) => item.telegram_id === telegramUser.id || item.id === telegramUser.id)
+
+    if (index !== -1) {
+      virtualizer.scrollToIndex(index, { align: "center" })
+      setShowMyPosition(true)
+
+      // Скрываем выделение через 3 секунды
+      setTimeout(() => {
+        setShowMyPosition(false)
+      }, 3000)
+    }
+  }
+
+  // Обработчик изменения типа рейтинга
+  const handleRatingTypeChange = (type) => {
+    setActiveRatingType(type)
+  }
+
   return (
-    <div className="min-h-screen pb-20">
-      <div className="px-4 py-6">
-        {/* Список пользователей */}
-        <div className="space-y-3">
-          {users.map((user, index) => (
-            <div
-              key={user.id}
-              className={`
-                relative overflow-hidden rounded-xl backdrop-blur-sm border
-                ${user.id === currentUserId ? "bg-blue-900/30 border-blue-500/30" : "bg-gray-800/50 border-gray-700/50"}
-              `}
+    <div className="rating-section">
+      <div className="rating-header">
+        <h2 className="rating-title">Рейтинг игроков</h2>
+
+        {/* Фильтры типов рейтинга */}
+        <div className="rating-filters">
+          {Object.values(RATING_TYPES).map((type) => (
+            <button
+              key={type}
+              className={`rating-filter-btn ${activeRatingType === type ? "active" : ""}`}
+              onClick={() => handleRatingTypeChange(type)}
             >
-              <div className="p-4 flex items-center gap-4">
-                {/* Ранг */}
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-700/50 font-bold text-white">
-                  {index + 1}
-                </div>
-
-                {/* Аватар */}
-                <div className="relative">
-                  {user.photo_url ? (
-                    <img
-                      src={user.photo_url || "/placeholder.svg"}
-                      alt={user.display_name}
-                      className="w-10 h-10 rounded-lg object-cover border border-gray-700/50"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-lg bg-gray-700/50 flex items-center justify-center border border-gray-700/50">
-                      <span className="text-lg font-bold text-gray-400">{user.display_name[0]}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Информация */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium text-white truncate">{user.display_name}</p>
-                    <p className="text-sm font-medium text-white">{user.total_mined.toFixed(2)} 💎</p>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 mt-1">
-                    <p className="text-xs text-gray-400">Мощность: {user.mining_power.toFixed(3)} ⚡</p>
-                    <p className="text-xs text-gray-400">Майнеров: {user.miners_count}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+              <span className="rating-filter-icon">{RATING_ICONS[type]}</span>
+              <span className="rating-filter-label">{RATING_LABELS[type]}</span>
+            </button>
           ))}
-
-          {users.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-400">Данные загружаются...</p>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Кнопка для прокрутки к позиции текущего пользователя */}
+      {currentUserPosition && (
+        <button className="find-me-btn" onClick={scrollToCurrentUser}>
+          Моя позиция ({currentUserPosition.position})
+        </button>
+      )}
+
+      {/* Состояние загрузки */}
+      {isLoading && (
+        <div className="loading-state">
+          <div className="spinner"></div>
+          <p>Загрузка рейтинга...</p>
+        </div>
+      )}
+
+      {/* Сообщение об ошибке */}
+      {error && (
+        <div className="error-state">
+          <p>Произошла ошибка при загрузке рейтинга</p>
+          <button onClick={() => mutate()}>Попробовать снова</button>
+        </div>
+      )}
+
+      {/* Список рейтинга с виртуализацией */}
+      {!isLoading && !error && ratingData && (
+        <div ref={parentRef} className="rating-list-container">
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: "100%",
+              position: "relative",
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const item = ratingData[virtualRow.index]
+              const position = virtualRow.index + 1
+              const isCurrentUser =
+                telegramUser && (item.telegram_id === telegramUser.id || item.id === telegramUser.id)
+
+              return (
+                <motion.div
+                  key={`${item.id || item.telegram_id}-${position}`}
+                  className={`rating-item ${isCurrentUser ? "current-user" : ""} ${showMyPosition && isCurrentUser ? "highlight-position" : ""}`}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                  initial={animateItems ? { opacity: 0, y: 20 } : false}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.3,
+                    delay: virtualRow.index * 0.05,
+                    ease: "easeOut",
+                  }}
+                >
+                  {/* Позиция в рейтинге */}
+                  <div
+                    className="position"
+                    style={{
+                      backgroundColor: position <= 3 ? POSITION_COLORS[position - 1] : undefined,
+                    }}
+                  >
+                    {position}
+                  </div>
+
+                  {/* Аватар пользователя */}
+                  <div className="user-avatar">
+                    <OptimizedImage
+                      src={item.photo_url || "/placeholder.svg?height=40&width=40"}
+                      alt={getUserName(item)}
+                      width={40}
+                      height={40}
+                      className="avatar-image"
+                    />
+                    {position <= 3 && (
+                      <div className="position-badge">{position === 1 ? "🥇" : position === 2 ? "🥈" : "🥉"}</div>
+                    )}
+                  </div>
+
+                  {/* Информация о пользователе */}
+                  <div className="user-info">
+                    <span className="username">{getUserName(item)}</span>
+                    <span className="user-level">Уровень {item.level || 1}</span>
+                  </div>
+
+                  {/* Значение рейтинга */}
+                  <div className="rating-value">{getRatingValue(item)}</div>
+
+                  {/* Действия с пользователем */}
+                  <div className="user-actions">
+                    {!isCurrentUser && (
+                      <button
+                        className="gift-button"
+                        onClick={() => handleSendGift(item.id || item.telegram_id)}
+                        aria-label="Отправить подарок"
+                      >
+                        🎁
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Информация о текущем пользователе */}
+      {currentUserPosition && (
+        <div className="current-user-info">
+          <div className="user-position">
+            <span>Ваша позиция:</span>
+            <span className="position-value">{currentUserPosition.position}</span>
+          </div>
+          <div className="next-position-info">
+            {currentUserPosition.position > 1 && (
+              <>
+                <span>До следующей позиции:</span>
+                <span className="next-position-value">
+                  {activeRatingType === RATING_TYPES.MINING &&
+                    `${(ratingData[currentUserPosition.position - 2]?.mining_power || 0) - currentUserPosition.mining_power} ⚡`}
+                  {activeRatingType === RATING_TYPES.REFERRALS &&
+                    `${(ratingData[currentUserPosition.position - 2]?.referral_count || 0) - currentUserPosition.referral_count} 👥`}
+                  {activeRatingType === RATING_TYPES.LEVEL &&
+                    `${(ratingData[currentUserPosition.position - 2]?.level || 0) - currentUserPosition.level} у��овней`}
+                  {activeRatingType === RATING_TYPES.TASKS &&
+                    `${(ratingData[currentUserPosition.position - 2]?.tasks_completed || 0) - currentUserPosition.tasks_completed} заданий`}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
+export default RatingSection
 
