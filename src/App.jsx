@@ -1,7 +1,7 @@
 "use client"
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react"
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from "react"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
@@ -30,6 +30,37 @@ const LoadingFallback = () => (
   </div>
 )
 
+// Компонент-обертка для страниц, который сбрасывает прокрутку
+function PageWrapper({ children }) {
+  const wrapperRef = useRef(null)
+  const location = useLocation()
+
+  // Сбрасываем прокрутку при изменении маршрута
+  useEffect(() => {
+    if (wrapperRef.current) {
+      wrapperRef.current.scrollTop = 0
+    }
+
+    // Также сбрасываем прокрутку окна
+    window.scrollTo(0, 0)
+  }, [location.pathname])
+
+  return (
+    <div
+      ref={wrapperRef}
+      className="page-wrapper"
+      style={{
+        height: "calc(100vh - 56px)", // Высота экрана минус высота нижнего меню
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        position: "relative",
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
 // Компонент для содержимого приложения
 function AppContent({
   user,
@@ -43,20 +74,6 @@ function AppContent({
 }) {
   const location = useLocation()
 
-  // Прокручиваем страницу вверх при изменении маршрута
-  useEffect(() => {
-    window.scrollTo(0, 0)
-
-    // Дополнительная проверка для надежности - прокрутка с небольшой задержкой
-    const timeoutId = setTimeout(() => {
-      window.scrollTo(0, 0)
-      document.body.scrollTop = 0
-      document.documentElement.scrollTop = 0
-    }, 100)
-
-    return () => clearTimeout(timeoutId)
-  }, [location])
-
   return (
     <div className="root-container">
       <div className="page-container">
@@ -64,7 +81,7 @@ function AppContent({
           <Route
             path="/"
             element={
-              <>
+              <PageWrapper key="home">
                 <div className="balance-card">
                   <div className="balance-background" />
                   <div className="balance-content">
@@ -76,49 +93,57 @@ function AppContent({
                   </div>
                 </div>
                 <MinersList miners={minersData.miners} totalPower={minersData.totalPower} />
-              </>
+              </PageWrapper>
             }
           />
           <Route
             path="/shop"
             element={
-              <Suspense fallback={<LoadingFallback />}>
-                <Shop
-                  user={user}
-                  onPurchase={handleBalanceUpdate}
-                  categories={shopData.categories}
-                  models={shopData.models}
-                />
-              </Suspense>
+              <PageWrapper key="shop">
+                <Suspense fallback={<LoadingFallback />}>
+                  <Shop
+                    user={user}
+                    onPurchase={handleBalanceUpdate}
+                    categories={shopData.categories}
+                    models={shopData.models}
+                  />
+                </Suspense>
+              </PageWrapper>
             }
           />
           <Route
             path="/tasks"
             element={
-              <Suspense fallback={<LoadingFallback />}>
-                <TasksSection
-                  user={user}
-                  onBalanceUpdate={handleBalanceUpdate}
-                  tasks={tasksData.tasks}
-                  onTaskComplete={handleTaskComplete}
-                />
-              </Suspense>
+              <PageWrapper key="tasks">
+                <Suspense fallback={<LoadingFallback />}>
+                  <TasksSection
+                    user={user}
+                    onBalanceUpdate={handleBalanceUpdate}
+                    tasks={tasksData.tasks}
+                    onTaskComplete={handleTaskComplete}
+                  />
+                </Suspense>
+              </PageWrapper>
             }
           />
           <Route
             path="/rating"
             element={
-              <Suspense fallback={<LoadingFallback />}>
-                <RatingSection currentUserId={user?.id} users={ratingData.users} />
-              </Suspense>
+              <PageWrapper key="rating">
+                <Suspense fallback={<LoadingFallback />}>
+                  <RatingSection currentUserId={user?.id} users={ratingData.users} />
+                </Suspense>
+              </PageWrapper>
             }
           />
           <Route
             path="/profile"
             element={
-              <Suspense fallback={<LoadingFallback />}>
-                <UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />
-              </Suspense>
+              <PageWrapper key="profile">
+                <Suspense fallback={<LoadingFallback />}>
+                  <UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />
+                </Suspense>
+              </PageWrapper>
             }
           />
         </Routes>
