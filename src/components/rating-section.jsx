@@ -200,63 +200,65 @@ export function RatingSection() {
   // Основной рендер компонента
   return (
     <div className="min-h-screen pb-12">
-      <div className="px-2 py-2 max-w-md mx-auto">
+      <div className="px-4 py-4 max-w-md mx-auto">
         {/* Заголовок и навигация */}
-        <div className="mb-3 bg-gradient-to-b from-[#1E2235] to-[#1A1C2E] p-3 rounded-xl shadow-lg border border-gray-800/50">
-          <h1 className="text-xl sm:text-2xl font-light tracking-wider text-white/90 text-center mb-3">
-            Рейтинг Игроков
-          </h1>
+        <div className="mb-4 bg-gradient-to-b from-[#1E2235] to-[#1A1C2E] p-4 rounded-2xl shadow-lg border border-gray-800/50">
+          <h1 className="text-2xl font-light tracking-wider text-white/90 text-center mb-4">Рейтинг Игроков</h1>
 
           {/* Кнопки навигации */}
-          <div className="flex gap-1.5">
+          <div className="flex gap-2.5 p-1">
             <button
               onClick={() => setActiveTab("balance")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm transition-all flex-1 relative overflow-hidden ${
+              className={`group flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex-1 relative overflow-hidden ${
                 activeTab === "balance"
-                  ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_15px_rgba(91,156,230,0.3)]"
+                  ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_20px_rgba(91,156,230,0.25)]"
                   : "bg-[#2B2D35] text-gray-400 hover:bg-[#2F3139] hover:text-gray-300"
               }`}
             >
               <div
-                className={`absolute inset-0 ${activeTab === "balance" ? "bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3Atb3BhY2l0eT0iMC4wNSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1vcGFjaXR5PSIwIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==')] opacity-50" : ""}`}
+                className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                  activeTab === "balance"
+                    ? "bg-[radial-gradient(circle_at_50%_50%,rgba(91,156,230,0.1),transparent_70%)]"
+                    : "bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.03),transparent_70%)]"
+                }`}
               />
-              <Trophy
-                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === "balance" ? "text-white" : "text-gray-500"}`}
-              />
+              <Trophy className={`w-4 h-4 ${activeTab === "balance" ? "text-white" : "text-gray-500"}`} />
               <span className="relative z-10">По балансу</span>
             </button>
 
             <button
               onClick={() => setActiveTab("referrals")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-xs sm:text-sm transition-all flex-1 relative overflow-hidden ${
+              className={`group flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex-1 relative overflow-hidden ${
                 activeTab === "referrals"
-                  ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_15px_rgba(91,156,230,0.3)]"
+                  ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_20px_rgba(91,156,230,0.25)]"
                   : "bg-[#2B2D35] text-gray-400 hover:bg-[#2F3139] hover:text-gray-300"
               }`}
             >
               <div
-                className={`absolute inset-0 ${activeTab === "referrals" ? "bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3Atb3BhY2l0eT0iMC4wNSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1vcGFjaXR5PSIwIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPg==')] opacity-50" : ""}`}
+                className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                  activeTab === "referrals"
+                    ? "bg-[radial-gradient(circle_at_50%_50%,rgba(91,156,230,0.1),transparent_70%)]"
+                    : "bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.03),transparent_70%)]"
+                }`}
               />
-              <Users
-                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === "referrals" ? "text-white" : "text-gray-500"}`}
-              />
+              <Users className={`w-4 h-4 ${activeTab === "referrals" ? "text-white" : "text-gray-500"}`} />
               <span className="relative z-10">По рефералам</span>
             </button>
           </div>
 
           {/* Позиция пользователя */}
           {currentUserPosition && currentUserPosition > 0 && currentUser && (
-            <div className="mt-3 pt-3 border-t border-gray-700/30">
-              <div className="flex items-center justify-between text-xs sm:text-sm">
-                <div className="flex items-center gap-1.5 text-[#5B9CE6]/90">
-                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                  <span>
+            <div className="mt-4 pt-4 border-t border-gray-700/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 bg-[#2B2D35]/80 px-3 py-2 rounded-xl">
+                  <Sparkles className="w-4 h-4 text-[#5B9CE6]" />
+                  <span className="text-sm text-white/90">
                     {currentUserPosition} место из {sortedUsers.length}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 bg-[#2B2D35] px-2 py-0.5 rounded-lg text-white/90">
-                  <span>{getMetricValue(currentUser)}</span>
-                  <span className="text-[#5B9CE6]">{getMetricIcon()}</span>
+                <div className="flex items-center gap-2 bg-gradient-to-r from-[#2B2D35] to-[#323544] px-3 py-2 rounded-xl border border-gray-700/30">
+                  <span className="text-sm font-medium text-white/90">{getMetricValue(currentUser)}</span>
+                  <span className="text-sm text-[#5B9CE6]">{getMetricIcon()}</span>
                 </div>
               </div>
             </div>
@@ -264,13 +266,13 @@ export function RatingSection() {
         </div>
 
         {/* Список пользователей */}
-        <div className="bg-[#1E2235] rounded-xl overflow-hidden mb-3 shadow-lg">
+        <div className="bg-[#1E2235] rounded-2xl overflow-hidden mb-3 shadow-lg border border-gray-800/50">
           {error ? (
-            <div className="p-4 text-center">
-              <div className="text-red-400 text-sm">{error}</div>
+            <div className="p-6 text-center">
+              <div className="text-red-400 mb-2">{error}</div>
             </div>
           ) : sortedUsers.length > 0 ? (
-            <div ref={containerRef} className="max-h-[60vh] overflow-y-auto scrollbar-hide">
+            <div ref={containerRef} className="max-h-[65vh] overflow-y-auto scrollbar-hide">
               <div className="divide-y divide-gray-700/30">
                 {sortedUsers.map((user, index) => {
                   const isTopThree = index < 3
@@ -279,7 +281,7 @@ export function RatingSection() {
                   return (
                     <div
                       key={user.id}
-                      className={`relative flex items-center p-1.5 sm:p-2 ${
+                      className={`relative flex items-center p-3 ${
                         isCurrentUser
                           ? "bg-blue-900/20 border-l-2 border-blue-500"
                           : isTopThree
@@ -296,21 +298,21 @@ export function RatingSection() {
 
                       {/* Номер позиции */}
                       <div
-                        className={`relative flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full font-bold ${
+                        className={`relative flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-xl font-bold ${
                           isTopThree ? "bg-gradient-to-r " + getPositionColor(index) : "bg-gray-800"
-                        } text-white text-xs`}
+                        } text-white text-sm`}
                       >
                         {index + 1}
                       </div>
 
                       {/* Аватар пользователя */}
-                      <div className="flex-shrink-0 ml-1.5 sm:ml-2 relative">
+                      <div className="flex-shrink-0 ml-3 relative">
                         {user.photo_url ? (
                           <div className="relative">
                             <img
                               src={user.photo_url || "/placeholder.svg?height=32&width=32"}
                               alt={user.display_name}
-                              className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover border-2 ${
+                              className={`w-9 h-9 rounded-xl object-cover border-2 ${
                                 index === 0
                                   ? "border-yellow-400"
                                   : index === 1
@@ -323,7 +325,7 @@ export function RatingSection() {
                           </div>
                         ) : (
                           <div
-                            className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-700 flex items-center justify-center border-2 ${
+                            className={`w-9 h-9 rounded-xl bg-gray-700 flex items-center justify-center border-2 ${
                               index === 0
                                 ? "border-yellow-400"
                                 : index === 1
@@ -333,12 +335,12 @@ export function RatingSection() {
                                     : "border-transparent"
                             }`}
                           >
-                            <span className="text-xs font-bold text-gray-300">{user.display_name?.[0] || "?"}</span>
+                            <span className="text-sm font-bold text-gray-300">{user.display_name?.[0] || "?"}</span>
                           </div>
                         )}
 
                         {isTopThree && (
-                          <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 rounded-full flex items-center justify-center text-xs font-bold">
+                          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-base font-bold">
                             {index === 0 && <span className="text-yellow-400">🥇</span>}
                             {index === 1 && <span className="text-gray-300">🥈</span>}
                             {index === 2 && <span className="text-amber-600">🥉</span>}
@@ -347,11 +349,11 @@ export function RatingSection() {
                       </div>
 
                       {/* Информация о пользователе */}
-                      <div className="ml-1.5 sm:ml-2 flex-1 min-w-0">
-                        <div className="font-medium text-white flex items-center text-xs sm:text-sm truncate">
+                      <div className="ml-3 flex-1 min-w-0">
+                        <div className="font-medium text-white flex items-center text-sm truncate">
                           {user.display_name}
                         </div>
-                        <div className="text-[10px] sm:text-xs text-gray-400 flex items-center">
+                        <div className="text-xs text-gray-400 flex items-center">
                           <span className="mr-1">{getMetricValue(user)}</span>
                           <span>{getMetricIcon()}</span>
                         </div>
@@ -362,17 +364,17 @@ export function RatingSection() {
               </div>
             </div>
           ) : !isInitialLoad ? (
-            <div className="p-3 text-center text-gray-400 text-xs sm:text-sm">Нет данных для отображения</div>
+            <div className="p-4 text-center text-gray-400 text-sm">Нет данных для отображения</div>
           ) : null}
         </div>
 
         {/* Реальная позиция пользователя, если он не в топ-100 */}
         {currentUser && currentUserPosition === null && lastTopUser && (
-          <div className="bg-[#1E2235] rounded-xl p-2.5 shadow-lg">
+          <div className="bg-[#1E2235] rounded-2xl p-4 shadow-lg border border-gray-800/50">
             <div className="text-center">
-              <div className="text-[10px] sm:text-xs text-gray-400 mb-1">Ваша позиция в общем рейтинге</div>
-              <div className="text-sm sm:text-base font-bold text-white mb-0.5">Ниже топ-100</div>
-              <div className="text-[10px] sm:text-xs text-blue-400">
+              <div className="text-sm text-gray-400 mb-1">Ваша позиция в общем рейтинге</div>
+              <div className="text-lg font-bold text-white mb-1">Ниже топ-100</div>
+              <div className="text-sm text-blue-400">
                 Вам нужно{" "}
                 {activeTab === "balance"
                   ? `набрать еще ${(lastTopUser.balance || 0) - (currentUser.balance || 0)} монет`
