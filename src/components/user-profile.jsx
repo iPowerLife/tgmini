@@ -223,8 +223,17 @@ export function UserProfile({ user, miners, totalPower }) {
           <button
             onClick={async () => {
               if (telegramUser?.id) {
-                const { success, message } = await testSendMessage(telegramUser.id)
-                if (window.Telegram?.WebApp?.showPopup) {
+                const { success, message, debug } = await testSendMessage(telegramUser.id)
+
+                // Если включен режим отладки и есть отладочная информация
+                if (debug && window.Telegram?.WebApp?.showPopup) {
+                  const debugMessage = `${message}\n\nDebug Info:\n${JSON.stringify(debug, null, 2)}`
+                  window.Telegram.WebApp.showPopup({
+                    title: success ? "Успех" : "Ошибка",
+                    message: debugMessage,
+                    buttons: [{ type: "close" }],
+                  })
+                } else if (window.Telegram?.WebApp?.showPopup) {
                   window.Telegram.WebApp.showPopup({
                     title: success ? "Успех" : "Ошибка",
                     message: message,
