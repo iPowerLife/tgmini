@@ -108,12 +108,11 @@ export function RatingSection() {
   function getUserDisplayName(user) {
     if (!user) return "Неизвестный пользователь"
 
-    // Приоритет отображения: nickname > first_name + last_name > username > id
-    if (user.nickname) return user.nickname
+    // Приоритет отображения: first_name + last_name > first_name > username > id
     if (user.first_name) {
       return user.last_name ? `${user.first_name} ${user.last_name}` : user.first_name
     }
-    if (user.username) return `@${user.username}`
+    if (user.username) return user.username // Убираем @ перед username
     return `Пользователь ${user.telegram_id || user.id}`
   }
 
