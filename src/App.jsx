@@ -2,7 +2,8 @@
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
 import { useState, useEffect, useCallback } from "react"
-import { initTelegram, getTelegramUser, createOrUpdateUser, canBotMessageUser } from "./utils/telegram"
+import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
+import { sendTelegramMessage, canBotMessageUser } from "./utils/telegram-bot"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
@@ -10,7 +11,6 @@ import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
 import { supabase } from "./supabase"
 import { RatingSection } from "./components/rating-section"
-import { sendTelegramMessage } from "./utils/telegram-bot"
 
 // Компонент для содержимого приложения
 function AppContent({
