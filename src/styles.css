@@ -27,6 +27,150 @@
   --radius: 0.5rem;
 }
 
+
+
+/* Базовая структура для скролла */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+/* Единственный скроллируемый контейнер */
+.page-container {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 56px); /* Высота нижнего меню */
+}
+
+/* Контент страниц */
+.page-content {
+  min-height: 100%;
+  position: relative;
+  width: 100%;
+}
+
+/* Фиксированное нижнее меню */
+.bottom-menu {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.8));
+  backdrop-filter: blur(8px);
+}
+
+/* Убираем видимый скроллбар, но оставляем функциональность */
+.page-container {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.page-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Предотвращаем нежелательные взаимодействия */
+* {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Обновляем стили для решения проблемы с прокруткой */
+:root {
+  height: 100%;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+  background-color: #1a1b1e;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
+  touch-action: manipulation;
+}
+
+#root {
+  background-color: #1a1b1e;
+}
+
+/* Скрываем скроллбар, но сохраняем функциональность */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE и Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Стили для Telegram WebApp */
+.telegram-app {
+  background-color: var(--tg-theme-bg-color, #1a1b1e);
+  color: var(--tg-theme-text-color, #ffffff);
+}
+
+/* Разрешаем выделение текста только в определенных элементах */
+input,
+textarea {
+  user-select: text;
+}
+
+/* Добавляем стили для плавного перехода между страницами */
+.page-transition-enter {
+  opacity: 0;
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transition: opacity 300ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* Анимация fadeIn */
 @keyframes fadeIn {
   from {
