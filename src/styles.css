@@ -1368,7 +1368,7 @@ button:not(:disabled):active {
 
 /* Добавляем стили для раздела заданий */
 .tasks-container {
-  min-height: 100vh;
+  min-height: auto;
   background: #0f1012;
   padding-bottom: 80px; /* Для нижнего меню */
   max-width: 800px;
