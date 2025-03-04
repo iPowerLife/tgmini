@@ -206,41 +206,27 @@ export function RatingSection() {
           <h1 className="text-2xl font-light tracking-wider text-white/90 text-center mb-4">Рейтинг Игроков</h1>
 
           {/* Кнопки навигации */}
-          <div className="flex gap-2.5 p-1">
+          <div className="flex gap-1 p-1 bg-[#1E2235]/50 rounded-xl">
             <button
               onClick={() => setActiveTab("balance")}
-              className={`group flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex-1 relative overflow-hidden ${
+              className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm transition-all flex-1 relative overflow-hidden ${
                 activeTab === "balance"
-                  ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_20px_rgba(91,156,230,0.25)]"
-                  : "bg-[#2B2D35] text-gray-400 hover:bg-[#2F3139] hover:text-gray-300"
+                  ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_15px_rgba(91,156,230,0.25)]"
+                  : "text-gray-400 hover:text-gray-300"
               }`}
             >
-              <div
-                className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
-                  activeTab === "balance"
-                    ? "bg-[radial-gradient(circle_at_50%_50%,rgba(91,156,230,0.1),transparent_70%)]"
-                    : "bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.03),transparent_70%)]"
-                }`}
-              />
               <Trophy className={`w-4 h-4 ${activeTab === "balance" ? "text-white" : "text-gray-500"}`} />
               <span className="relative z-10">По балансу</span>
             </button>
 
             <button
               onClick={() => setActiveTab("referrals")}
-              className={`group flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex-1 relative overflow-hidden ${
+              className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm transition-all flex-1 relative overflow-hidden ${
                 activeTab === "referrals"
-                  ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_20px_rgba(91,156,230,0.25)]"
-                  : "bg-[#2B2D35] text-gray-400 hover:bg-[#2F3139] hover:text-gray-300"
+                  ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_15px_rgba(91,156,230,0.25)]"
+                  : "text-gray-400 hover:text-gray-300"
               }`}
             >
-              <div
-                className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
-                  activeTab === "referrals"
-                    ? "bg-[radial-gradient(circle_at_50%_50%,rgba(91,156,230,0.1),transparent_70%)]"
-                    : "bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.03),transparent_70%)]"
-                }`}
-              />
               <Users className={`w-4 h-4 ${activeTab === "referrals" ? "text-white" : "text-gray-500"}`} />
               <span className="relative z-10">По рефералам</span>
             </button>
