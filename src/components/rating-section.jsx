@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { supabase } from "../supabase"
 import { useTelegramUser } from "../hooks/use-telegram-user"
 import { useCachedData } from "../hooks/use-cached-data"
-import OptimizedImage from "./optimized-image"
+import { OptimizedImage } from "./optimized-image"
 
 // Типы рейтингов
 const RATING_TYPES = {
