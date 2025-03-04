@@ -12,11 +12,18 @@ import {
   clearRatingCache,
 } from "../utils/cache-manager"
 
+// Создаем глобальный кэш для данных рейтинга, чтобы сохранять их между переключениями вкладок
+const globalRatingCache = {
+  balance: null,
+  referrals: null,
+}
+
 export function RatingSection() {
   const [activeTab, setActiveTab] = useState("balance")
-  const [sortedUsers, setSortedUsers] = useState([])
+  const [sortedUsers, setSortedUsers] = useState(() => globalRatingCache[activeTab] || [])
   const [error, setError] = useState(null)
   const [lastUpdateTime, setLastUpdateTime] = useState("Загрузка...")
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   const maxUsers = 100
   const containerRef = useRef(null)
 
@@ -34,6 +41,14 @@ export function RatingSection() {
   useEffect(() => {
     async function fetchUsers() {
       try {
+        // Проверяем наличие данных в глобальном кэше
+        if (globalRatingCache[activeTab]) {
+          setSortedUsers(globalRatingCache[activeTab])
+          setLastUpdateTime(getLastUpdateTime())
+          setIsInitialLoad(false)
+          return
+        }
+
         // Проверяем наличие кэша и его актуальность
         const shouldUpdate = shouldUpdateCache()
         const cachedData = getCachedRating(activeTab)
@@ -41,7 +56,10 @@ export function RatingSection() {
         // Если кэш актуален и данные есть, используем их
         if (!shouldUpdate && cachedData) {
           setSortedUsers(cachedData)
+          // Сохраняем в глобальный кэш
+          globalRatingCache[activeTab] = cachedData
           setLastUpdateTime(getLastUpdateTime())
+          setIsInitialLoad(false)
           return
         }
 
@@ -89,12 +107,17 @@ export function RatingSection() {
         // Сохраняем данные в кэш
         cacheRating(activeTab, processedData)
 
+        // Сохраняем в глобальный кэш
+        globalRatingCache[activeTab] = processedData
+
         // Обновляем состояние компонента
         setSortedUsers(processedData)
         setLastUpdateTime(getLastUpdateTime())
+        setIsInitialLoad(false)
       } catch (err) {
         console.error("Ошибка при загрузке данных:", err)
         setError(err.message || "Не удалось загрузить данные рейтинга")
+        setIsInitialLoad(false)
       }
     }
 
@@ -335,9 +358,9 @@ export function RatingSection() {
                 })}
               </div>
             </div>
-          ) : (
+          ) : !isInitialLoad ? (
             <div className="p-4 text-center text-gray-400 text-sm">Нет данных для отображения</div>
-          )}
+          ) : null}
         </div>
 
         {/* Реальная позиция пользователя, если он не в топ-100 */}
