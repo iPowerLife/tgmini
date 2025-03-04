@@ -82,23 +82,10 @@ export function RatingSection() {
           throw new Error("Нет данных")
         }
 
-        // Отладочная информация
-        console.log("Данные из базы:", data.slice(0, 3))
-
         // Преобразуем данные для отображения
         const processedData = data.map((user) => {
-          // Сохраняем оригинальные данные для отладки
-          const originalUser = { ...user }
-
           // Получаем имя для отображения
           const displayName = getUserDisplayName(user)
-
-          // Отладочная информация для первых нескольких пользователей
-          if (data.indexOf(user) < 3) {
-            console.log(
-              `Пользователь ${user.id}: first_name=${user.first_name}, last_name=${user.last_name}, username=${user.username}, отображаемое имя=${displayName}`,
-            )
-          }
 
           return {
             id: user.telegram_id || user.id,
@@ -107,8 +94,6 @@ export function RatingSection() {
             balance: user.balance || 0,
             referral_count: user.referral_count || 0,
             level: user.level || 1,
-            // Сохраняем оригинальные данные для возможной отладки
-            original: originalUser,
           }
         })
 
@@ -230,11 +215,6 @@ export function RatingSection() {
       default:
         return (user.balance || 0).toFixed(2)
     }
-  }
-
-  // Получаем достижение для топ-игрока
-  const getAchievement = (index) => {
-    return null // Убираем все надписи достижений
   }
 
   // Получаем цвет для топ-позиций
@@ -385,21 +365,19 @@ export function RatingSection() {
               <div className="divide-y divide-gray-700/30">
                 {getCurrentPageUsers().map((user, index) => {
                   const actualIndex = (currentPage - 1) * usersPerPage + index
-                  const achievement = getAchievement(actualIndex)
                   const isTopThree = actualIndex < 3
                   const isCurrentUser = currentUserId && String(user.id) === String(currentUserId)
 
                   return (
                     <div
                       key={user.id}
-                      className={`relative flex items-center p-2 transition-all duration-300 fade-in ${
+                      className={`relative flex items-center p-2 ${
                         isCurrentUser
-                          ? "bg-blue-900/20 border-l-2 border-blue-500 current-user"
+                          ? "bg-blue-900/20 border-l-2 border-blue-500"
                           : isTopThree
-                            ? `bg-gradient-to-r from-gray-800/50 to-gray-900/50 top-position`
+                            ? `bg-gradient-to-r from-gray-800/50 to-gray-900/50`
                             : "hover:bg-gray-800/30"
                       }`}
-                      style={{ animationDelay: `${index * 0.05}s` }}
                     >
                       {/* Фоновый градиент для топ-3 */}
                       {isTopThree && (
@@ -421,20 +399,6 @@ export function RatingSection() {
                       <div className="flex-shrink-0 ml-2 relative">
                         {user.photo_url ? (
                           <div className="relative">
-                            <div
-                              className={`absolute inset-0 rounded-full ${isTopThree ? "animate-pulse-glow" : ""}`}
-                              style={{
-                                boxShadow: isTopThree
-                                  ? `0 0 10px 2px rgba(${
-                                      actualIndex === 0
-                                        ? "255, 215, 0"
-                                        : actualIndex === 1
-                                          ? "192, 192, 192"
-                                          : "205, 127, 50"
-                                    }, 0.5)`
-                                  : "none",
-                              }}
-                            ></div>
                             <img
                               src={user.photo_url || "/placeholder.svg?height=32&width=32"}
                               alt={user.display_name}
@@ -467,17 +431,9 @@ export function RatingSection() {
 
                         {isTopThree && (
                           <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold">
-                            {actualIndex === 0 && <span className="text-yellow-400 animate-bounce-slow">🥇</span>}
-                            {actualIndex === 1 && (
-                              <span className="text-gray-300 animate-bounce-slow" style={{ animationDelay: "0.1s" }}>
-                                🥈
-                              </span>
-                            )}
-                            {actualIndex === 2 && (
-                              <span className="text-amber-600 animate-bounce-slow" style={{ animationDelay: "0.2s" }}>
-                                🥉
-                              </span>
-                            )}
+                            {actualIndex === 0 && <span className="text-yellow-400">🥇</span>}
+                            {actualIndex === 1 && <span className="text-gray-300">🥈</span>}
+                            {actualIndex === 2 && <span className="text-amber-600">🥉</span>}
                           </div>
                         )}
                       </div>
