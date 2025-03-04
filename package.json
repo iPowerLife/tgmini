@@ -18,7 +18,8 @@
     "compression": "1.7.4",
     "lucide-react": "0.344.0",
     "framer-motion": "^11.0.3",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "react-window": "^1.8.9"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "4.2.1",
