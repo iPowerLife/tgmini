@@ -56,7 +56,7 @@ body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   position: relative;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 16px); /* Высота нижнего меню */
+  padding-bottom: calc(env(safe-area-inset-bottom) + 56px); /* Высота нижнего меню */
 }
 
 /* Контент страниц */
@@ -3154,4 +3154,14 @@ body {
   padding: 16px;
   padding-bottom: calc(env(safe-area-inset-bottom) + 60px);
 }
+
+
+
+
+
+
+
+
+
+
 
