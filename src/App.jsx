@@ -1,15 +1,11 @@
 "use client"
 
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigationType } from "react-router-dom"
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from "react"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
-// import { Shop } from "./components/shop"
-// import { UserProfile } from "./components/user-profile"
-// import { TasksSection } from "./components/tasks-section"
 import { supabase } from "./supabase"
-// import { RatingSection } from "./components/rating-section"
 
 // Ленивая загрузка тяжелых компонентов
 const Shop = lazy(() => import("./components/shop").then((module) => ({ default: module.Shop })))
@@ -30,86 +26,20 @@ const LoadingFallback = () => (
   </div>
 )
 
-// Компонент для управления прокруткой страниц
-function ScrollManager() {
-  const location = useLocation()
-  const navigationType = useNavigationType()
-  const prevPathRef = useRef(location.pathname)
+// Компонент для сброса прокрутки при изменении маршрута
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  const pageContainerRef = useRef(null)
 
-  // Функция для контроля прокрутки
-  const scrollToTop = useCallback(() => {
-    // Логируем действия для отладки
-    console.log("⬆️ Scrolling to top", { path: location.pathname })
-
-    // Применяем несколько методов сброса прокрутки
-    try {
-      window.scrollTo(0, 0)
-      document.body.scrollTop = 0
-      document.documentElement.scrollTop = 0
-
-      // Для Telegram Mini App
-      if (window.Telegram?.WebApp) {
-        window.Telegram.WebApp.expand?.()
-      }
-
-      // Пытаемся найти основной контейнер и сбросить его прокрутку
-      const mainContainer = document.querySelector("#root")
-      if (mainContainer) {
-        mainContainer.scrollTop = 0
-      }
-
-      // Форсируем сброс прокрутки для всех потенциальных контейнеров
-      Array.from(document.querySelectorAll(".page-content")).forEach((el) => {
-        el.scrollTop = 0
-      })
-
-      // Передаем сообщение всем iframe, если они есть
-      window.dispatchEvent(new CustomEvent("force-scroll-top"))
-    } catch (e) {
-      console.error("Error scrolling to top:", e)
-    }
-  }, [location])
-
-  // Обработчик изменения маршрута
   useEffect(() => {
-    if (location.pathname !== prevPathRef.current) {
-      // Сбрасываем прокрутку при смене маршрута
-      scrollToTop()
-
-      // Делаем еще одну попытку с задержкой (когда контент уже мог загрузиться)
-      setTimeout(scrollToTop, 100)
-      setTimeout(scrollToTop, 500) // На случай, если контент загружается долго
-
-      // Обновляем сохраненный маршрут
-      prevPathRef.current = location.pathname
+    // Находим контейнер с прокруткой
+    const container = document.querySelector(".page-container")
+    if (container) {
+      // Сбрасываем прокрутку
+      container.scrollTop = 0
+      console.log("Сброс прокрутки при переходе на:", pathname)
     }
-  }, [location, scrollToTop])
-
-  // Обработчик события прокрутки
-  useEffect(() => {
-    // Проверяем, находимся ли мы в верхней части страницы
-    const checkTopPosition = () => {
-      const isAtTop = window.scrollY <= 10
-      if (!isAtTop) {
-        // Если мы не в начале, то возможно что-то блокирует нашу прокрутку
-        // Попробуем еще раз
-        scrollToTop()
-      }
-    }
-
-    // Устанавливаем слушатель на скролл с задержкой
-    let timeout
-    const handleScroll = () => {
-      clearTimeout(timeout)
-      timeout = setTimeout(checkTopPosition, 300)
-    }
-
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => {
-      window.removeEventListener("scroll", handleScroll)
-      clearTimeout(timeout)
-    }
-  }, [scrollToTop])
+  }, [pathname])
 
   return null
 }
@@ -127,13 +57,15 @@ function AppContent({
 }) {
   return (
     <div className="root-container">
-      <ScrollManager />
+      <ScrollToTop />
+
+      {/* Единственный скроллируемый контейнер */}
       <div className="page-container">
         <Routes>
           <Route
             path="/"
             element={
-              <div className="page-content" key="home-page" id="home-page">
+              <div className="page-content" key="home-page">
                 <div className="balance-card">
                   <div className="balance-background" />
                   <div className="balance-content">
@@ -151,7 +83,7 @@ function AppContent({
           <Route
             path="/shop"
             element={
-              <div className="page-content" key="shop-page" id="shop-page">
+              <div className="page-content" key="shop-page">
                 <Suspense fallback={<LoadingFallback />}>
                   <Shop
                     user={user}
@@ -166,7 +98,7 @@ function AppContent({
           <Route
             path="/tasks"
             element={
-              <div className="page-content" key="tasks-page" id="tasks-page">
+              <div className="page-content" key="tasks-page">
                 <Suspense fallback={<LoadingFallback />}>
                   <TasksSection
                     user={user}
@@ -181,7 +113,7 @@ function AppContent({
           <Route
             path="/rating"
             element={
-              <div className="page-content" key="rating-page" id="rating-page">
+              <div className="page-content" key="rating-page">
                 <Suspense fallback={<LoadingFallback />}>
                   <RatingSection currentUserId={user?.id} users={ratingData.users} />
                 </Suspense>
@@ -191,7 +123,7 @@ function AppContent({
           <Route
             path="/profile"
             element={
-              <div className="page-content" key="profile-page" id="profile-page">
+              <div className="page-content" key="profile-page">
                 <Suspense fallback={<LoadingFallback />}>
                   <UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />
                 </Suspense>
@@ -200,10 +132,16 @@ function AppContent({
           />
         </Routes>
       </div>
-      <BottomMenu />
+
+      {/* Фиксированное нижнее меню */}
+      <div className="fixed-bottom-menu">
+        <BottomMenu />
+      </div>
     </div>
   )
 }
+
+// Остальной код App.jsx остается без изменений...
 
 function App() {
   const [user, setUser] = useState(null)
@@ -513,20 +451,8 @@ function App() {
     // Добавляем обработчик события загрузки страницы
     window.addEventListener("load", handlePageLoad)
 
-    // Инициализируем обработчик прокрутки
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        // Когда пользователь возвращается к приложению, сбрасываем прокрутку
-        window.scrollTo(0, 0)
-      }
-    }
-
-    document.addEventListener("visibilitychange", handleVisibilityChange)
-
-    // Очищаем обработчики при размонтировании
     return () => {
       window.removeEventListener("load", handlePageLoad)
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
   }, [])
 
