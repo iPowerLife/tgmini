@@ -202,17 +202,16 @@ export function RatingSection() {
     <div className="min-h-screen pb-12">
       <div className="px-4 py-4">
         {/* Заголовок */}
-        <div className="mb-6 bg-[#1E2235] p-4 rounded-xl shadow-lg">
+        <div className="mb-6 bg-[#1E2235] p-3 rounded-xl shadow-lg relative">
+          <div className="absolute top-3 right-3 text-xs text-[#5B9CE6]">(обновляется раз в 12 часов)</div>
+
           <h1 className="text-2xl font-bold text-white mb-1">Рейтинг игроков</h1>
-          <div className="text-[#5B9CE6] text-sm font-medium">
+          <div className="text-[#5B9CE6] text-sm font-medium mb-1">
             {activeTab === "balance" ? "По количеству монет" : "По количеству рефералов"}
           </div>
 
           {/* Информация об обновлении */}
-          <div className="flex items-center mt-2 text-xs">
-            <div className="text-gray-400">Обновлено: {lastUpdateTime}</div>
-            <div className="text-[#5B9CE6] ml-2">(обновляется раз в 12 часов)</div>
-          </div>
+          <div className="text-xs text-gray-400">{lastUpdateTime}</div>
         </div>
 
         {/* Вкладки */}
