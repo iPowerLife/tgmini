@@ -247,10 +247,10 @@ export function RatingSection() {
 
   // Основной рендер компонента
   return (
-    <div className="min-h-screen pb-12 bg-[#17181C]">
+    <div className="min-h-screen pb-12">
       <div className="px-4 py-4">
         {/* Заголовок */}
-        <div className="mb-6">
+        <div className="mb-6 bg-[#1E2235] p-4 rounded-xl shadow-lg">
           <h1 className="text-2xl font-bold text-white mb-1">Рейтинг игроков</h1>
           <div className="text-[#5B9CE6] text-sm font-medium">
             {activeTab === "balance" ? "По количеству монет" : "По количеству рефералов"}
@@ -264,11 +264,11 @@ export function RatingSection() {
         </div>
 
         {/* Вкладки */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 bg-[#1E2235] p-1 rounded-xl shadow-lg">
           <button
             onClick={() => setActiveTab("balance")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-              activeTab === "balance" ? "bg-[#5B9CE6] text-white" : "bg-[#2B2D35] text-gray-400 hover:bg-[#3B3D45]"
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all flex-1 ${
+              activeTab === "balance" ? "bg-[#5B9CE6] text-white" : "text-gray-400 hover:bg-[#2B2D35]"
             }`}
           >
             <Trophy className="w-4 h-4" />
@@ -277,8 +277,8 @@ export function RatingSection() {
 
           <button
             onClick={() => setActiveTab("referrals")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-              activeTab === "referrals" ? "bg-[#5B9CE6] text-white" : "bg-[#2B2D35] text-gray-400 hover:bg-[#3B3D45]"
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all flex-1 ${
+              activeTab === "referrals" ? "bg-[#5B9CE6] text-white" : "text-gray-400 hover:bg-[#2B2D35]"
             }`}
           >
             <Users className="w-4 h-4" />
@@ -288,10 +288,8 @@ export function RatingSection() {
 
         {/* Позиция текущего пользователя */}
         {currentUserPosition && currentUserPosition > 0 && currentUser && (
-          <div className="relative overflow-hidden rounded-lg mb-3 group">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/30 via-purple-600/30 to-blue-600/30 animate-gradient-x"></div>
-            <div className="absolute inset-0 bg-gray-900/50"></div>
-            <div className="relative z-10 p-2 border border-blue-500/30">
+          <div className="relative overflow-hidden rounded-xl mb-3 group bg-[#1E2235] shadow-lg">
+            <div className="relative z-10 p-3">
               <div className="text-xs text-blue-300 mb-0.5 flex items-center">
                 <Sparkles className="w-3 h-3 mr-1 animate-pulse" />
                 <span>Ваша позиция в рейтинге</span>
@@ -311,7 +309,7 @@ export function RatingSection() {
         )}
 
         {/* Список пользователей */}
-        <div className="bg-gradient-to-b from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-lg overflow-hidden mb-3 border border-gray-700/50 shadow-lg">
+        <div className="bg-[#1E2235] rounded-xl overflow-hidden mb-3 shadow-lg">
           {isLoading ? (
             <div className="p-6 flex flex-col items-center justify-center">
               <div className="relative w-12 h-12">
@@ -424,43 +422,41 @@ export function RatingSection() {
         </div>
 
         {/* Пагинация */}
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center mb-3">
-            <button
-              onClick={prevPage}
-              disabled={currentPage === 1}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-md pagination-button text-sm ${
-                currentPage === 1
-                  ? "bg-gray-800/30 text-gray-500 cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-gray-300 hover:from-blue-600/30 hover:to-purple-600/30"
-              }`}
-            >
-              <ChevronLeft className="w-3 h-3" />
-              <span>Назад</span>
-            </button>
+        <div className="flex justify-between items-center mb-3 bg-[#1E2235] p-2 rounded-xl shadow-lg">
+          <button
+            onClick={prevPage}
+            disabled={currentPage === 1}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-xl pagination-button text-sm ${
+              currentPage === 1
+                ? "bg-gray-800/30 text-gray-500 cursor-not-allowed"
+                : "bg-[#2B2D35] text-gray-300 hover:bg-[#3B3D45]"
+            }`}
+          >
+            <ChevronLeft className="w-3 h-3" />
+            <span>Назад</span>
+          </button>
 
-            <div className="text-xs text-blue-400 bg-gray-800/50 px-2 py-1 rounded-full">
-              {currentPage} из {totalPages}
-            </div>
-
-            <button
-              onClick={nextPage}
-              disabled={currentPage === totalPages}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-md pagination-button text-sm ${
-                currentPage === totalPages
-                  ? "bg-gray-800/30 text-gray-500 cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-gray-300 hover:from-blue-600/30 hover:to-purple-600/30"
-              }`}
-            >
-              <span>Вперед</span>
-              <ChevronRight className="w-3 h-3" />
-            </button>
+          <div className="text-xs text-blue-400 bg-gray-800/50 px-2 py-1 rounded-full">
+            {currentPage} из {totalPages}
           </div>
-        )}
+
+          <button
+            onClick={nextPage}
+            disabled={currentPage === totalPages}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-md pagination-button text-sm ${
+              currentPage === totalPages
+                ? "bg-gray-800/30 text-gray-500 cursor-not-allowed"
+                : "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-gray-300 hover:from-blue-600/30 hover:to-purple-600/30"
+            }`}
+          >
+            <span>Вперед</span>
+            <ChevronRight className="w-3 h-3" />
+          </button>
+        </div>
 
         {/* Реальная позиция пользователя, если он не в топ-100 */}
         {currentUser && currentUserPosition === null && lastTopUser && (
-          <div className="bg-gradient-to-r from-gray-800/70 to-gray-900/70 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50 shadow-lg">
+          <div className="bg-[#1E2235] rounded-xl p-3 shadow-lg">
             <div className="text-center">
               <div className="text-xs text-gray-400 mb-1">Ваша позиция в общем рейтинге</div>
               <div className="text-lg font-bold text-white mb-0.5">Ниже топ-100</div>
