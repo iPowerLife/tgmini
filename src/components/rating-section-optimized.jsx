@@ -1,4 +1,4 @@
-import RatingSection from "./rating-section"
+import { RatingSection } from "./rating-section"
 
 // Реэкспортируем основной компонент рейтинга
 // Это позволяет сохранить совместимость с существующим кодом
