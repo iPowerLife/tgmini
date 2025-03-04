@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { Trophy, Users, ChevronLeft, ChevronRight, Award, Crown, Star, Sparkles } from "lucide-react"
+import { Trophy, Users, ChevronLeft, ChevronRight, Award, Crown, Star, Sparkles, RefreshCw, Clock } from "lucide-react"
 import { supabase } from "../supabase"
 import { useTelegramUser } from "../hooks/use-telegram-user"
+import { shouldUpdateCache, getCachedRating, cacheRating, getLastUpdateTime } from "../utils/cache-manager"
 
 export function RatingSection() {
   const [activeTab, setActiveTab] = useState("balance")
@@ -11,6 +12,8 @@ export function RatingSection() {
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [lastUpdateTime, setLastUpdateTime] = useState("Загрузка...")
+  const [isForceUpdating, setIsForceUpdating] = useState(false)
   const usersPerPage = 10
   const maxUsers = 100
   const containerRef = useRef(null)
@@ -21,11 +24,24 @@ export function RatingSection() {
 
   // Загрузка данных пользователей
   useEffect(() => {
-    async function fetchUsers() {
+    async function fetchUsers(forceUpdate = false) {
       try {
         setIsLoading(true)
         setError(null)
 
+        // Проверяем наличие кэша и его актуальность
+        const shouldUpdate = forceUpdate || shouldUpdateCache()
+        const cachedData = getCachedRating(activeTab)
+
+        // Если кэш актуален и данные есть, используем их
+        if (!shouldUpdate && cachedData) {
+          setSortedUsers(cachedData)
+          setLastUpdateTime(getLastUpdateTime())
+          setIsLoading(false)
+          return
+        }
+
+        // Если кэш устарел или отсутствует, делаем запрос к базе данных
         let query
 
         if (activeTab === "balance") {
@@ -64,17 +80,28 @@ export function RatingSection() {
           level: user.level || 1,
         }))
 
+        // Сохраняем данные в кэш
+        cacheRating(activeTab, processedData)
+
+        // Обновляем состояние компонента
         setSortedUsers(processedData)
+        setLastUpdateTime(getLastUpdateTime())
       } catch (err) {
         console.error("Ошибка при загрузке данных:", err)
         setError(err.message || "Не удалось загрузить данные рейтинга")
       } finally {
         setIsLoading(false)
+        setIsForceUpdating(false)
       }
     }
 
-    fetchUsers()
-  }, [activeTab])
+    fetchUsers(isForceUpdating)
+  }, [activeTab, isForceUpdating])
+
+  // Функция для принудительного обновления данных
+  const forceUpdate = () => {
+    setIsForceUpdating(true)
+  }
 
   // Функция для получения отображаемого имени пользователя
   function getUserDisplayName(user) {
@@ -220,6 +247,20 @@ export function RatingSection() {
             <div className="text-sm font-medium text-blue-400">
               {activeTab === "balance" ? "По количеству монет" : "По количеству рефералов"}
             </div>
+
+            {/* Информация о последнем обновлении */}
+            <div className="flex items-center justify-center mt-2 text-xs text-gray-400">
+              <Clock className="w-3 h-3 mr-1" />
+              <span>Обновлено: {lastUpdateTime}</span>
+              <button
+                onClick={forceUpdate}
+                disabled={isLoading || isForceUpdating}
+                className="ml-2 text-blue-400 hover:text-blue-300 transition-colors"
+                title="Обновить данные"
+              >
+                <RefreshCw className={`w-3 h-3 ${isForceUpdating ? "animate-spin" : ""}`} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -296,10 +337,7 @@ export function RatingSection() {
           ) : error ? (
             <div className="p-6 text-center">
               <div className="text-red-400 mb-2">{error}</div>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm"
-              >
+              <button onClick={forceUpdate} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm">
                 Попробовать снова
               </button>
             </div>
