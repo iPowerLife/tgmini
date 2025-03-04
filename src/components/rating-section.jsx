@@ -199,7 +199,7 @@ export function RatingSection() {
 
   // Основной рендер компонента
   return (
-    <div className="min-h-screen pb-12 bg-[#1A1B1E]">
+    <div className="min-h-screen pb-12">
       {/* Добавляем максимальную ширину и центрирование */}
       <div className="w-full max-w-[380px] mx-auto px-2 py-4 sm:px-4">
         {/* Заголовок и навигация */}
@@ -209,10 +209,10 @@ export function RatingSection() {
           </h1>
 
           {/* Кнопки навигации */}
-          <div className="flex gap-1 p-1 bg-[#1E2235]/50 rounded-xl">
+          <div className="flex gap-1 p-1 bg-[#1E2235]/50 rounded-full">
             <button
               onClick={() => setActiveTab("balance")}
-              className={`group flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm transition-all flex-1 relative overflow-hidden ${
+              className={`group flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full font-medium text-sm transition-all flex-1 relative overflow-hidden ${
                 activeTab === "balance"
                   ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_15px_rgba(91,156,230,0.25)]"
                   : "text-gray-400 hover:text-gray-300"
@@ -224,7 +224,7 @@ export function RatingSection() {
 
             <button
               onClick={() => setActiveTab("referrals")}
-              className={`group flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm transition-all flex-1 relative overflow-hidden ${
+              className={`group flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full font-medium text-sm transition-all flex-1 relative overflow-hidden ${
                 activeTab === "referrals"
                   ? "bg-gradient-to-r from-[#4171BE] to-[#5B9CE6] text-white shadow-[0_0_15px_rgba(91,156,230,0.25)]"
                   : "text-gray-400 hover:text-gray-300"
