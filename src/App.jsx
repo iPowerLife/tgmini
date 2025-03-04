@@ -3,7 +3,6 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
 import { useState, useEffect, useCallback } from "react"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
-import { sendTelegramMessage, canBotMessageUser } from "./utils/telegram-bot"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { Shop } from "./components/shop"
@@ -11,6 +10,8 @@ import { UserProfile } from "./components/user-profile"
 import { TasksSection } from "./components/tasks-section"
 import { supabase } from "./supabase"
 import { RatingSection } from "./components/rating-section"
+// Добавьте импорт компонента AdminPanel
+import { AdminPanel } from "./components/admin-panel"
 
 // Компонент для содержимого приложения
 function AppContent({
@@ -29,6 +30,7 @@ function AppContent({
     <div className="root-container">
       <div className="page-container">
         <Routes>
+          {/* Существующие маршруты */}
           <Route
             path="/"
             element={
@@ -74,6 +76,8 @@ function AppContent({
             path="/profile"
             element={<UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />}
           />
+          {/* Новый маршрут для админ-панели */}
+          <Route path="/admin" element={<AdminPanel />} />
         </Routes>
       </div>
       <BottomMenu />
@@ -290,92 +294,7 @@ function App() {
                   })
                 }
 
-                // Получаем telegram_id реферера для отправки уведомления
-                const { data: referrerTelegramData, error: referrerTelegramError } = await supabase
-                  .from("users")
-                  .select("telegram_id")
-                  .eq("id", referrerData.id)
-                  .single()
-
-                console.log("Referrer telegram data:", referrerTelegramData)
-                console.log("Referrer telegram error:", referrerTelegramError)
-
-                if (!referrerTelegramError && referrerTelegramData?.telegram_id) {
-                  console.log(`Preparing to send notification to telegram_id: ${referrerTelegramData.telegram_id}`)
-
-                  // Проверяем, может ли бот отправлять сообщения пользователю
-                  const canMessage = await canBotMessageUser(referrerTelegramData.telegram_id)
-
-                  if (!canMessage) {
-                    console.log(
-                      `Bot cannot send messages to user ${referrerTelegramData.telegram_id}. User may need to start the bot first.`,
-                    )
-
-                    // Сохраняем уведомление в базе данных для отправки позже
-                    await supabase.from("pending_notifications").insert({
-                      user_id: referrerData.id,
-                      telegram_id: referrerTelegramData.telegram_id,
-                      message: `Пользователь ${telegramUser.first_name || "Новый пользователь"} присоединился по вашей реферальной ссылке. Вы получили награду: ${REFERRER_REWARD} алмазов`,
-                      created_at: new Date().toISOString(),
-                    })
-                  } else {
-                    // Формируем текст уведомления
-                    const notificationText = `
-<b>🎉 У вас новый реферал!</b>
-
-Пользователь <b>${telegramUser.first_name || "Новый пользователь"}</b> присоединился по вашей реферальной ссылке.
-
-<b>💎 Вы получили награду: ${REFERRER_REWARD} алмазов</b>
-
-Продолжайте приглашать друзей и получать бонусы!
-`
-
-                    // Отправляем уведомление рефоводу
-                    try {
-                      const result = await sendTelegramMessage(referrerTelegramData.telegram_id, notificationText)
-                      console.log("Send message result:", result)
-                      if (result) {
-                        console.log(`Notification sent to referrer (${referrerTelegramData.telegram_id})`)
-                      } else {
-                        console.error(`Failed to send notification to referrer (${referrerTelegramData.telegram_id})`)
-
-                        // Сохраняем уведомление в базе данных для отправки позже
-                        await supabase.from("pending_notifications").insert({
-                          user_id: referrerData.id,
-                          telegram_id: referrerTelegramData.telegram_id,
-                          message: `Пользователь ${telegramUser.first_name || "Новый пользователь"} присоединился по вашей реферальной ссылке. Вы получили награду: ${REFERRER_REWARD} алмазов`,
-                          created_at: new Date().toISOString(),
-                        })
-                      }
-                    } catch (notificationError) {
-                      console.error("Error sending notification:", notificationError)
-                    }
-                  }
-                } else {
-                  console.error("Cannot send notification: referrer telegram_id not found")
-                  console.error("Referrer data:", referrerData)
-                }
-
-                // Начисляем награду приглашенному пользователю
-                const { error: referredUpdateError } = await supabase.rpc("increment_user_balance", {
-                  user_id_param: userData.id,
-                  amount_param: REFERRED_REWARD,
-                })
-
-                if (referredUpdateError) {
-                  console.error("Error rewarding referred user:", referredUpdateError)
-                } else {
-                  console.log(`Referred user rewarded with ${REFERRED_REWARD} diamonds`)
-
-                  // Записываем награду в историю транзакций
-                  await supabase.from("transactions").insert({
-                    user_id: userData.id,
-                    amount: REFERRED_REWARD,
-                    type: "referral_bonus",
-                    description: `Bonus for joining via referral link`,
-                    created_at: new Date().toISOString(),
-                  })
-                }
+                // В функции handleReferral удалите весь блок кода, связанный с отправкой уведомлений:
               }
             }
           } catch (error) {
