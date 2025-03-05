@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { ArrowUp, Zap, Award, TrendingUp, Clock } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
+import { motion } from "framer-motion"
 
 // Защита от свайпа вниз
 const SwipeGuard = () => {
@@ -12,34 +13,35 @@ const SwipeGuard = () => {
 
 // Компонент баланса с анимацией
 const BalanceCard = ({ balance, currency = "COINS", power = 0 }) => {
-  const [showIncrease, setShowIncrease] = useState(false)
-  const [lastBalance, setLastBalance] = useState(balance)
-
-  useEffect(() => {
-    if (balance > lastBalance) {
-      setShowIncrease(true)
-      const timer = setTimeout(() => setShowIncrease(false), 2000)
-      return () => clearTimeout(timer)
-    }
-    setLastBalance(balance)
-  }, [balance, lastBalance])
-
   return (
-    <div className="balance-card">
+    <motion.div
+      className="balance-card card-3d glow-effect"
+      whileHover={{ scale: 1.02 }}
+      transition={{ type: "spring", stiffness: 300 }}
+    >
+      <div className="hexagon-bg"></div>
       <div className="balance-background"></div>
       <div className="balance-content">
         <div className="balance-label">Ваш баланс</div>
-        <div className="balance-amount">
+        <motion.div
+          className="balance-amount"
+          animate={{ scale: [1, 1.02, 1] }}
+          transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+        >
           {balance}
           <span className="balance-currency">{currency}</span>
-          {showIncrease && <div className="balance-increase">+{(balance - lastBalance).toFixed(2)}</div>}
-        </div>
+        </motion.div>
         <div className="mt-4 text-sm text-gray-400 flex items-center justify-center gap-2">
-          <Zap size={16} className="text-blue-400" />
-          <span>Мощность: {power} h/s</span>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+          >
+            <Zap size={16} className="text-blue-400" />
+          </motion.div>
+          <span className="power-indicator">Мощность: {power} h/s</span>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -188,17 +190,55 @@ const QuickActions = ({ onAction }) => {
   return (
     <div className="grid grid-cols-3 gap-3 mb-6">
       {actions.map((action) => (
-        <button
+        <motion.button
           key={action.id}
           onClick={() => onAction(action.id)}
           className="button-gradient py-3 px-4 rounded-xl flex flex-col items-center"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
-          <div className="mb-2">{action.icon}</div>
+          <motion.div
+            className="mb-2"
+            animate={{ y: [0, -2, 0] }}
+            transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+          >
+            {action.icon}
+          </motion.div>
           <div className="text-sm font-medium">{action.label}</div>
-        </button>
+        </motion.button>
       ))}
     </div>
   )
+}
+
+const Particles = () => {
+  const particlesRef = useRef([])
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const container = containerRef.current
+    const particleCount = 20
+
+    // Create particles
+    for (let i = 0; i < particleCount; i++) {
+      const particle = document.createElement("div")
+      particle.className = "particle"
+      particle.style.left = `${Math.random() * 100}%`
+      particle.style.top = `${Math.random() * 100}%`
+      particle.style.animation = `float ${5 + Math.random() * 5}s infinite`
+      container.appendChild(particle)
+      particlesRef.current.push(particle)
+    }
+
+    return () => {
+      particlesRef.current.forEach((particle) => particle.remove())
+      particlesRef.current = []
+    }
+  }, [])
+
+  return <div ref={containerRef} className="fixed inset-0 pointer-events-none" />
 }
 
 // Главная страница
@@ -404,17 +444,27 @@ const HomePage = () => {
   return (
     <div className="home-page">
       <SwipeGuard />
+      <Particles />
 
-      <div className="app-container">
+      <motion.div
+        className="app-container"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="background-gradient"></div>
         <div className="decorative-circle-1"></div>
         <div className="decorative-circle-2"></div>
 
         <BalanceCard balance={Number.parseFloat(userData.balance.toFixed(2))} power={userData.power} />
 
-        <StatsSection stats={userData.stats} />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <StatsSection stats={userData.stats} />
+        </motion.div>
 
-        <QuickActions onAction={handleQuickAction} />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <QuickActions onAction={handleQuickAction} />
+        </motion.div>
 
         <ActiveMiners miners={userData.miners} />
 
@@ -423,7 +473,7 @@ const HomePage = () => {
         <RecentTransactions transactions={userData.transactions} />
 
         <Achievements achievements={userData.achievements} />
-      </div>
+      </motion.div>
     </div>
   )
 }
