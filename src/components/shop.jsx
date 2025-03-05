@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { ShoppingCart, Zap, Battery, Gauge, Crown, Sparkles, Rocket } from "lucide-react"
+import { supabase } from "../supabase" // Импортируем клиент Supabase
 
 // Компонент карточки майнера
 const MinerCard = ({ miner, onBuy, userBalance }) => {
@@ -109,13 +110,33 @@ export const Shop = ({ user, onPurchase, categories = [], models = [] }) => {
     if (!user || !miner || balance < miner.price) return
 
     try {
-      // Здесь должен быть код для покупки майнера через API
       console.log(`Покупка майнера: ${miner.name} за ${miner.price} монет`)
+
+      // Вызываем существующую функцию покупки майнера
+      const { data, error } = await supabase.rpc("buy_miner", {
+        user_id_param: user.id,
+        model_id_param: miner.id,
+      })
+
+      if (error) {
+        console.error("Ошибка при покупке майнера:", error)
+        return
+      }
+
+      console.log("Результат покупки:", data)
 
       // Вызываем функцию обновления баланса из родительского компонента
       if (onPurchase && typeof onPurchase === "function") {
-        // Предполагаем, что после покупки баланс уменьшится на цену майнера
-        onPurchase(balance - miner.price)
+        // Получаем обновленный баланс пользователя
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("balance")
+          .eq("id", user.id)
+          .single()
+
+        if (!userError && userData) {
+          onPurchase(userData.balance)
+        }
       }
     } catch (error) {
       console.error("Ошибка при покупке майнера:", error)
