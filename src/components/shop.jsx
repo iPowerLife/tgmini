@@ -78,9 +78,19 @@ const MinerCategory = ({ title, description, miners, onBuy }) => {
 }
 
 // Главный компонент магазина
-const Shop = ({ balance = 0, onBuy }) => {
+export const Shop = ({ user, onPurchase, categories, models }) => {
   const [activeCategory, setActiveCategory] = useState("shop")
   const [activeType, setActiveType] = useState("basic")
+
+  // Получаем баланс пользователя
+  const balance = user?.balance || 0
+
+  // Обработчик покупки
+  const handleBuy = (miner) => {
+    if (onPurchase && typeof onPurchase === "function") {
+      onPurchase(miner)
+    }
+  }
 
   // Категории навигации
   const navCategories = [
@@ -203,7 +213,7 @@ const Shop = ({ balance = 0, onBuy }) => {
           title="Базовые майнеры"
           description="Оптимальное решение для начала"
           miners={miners.basic}
-          onBuy={onBuy}
+          onBuy={handleBuy}
         />
       )}
       {activeType === "advanced" && (
@@ -211,7 +221,7 @@ const Shop = ({ balance = 0, onBuy }) => {
           title="Продвинутые майнеры"
           description="Для опытных пользователей"
           miners={miners.advanced}
-          onBuy={onBuy}
+          onBuy={handleBuy}
         />
       )}
       {activeType === "premium" && (
@@ -219,12 +229,13 @@ const Shop = ({ balance = 0, onBuy }) => {
           title="Премиум майнеры"
           description="Максимальная производительность"
           miners={miners.premium}
-          onBuy={onBuy}
+          onBuy={handleBuy}
         />
       )}
     </div>
   )
 }
 
+// Экспорт по умолчанию для совместимости
 export default Shop
 

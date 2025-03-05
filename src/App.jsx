@@ -7,9 +7,9 @@ import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { supabase } from "./supabase"
 import HomePage from "./pages/home-page" // Импортируем новую главную страницу
+import { Shop } from "./components/shop" // Обновленный импорт Shop
 
 // Ленивая загрузка тяжелых компонентов
-const Shop = lazy(() => import("./components/shop").then((module) => ({ default: module.Shop })))
 const TasksSection = lazy(() =>
   import("./components/tasks-section").then((module) => ({ default: module.TasksSection })),
 )
@@ -103,14 +103,17 @@ function AppContent({
             path="/shop"
             element={
               <div className="page-content" key="shop-page">
-                <Suspense fallback={<LoadingFallback />}>
+                <div className="app-container">
+                  <div className="background-gradient"></div>
+                  <div className="decorative-circle-1"></div>
+                  <div className="decorative-circle-2"></div>
                   <Shop
                     user={user}
                     onPurchase={handleBalanceUpdate}
                     categories={shopData.categories}
                     models={shopData.models}
                   />
-                </Suspense>
+                </div>
               </div>
             }
           />
@@ -208,15 +211,15 @@ function App() {
       const { data, error } = await supabase
         .from("user_miners")
         .select(`
-          *,
-          model:miner_models (
-            id,
-            name,
-            display_name,
-            mining_power,
-            energy_consumption
-          )
-        `)
+        *,
+        model:miner_models (
+          id,
+          name,
+          display_name,
+          mining_power,
+          energy_consumption
+        )
+      `)
         .eq("user_id", user.id)
         .order("purchased_at")
 
