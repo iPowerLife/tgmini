@@ -251,9 +251,43 @@ const SpecialItemsSection = ({ items, onBuy, userBalance, loading, userItems }) 
   )
 }
 
+// Обновляем компонент навигации по типам майнеров
+const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
+  const minerTypes = [
+    { id: "basic", name: "Базовый", icon: Zap, color: "blue" },
+    { id: "advanced", name: "Продвинутый", icon: Gauge, color: "purple" },
+    { id: "premium", name: "Премиум", icon: Crown, color: "yellow" },
+  ]
+
+  return (
+    <div className="bg-gray-900/30 backdrop-blur-sm px-4 py-2">
+      <div className="flex gap-4">
+        {minerTypes.map((type) => {
+          const Icon = type.icon
+          const isActive = activeType === type.id
+
+          return (
+            <button
+              key={type.id}
+              onClick={() => onTypeChange(type.id)}
+              className={`
+                flex items-center gap-2 py-2 px-4 rounded-lg
+                transition-all duration-200
+                ${isActive ? `bg-${type.color}-500/10 text-${type.color}-400` : "text-gray-400 hover:bg-gray-800/50"}
+              `}
+            >
+              <Icon size={16} className={`${isActive ? `text-${type.color}-400` : "text-gray-400"}`} />
+              <span className="text-sm font-medium">{type.name}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // Обновляем компонент навигации по категориям
 const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
-  // Категории навигации с обновленными иконками и порядком
   const navCategories = [
     { id: "shop", name: "Магазин", icon: ShoppingCart },
     { id: "premium", name: "Премиум", icon: Crown },
@@ -262,7 +296,7 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
   ]
 
   return (
-    <div className="bg-gray-900/50 backdrop-blur-sm fixed top-0 left-0 right-0 z-50">
+    <div className="bg-gray-900/50 backdrop-blur-sm">
       <div className="flex">
         {navCategories.map((category) => {
           const Icon = category.icon
@@ -275,18 +309,11 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
               className={`
                 flex items-center justify-center gap-2 flex-1 py-3 px-4
                 transition-colors duration-200
-                ${isActive ? "bg-gray-800" : "hover:bg-gray-800/50"}
+                ${isActive ? "bg-gray-800/50 text-white" : "text-gray-400 hover:bg-gray-800/30"}
               `}
             >
-              <Icon size={18} className={isActive ? "text-white" : "text-gray-400"} />
-              <span
-                className={`
-                  text-sm font-medium
-                  ${isActive ? "text-white" : "text-gray-400"}
-                `}
-              >
-                {category.name}
-              </span>
+              <Icon size={18} />
+              <span className="text-sm font-medium">{category.name}</span>
             </button>
           )
         })}
@@ -295,7 +322,7 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
   )
 }
 
-// В основном компоненте Shop обновляем структуру для фиксированной навигации
+// В основном компоненте Shop обновляем структуру навигации
 export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerPass: initialHasMinerPass = false }) => {
   const [activeCategory, setActiveCategory] = useState("shop")
   const [activeType, setActiveType] = useState("basic")
@@ -557,26 +584,31 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-900">
       {/* Фиксированная навигация */}
-      <CategoryNavigation activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <CategoryNavigation activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
+
+        {/* Подкатегории для раздела магазина */}
+        {activeCategory === "shop" && <MinerTypesNavigation activeType={activeType} onTypeChange={setActiveType} />}
+      </div>
 
       {/* Контент с отступом сверху для фиксированной навигации */}
-      <div className="pt-14 pb-20">
+      <div className={`pt-${activeCategory === "shop" ? "24" : "14"} pb-20 px-4`}>
         {/* Верхняя панель с балансом */}
-        <div className="bg-gray-900 rounded-2xl p-4 mb-4 flex justify-between items-center">
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-4 mb-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <ShoppingCart className="text-green-500" size={20} />
-            <span className="font-medium">Магазин</span>
+            <ShoppingCart className="text-green-400" size={20} />
+            <span className="font-medium text-white">Магазин</span>
           </div>
-          <div className="text-green-500 font-medium">{balance} монет</div>
+          <div className="text-green-400 font-medium">{balance} монет</div>
         </div>
 
         {/* Отображаем соответствующий раздел */}
         {activeCategory === "shop" && (
           <>
             {/* Типы майнеров */}
-            <div className="bg-gray-900 rounded-2xl p-2 mb-4">
+            {/* <div className="bg-gray-900 rounded-2xl p-2 mb-4">
               <div className="flex gap-2">
                 {minerTypes.map((type) => {
                   const Icon = type.icon
@@ -596,7 +628,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
                   )
                 })}
               </div>
-            </div>
+            </div> */}
 
             {/* Остальной контент категории магазина */}
             {/* ... */}
