@@ -5,7 +5,7 @@ import { ShoppingCart, Zap, Battery, Gauge, Crown, Sparkles, Rocket } from "luci
 import { supabase } from "../supabase" // Импортируем клиент Supabase
 
 // Компонент карточки майнера
-const MinerCard = ({ miner, onBuy, userBalance }) => {
+const MinerCard = ({ miner, onBuy, userBalance, loading }) => {
   // Проверяем, может ли пользователь купить майнер
   const canBuy = userBalance >= miner.price
 
@@ -58,13 +58,17 @@ const MinerCard = ({ miner, onBuy, userBalance }) => {
       <div className="flex items-center justify-between">
         <div className="text-xl font-medium text-blue-400">{miner.price} монет</div>
         <button
-          onClick={() => onBuy(miner)}
+          onClick={() => onBuy(miner.id)}
           className={`px-6 py-2 rounded-lg font-medium ${
-            canBuy ? "bg-green-500 text-black hover:bg-green-600" : "bg-gray-700 text-gray-400 cursor-not-allowed"
+            loading
+              ? "bg-gray-600 text-gray-300 cursor-wait"
+              : canBuy
+                ? "bg-green-500 text-black hover:bg-green-600"
+                : "bg-gray-700 text-gray-400 cursor-not-allowed"
           }`}
-          disabled={!canBuy}
+          disabled={!canBuy || loading}
         >
-          {canBuy ? "Купить" : "Недостаточно средств"}
+          {loading ? "Покупка..." : canBuy ? "Купить" : "Недостаточно средств"}
         </button>
       </div>
     </div>
@@ -72,7 +76,7 @@ const MinerCard = ({ miner, onBuy, userBalance }) => {
 }
 
 // Компонент категории майнеров
-const MinerCategory = ({ title, description, miners, onBuy, userBalance }) => {
+const MinerCategory = ({ title, description, miners, onBuy, userBalance, loading }) => {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-2">
@@ -84,7 +88,9 @@ const MinerCategory = ({ title, description, miners, onBuy, userBalance }) => {
         {miners.length === 0 ? (
           <div className="text-center py-8 text-gray-400">В этой категории пока нет доступных майнеров</div>
         ) : (
-          miners.map((miner) => <MinerCard key={miner.id} miner={miner} onBuy={onBuy} userBalance={userBalance} />)
+          miners.map((miner) => (
+            <MinerCard key={miner.id} miner={miner} onBuy={onBuy} userBalance={userBalance} loading={loading} />
+          ))
         )}
       </div>
     </div>
@@ -101,45 +107,34 @@ export const Shop = ({ user, onPurchase, categories = [], models = [] }) => {
     advanced: [],
     premium: [],
   })
+  const [loading, setLoading] = useState(false)
 
   // Получаем баланс пользователя
   const balance = user?.balance || 0
 
-  // Обработчик покупки
-  const handleBuy = async (miner) => {
-    if (!user || !miner || balance < miner.price) return
-
+  // Обработчик покупки - используем логику из предыдущей версии
+  const handleBuy = async (modelId) => {
     try {
-      console.log(`Покупка майнера: ${miner.name} за ${miner.price} монет`)
-
-      // Вызываем существующую функцию покупки майнера
-      const { data, error } = await supabase.rpc("buy_miner", {
+      setLoading(true)
+      const { data, error } = await supabase.rpc("purchase_miner", {
         user_id_param: user.id,
-        model_id_param: miner.id,
+        model_id_param: modelId,
+        quantity_param: 1,
       })
 
-      if (error) {
-        console.error("Ошибка при покупке майнера:", error)
-        return
-      }
+      if (error) throw error
 
-      console.log("Результат покупки:", data)
-
-      // Вызываем функцию обновления баланса из родительского компонента
-      if (onPurchase && typeof onPurchase === "function") {
-        // Получаем обновленный баланс пользователя
-        const { data: userData, error: userError } = await supabase
-          .from("users")
-          .select("balance")
-          .eq("id", user.id)
-          .single()
-
-        if (!userError && userData) {
-          onPurchase(userData.balance)
-        }
+      if (data.success) {
+        onPurchase(data.new_balance)
+        alert("Майнер успешно куплен!")
+      } else {
+        alert(data.error || "Ошибка при покупке")
       }
     } catch (error) {
-      console.error("Ошибка при покупке майнера:", error)
+      console.error("Error purchasing miner:", error)
+      alert("Ошибка при покупке майнера")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -161,7 +156,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [] }) => {
 
     // Находим ID категорий для каждого типа
     categories.forEach((category) => {
-      const name = category.name.toLowerCase()
+      const name = (category.name || category.display_name || "").toLowerCase()
 
       if (name.includes("базов") || name.includes("basic")) {
         categoryTypes.basic.push(category.id)
@@ -296,6 +291,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [] }) => {
           miners={filteredModels.basic || []}
           onBuy={handleBuy}
           userBalance={balance}
+          loading={loading}
         />
       )}
       {activeType === "advanced" && (
@@ -305,6 +301,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [] }) => {
           miners={filteredModels.advanced || []}
           onBuy={handleBuy}
           userBalance={balance}
+          loading={loading}
         />
       )}
       {activeType === "premium" && (
@@ -314,6 +311,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [] }) => {
           miners={filteredModels.premium || []}
           onBuy={handleBuy}
           userBalance={balance}
+          loading={loading}
         />
       )}
     </div>
