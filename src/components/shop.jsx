@@ -626,25 +626,26 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
             ? filteredModels.basic
             : activeType === "advanced"
               ? filteredModels.advanced
-              : activeType === "premium"
-          )?.map((miner) => {
-            // Находим текущее количество этого майнера у пользователя
-            const userMiner = userMiners.find((um) => um.model_id === miner.id)
-            const currentQuantity = userMiner ? userMiner.quantity : 0
+              : filteredModels.premium
+          ) // Исправлено: добавлен массив для премиум майнеров
+            ?.map((miner) => {
+              // Находим текущее количество этого майнера у пользователя
+              const userMiner = userMiners.find((um) => um.model_id === miner.id)
+              const currentQuantity = userMiner ? userMiner.quantity : 0
 
-            return (
-              <MinerCard
-                key={miner.id}
-                miner={miner}
-                onBuy={handleBuyMiner}
-                userBalance={balance}
-                loading={loading}
-                currentQuantity={currentQuantity}
-                purchaseLimit={miner.purchase_limit}
-                hasMinerPass={hasMinerPass}
-              />
-            )
-          })}
+              return (
+                <MinerCard
+                  key={miner.id}
+                  miner={miner}
+                  onBuy={handleBuyMiner}
+                  userBalance={balance}
+                  loading={loading}
+                  currentQuantity={currentQuantity}
+                  purchaseLimit={miner.purchase_limit}
+                  hasMinerPass={hasMinerPass}
+                />
+              )
+            })}
 
           {/* Если нет майнеров */}
           {(activeType === "basic" && (!filteredModels.basic || filteredModels.basic.length === 0)) ||
