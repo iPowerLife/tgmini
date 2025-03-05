@@ -44,7 +44,7 @@ function ScrollToTop() {
   return null
 }
 
-// Компонент для содержимого приложения
+// В функции AppContent добавим ranksData в параметры
 function AppContent({
   user,
   balance,
@@ -55,8 +55,9 @@ function AppContent({
   handleTaskComplete,
   ratingData,
   transactionsData,
+  ranksData,
 }) {
-  console.log("AppContent rendered with:", { user, balance, minersData, ratingData })
+  console.log("AppContent rendered with:", { user, balance, minersData, ratingData, ranksData })
 
   return (
     <div className="root-container">
@@ -75,6 +76,7 @@ function AppContent({
                   minersData={minersData}
                   ratingData={ratingData}
                   transactionsData={transactionsData}
+                  ranksData={ranksData}
                 />
               </div>
             }
@@ -170,6 +172,8 @@ function App() {
   const [tasksData, setTasksData] = useState({ tasks: [] })
   const [ratingData, setRatingData] = useState({ users: [] })
   const [transactionsData, setTransactionsData] = useState({ transactions: [] })
+  // Добавим новое состояние для рангов и функцию их загрузки
+  const [ranksData, setRanksData] = useState({ ranks: [] })
 
   // Загрузка данных магазина
   const loadShopData = useCallback(async () => {
@@ -279,9 +283,21 @@ function App() {
 
       // Форматируем транзакции
       const formattedTransactions = (data || []).map((tx) => ({
-        description: tx.description || "Транзакция",
+        id: tx.id,
+        description:
+          tx.description ||
+          (tx.type === "mining"
+            ? "Майнинг"
+            : tx.type === "purchase"
+              ? "Покупка майнера"
+              : tx.type === "referral_reward"
+                ? "Реферальная награда"
+                : tx.type === "referral_bonus"
+                  ? "Реферальный бонус"
+                  : "Транзакция"),
         amount: tx.amount,
         timestamp: new Date(tx.created_at).getTime(),
+        type: tx.type,
       }))
 
       setTransactionsData({ transactions: formattedTransactions })
@@ -290,6 +306,21 @@ function App() {
       console.error("Error loading transactions data:", error)
     }
   }, [user?.id])
+
+  // Добавим функцию загрузки рангов
+  const loadRanksData = useCallback(async () => {
+    try {
+      console.log("Loading ranks data...")
+      const { data, error } = await supabase.from("ranks").select("*").order("min_balance")
+
+      if (error) throw error
+
+      setRanksData({ ranks: data || [] })
+      console.log("Ranks data loaded successfully")
+    } catch (error) {
+      console.error("Error loading ranks data:", error)
+    }
+  }, [])
 
   // Инициализация приложения
   useEffect(() => {
@@ -458,6 +489,7 @@ function App() {
             loadTasksData(),
             loadRatingData(),
             loadTransactionsData(),
+            loadRanksData(),
           ])
           console.log("All data loaded successfully")
         }
@@ -478,7 +510,7 @@ function App() {
     return () => {
       mounted = false
     }
-  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData, loadTransactionsData])
+  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData, loadTransactionsData, loadRanksData])
 
   // Добавляем эффект для перенаправления на главную страницу при обновлении
   useEffect(() => {
@@ -542,6 +574,7 @@ function App() {
         handleTaskComplete={handleTaskComplete}
         ratingData={ratingData}
         transactionsData={transactionsData}
+        ranksData={ranksData}
       />
     )
   }, [
@@ -554,6 +587,7 @@ function App() {
     handleTaskComplete,
     ratingData,
     transactionsData,
+    ranksData,
   ])
 
   if (loading) {
