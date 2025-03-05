@@ -136,10 +136,40 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
 // Обновляем компонент навигации по типам майнеров
 const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
   const minerTypes = [
-    { id: "basic", name: "Базовый", icon: Zap, color: "blue" },
-    { id: "advanced", name: "Продвинутый", icon: Gauge, color: "purple" },
-    { id: "premium", name: "Премиум", icon: Crown, color: "yellow" },
+    {
+      id: "basic",
+      name: "Базовый",
+      icon: Zap,
+      color: "blue",
+      gradient: "from-blue-600/20 to-blue-500/5",
+      activeGradient: "from-blue-600/30 to-blue-500/10",
+      border: "border-blue-500",
+    },
+    {
+      id: "advanced",
+      name: "Продвинутый",
+      icon: Gauge,
+      color: "purple",
+      gradient: "from-purple-600/20 to-purple-500/5",
+      activeGradient: "from-purple-600/30 to-purple-500/10",
+      border: "border-purple-500",
+    },
+    {
+      id: "premium",
+      name: "Премиум",
+      icon: Crown,
+      color: "yellow",
+      gradient: "from-yellow-600/20 to-yellow-500/5",
+      activeGradient: "from-yellow-600/30 to-yellow-500/10",
+      border: "border-yellow-500",
+    },
   ]
+
+  // Обработчик клика с принудительным обновлением
+  const handleTypeClick = (typeId) => {
+    console.log("Clicked on type:", typeId)
+    onTypeChange(typeId)
+  }
 
   return (
     <div className="bg-[#151B26] rounded-lg p-1.5 mb-3 shadow-md">
@@ -151,20 +181,28 @@ const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
           return (
             <button
               key={type.id}
-              onClick={() => onTypeChange(type.id)}
+              onClick={() => handleTypeClick(type.id)}
               className={`
-                flex items-center gap-1.5 py-1.5 px-2.5 rounded-md flex-1
-                transition-all duration-200 text-xs
+                flex items-center justify-center gap-1.5 flex-1 py-1.5 px-2.5 rounded-md
+                transition-all duration-200 text-xs relative
                 ${
                   isActive
-                    ? `bg-gradient-to-r from-[#1F2937] to-[#1A2231] text-${type.color}-400 shadow-sm border-l-2 border-${type.color}-500`
-                    : "text-gray-400 hover:bg-[#1A2231] hover:text-gray-300"
+                    ? `bg-gradient-to-br ${type.activeGradient} text-${type.color}-400 shadow-sm border-b-2 ${type.border}`
+                    : `hover:bg-gradient-to-br ${type.gradient} text-gray-400 hover:text-${type.color}-400`
                 }
               `}
+              style={{
+                pointerEvents: "auto",
+                position: "relative",
+                zIndex: 10,
+              }}
             >
-              <Icon size={14} />
-              <span className="font-medium">{type.name}</span>
-              {isActive && <ChevronRight size={12} className="ml-auto" />}
+              {isActive && <span className="absolute inset-0 opacity-10 bg-pattern-dots" style={{ zIndex: 1 }} />}
+              <div className="relative z-20 flex items-center justify-center gap-1.5">
+                <Icon size={14} className={isActive ? `text-${type.color}-400` : ""} />
+                <span className="font-medium">{type.name}</span>
+                {isActive && <ChevronRight size={12} className="ml-1.5" />}
+              </div>
             </button>
           )
         })}
