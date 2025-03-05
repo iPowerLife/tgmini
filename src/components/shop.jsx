@@ -619,15 +619,48 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
             {React.createElement(categoryIcons[activeType], { size: 16, className: "text-[#5B9DFF]" })}
             <h2 className="text-white text-sm font-medium">{categoryTitles[activeType]}</h2>
 
-            {/* Добавляем информацию о доступном количестве */}
+            {/* Заменяем информацию о доступном количестве на информацию о лимитах */}
             {activeType && filteredModels[activeType] && (
               <span className="text-xs text-gray-400 ml-auto">
-                Доступно: {filteredModels[activeType].length}{" "}
-                {filteredModels[activeType].length === 1
-                  ? "модель"
-                  : filteredModels[activeType].length >= 2 && filteredModels[activeType].length <= 4
-                    ? "модели"
-                    : "моделей"}
+                {(() => {
+                  // Находим все майнеры пользователя этой категории
+                  const categoryIds = categories
+                    .filter((cat) => {
+                      const name = (cat.name || cat.display_name || "").toLowerCase()
+                      if (activeType === "basic") return name.includes("базов") || name.includes("basic")
+                      if (activeType === "advanced") return name.includes("продвинут") || name.includes("advanced")
+                      if (activeType === "premium") return name.includes("премиум") || name.includes("premium")
+                      return false
+                    })
+                    .map((cat) => cat.id)
+
+                  // Считаем количество майнеров у пользователя в этой категории
+                  const userMinersInCategory = userMiners.filter((um) => {
+                    const model = models.find((m) => m.id === um.model_id)
+                    return model && categoryIds.includes(model.category_id)
+                  })
+
+                  const totalUserMiners = userMinersInCategory.reduce((sum, um) => sum + (um.quantity || 0), 0)
+
+                  // Находим лимит для этой категории
+                  const categoryLimit =
+                    categories.find((cat) => {
+                      const name = (cat.name || cat.display_name || "").toLowerCase()
+                      if (activeType === "basic") return name.includes("базов") || name.includes("basic")
+                      if (activeType === "advanced") return name.includes("продвинут") || name.includes("advanced")
+                      if (activeType === "premium") return name.includes("премиум") || name.includes("premium")
+                      return false
+                    })?.purchase_limit || 0
+
+                  // Если у пользователя есть Mining Pass, показываем только текущее количество
+                  if (hasMinerPass) {
+                    return `У вас: ${totalUserMiners} (без лимита)`
+                  }
+
+                  // Иначе показываем текущее количество и лимит
+                  const remaining = Math.max(0, categoryLimit - totalUserMiners)
+                  return `У вас: ${totalUserMiners} / ${categoryLimit} (доступно: ${remaining})`
+                })()}
               </span>
             )}
           </div>
