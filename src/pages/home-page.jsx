@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Clock, ChevronDown, Users, Cpu, Zap, BarChart3, Server, CheckCircle2 } from "lucide-react"
+import { Clock, ChevronDown, Users, Zap, BarChart3, Server, CheckCircle2, ChevronUp } from "lucide-react"
 
 // Компонент таймера обратного отсчета
 const CountdownTimer = ({ targetTime }) => {
@@ -191,81 +191,65 @@ const MiningPool = ({ pools, selectedPool }) => (
   </div>
 )
 
-// Компонент майнеров
-const Miners = ({ miners }) => (
-  <div className="bg-gray-900 rounded-2xl p-4">
-    <div className="flex justify-between items-center mb-4">
-      <div className="flex items-center gap-2">
-        <Server className="text-blue-400" size={20} />
-        <span className="font-medium">Basic Miners</span>
-      </div>
-      <div className="flex items-center gap-1 text-sm text-gray-400">
-        1 устройств
-        <ChevronDown size={16} />
-      </div>
-    </div>
+// Обновленный компонент майнеров
+const MyMiners = ({ miners = [] }) => {
+  const [isExpanded, setIsExpanded] = useState(false)
 
-    <div className="grid grid-cols-3 gap-4 mb-4">
-      <div>
-        <div className="text-gray-400 text-sm mb-1">Общий хешрейт</div>
-        <div className="font-medium">25 TH/s</div>
-      </div>
-      <div>
-        <div className="text-gray-400 text-sm mb-1">Эффективность</div>
-        <div className="font-medium">92.0%</div>
-      </div>
-    </div>
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded)
+  }
 
-    <div className="grid grid-cols-3 gap-4 mb-4">
-      <div>
-        <div className="text-gray-400 text-sm mb-1">Мощность</div>
-        <div className="font-medium">2.2 kW</div>
-      </div>
-      <div>
-        <div className="text-gray-400 text-sm mb-1">Средний хешрейт</div>
-        <div className="flex items-center gap-1">
-          <Cpu size={14} className="text-gray-400" />
-          <span className="font-medium">25.0 TH/s</span>
+  return (
+    <div className="bg-gray-900 rounded-2xl p-4">
+      <div className="flex justify-between items-center mb-4 cursor-pointer" onClick={toggleExpand}>
+        <div className="flex items-center gap-2">
+          <Server className="text-blue-400" size={20} />
+          <span className="font-medium">Мои Майнеры</span>
         </div>
-      </div>
-      <div>
-        <div className="text-gray-400 text-sm mb-1">Эффективность</div>
-        <div className="flex items-center gap-1">
-          <Zap size={14} className="text-gray-400" />
-          <span className="font-medium">92.0%</span>
-        </div>
-      </div>
-    </div>
-
-    <div className="bg-gray-800 rounded-xl p-4">
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <div className="font-medium">Basic Miner I</div>
-          <div className="text-gray-400 text-sm">ID: 1</div>
-        </div>
-        <div className="flex items-center gap-1 text-green-500 text-sm">
-          <CheckCircle2 size={16} />
-          <span>Активен</span>
+        <div className="flex items-center gap-1 text-sm text-gray-400">
+          {miners.length} устройств
+          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <div className="text-gray-400 text-sm mb-1">Хешрейт</div>
-          <div className="font-medium">25 TH/s</div>
+      {isExpanded && (
+        <div className="space-y-3 mt-2">
+          {miners.length === 0 ? (
+            <div className="text-center py-4 text-gray-400">
+              У вас пока нет майнеров. Посетите магазин, чтобы приобрести первого майнера!
+            </div>
+          ) : (
+            miners.map((miner, index) => (
+              <div key={index} className="bg-gray-800 rounded-xl p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <div className="font-medium">{miner.model?.display_name || "Майнер"}</div>
+                    <div className="text-gray-400 text-sm">ID: {miner.id}</div>
+                  </div>
+                  <div className="flex items-center gap-1 text-green-500 text-sm">
+                    <CheckCircle2 size={16} />
+                    <span>Активен</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-gray-400 text-sm mb-1">Хешрейт</div>
+                    <div className="font-medium">{miner.model?.mining_power * miner.quantity} h/s</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-400 text-sm mb-1">Мощность</div>
+                    <div className="font-medium">{miner.model?.energy_consumption || 0} kW</div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
-        <div>
-          <div className="text-gray-400 text-sm mb-1">Мощность</div>
-          <div className="font-medium">2.2 kW</div>
-        </div>
-        <div>
-          <div className="text-gray-400 text-sm mb-1">Эффективность</div>
-          <div className="font-medium">92%</div>
-        </div>
-      </div>
+      )}
     </div>
-  </div>
-)
+  )
+}
 
 // Обновленная главная страница
 const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ranksData }) => {
@@ -290,7 +274,7 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
 
         <MiningPool />
 
-        <Miners />
+        <MyMiners miners={minersData?.miners || []} />
       </div>
     </div>
   )
