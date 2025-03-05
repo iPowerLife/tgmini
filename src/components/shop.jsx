@@ -254,14 +254,14 @@ const SpecialItemsSection = ({ items, onBuy, userBalance, loading, userItems }) 
 // Обновляем компонент навигации по типам майнеров
 const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
   const minerTypes = [
-    { id: "basic", name: "Базовый", icon: Zap, color: "blue" },
-    { id: "advanced", name: "Продвинутый", icon: Gauge, color: "purple" },
-    { id: "premium", name: "Премиум", icon: Crown, color: "yellow" },
+    { id: "basic", name: "Базовый", icon: Zap },
+    { id: "advanced", name: "Продвинутый", icon: Gauge },
+    { id: "premium", name: "Премиум", icon: Crown },
   ]
 
   return (
-    <div className="bg-gray-900/30 backdrop-blur-sm px-4 py-2">
-      <div className="flex gap-4">
+    <div className="bg-[#0B0E14] border-b border-gray-800">
+      <div className="flex px-4">
         {minerTypes.map((type) => {
           const Icon = type.icon
           const isActive = activeType === type.id
@@ -271,13 +271,14 @@ const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
               key={type.id}
               onClick={() => onTypeChange(type.id)}
               className={`
-                flex items-center gap-2 py-2 px-4 rounded-lg
-                transition-all duration-200
-                ${isActive ? `bg-${type.color}-500/10 text-${type.color}-400` : "text-gray-400 hover:bg-gray-800/50"}
+                flex items-center gap-2 py-3 px-4
+                transition-all duration-200 relative
+                ${isActive ? "text-[#5B9DFF]" : "text-gray-500 hover:text-gray-400"}
               `}
             >
-              <Icon size={16} className={`${isActive ? `text-${type.color}-400` : "text-gray-400"}`} />
+              <Icon size={16} />
               <span className="text-sm font-medium">{type.name}</span>
+              {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#5B9DFF]" />}
             </button>
           )
         })}
@@ -296,7 +297,7 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
   ]
 
   return (
-    <div className="bg-gray-900/50 backdrop-blur-sm">
+    <div className="bg-[#0B0E14] border-b border-gray-800">
       <div className="flex">
         {navCategories.map((category) => {
           const Icon = category.icon
@@ -308,12 +309,13 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
               onClick={() => onCategoryChange(category.id)}
               className={`
                 flex items-center justify-center gap-2 flex-1 py-3 px-4
-                transition-colors duration-200
-                ${isActive ? "bg-gray-800/50 text-white" : "text-gray-400 hover:bg-gray-800/30"}
+                transition-all duration-200 relative
+                ${isActive ? "text-white" : "text-gray-500 hover:text-gray-400"}
               `}
             >
               <Icon size={18} />
               <span className="text-sm font-medium">{category.name}</span>
+              {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />}
             </button>
           )
         })}
@@ -584,7 +586,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-[#0B0E14]">
       {/* Фиксированная навигация */}
       <div className="fixed top-0 left-0 right-0 z-50">
         <CategoryNavigation activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
@@ -632,6 +634,17 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
 
             {/* Остальной контент категории магазина */}
             {/* ... */}
+
+            {/* Заголовок категории */}
+            {activeCategory === "shop" && (
+              <div className="mb-6">
+                <h2 className="text-[#5B9DFF] text-xl font-medium flex items-center gap-2 mb-1">
+                  <Zap size={20} />
+                  Базовые майнеры
+                </h2>
+                <p className="text-gray-500 text-sm">Оптимальное решение для начала майнинга</p>
+              </div>
+            )}
 
             {/* Список майнеров по категориям */}
             {activeType === "basic" && (
