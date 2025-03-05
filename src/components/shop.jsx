@@ -179,7 +179,7 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
   const navCategories = [
     {
       id: "shop",
-      name: "Магазин",
+      name: "Маркет", // Короче чем "Магазин"
       icon: ShoppingCart,
       color: "blue",
       gradient: "from-blue-600/20 to-blue-500/5",
@@ -188,7 +188,7 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
     },
     {
       id: "special",
-      name: "Специальные",
+      name: "Спец", // Короче чем "Специальные"
       icon: Sparkles,
       color: "yellow",
       gradient: "from-yellow-600/20 to-yellow-500/5",
@@ -197,7 +197,7 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
     },
     {
       id: "premium",
-      name: "Премиум",
+      name: "VIP", // Короче чем "Премиум"
       icon: Crown,
       color: "purple",
       gradient: "from-purple-600/20 to-purple-500/5",
@@ -206,7 +206,7 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
     },
     {
       id: "boosts",
-      name: "Бусты",
+      name: "Буст", // Короче чем "Бусты"
       icon: Rocket,
       color: "green",
       gradient: "from-green-600/20 to-green-500/5",
@@ -290,7 +290,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
 
     const loadSpecialItems = async () => {
       try {
-        // Загружаем все специальные предметы напряму�� из таблицы special_items
+        // Загружаем все специальные предметы напрямую из таблицы special_items
         const { data: items, error: itemsError } = await supabase.from("special_items").select("*").order("price")
 
         if (itemsError) throw itemsError
@@ -730,20 +730,6 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-yellow-400">350</span>
                   <button className="px-2 py-1 rounded text-[10px] font-medium bg-purple-500/20 text-purple-400">
-                    Купить
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-[#0F1520] rounded-lg p-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-red-500/20 to-red-600/10 rounded-lg flex items-center justify-center mb-2">
-                  <Flame className="text-red-400" size={20} />
-                </div>
-                <h4 className="text-sm font-medium mb-1">Двойной сбор</h4>
-                <p className="text-xs text-gray-400 mb-2">Одноразовый</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-yellow-400">400</span>
-                  <button className="px-2 py-1 rounded text-[10px] font-medium bg-red-500/20 text-red-400">
                     Купить
                   </button>
                 </div>
