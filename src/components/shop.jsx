@@ -20,10 +20,11 @@ import {
   ChevronRight,
   Lock,
   Bell,
+  Flame,
 } from "lucide-react"
 import { supabase } from "../supabase"
 
-// Обновляем компонент карточки майнера, убирая поля Энергия, Эффект и Количество
+// Обновляем компонент карточки майнера, добавляя обратно поле Энергия
 const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purchaseLimit, hasMinerPass, minerType }) => {
   // Проверяем, может ли пользователь купить майнер
   const canBuy = userBalance >= miner.price
@@ -78,6 +79,11 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
               <Bolt size={14} className={colorScheme.icon} />
               <span className="text-xs text-gray-400">Хешрейт:</span>
               <span className="text-xs font-medium ml-auto">{miner.mining_power}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Flame size={14} className="text-orange-400" />
+              <span className="text-xs text-gray-400">Энергия:</span>
+              <span className="text-xs font-medium ml-auto">{miner.energy_consumption}</span>
             </div>
           </div>
         </div>
