@@ -76,7 +76,7 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
       <div className="flex items-center justify-between">
         <div className="text-xl font-medium text-blue-400">{miner.price} монет</div>
         <button
-          onClick={() => onBuy(miner.id)}
+          onClick={() => onBuy(miner.id, miner.price)}
           className={`px-6 py-2 rounded-lg font-medium ${
             loading
               ? "bg-gray-600 text-gray-300 cursor-wait"
@@ -154,7 +154,7 @@ const SpecialItemCard = ({ item, onBuy, userBalance, loading, userHasItem }) => 
       <div className="flex items-center justify-between">
         <div className="text-xl font-medium text-blue-400">{item.price} монет</div>
         <button
-          onClick={() => onBuy(item.name)}
+          onClick={() => onBuy(item.name, item.price)}
           className={`px-6 py-2 rounded-lg font-medium ${
             loading
               ? "bg-gray-600 text-gray-300 cursor-wait"
@@ -317,24 +317,25 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
   }, [user?.id])
 
   // Обработчик покупки майнера
-  const handleBuyMiner = async (modelId) => {
+  const handleBuyMiner = async (modelId, price) => {
     try {
       setLoading(true)
+      console.log("Покупка майнера:", modelId, "цена:", price)
 
-      // Находим модель майнера
-      const model = models.find((m) => m.id === modelId)
-      if (!model) {
-        throw new Error("Модель майнера не найдена")
-      }
-
+      // Вызываем функцию покупки майнера
       const { data, error } = await supabase.rpc("purchase_miner", {
         user_id_param: user.id,
         model_id_param: modelId,
-        price_param: model.price,
+        price_param: price,
         quantity_param: 1,
       })
 
-      if (error) throw error
+      if (error) {
+        console.error("Ошибка при вызове purchase_miner:", error)
+        throw error
+      }
+
+      console.log("Результат покупки:", data)
 
       if (data.success) {
         // Обновляем список майнеров пользователя
@@ -361,23 +362,24 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
   }
 
   // Обработчик покупки специального предмета
-  const handleBuySpecialItem = async (itemName) => {
+  const handleBuySpecialItem = async (itemName, price) => {
     try {
       setLoading(true)
+      console.log("Покупка предмета:", itemName, "цена:", price)
 
-      // Находим предмет
-      const item = specialItems.find((i) => i.name === itemName)
-      if (!item) {
-        throw new Error("Предмет не найден")
-      }
-
+      // Вызываем функцию покупки специального предмета
       const { data, error } = await supabase.rpc("purchase_special_item", {
         user_id_param: user.id,
         item_name_param: itemName,
-        price_param: item.price,
+        price_param: price,
       })
 
-      if (error) throw error
+      if (error) {
+        console.error("Ошибка при вызове purchase_special_item:", error)
+        throw error
+      }
+
+      console.log("Результат покупки:", data)
 
       if (data.success) {
         // Обновляем список специальных предметов пользователя
