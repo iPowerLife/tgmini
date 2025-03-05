@@ -20,8 +20,6 @@ import {
   Loader,
   AlertCircle,
   ChevronRight,
-  Plus,
-  ArrowRight,
   Lock,
   Bell,
 } from "lucide-react"
@@ -581,7 +579,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
   console.log("Rendering Shop with activeCategory:", activeCategory, "updateCounter:", updateCounter)
 
   return (
-    <div className="min-h-screen bg-[#0B0E14] p-3">
+    <div className="min-h-screen p-3">
       {/* Верхняя панель с балансом */}
       <div className="bg-[#151B26] rounded-lg p-3 mb-3 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-2">
@@ -609,7 +607,9 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
 
       {/* Заголовок и описание категории */}
       {activeCategory === "shop" && (
-        <div className="mb-3">
+        <div className="mb-3 h-14">
+          {" "}
+          {/* Добавлена фиксированная высота */}
           <div className="flex items-center gap-1.5 mb-0.5">
             {React.createElement(categoryIcons[activeType], { size: 16, className: "text-[#5B9DFF]" })}
             <h2 className="text-white text-sm font-medium">{categoryTitles[activeType]}</h2>
@@ -652,19 +652,6 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
           (activeType === "advanced" && (!filteredModels.advanced || filteredModels.advanced.length === 0)) ||
           (activeType === "premium" && (!filteredModels.premium || filteredModels.premium.length === 0)) ? (
             <div className="text-center py-6 text-gray-400 text-sm">В этой категории пока нет доступных майнеров</div>
-          ) : null}
-
-          {/* Кнопка "Показать все" в конце списка майнеров */}
-          {(activeType === "basic" && filteredModels.basic?.length > 0) ||
-          (activeType === "advanced" && filteredModels.advanced?.length > 0) ||
-          (activeType === "premium" && filteredModels.premium?.length > 0) ? (
-            <div className="flex justify-center mt-2">
-              <button className="flex items-center gap-1.5 text-xs text-blue-400 bg-[#151B26] py-2 px-4 rounded-lg hover:bg-[#1A2231] transition-colors">
-                <Plus size={12} />
-                <span>Показать все</span>
-                <ArrowRight size={12} />
-              </button>
-            </div>
           ) : null}
         </div>
       )}
