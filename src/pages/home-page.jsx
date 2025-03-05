@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
-import { ArrowUp, Zap, Award, TrendingUp, Clock } from "lucide-react"
+import { useEffect, useState } from "react"
+import { ArrowUp, Zap, Award, TrendingUp, Clock, User } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { motion } from "framer-motion"
@@ -13,13 +13,20 @@ const SwipeGuard = () => {
 
 // Компонент баланса с анимацией
 const BalanceCard = ({ balance, currency = "COINS", power = 0 }) => {
+  const [showIncrease, setShowIncrease] = useState(false)
+  const [lastBalance, setLastBalance] = useState(balance)
+
+  useEffect(() => {
+    if (balance > lastBalance) {
+      setShowIncrease(true)
+      const timer = setTimeout(() => setShowIncrease(false), 2000)
+      return () => clearTimeout(timer)
+    }
+    setLastBalance(balance)
+  }, [balance, lastBalance])
+
   return (
-    <motion.div
-      className="balance-card card-3d glow-effect"
-      whileHover={{ scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 300 }}
-    >
-      <div className="hexagon-bg"></div>
+    <motion.div className="balance-card" whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
       <div className="balance-background"></div>
       <div className="balance-content">
         <div className="balance-label">Ваш баланс</div>
@@ -30,6 +37,7 @@ const BalanceCard = ({ balance, currency = "COINS", power = 0 }) => {
         >
           {balance}
           <span className="balance-currency">{currency}</span>
+          {showIncrease && <div className="balance-increase">+{(balance - lastBalance).toFixed(2)}</div>}
         </motion.div>
         <div className="mt-4 text-sm text-gray-400 flex items-center justify-center gap-2">
           <motion.div
@@ -38,7 +46,7 @@ const BalanceCard = ({ balance, currency = "COINS", power = 0 }) => {
           >
             <Zap size={16} className="text-blue-400" />
           </motion.div>
-          <span className="power-indicator">Мощность: {power} h/s</span>
+          <span>Мощность: {power} h/s</span>
         </div>
       </div>
     </motion.div>
@@ -50,10 +58,15 @@ const StatsSection = ({ stats }) => {
   return (
     <div className="stats-grid">
       {stats.map((stat, index) => (
-        <div key={index} className="stat-card">
+        <motion.div
+          key={index}
+          className="stat-card"
+          whileHover={{ scale: 1.05 }}
+          transition={{ type: "spring", stiffness: 400 }}
+        >
           <div className="stat-value">{stat.value}</div>
           <div className="stat-label">{stat.label}</div>
-        </div>
+        </motion.div>
       ))}
     </div>
   )
@@ -61,6 +74,20 @@ const StatsSection = ({ stats }) => {
 
 // Компонент активных майнеров
 const ActiveMiners = ({ miners }) => {
+  if (!miners || miners.length === 0) {
+    return (
+      <div className="bg-opacity-30 bg-gray-800 rounded-xl p-4 mb-6">
+        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+          <Zap size={18} className="text-blue-400" />
+          Активные майнеры
+        </h3>
+        <div className="text-center py-4 text-gray-400">
+          У вас пока нет майнеров. Посетите магазин, чтобы приобрести первого майнера!
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-opacity-30 bg-gray-800 rounded-xl p-4 mb-6">
       <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -69,7 +96,14 @@ const ActiveMiners = ({ miners }) => {
       </h3>
       <div className="space-y-3">
         {miners.map((miner, index) => (
-          <div key={index} className="bg-opacity-40 bg-gray-700 rounded-lg p-3 flex justify-between items-center">
+          <motion.div
+            key={index}
+            className="bg-opacity-40 bg-gray-700 rounded-lg p-3 flex justify-between items-center"
+            whileHover={{ scale: 1.02, backgroundColor: "rgba(30, 41, 59, 0.5)" }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
             <div>
               <div className="font-medium">{miner.name}</div>
               <div className="text-sm text-gray-400">Уровень: {miner.level}</div>
@@ -78,7 +112,7 @@ const ActiveMiners = ({ miners }) => {
               <div className="text-blue-400 font-medium">{miner.power} h/s</div>
               <div className="text-xs text-gray-400">{miner.earnings}/час</div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>
@@ -87,6 +121,20 @@ const ActiveMiners = ({ miners }) => {
 
 // Компонент последних транзакций
 const RecentTransactions = ({ transactions }) => {
+  if (!transactions || transactions.length === 0) {
+    return (
+      <div className="bg-opacity-30 bg-gray-800 rounded-xl p-4 mb-6">
+        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+          <Clock size={18} className="text-blue-400" />
+          Последние транзакции
+        </h3>
+        <div className="text-center py-4 text-gray-400">
+          У вас пока нет транзакций. Начните майнить, чтобы увидеть историю транзакций!
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-opacity-30 bg-gray-800 rounded-xl p-4 mb-6">
       <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -95,7 +143,14 @@ const RecentTransactions = ({ transactions }) => {
       </h3>
       <div className="space-y-2">
         {transactions.map((tx, index) => (
-          <div key={index} className="bg-opacity-40 bg-gray-700 rounded-lg p-2 flex justify-between items-center">
+          <motion.div
+            key={index}
+            className="bg-opacity-40 bg-gray-700 rounded-lg p-2 flex justify-between items-center"
+            whileHover={{ scale: 1.02, backgroundColor: "rgba(30, 41, 59, 0.5)" }}
+            initial={{ opacity: 0, x: tx.amount > 0 ? -10 : 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
             <div className="flex items-center gap-2">
               <div
                 className={`p-1 rounded-full ${tx.amount > 0 ? "bg-green-500 bg-opacity-20" : "bg-red-500 bg-opacity-20"}`}
@@ -112,36 +167,7 @@ const RecentTransactions = ({ transactions }) => {
               {tx.amount > 0 ? "+" : ""}
               {tx.amount}
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// Компонент достижений
-const Achievements = ({ achievements }) => {
-  return (
-    <div className="bg-opacity-30 bg-gray-800 rounded-xl p-4 mb-6">
-      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-        <Award size={18} className="text-blue-400" />
-        Достижения
-      </h3>
-      <div className="grid grid-cols-2 gap-3">
-        {achievements.map((achievement, index) => (
-          <div
-            key={index}
-            className={`bg-opacity-40 ${achievement.completed ? "bg-blue-900" : "bg-gray-700"} rounded-lg p-3 flex flex-col items-center text-center`}
-          >
-            <div
-              className={`p-2 rounded-full mb-2 ${achievement.completed ? "bg-blue-500 bg-opacity-30" : "bg-gray-600 bg-opacity-30"}`}
-            >
-              {achievement.icon}
-            </div>
-            <div className="font-medium text-sm">{achievement.name}</div>
-            <div className="text-xs text-gray-400 mt-1">{achievement.description}</div>
-            {achievement.completed && <div className="text-xs text-blue-400 mt-2">Выполнено</div>}
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>
@@ -149,7 +175,7 @@ const Achievements = ({ achievements }) => {
 }
 
 // Компонент рейтинга
-const RankingPreview = ({ ranking }) => {
+const RankingPreview = ({ ranking, onViewRating }) => {
   return (
     <div className="bg-opacity-30 bg-gray-800 rounded-xl p-4 mb-6">
       <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -167,13 +193,26 @@ const RankingPreview = ({ ranking }) => {
             <span>{ranking.progress}%</span>
           </div>
           <div className="progress-wrapper">
-            <div
+            <motion.div
               className="progress-bar"
               style={{ width: `${ranking.progress}%`, height: "8px", borderRadius: "4px" }}
-            ></div>
+              initial={{ width: "0%" }}
+              animate={{ width: `${ranking.progress}%` }}
+              transition={{ duration: 1, ease: "easeOut" }}
+            ></motion.div>
           </div>
         </div>
-        <div className="text-center text-sm text-gray-400">До следующего ранга: {ranking.nextRankDifference} монет</div>
+        <div className="text-center text-sm text-gray-400 mb-3">
+          До следующего ранга: {ranking.nextRankDifference} монет
+        </div>
+        <motion.button
+          onClick={onViewRating}
+          className="w-full py-2 px-4 bg-blue-600 bg-opacity-20 hover:bg-opacity-30 rounded-lg text-blue-400 text-sm font-medium"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          Посмотреть полный рейтинг
+        </motion.button>
       </div>
     </div>
   )
@@ -184,7 +223,7 @@ const QuickActions = ({ onAction }) => {
   const actions = [
     { id: "shop", label: "Магазин", icon: <Zap size={20} /> },
     { id: "tasks", label: "Задания", icon: <Award size={20} /> },
-    { id: "rating", label: "Рейтинг", icon: <TrendingUp size={20} /> },
+    { id: "miners", label: "Майнеры", icon: <User size={20} /> },
   ]
 
   return (
@@ -211,36 +250,6 @@ const QuickActions = ({ onAction }) => {
   )
 }
 
-const Particles = () => {
-  const particlesRef = useRef([])
-  const containerRef = useRef(null)
-
-  useEffect(() => {
-    if (!containerRef.current) return
-
-    const container = containerRef.current
-    const particleCount = 20
-
-    // Create particles
-    for (let i = 0; i < particleCount; i++) {
-      const particle = document.createElement("div")
-      particle.className = "particle"
-      particle.style.left = `${Math.random() * 100}%`
-      particle.style.top = `${Math.random() * 100}%`
-      particle.style.animation = `float ${5 + Math.random() * 5}s infinite`
-      container.appendChild(particle)
-      particlesRef.current.push(particle)
-    }
-
-    return () => {
-      particlesRef.current.forEach((particle) => particle.remove())
-      particlesRef.current = []
-    }
-  }, [])
-
-  return <div ref={containerRef} className="fixed inset-0 pointer-events-none" />
-}
-
 // Главная страница
 const HomePage = () => {
   const navigate = useNavigate()
@@ -255,51 +264,43 @@ const HomePage = () => {
     ],
     miners: [],
     transactions: [],
-    achievements: [
-      {
-        name: "Первый шаг",
-        description: "Купите первого майнера",
-        completed: false,
-        icon: <Zap size={16} className="text-blue-400" />,
-      },
-      {
-        name: "Коллекционер",
-        description: "Соберите 5 майнеров",
-        completed: false,
-        icon: <Award size={16} className="text-gray-400" />,
-      },
-      {
-        name: "Социальная сеть",
-        description: "Пригласите 3 друзей",
-        completed: false,
-        icon: <TrendingUp size={16} className="text-gray-400" />,
-      },
-      {
-        name: "Богатство",
-        description: "Заработайте 5000 монет",
-        completed: false,
-        icon: <Clock size={16} className="text-gray-400" />,
-      },
-    ],
     ranking: {
       position: 0,
       progress: 0,
       nextRankDifference: 0,
     },
   })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   // Загрузка данных пользователя
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // Получаем текущего пользователя
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-        if (!user) return
+        setLoading(true)
+        setError(null)
+
+        // Получаем текущего пользователя из Supabase
+        const { data: authData, error: authError } = await supabase.auth.getSession()
+
+        if (authError) throw authError
+
+        // Если пользователь не авторизован, используем данные из Telegram
+        const userId = authData?.session?.user?.id
+
+        if (!userId) {
+          console.log("Пользователь не авторизован, используем данные из localStorage")
+          // Получаем данные из localStorage или используем значения по умолчанию
+          const storedData = localStorage.getItem("userData")
+          if (storedData) {
+            setUserData(JSON.parse(storedData))
+          }
+          setLoading(false)
+          return
+        }
 
         // Получаем данные пользователя из базы
-        const { data: userData, error: userError } = await supabase.from("users").select("*").eq("id", user.id).single()
+        const { data: userData, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()
 
         if (userError) throw userError
 
@@ -316,7 +317,7 @@ const HomePage = () => {
               energy_consumption
             )
           `)
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .order("purchased_at")
 
         if (minersError) throw minersError
@@ -325,7 +326,7 @@ const HomePage = () => {
         const { data: transactionsData, error: transactionsError } = await supabase
           .from("transactions")
           .select("*")
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .order("created_at", { ascending: false })
           .limit(5)
 
@@ -333,7 +334,7 @@ const HomePage = () => {
 
         // Получаем позицию пользователя в рейтинге
         const { data: ratingData, error: ratingError } = await supabase.rpc("get_user_rating", {
-          user_id_param: user.id,
+          user_id_param: userId,
         })
 
         if (ratingError) throw ratingError
@@ -342,7 +343,7 @@ const HomePage = () => {
         const { count: referralsCount, error: referralsError } = await supabase
           .from("referral_users")
           .select("id", { count: "exact" })
-          .eq("referrer_id", user.id)
+          .eq("referrer_id", userId)
 
         if (referralsError) throw referralsError
 
@@ -352,75 +353,54 @@ const HomePage = () => {
           .filter((tx) => tx.amount > 0)
           .reduce((sum, tx) => sum + tx.amount, 0)
 
-        // Проверяем достижения
-        const achievements = [
-          {
-            name: "Первый шаг",
-            description: "Купите первого майнера",
-            completed: minersData.length > 0,
-            icon: <Zap size={16} className={minersData.length > 0 ? "text-blue-400" : "text-gray-400"} />,
-          },
-          {
-            name: "Коллекционер",
-            description: "Соберите 5 майнеров",
-            completed: minersData.length >= 5,
-            icon: <Award size={16} className={minersData.length >= 5 ? "text-blue-400" : "text-gray-400"} />,
-          },
-          {
-            name: "Социальная сеть",
-            description: "Пригласите 3 друзей",
-            completed: referralsCount >= 3,
-            icon: <TrendingUp size={16} className={referralsCount >= 3 ? "text-blue-400" : "text-gray-400"} />,
-          },
-          {
-            name: "Богатство",
-            description: "Заработайте 5000 монет",
-            completed: totalEarned >= 5000,
-            icon: <Clock size={16} className={totalEarned >= 5000 ? "text-blue-400" : "text-gray-400"} />,
-          },
-        ]
-
         // Форматируем транзакции
-        const formattedTransactions = transactionsData.map((tx) => ({
-          description: tx.description,
+        const formattedTransactions = (transactionsData || []).map((tx) => ({
+          description: tx.description || "Транзакция",
           amount: tx.amount,
           timestamp: new Date(tx.created_at).getTime(),
         }))
 
         // Форматируем майнеры
-        const formattedMiners = minersData.map((miner) => ({
-          name: miner.model.display_name,
+        const formattedMiners = (minersData || []).map((miner) => ({
+          name: miner.model.display_name || "Майнер",
           level: miner.level || 1,
           power: miner.model.mining_power * miner.quantity,
           earnings: `+${(miner.model.mining_power * miner.quantity * 0.5).toFixed(1)}`,
         }))
 
         // Обновляем состояние
-        setUserData({
-          balance: userData.balance,
+        const updatedUserData = {
+          balance: userData.balance || 0,
           power: totalPower,
           stats: [
             { label: "Заработано", value: totalEarned.toFixed(0) },
-            { label: "Майнеров", value: minersData.length.toString() },
+            { label: "Майнеров", value: (minersData || []).length.toString() },
             { label: "Рефералов", value: referralsCount.toString() },
             {
               label: "Дней",
               value: Math.floor(
-                (Date.now() - new Date(userData.created_at).getTime()) / (1000 * 60 * 60 * 24),
+                (Date.now() - new Date(userData.created_at || Date.now()).getTime()) / (1000 * 60 * 60 * 24),
               ).toString(),
             },
           ],
           miners: formattedMiners,
           transactions: formattedTransactions,
-          achievements,
           ranking: {
             position: ratingData?.position || 0,
             progress: ratingData?.progress || 0,
             nextRankDifference: ratingData?.next_rank_difference || 100,
           },
-        })
+        }
+
+        setUserData(updatedUserData)
+
+        // Сохраняем данные в localStorage для быстрой загрузки в будущем
+        localStorage.setItem("userData", JSON.stringify(updatedUserData))
       } catch (error) {
         console.error("Error fetching user data:", error)
+        setError("Не удалось загрузить данные. Пожалуйста, попробуйте позже.")
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -428,10 +408,13 @@ const HomePage = () => {
 
     // Обновляем баланс каждую секунду
     const interval = setInterval(() => {
-      setUserData((prev) => ({
-        ...prev,
-        balance: prev.balance + prev.power / 3600, // Увеличиваем баланс каждую секунду
-      }))
+      setUserData((prev) => {
+        const newBalance = prev.balance + prev.power / 3600 // Увеличиваем баланс каждую секунду
+        return {
+          ...prev,
+          balance: newBalance,
+        }
+      })
     }, 1000)
 
     return () => clearInterval(interval)
@@ -441,10 +424,28 @@ const HomePage = () => {
     navigate(`/${actionId}`)
   }
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center p-4">
+        <div className="text-red-500 mb-4">{error}</div>
+        <button onClick={() => window.location.reload()} className="px-4 py-2 bg-blue-600 rounded-lg text-white">
+          Попробовать снова
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="home-page">
       <SwipeGuard />
-      <Particles />
 
       <motion.div
         className="app-container"
@@ -466,13 +467,17 @@ const HomePage = () => {
           <QuickActions onAction={handleQuickAction} />
         </motion.div>
 
-        <ActiveMiners miners={userData.miners} />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          <ActiveMiners miners={userData.miners} />
+        </motion.div>
 
-        <RankingPreview ranking={userData.ranking} />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+          <RankingPreview ranking={userData.ranking} onViewRating={() => navigate("/rating")} />
+        </motion.div>
 
-        <RecentTransactions transactions={userData.transactions} />
-
-        <Achievements achievements={userData.achievements} />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+          <RecentTransactions transactions={userData.transactions} />
+        </motion.div>
       </motion.div>
     </div>
   )

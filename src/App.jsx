@@ -1,7 +1,7 @@
 "use client"
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from "react"
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
@@ -30,7 +30,6 @@ const LoadingFallback = () => (
 // Компонент для сброса прокрутки при изменении маршрута
 function ScrollToTop() {
   const { pathname } = useLocation()
-  const pageContainerRef = useRef(null)
 
   useEffect(() => {
     // Находим контейнер с прокруткой
@@ -67,7 +66,6 @@ function AppContent({
             path="/"
             element={
               <div className="page-content" key="home-page">
-                {/* Заменяем старую главную страницу на новую */}
                 <HomePage />
               </div>
             }
