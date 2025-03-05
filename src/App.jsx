@@ -6,6 +6,7 @@ import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/teleg
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { supabase } from "./supabase"
+import HomePage from "./pages/home-page" // Импортируем новую главную страницу
 
 // Ленивая загрузка тяжелых компонентов
 const Shop = lazy(() => import("./components/shop").then((module) => ({ default: module.Shop })))
@@ -66,6 +67,15 @@ function AppContent({
             path="/"
             element={
               <div className="page-content" key="home-page">
+                {/* Заменяем старую главную страницу на новую */}
+                <HomePage />
+              </div>
+            }
+          />
+          <Route
+            path="/miners"
+            element={
+              <div className="page-content" key="miners-page">
                 <div className="balance-card">
                   <div className="balance-background" />
                   <div className="balance-content">
@@ -140,8 +150,6 @@ function AppContent({
     </div>
   )
 }
-
-// Остальной код App.jsx остается без изменений...
 
 function App() {
   const [user, setUser] = useState(null)
