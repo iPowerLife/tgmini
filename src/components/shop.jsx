@@ -25,8 +25,8 @@ import {
 } from "lucide-react"
 import { supabase } from "../supabase"
 
-// Компонент карточки майнера
-const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purchaseLimit, hasMinerPass }) => {
+// Обновляем компонент карточки майнера с цветовой схемой в зависимости от типа
+const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purchaseLimit, hasMinerPass, minerType }) => {
   // Проверяем, может ли пользователь купить майнер
   const canBuy = userBalance >= miner.price
 
@@ -36,8 +36,33 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
   // Текст для кнопки при достижении лимита
   const limitText = hasMinerPass ? `${currentQuantity}` : `${currentQuantity}/${purchaseLimit}`
 
+  // Цветовые схемы для разных типов майнеров
+  const colorSchemes = {
+    basic: {
+      icon: "text-blue-400",
+      iconBg: "bg-blue-500/10",
+      border: "border-blue-500/30",
+      gradient: "from-blue-500/20 to-blue-600/5",
+    },
+    advanced: {
+      icon: "text-purple-400",
+      iconBg: "bg-purple-500/10",
+      border: "border-purple-500/30",
+      gradient: "from-purple-500/20 to-purple-600/5",
+    },
+    premium: {
+      icon: "text-yellow-400",
+      iconBg: "bg-yellow-500/10",
+      border: "border-yellow-500/30",
+      gradient: "from-yellow-500/20 to-yellow-600/5",
+    },
+  }
+
+  // Используем цветовую схему по умолчанию, если тип не указан
+  const colorScheme = colorSchemes[minerType] || colorSchemes.basic
+
   return (
-    <div className="bg-[#151B26] rounded-xl p-3 mb-3 shadow-md">
+    <div className={`bg-[#151B26] rounded-xl p-3 mb-3 shadow-md border border-opacity-30 ${colorScheme.border}`}>
       <div className="flex items-start justify-between mb-2">
         <div>
           <h3 className="font-medium text-base mb-0.5">{miner.display_name || miner.name}</h3>
@@ -48,14 +73,14 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
         )}
       </div>
 
-      <div className="bg-[#0F1520] rounded-lg p-3 mb-3">
+      <div className={`bg-[#0F1520] rounded-lg p-3 mb-3 bg-gradient-to-br ${colorScheme.gradient}`}>
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-16 h-16 bg-[#1F2937] rounded-lg flex items-center justify-center">
-            <Cpu className="text-[#5B9DFF]" size={32} />
+          <div className={`w-16 h-16 ${colorScheme.iconBg} rounded-lg flex items-center justify-center`}>
+            <Cpu className={colorScheme.icon} size={32} />
           </div>
           <div className="flex-1 grid grid-cols-2 gap-2">
             <div className="flex items-center gap-1.5">
-              <Bolt size={14} className="text-[#5B9DFF]" />
+              <Bolt size={14} className={colorScheme.icon} />
               <span className="text-xs text-gray-400">Хешрейт:</span>
               <span className="text-xs font-medium ml-auto">{miner.mining_power}</span>
             </div>
@@ -643,6 +668,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
                   currentQuantity={currentQuantity}
                   purchaseLimit={miner.purchase_limit}
                   hasMinerPass={hasMinerPass}
+                  minerType={activeType} // Передаем активный тип майнера
                 />
               )
             })}
