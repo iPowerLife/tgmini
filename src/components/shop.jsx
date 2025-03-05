@@ -3,7 +3,25 @@
 import React from "react"
 
 import { useState, useEffect, useCallback } from "react"
-import { ShoppingCart, Zap, Gauge, Crown, Sparkles, Rocket, Cpu, Layers, Flame, Bolt, Coins } from "lucide-react"
+import {
+  ShoppingCart,
+  Zap,
+  Gauge,
+  Crown,
+  Sparkles,
+  Rocket,
+  Shield,
+  Cpu,
+  Layers,
+  Flame,
+  Bolt,
+  Coins,
+  Loader,
+  AlertCircle,
+  ChevronRight,
+  Plus,
+  ArrowRight,
+} from "lucide-react"
 import { supabase } from "../supabase"
 
 // Компонент карточки майнера
@@ -69,18 +87,42 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
           </div>
           <button
             onClick={() => onBuy(miner.id, miner.price)}
-            className={`px-4 py-1.5 rounded-lg text-xs font-medium ${
-              loading
-                ? "bg-gray-600 text-gray-300 cursor-wait"
-                : limitReached
-                  ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                  : canBuy
-                    ? "bg-green-500 text-black hover:bg-green-600"
-                    : "bg-gray-700 text-gray-400 cursor-not-allowed"
-            }`}
+            className={`
+    px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5
+    transition-all duration-200 shadow-sm
+    ${
+      loading
+        ? "bg-gray-600 text-gray-300 cursor-wait"
+        : limitReached
+          ? "bg-gray-700/80 text-gray-400 cursor-not-allowed"
+          : canBuy
+            ? "bg-gradient-to-r from-green-500 to-emerald-500 text-black hover:shadow-md hover:translate-y-[-1px]"
+            : "bg-gray-700/80 text-gray-400 cursor-not-allowed"
+    }
+  `}
             disabled={!canBuy || loading || limitReached}
           >
-            {loading ? "Покупка..." : limitReached ? "Лимит" : canBuy ? "Купить" : "Недостаточно"}
+            {loading ? (
+              <>
+                <Loader size={12} className="animate-spin" />
+                <span>Покупка...</span>
+              </>
+            ) : limitReached ? (
+              <>
+                <Shield size={12} />
+                <span>Лимит</span>
+              </>
+            ) : canBuy ? (
+              <>
+                <ShoppingCart size={12} />
+                <span>Купить</span>
+              </>
+            ) : (
+              <>
+                <AlertCircle size={12} />
+                <span>Недостаточно</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -108,17 +150,18 @@ const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
               key={type.id}
               onClick={() => onTypeChange(type.id)}
               className={`
-                flex items-center gap-1.5 py-1.5 px-2.5 rounded-md flex-1
-                transition-all duration-200 text-xs
-                ${
-                  isActive
-                    ? `bg-[#1F2937] text-${type.color}-400 shadow-sm`
-                    : "text-gray-400 hover:bg-[#1A2231] hover:text-gray-300"
-                }
-              `}
+    flex items-center gap-1.5 py-1.5 px-2.5 rounded-md flex-1
+    transition-all duration-200 text-xs
+    ${
+      isActive
+        ? `bg-gradient-to-r from-[#1F2937] to-[#1A2231] text-${type.color}-400 shadow-sm border-l-2 border-${type.color}-500`
+        : "text-gray-400 hover:bg-[#1A2231] hover:text-gray-300"
+    }
+  `}
             >
               <Icon size={14} />
               <span className="font-medium">{type.name}</span>
+              {isActive && <ChevronRight size={12} className="ml-auto" />}
             </button>
           )
         })}
@@ -148,14 +191,14 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
               key={category.id}
               onClick={() => onCategoryChange(category.id)}
               className={`
-                flex items-center justify-center gap-1.5 flex-1 py-1.5 px-2.5 rounded-md
-                transition-all duration-200 text-xs
-                ${
-                  isActive
-                    ? "bg-[#1F2937] text-white shadow-sm"
-                    : "text-gray-400 hover:bg-[#1A2231] hover:text-gray-300"
-                }
-              `}
+    flex items-center justify-center gap-1.5 flex-1 py-1.5 px-2.5 rounded-md
+    transition-all duration-200 text-xs
+    ${
+      isActive
+        ? "bg-gradient-to-r from-[#1F2937] to-[#1A2231] text-white shadow-sm border-b-2 border-blue-500"
+        : "text-gray-400 hover:bg-[#1A2231] hover:text-gray-300"
+    }
+  `}
             >
               <Icon size={14} />
               <span className="font-medium">{category.name}</span>
@@ -492,6 +535,19 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
           (activeType === "advanced" && (!filteredModels.advanced || filteredModels.advanced.length === 0)) ||
           (activeType === "premium" && (!filteredModels.premium || filteredModels.premium.length === 0)) ? (
             <div className="text-center py-6 text-gray-400 text-sm">В этой категории пока нет доступных майнеров</div>
+          ) : null}
+
+          {/* Кнопка "Показать все" в конце списка майнеров */}
+          {(activeType === "basic" && filteredModels.basic?.length > 0) ||
+          (activeType === "advanced" && filteredModels.advanced?.length > 0) ||
+          (activeType === "premium" && filteredModels.premium?.length > 0) ? (
+            <div className="flex justify-center mt-2">
+              <button className="flex items-center gap-1.5 text-xs text-blue-400 bg-[#151B26] py-2 px-4 rounded-lg hover:bg-[#1A2231] transition-colors">
+                <Plus size={12} />
+                <span>Показать все</span>
+                <ArrowRight size={12} />
+              </button>
+            </div>
           ) : null}
         </div>
       )}
