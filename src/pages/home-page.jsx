@@ -199,6 +199,31 @@ const MyMiners = ({ miners = [] }) => {
     setIsExpanded(!isExpanded)
   }
 
+  // Группируем майнеры по моделям для отображения количества каждого типа
+  const groupedMiners = miners.reduce((acc, miner) => {
+    const modelId = miner.model?.id
+    if (!modelId) return acc
+
+    if (!acc[modelId]) {
+      acc[modelId] = {
+        model: miner.model,
+        count: 0,
+        totalPower: 0,
+      }
+    }
+
+    acc[modelId].count += miner.quantity || 1
+    acc[modelId].totalPower += (miner.model?.mining_power || 0) * (miner.quantity || 1)
+
+    return acc
+  }, {})
+
+  // Преобразуем объект в массив для отображения
+  const minersList = Object.values(groupedMiners)
+
+  // Общее количество майнеров
+  const totalMiners = minersList.reduce((sum, item) => sum + item.count, 0)
+
   return (
     <div className="bg-gray-900 rounded-2xl p-4">
       <div className="flex justify-between items-center mb-4 cursor-pointer" onClick={toggleExpand}>
@@ -207,24 +232,24 @@ const MyMiners = ({ miners = [] }) => {
           <span className="font-medium">Мои Майнеры</span>
         </div>
         <div className="flex items-center gap-1 text-sm text-gray-400">
-          {miners.length} устройств
+          {totalMiners} устройств
           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </div>
       </div>
 
       {isExpanded && (
         <div className="space-y-3 mt-2">
-          {miners.length === 0 ? (
+          {minersList.length === 0 ? (
             <div className="text-center py-4 text-gray-400">
               У вас пока нет майнеров. Посетите магазин, чтобы приобрести первого майнера!
             </div>
           ) : (
-            miners.map((miner, index) => (
+            minersList.map((item, index) => (
               <div key={index} className="bg-gray-800 rounded-xl p-4">
                 <div className="flex justify-between items-center mb-3">
-                  <div>
-                    <div className="font-medium">{miner.model?.display_name || "Майнер"}</div>
-                    <div className="text-gray-400 text-sm">ID: {miner.id}</div>
+                  <div className="font-medium">
+                    {item.model?.display_name || "Майнер"}
+                    <span className="text-gray-400 ml-2">x{item.count}</span>
                   </div>
                   <div className="flex items-center gap-1 text-green-500 text-sm">
                     <CheckCircle2 size={16} />
@@ -235,11 +260,13 @@ const MyMiners = ({ miners = [] }) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-gray-400 text-sm mb-1">Хешрейт</div>
-                    <div className="font-medium">{miner.model?.mining_power * miner.quantity} h/s</div>
+                    <div className="font-medium">{item.totalPower} h/s</div>
                   </div>
                   <div>
                     <div className="text-gray-400 text-sm mb-1">Мощность</div>
-                    <div className="font-medium">{miner.model?.energy_consumption || 0} kW</div>
+                    <div className="font-medium">
+                      {((item.model?.energy_consumption || 0) * item.count).toFixed(1)} kW
+                    </div>
                   </div>
                 </div>
               </div>
