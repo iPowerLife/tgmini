@@ -95,7 +95,11 @@ export const Shop = ({ user, onPurchase, categories = [], models = [] }) => {
   const [activeCategory, setActiveCategory] = useState("shop")
   const [activeType, setActiveType] = useState("basic")
   const [categoryMap, setCategoryMap] = useState({})
-  const [filteredModels, setFilteredModels] = useState({})
+  const [filteredModels, setFilteredModels] = useState({
+    basic: [],
+    advanced: [],
+    premium: [],
+  })
 
   // Получаем баланс пользователя
   const balance = user?.balance || 0
@@ -127,43 +131,58 @@ export const Shop = ({ user, onPurchase, categories = [], models = [] }) => {
     })
     setCategoryMap(catMap)
 
-    // Группируем модели по категориям
-    const modelsByCategory = {
+    // Определяем категории по их названиям
+    const categoryTypes = {
       basic: [],
       advanced: [],
       premium: [],
     }
 
-    // Распределяем модели по категориям
-    models.forEach((model) => {
-      const category = catMap[model.category_id]
-      if (!category) return
+    // Находим ID категорий для каждого типа
+    categories.forEach((category) => {
+      const name = category.name.toLowerCase()
 
-      // Определяем тип категории по имени
-      let categoryType = "basic"
-      if (category.name.toLowerCase().includes("продвинут")) {
-        categoryType = "advanced"
-      } else if (category.name.toLowerCase().includes("премиум")) {
-        categoryType = "premium"
-      }
-
-      // Добавляем модель в соответствующую категорию
-      if (modelsByCategory[categoryType]) {
-        modelsByCategory[categoryType].push(model)
+      if (name.includes("базов") || name.includes("basic")) {
+        categoryTypes.basic.push(category.id)
+      } else if (name.includes("продвинут") || name.includes("advanced")) {
+        categoryTypes.advanced.push(category.id)
+      } else if (name.includes("премиум") || name.includes("premium")) {
+        categoryTypes.premium.push(category.id)
       }
     })
 
-    setFilteredModels(modelsByCategory)
+    // Группируем модели по типам категорий
+    const modelsByType = {
+      basic: [],
+      advanced: [],
+      premium: [],
+    }
+
+    // Распределяем модели по типам категорий
+    models.forEach((model) => {
+      if (categoryTypes.basic.includes(model.category_id)) {
+        modelsByType.basic.push(model)
+      } else if (categoryTypes.advanced.includes(model.category_id)) {
+        modelsByType.advanced.push(model)
+      } else if (categoryTypes.premium.includes(model.category_id)) {
+        modelsByType.premium.push(model)
+      }
+    })
+
+    setFilteredModels(modelsByType)
 
     // Если нет активного типа или в активном типе нет моделей, выбираем первый непустой тип
-    if (!modelsByCategory[activeType] || modelsByCategory[activeType].length === 0) {
+    if (!modelsByType[activeType] || modelsByType[activeType].length === 0) {
       for (const type of ["basic", "advanced", "premium"]) {
-        if (modelsByCategory[type] && modelsByCategory[type].length > 0) {
+        if (modelsByType[type] && modelsByType[type].length > 0) {
           setActiveType(type)
           break
         }
       }
     }
+
+    console.log("Категории майнеров:", categoryTypes)
+    console.log("Модели по категориям:", modelsByType)
   }, [categories, models, activeType])
 
   // Категории навигации
