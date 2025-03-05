@@ -54,8 +54,9 @@ function AppContent({
   tasksData,
   handleTaskComplete,
   ratingData,
+  transactionsData,
 }) {
-  console.log("AppContent rendered with:", { user, balance, minersData })
+  console.log("AppContent rendered with:", { user, balance, minersData, ratingData })
 
   return (
     <div className="root-container">
@@ -68,7 +69,13 @@ function AppContent({
             path="/"
             element={
               <div className="page-content" key="home-page">
-                <HomePage />
+                <HomePage
+                  user={user}
+                  balance={balance}
+                  minersData={minersData}
+                  ratingData={ratingData}
+                  transactionsData={transactionsData}
+                />
               </div>
             }
           />
@@ -162,6 +169,7 @@ function App() {
   const [minersData, setMinersData] = useState({ miners: [], totalPower: 0 })
   const [tasksData, setTasksData] = useState({ tasks: [] })
   const [ratingData, setRatingData] = useState({ users: [] })
+  const [transactionsData, setTransactionsData] = useState({ transactions: [] })
 
   // Загрузка данных магазина
   const loadShopData = useCallback(async () => {
@@ -237,6 +245,7 @@ function App() {
     }
   }, [user?.id])
 
+  // Загрузка данных рейтинга
   const loadRatingData = useCallback(async () => {
     if (!user?.id) return
 
@@ -250,6 +259,35 @@ function App() {
       console.log("Rating data loaded successfully")
     } catch (error) {
       console.error("Error loading rating data:", error)
+    }
+  }, [user?.id])
+
+  // Загрузка данных транзакций
+  const loadTransactionsData = useCallback(async () => {
+    if (!user?.id) return
+
+    try {
+      console.log("Loading transactions data...")
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(5)
+
+      if (error) throw error
+
+      // Форматируем транзакции
+      const formattedTransactions = (data || []).map((tx) => ({
+        description: tx.description || "Транзакция",
+        amount: tx.amount,
+        timestamp: new Date(tx.created_at).getTime(),
+      }))
+
+      setTransactionsData({ transactions: formattedTransactions })
+      console.log("Transactions data loaded successfully")
+    } catch (error) {
+      console.error("Error loading transactions data:", error)
     }
   }, [user?.id])
 
@@ -414,7 +452,13 @@ function App() {
           console.log("User initialized:", userWithDisplay)
 
           // Загружаем все данные сразу после инициализации пользователя
-          await Promise.all([loadShopData(), loadMinersData(), loadTasksData(), loadRatingData()])
+          await Promise.all([
+            loadShopData(),
+            loadMinersData(),
+            loadTasksData(),
+            loadRatingData(),
+            loadTransactionsData(),
+          ])
           console.log("All data loaded successfully")
         }
       } catch (err) {
@@ -434,7 +478,7 @@ function App() {
     return () => {
       mounted = false
     }
-  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData])
+  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData, loadTransactionsData])
 
   // Добавляем эффект для перенаправления на главную страницу при обновлении
   useEffect(() => {
@@ -497,9 +541,20 @@ function App() {
         tasksData={tasksData}
         handleTaskComplete={handleTaskComplete}
         ratingData={ratingData}
+        transactionsData={transactionsData}
       />
     )
-  }, [user, balance, handleBalanceUpdate, shopData, minersData, tasksData, handleTaskComplete, ratingData])
+  }, [
+    user,
+    balance,
+    handleBalanceUpdate,
+    shopData,
+    minersData,
+    tasksData,
+    handleTaskComplete,
+    ratingData,
+    transactionsData,
+  ])
 
   if (loading) {
     return (

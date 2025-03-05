@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { ArrowUp, Zap, Award, TrendingUp, Clock } from "lucide-react"
+import { ArrowUp, Zap, Award, TrendingUp, Clock, User } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 // Защита от свайпа вниз
@@ -11,6 +11,18 @@ const SwipeGuard = () => {
 
 // Компонент баланса с анимацией
 const BalanceCard = ({ balance, currency = "COINS", power = 0 }) => {
+  const [showIncrease, setShowIncrease] = useState(false)
+  const [lastBalance, setLastBalance] = useState(balance)
+
+  useEffect(() => {
+    if (balance > lastBalance) {
+      setShowIncrease(true)
+      const timer = setTimeout(() => setShowIncrease(false), 2000)
+      return () => clearTimeout(timer)
+    }
+    setLastBalance(balance)
+  }, [balance, lastBalance])
+
   return (
     <div className="balance-card">
       <div className="balance-background"></div>
@@ -19,6 +31,7 @@ const BalanceCard = ({ balance, currency = "COINS", power = 0 }) => {
         <div className="balance-amount">
           {balance}
           <span className="balance-currency">{currency}</span>
+          {showIncrease && <div className="balance-increase">+{(balance - lastBalance).toFixed(2)}</div>}
         </div>
         <div className="mt-4 text-sm text-gray-400 flex items-center justify-center gap-2">
           <Zap size={16} className="text-blue-400" />
@@ -175,7 +188,7 @@ const QuickActions = ({ onAction }) => {
   const actions = [
     { id: "shop", label: "Магазин", icon: <Zap size={20} /> },
     { id: "tasks", label: "Задания", icon: <Award size={20} /> },
-    { id: "miners", label: "Майнеры", icon: <TrendingUp size={20} /> },
+    { id: "miners", label: "Майнеры", icon: <User size={20} /> },
   ]
 
   return (
@@ -195,34 +208,91 @@ const QuickActions = ({ onAction }) => {
 }
 
 // Главная страница
-const HomePage = () => {
+const HomePage = ({ user, balance, minersData, ratingData }) => {
   const navigate = useNavigate()
   const [userData, setUserData] = useState({
-    balance: 1250,
-    power: 125,
+    balance: balance || 0,
+    power: minersData?.totalPower || 0,
     stats: [
-      { label: "Заработано", value: "2,450" },
-      { label: "Майнеров", value: "3" },
-      { label: "Рефералов", value: "2" },
-      { label: "Дней", value: "7" },
+      { label: "Заработано", value: "0" },
+      { label: "Майнеров", value: (minersData?.miners?.length || 0).toString() },
+      { label: "Рефералов", value: "0" },
+      { label: "Дней", value: "0" },
     ],
-    miners: [
-      { name: "Basic Miner", level: 2, power: 50, earnings: "+25" },
-      { name: "Advanced Miner", level: 1, power: 75, earnings: "+40" },
-    ],
-    transactions: [
-      { description: "Майнинг", amount: 25, timestamp: Date.now() - 3600000 },
-      { description: "Покупка майнера", amount: -500, timestamp: Date.now() - 86400000 },
-      { description: "Реферальный бонус", amount: 100, timestamp: Date.now() - 172800000 },
-    ],
+    miners: [],
+    transactions: [],
     ranking: {
-      position: 42,
-      progress: 65,
-      nextRankDifference: 350,
+      position: 0,
+      progress: 0,
+      nextRankDifference: 100,
     },
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  // Обновляем данные при изменении пропсов
+  useEffect(() => {
+    if (user && balance !== undefined && minersData) {
+      console.log("Updating home page data from props:", { user, balance, minersData })
+
+      // Форматируем майнеры
+      const formattedMiners = (minersData.miners || []).map((miner) => ({
+        name: miner.model?.display_name || "Майнер",
+        level: miner.level || 1,
+        power: miner.model?.mining_power * miner.quantity || 0,
+        earnings: `+${((miner.model?.mining_power * miner.quantity || 0) * 0.5).toFixed(1)}`,
+      }))
+
+      // Обновляем состояние
+      setUserData((prev) => ({
+        ...prev,
+        balance: balance,
+        power: minersData.totalPower || 0,
+        stats: [
+          { label: "Заработано", value: user.total_earned?.toFixed(0) || "0" },
+          { label: "Майнеров", value: (minersData.miners?.length || 0).toString() },
+          { label: "Рефералов", value: user.referrals_count?.toString() || "0" },
+          {
+            label: "Дней",
+            value: Math.floor(
+              (Date.now() - new Date(user.created_at || Date.now()).getTime()) / (1000 * 60 * 60 * 24),
+            ).toString(),
+          },
+        ],
+        miners: formattedMiners,
+      }))
+    }
+  }, [user, balance, minersData])
+
+  // Обновляем рейтинг при изменении данных рейтинга
+  useEffect(() => {
+    if (ratingData && user) {
+      // Находим позицию пользователя в рейтинге
+      const userPosition = ratingData.users.findIndex((u) => u.id === user.id) + 1
+
+      // Находим следующего пользователя в рейтинге
+      const nextUser = ratingData.users[Math.max(0, userPosition - 2)]
+      const currentUser = ratingData.users[userPosition - 1]
+
+      // Вычисляем разницу до следующего ранга
+      const nextRankDifference = nextUser && currentUser ? Math.max(0, nextUser.balance - currentUser.balance) : 100
+
+      // Вычисляем прогресс
+      const progress =
+        nextUser && currentUser && nextUser.balance > currentUser.balance
+          ? Math.min(100, Math.floor((currentUser.balance / nextUser.balance) * 100))
+          : 0
+
+      setUserData((prev) => ({
+        ...prev,
+        ranking: {
+          position: userPosition || 0,
+          progress: progress,
+          nextRankDifference: nextRankDifference,
+        },
+      }))
+    }
+  }, [ratingData, user])
 
   // Имитация обновления баланса
   useEffect(() => {
