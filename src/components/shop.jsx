@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { ShoppingCart, Zap, Battery, Gauge, Crown, Sparkles, Rocket, Clock, Shield, Check } from "lucide-react"
 import { supabase } from "../supabase" // Импортируем клиент Supabase
 
@@ -251,6 +251,47 @@ const SpecialItemsSection = ({ items, onBuy, userBalance, loading, userItems }) 
   )
 }
 
+// Обновляем компонент навигации по категориям
+const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
+  // Категории навигации
+  const navCategories = [
+    { id: "shop", name: "Магазин", icon: ShoppingCart },
+    { id: "special", name: "Специальные", icon: Sparkles },
+    { id: "premium", name: "Премиум", icon: Crown },
+    { id: "boosts", name: "Бусты", icon: Rocket },
+  ]
+
+  return (
+    <div className="bg-gray-900 rounded-2xl p-2 mb-4">
+      <div className="flex gap-2">
+        {navCategories.map((category) => {
+          const Icon = category.icon
+          return (
+            <button
+              key={category.id}
+              onClick={() => onCategoryChange(category.id)}
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-lg flex-1 justify-center
+                transition-all duration-200 ease-in-out
+                ${
+                  activeCategory === category.id
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-400 hover:bg-gray-800/50 hover:text-gray-300"
+                }
+                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+                active:transform active:scale-95
+              `}
+            >
+              <Icon size={16} />
+              <span className="text-sm whitespace-nowrap">{category.name}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // Главный компонент ��агазина
 export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerPass: initialHasMinerPass = false }) => {
   const [activeCategory, setActiveCategory] = useState("shop")
@@ -361,11 +402,24 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
     }
   }
 
-  // Обработчик покупки специального предмета
+  // Обновленный обработчик смены категории
+  const handleCategoryChange = useCallback((categoryId) => {
+    setActiveCategory(categoryId)
+    // Сбрасываем тип майнера при переходе в другую категорию
+    if (categoryId === "shop") {
+      setActiveType("basic")
+    }
+  }, [])
+
+  // Обновленный обработчик покупки специального предмета
   const handleBuySpecialItem = async (itemName, price) => {
     try {
       setLoading(true)
       console.log("Покупка предмета:", itemName, "цена:", price)
+
+      if (!user?.id) {
+        throw new Error("Пользователь не авторизован")
+      }
 
       // Вызываем функцию покупки специального предмета
       const { data, error } = await supabase.rpc("purchase_special_item", {
@@ -478,14 +532,6 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
     console.log("Модели по категориям:", modelsByType)
   }, [categories, models, activeType])
 
-  // Категории навигации
-  const navCategories = [
-    { id: "shop", name: "Магазин", icon: ShoppingCart },
-    { id: "special", name: "Специальные", icon: Sparkles },
-    { id: "premium", name: "Премиум", icon: Crown },
-    { id: "boosts", name: "Бусты", icon: Rocket },
-  ]
-
   // Типы майнеров
   const minerTypes = [
     { id: "basic", name: "Базовый", icon: Zap },
@@ -518,26 +564,8 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
         <div className="text-green-500 font-medium">{balance} монет</div>
       </div>
 
-      {/* Навигация по категориям */}
-      <div className="bg-gray-900 rounded-2xl p-2 mb-4">
-        <div className="flex gap-2">
-          {navCategories.map((category) => {
-            const Icon = category.icon
-            return (
-              <button
-                key={category.id}
-                onClick={() => setActiveCategory(category.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg flex-1 justify-center ${
-                  activeCategory === category.id ? "bg-gray-800 text-white" : "text-gray-400"
-                }`}
-              >
-                <Icon size={16} />
-                <span className="text-sm">{category.name}</span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
+      {/* Используем обновленный компонент навигации */}
+      <CategoryNavigation activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
 
       {/* Отображаем соответствующий раздел */}
       {activeCategory === "shop" && (
