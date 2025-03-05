@@ -1,23 +1,26 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ShoppingCart, Zap, Battery, Gauge, Crown, Sparkles, Rocket } from "lucide-react"
 
 // Компонент карточки майнера
-const MinerCard = ({ miner, onBuy }) => {
+const MinerCard = ({ miner, onBuy, userBalance }) => {
+  // Проверяем, может ли пользователь купить майнер
+  const canBuy = userBalance >= miner.price
+
   return (
     <div className="bg-gray-900 rounded-2xl p-4 mb-4">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="font-medium text-lg mb-1">{miner.name}</h3>
-          <p className="text-sm text-gray-400">{miner.description}</p>
+          <h3 className="font-medium text-lg mb-1">{miner.display_name || miner.name}</h3>
+          <p className="text-sm text-gray-400">{miner.description || "Майнер для добычи криптовалюты"}</p>
         </div>
-        {miner.isNew && <span className="bg-green-500/20 text-green-500 text-xs px-2 py-1 rounded-full">Новинка</span>}
+        {miner.is_new && <span className="bg-green-500/20 text-green-500 text-xs px-2 py-1 rounded-full">Новинка</span>}
       </div>
 
       <div className="bg-gray-800 rounded-xl p-4 mb-4">
         <img
-          src={miner.image || "/placeholder.svg?height=100&width=100"}
+          src={miner.image_url || "/placeholder.svg?height=100&width=100"}
           alt={miner.name}
           className="w-full h-32 object-contain mb-4"
         />
@@ -28,7 +31,7 @@ const MinerCard = ({ miner, onBuy }) => {
               <Zap size={16} className="text-blue-400" />
               <span>Хешрейт:</span>
             </div>
-            <span className="font-medium">{miner.hashrate} TH/s</span>
+            <span className="font-medium">{miner.mining_power} h/s</span>
           </div>
 
           <div className="flex items-center justify-between text-sm">
@@ -36,7 +39,7 @@ const MinerCard = ({ miner, onBuy }) => {
               <Battery size={16} className="text-purple-400" />
               <span>Потребление:</span>
             </div>
-            <span className="font-medium">{miner.power} kW</span>
+            <span className="font-medium">{miner.energy_consumption} kW</span>
           </div>
 
           <div className="flex items-center justify-between text-sm">
@@ -44,15 +47,23 @@ const MinerCard = ({ miner, onBuy }) => {
               <Gauge size={16} className="text-green-400" />
               <span>Эффективность:</span>
             </div>
-            <span className="font-medium">{miner.efficiency}%</span>
+            <span className="font-medium">
+              {miner.efficiency || Math.round((miner.mining_power / miner.energy_consumption) * 10)}%
+            </span>
           </div>
         </div>
       </div>
 
       <div className="flex items-center justify-between">
         <div className="text-xl font-medium text-blue-400">{miner.price} монет</div>
-        <button onClick={() => onBuy(miner)} className="bg-green-500 text-black font-medium px-6 py-2 rounded-lg">
-          Купить
+        <button
+          onClick={() => onBuy(miner)}
+          className={`px-6 py-2 rounded-lg font-medium ${
+            canBuy ? "bg-green-500 text-black hover:bg-green-600" : "bg-gray-700 text-gray-400 cursor-not-allowed"
+          }`}
+          disabled={!canBuy}
+        >
+          {canBuy ? "Купить" : "Недостаточно средств"}
         </button>
       </div>
     </div>
@@ -60,7 +71,7 @@ const MinerCard = ({ miner, onBuy }) => {
 }
 
 // Компонент категории майнеров
-const MinerCategory = ({ title, description, miners, onBuy }) => {
+const MinerCategory = ({ title, description, miners, onBuy, userBalance }) => {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-2">
@@ -69,28 +80,91 @@ const MinerCategory = ({ title, description, miners, onBuy }) => {
       </div>
       <p className="text-gray-400 text-sm mb-4">{description}</p>
       <div className="space-y-4">
-        {miners.map((miner) => (
-          <MinerCard key={miner.id} miner={miner} onBuy={onBuy} />
-        ))}
+        {miners.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">В этой категории пока нет доступных майнеров</div>
+        ) : (
+          miners.map((miner) => <MinerCard key={miner.id} miner={miner} onBuy={onBuy} userBalance={userBalance} />)
+        )}
       </div>
     </div>
   )
 }
 
 // Главный компонент магазина
-export const Shop = ({ user, onPurchase, categories, models }) => {
+export const Shop = ({ user, onPurchase, categories = [], models = [] }) => {
   const [activeCategory, setActiveCategory] = useState("shop")
   const [activeType, setActiveType] = useState("basic")
+  const [categoryMap, setCategoryMap] = useState({})
+  const [filteredModels, setFilteredModels] = useState({})
 
   // Получаем баланс пользователя
   const balance = user?.balance || 0
 
   // Обработчик покупки
-  const handleBuy = (miner) => {
-    if (onPurchase && typeof onPurchase === "function") {
-      onPurchase(miner)
+  const handleBuy = async (miner) => {
+    if (!user || !miner || balance < miner.price) return
+
+    try {
+      // Здесь должен быть код для покупки майнера через API
+      console.log(`Покупка майнера: ${miner.name} за ${miner.price} монет`)
+
+      // Вызываем функцию обновления баланса из родительского компонента
+      if (onPurchase && typeof onPurchase === "function") {
+        // Предполагаем, что после покупки баланс уменьшится на цену майнера
+        onPurchase(balance - miner.price)
+      }
+    } catch (error) {
+      console.error("Ошибка при покупке майнера:", error)
     }
   }
+
+  // Обрабатываем данные категорий и моделей при их изменении
+  useEffect(() => {
+    // Создаем карту категорий для быстрого доступа
+    const catMap = {}
+    categories.forEach((cat) => {
+      catMap[cat.id] = cat
+    })
+    setCategoryMap(catMap)
+
+    // Группируем модели по категориям
+    const modelsByCategory = {
+      basic: [],
+      advanced: [],
+      premium: [],
+    }
+
+    // Распределяем модели по категориям
+    models.forEach((model) => {
+      const category = catMap[model.category_id]
+      if (!category) return
+
+      // Определяем тип категории по имени
+      let categoryType = "basic"
+      if (category.name.toLowerCase().includes("продвинут")) {
+        categoryType = "advanced"
+      } else if (category.name.toLowerCase().includes("премиум")) {
+        categoryType = "premium"
+      }
+
+      // Добавляем модель в соответствующую категорию
+      if (modelsByCategory[categoryType]) {
+        modelsByCategory[categoryType].push(model)
+      }
+    })
+
+    setFilteredModels(modelsByCategory)
+
+    // Если нет активного типа или в активном типе нет моделей, выбираем первый непустой тип
+    if (!modelsByCategory[activeType] || modelsByCategory[activeType].length === 0) {
+      for (const type of ["basic", "advanced", "premium"]) {
+        if (modelsByCategory[type] && modelsByCategory[type].length > 0) {
+          setActiveType(type)
+          break
+        }
+      }
+    }
+  }, [categories, models, activeType])
 
   // Категории навигации
   const navCategories = [
@@ -107,51 +181,18 @@ export const Shop = ({ user, onPurchase, categories, models }) => {
     { id: "premium", name: "Премиум", icon: Crown },
   ]
 
-  // Примеры майнеров (в реальном приложении данные будут приходить с сервера)
-  const miners = {
-    basic: [
-      {
-        id: 1,
-        name: "Basic Miner S1",
-        description: "Начальная модель для входа в майнинг",
-        hashrate: "25",
-        power: "2.2",
-        efficiency: "92",
-        price: 1000,
-        isNew: true,
-      },
-      {
-        id: 2,
-        name: "Basic Miner S2",
-        description: "Улучшенная базовая модель с оптимальным энергопотреблением",
-        hashrate: "30",
-        power: "2.4",
-        efficiency: "93",
-        price: 1500,
-      },
-    ],
-    advanced: [
-      {
-        id: 3,
-        name: "Advanced Miner X1",
-        description: "Продвинутая модель для опытных майнеров",
-        hashrate: "45",
-        power: "3.0",
-        efficiency: "95",
-        price: 2500,
-      },
-    ],
-    premium: [
-      {
-        id: 4,
-        name: "Premium Miner Pro",
-        description: "Премиальная модель с максимальной производительностью",
-        hashrate: "75",
-        power: "4.5",
-        efficiency: "97",
-        price: 5000,
-      },
-    ],
+  // Описания для категорий
+  const categoryDescriptions = {
+    basic: "Оптимальное решение для начала майнинга",
+    advanced: "Для опытных майнеров, желающих увеличить доход",
+    premium: "Максимальная производительность и эффективность",
+  }
+
+  // Заголовки для категорий
+  const categoryTitles = {
+    basic: "Базовые майнеры",
+    advanced: "Продвинутые майнеры",
+    premium: "Премиум майнеры",
   }
 
   return (
@@ -207,29 +248,32 @@ export const Shop = ({ user, onPurchase, categories, models }) => {
         </div>
       </div>
 
-      {/* Список майнеров */}
+      {/* Список майнеров по категориям */}
       {activeType === "basic" && (
         <MinerCategory
-          title="Базовые майнеры"
-          description="Оптимальное решение для начала"
-          miners={miners.basic}
+          title={categoryTitles.basic}
+          description={categoryDescriptions.basic}
+          miners={filteredModels.basic || []}
           onBuy={handleBuy}
+          userBalance={balance}
         />
       )}
       {activeType === "advanced" && (
         <MinerCategory
-          title="Продвинутые майнеры"
-          description="Для опытных пользователей"
-          miners={miners.advanced}
+          title={categoryTitles.advanced}
+          description={categoryDescriptions.advanced}
+          miners={filteredModels.advanced || []}
           onBuy={handleBuy}
+          userBalance={balance}
         />
       )}
       {activeType === "premium" && (
         <MinerCategory
-          title="Премиум майнеры"
-          description="Максимальная производительность"
-          miners={miners.premium}
+          title={categoryTitles.premium}
+          description={categoryDescriptions.premium}
+          miners={filteredModels.premium || []}
           onBuy={handleBuy}
+          userBalance={balance}
         />
       )}
     </div>
