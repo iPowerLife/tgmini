@@ -4,6 +4,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Добавляем в начало файла, после базовых импортов */
+
+/* Предотвращаем закрытие приложения при свайпе вниз */
+body {
+  overscroll-behavior-y: contain;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+#root {
+  overscroll-behavior-y: contain;
+}
+
+.page-container {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* CSS Variables */
 :root {
   --background: 0 0% 100%;
@@ -80,6 +98,7 @@ body {
   position: relative;
   width: 100%;
   background-color: #1a1b1e;
+  overscroll-behavior-y: contain;
 }
 
 /* Layout Structure */
@@ -102,6 +121,19 @@ body {
   background: linear-gradient(45deg, #0f172a, #1e293b);
 }
 
+/* Добавляем защиту от свайпа вниз в верхней части экрана */
+.app-wrapper::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  z-index: 1000;
+  touch-action: none;
+  pointer-events: none;
+}
+
 .page-container {
   height: 100%;
   overflow-y: auto;
@@ -111,6 +143,7 @@ body {
   padding-bottom: calc(env(safe-area-inset-bottom) + 56px);
   scrollbar-width: none;
   -ms-overflow-style: none;
+  overscroll-behavior-y: contain;
 }
 
 .page-container::-webkit-scrollbar {
@@ -128,6 +161,7 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   will-change: transform;
+  overscroll-behavior-y: contain;
 }
 
 .page-content {
@@ -1202,7 +1236,8 @@ button:active::after {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -1293,7 +1328,7 @@ button:active::after {
   .category-btn {
     width: 100%;
   }
-  
+
   .tasks-container {
     padding: 16px;
   }
@@ -1330,7 +1365,7 @@ button:active::after {
   .section-container {
     padding: 16px;
   }
-  
+
   .menu-label {
     font-size: 10px;
   }
@@ -1347,7 +1382,7 @@ button:active::after {
   .menu-item {
     padding: 6px 12px;
   }
-  
+
   .leaderboard-item {
     padding: 8px;
     gap: 8px;
@@ -1418,7 +1453,7 @@ button:active::after {
   .animate-pulse-glow {
     animation: none !important;
   }
-  
+
   * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
@@ -1445,7 +1480,7 @@ button:active::after {
   --tg-theme-button-color: var(--tg-theme-button-color, #3390ec);
   --tg-theme-button-text-color: var(--tg-theme-button-text-color, #ffffff);
   --tg-theme-secondary-bg-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-  
+
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: contain;
@@ -1474,3 +1509,4 @@ button:active::after {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
+
