@@ -21,8 +21,22 @@ import {
   Lock,
   Bell,
   Flame,
+  AlertTriangle,
 } from "lucide-react"
 import { supabase } from "../supabase"
+
+// Add this component at the top level of the file, after imports
+const WarningMessage = () => (
+  <div className="mt-3 bg-yellow-950/50 border border-yellow-500/20 rounded-lg p-3 flex gap-2">
+    <AlertTriangle className="text-yellow-500 shrink-0" size={20} />
+    <div>
+      <div className="text-yellow-500 text-sm font-medium mb-0.5">Важное уведомление</div>
+      <div className="text-yellow-500/80 text-xs">
+        Все покупки являются окончательными. Пожалуйста, внимательно проверяйте выбранные товары перед покупкой.
+      </div>
+    </div>
+  </div>
+)
 
 // Обновляем компонент карточки майнера, добавляя обратно поле Энергия
 const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purchaseLimit, hasMinerPass, minerType }) => {
@@ -704,6 +718,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
           (activeType === "premium" && (!filteredModels.premium || filteredModels.premium.length === 0)) ? (
             <div className="text-center py-6 text-gray-400 text-sm">В этой категории пока нет доступных майнеров</div>
           ) : null}
+          <WarningMessage />
         </div>
       )}
 
@@ -762,6 +777,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
               </div>
             </div>
           </div>
+          <WarningMessage />
         </>
       )}
 
@@ -794,6 +810,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
               </button>
             </div>
           </div>
+          <WarningMessage />
         </>
       )}
 
@@ -854,6 +871,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
               </div>
             </div>
           </div>
+          <WarningMessage />
         </>
       )}
     </div>
