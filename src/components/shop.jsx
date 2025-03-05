@@ -1,8 +1,10 @@
 "use client"
 
+import React from "react"
+
 import { useState, useEffect, useCallback } from "react"
-import { ShoppingCart, Zap, Battery, Gauge, Crown, Sparkles, Rocket, Clock, Shield, Check } from "lucide-react"
-import { supabase } from "../supabase" // Импортируем клиент Supabase
+import { ShoppingCart, Zap, Gauge, Crown, Sparkles, Rocket, Cpu, Layers, Flame, Bolt, Coins } from "lucide-react"
+import { supabase } from "../supabase"
 
 // Компонент карточки майнера
 const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purchaseLimit, hasMinerPass }) => {
@@ -13,239 +15,74 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
   const limitReached = purchaseLimit !== null && currentQuantity >= purchaseLimit && !hasMinerPass
 
   // Текст для кнопки при достижении лимита
-  const limitText = hasMinerPass ? `Куплено ${currentQuantity}` : `Лимит: ${currentQuantity}/${purchaseLimit}`
+  const limitText = hasMinerPass ? `${currentQuantity}` : `${currentQuantity}/${purchaseLimit}`
 
   return (
-    <div className="bg-gray-900 rounded-2xl p-4 mb-4">
-      <div className="flex items-start justify-between mb-4">
+    <div className="bg-[#151B26] rounded-xl p-3 mb-3 shadow-md">
+      <div className="flex items-start justify-between mb-2">
         <div>
-          <h3 className="font-medium text-lg mb-1">{miner.display_name || miner.name}</h3>
-          <p className="text-sm text-gray-400">{miner.description || "Майнер для добычи криптовалюты"}</p>
+          <h3 className="font-medium text-base mb-0.5">{miner.display_name || miner.name}</h3>
+          <p className="text-xs text-gray-400">{miner.description || "Майнер для добычи криптовалюты"}</p>
         </div>
-        {miner.is_new && <span className="bg-green-500/20 text-green-500 text-xs px-2 py-1 rounded-full">Новинка</span>}
+        {miner.is_new && (
+          <span className="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded-full">Новинка</span>
+        )}
       </div>
 
-      <div className="bg-gray-800 rounded-xl p-4 mb-4">
-        <img
-          src={miner.image_url || "/placeholder.svg?height=100&width=100"}
-          alt={miner.name}
-          className="w-full h-32 object-contain mb-4"
-        />
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2 text-gray-400">
-              <Zap size={16} className="text-blue-400" />
-              <span>Хешрейт:</span>
-            </div>
-            <span className="font-medium">{miner.mining_power} h/s</span>
+      <div className="bg-[#0F1520] rounded-lg p-3 mb-3">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-16 h-16 bg-[#1F2937] rounded-lg flex items-center justify-center">
+            <Cpu className="text-[#5B9DFF]" size={32} />
           </div>
-
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2 text-gray-400">
-              <Battery size={16} className="text-purple-400" />
-              <span>Потребление:</span>
+          <div className="flex-1 grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-1.5">
+              <Bolt size={14} className="text-[#5B9DFF]" />
+              <span className="text-xs text-gray-400">Хешрейт:</span>
+              <span className="text-xs font-medium ml-auto">{miner.mining_power}</span>
             </div>
-            <span className="font-medium">{miner.energy_consumption} kW</span>
-          </div>
-
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2 text-gray-400">
-              <Gauge size={16} className="text-green-400" />
-              <span>Эффе��тивность:</span>
+            <div className="flex items-center gap-1.5">
+              <Flame size={14} className="text-orange-400" />
+              <span className="text-xs text-gray-400">Энергия:</span>
+              <span className="text-xs font-medium ml-auto">{miner.energy_consumption}</span>
             </div>
-            <span className="font-medium">
-              {miner.efficiency || Math.round((miner.mining_power / miner.energy_consumption) * 10)}%
-            </span>
-          </div>
-
-          {purchaseLimit !== null && (
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2 text-gray-400">
-                <Shield size={16} className="text-yellow-400" />
-                <span>Количество:</span>
-              </div>
-              <span className={`font-medium ${limitReached ? "text-red-400" : ""}`}>
-                {currentQuantity} / {hasMinerPass ? "∞" : purchaseLimit}
+            <div className="flex items-center gap-1.5">
+              <Gauge size={14} className="text-green-400" />
+              <span className="text-xs text-gray-400">Эффект:</span>
+              <span className="text-xs font-medium ml-auto">
+                {miner.efficiency || Math.round((miner.mining_power / miner.energy_consumption) * 10)}%
               </span>
             </div>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="text-xl font-medium text-blue-400">{miner.price} монет</div>
-        <button
-          onClick={() => onBuy(miner.id, miner.price)}
-          className={`px-6 py-2 rounded-lg font-medium ${
-            loading
-              ? "bg-gray-600 text-gray-300 cursor-wait"
-              : limitReached
-                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                : canBuy
-                  ? "bg-green-500 text-black hover:bg-green-600"
-                  : "bg-gray-700 text-gray-400 cursor-not-allowed"
-          }`}
-          disabled={!canBuy || loading || limitReached}
-        >
-          {loading ? "Покупка..." : limitReached ? limitText : canBuy ? "Купить" : "Недостаточно средств"}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// Компонент карточки специального предмета
-const SpecialItemCard = ({ item, onBuy, userBalance, loading, userHasItem }) => {
-  // Проверяем, может ли пользователь купить предмет
-  const canBuy = userBalance >= item.price
-
-  return (
-    <div className="bg-gray-900 rounded-2xl p-4 mb-4">
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <h3 className="font-medium text-lg mb-1">{item.display_name}</h3>
-          <p className="text-sm text-gray-400">{item.description}</p>
-        </div>
-        {userHasItem && (
-          <span className="bg-green-500/20 text-green-500 text-xs px-2 py-1 rounded-full flex items-center gap-1">
-            <Check size={12} />
-            <span>Активен</span>
-          </span>
-        )}
-      </div>
-
-      <div className="bg-gray-800 rounded-xl p-4 mb-4">
-        <div className="flex justify-center mb-4">
-          <div className="w-24 h-24 bg-blue-500/20 rounded-full flex items-center justify-center">
-            <Crown size={48} className="text-blue-400" />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2 text-gray-400">
-              <Shield size={16} className="text-yellow-400" />
-              <span>Преимущества:</span>
-            </div>
-            <span className="font-medium">Снятие лимитов</span>
-          </div>
-
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2 text-gray-400">
-              <Clock size={16} className="text-purple-400" />
-              <span>Длительность:</span>
-            </div>
-            <span className="font-medium">{item.duration_days || "∞"} дней</span>
-          </div>
-
-          {userHasItem && item.expires_at && (
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2 text-gray-400">
-                <Clock size={16} className="text-red-400" />
-                <span>Истекает:</span>
+            {purchaseLimit !== null && (
+              <div className="flex items-center gap-1.5">
+                <Layers size={14} className="text-yellow-400" />
+                <span className="text-xs text-gray-400">Кол-во:</span>
+                <span className={`text-xs font-medium ml-auto ${limitReached ? "text-red-400" : ""}`}>{limitText}</span>
               </div>
-              <span className="font-medium">{new Date(item.expires_at).toLocaleDateString()}</span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center justify-between">
-        <div className="text-xl font-medium text-blue-400">{item.price} монет</div>
-        <button
-          onClick={() => onBuy(item.name, item.price)}
-          className={`px-6 py-2 rounded-lg font-medium ${
-            loading
-              ? "bg-gray-600 text-gray-300 cursor-wait"
-              : userHasItem
-                ? "bg-blue-500 text-white hover:bg-blue-600"
-                : canBuy
-                  ? "bg-green-500 text-black hover:bg-green-600"
-                  : "bg-gray-700 text-gray-400 cursor-not-allowed"
-          }`}
-          disabled={(!canBuy && !userHasItem) || loading}
-        >
-          {loading ? "Покупка..." : userHasItem ? "Продлить" : canBuy ? "Купить" : "Недостаточно средств"}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// Компонент категории майнеров
-const MinerCategory = ({ title, description, miners, onBuy, userBalance, loading, userMiners, hasMinerPass }) => {
-  return (
-    <div className="mb-6">
-      <div className="flex items-center gap-2 mb-2">
-        <Zap className="text-blue-400" size={20} />
-        <h2 className="text-lg font-medium">{title}</h2>
-      </div>
-      <p className="text-gray-400 text-sm mb-4">{description}</p>
-      <div className="space-y-4">
-        {miners.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">В этой категории пока нет доступных майнеров</div>
-        ) : (
-          miners.map((miner) => {
-            // Находим текущее количество этого майнера у пользователя
-            const userMiner = userMiners.find((um) => um.model_id === miner.id)
-            const currentQuantity = userMiner ? userMiner.quantity : 0
-
-            return (
-              <MinerCard
-                key={miner.id}
-                miner={miner}
-                onBuy={onBuy}
-                userBalance={userBalance}
-                loading={loading}
-                currentQuantity={currentQuantity}
-                purchaseLimit={miner.purchase_limit}
-                hasMinerPass={hasMinerPass}
-              />
-            )
-          })
-        )}
-      </div>
-    </div>
-  )
-}
-
-// Компонент раздела специальных предметов
-const SpecialItemsSection = ({ items, onBuy, userBalance, loading, userItems }) => {
-  return (
-    <div className="mb-6">
-      <div className="flex items-center gap-2 mb-2">
-        <Sparkles className="text-yellow-400" size={20} />
-        <h2 className="text-lg font-medium">Специальные предметы</h2>
-      </div>
-      <p className="text-gray-400 text-sm mb-4">Уникальные предметы и улучшения для вашего майнинга</p>
-      <div className="space-y-4">
-        {items.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">В этой категории пока нет доступных предметов</div>
-        ) : (
-          items.map((item) => {
-            // Проверяем, есть ли у пользователя этот предмет
-            const userItem = userItems.find((ui) => ui.item_id === item.id)
-            const hasItem = !!userItem
-
-            // Добавляем информацию о сроке действия
-            const itemWithExpiry = {
-              ...item,
-              expires_at: userItem?.expires_at,
-            }
-
-            return (
-              <SpecialItemCard
-                key={item.id}
-                item={itemWithExpiry}
-                onBuy={onBuy}
-                userBalance={userBalance}
-                loading={loading}
-                userHasItem={hasItem}
-              />
-            )
-          })
-        )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Coins size={14} className="text-yellow-400" />
+            <span className="text-sm font-medium text-yellow-400">{miner.price}</span>
+          </div>
+          <button
+            onClick={() => onBuy(miner.id, miner.price)}
+            className={`px-4 py-1.5 rounded-lg text-xs font-medium ${
+              loading
+                ? "bg-gray-600 text-gray-300 cursor-wait"
+                : limitReached
+                  ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                  : canBuy
+                    ? "bg-green-500 text-black hover:bg-green-600"
+                    : "bg-gray-700 text-gray-400 cursor-not-allowed"
+            }`}
+            disabled={!canBuy || loading || limitReached}
+          >
+            {loading ? "Покупка..." : limitReached ? "Лимит" : canBuy ? "Купить" : "Недостаточно"}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -254,14 +91,14 @@ const SpecialItemsSection = ({ items, onBuy, userBalance, loading, userItems }) 
 // Обновляем компонент навигации по типам майнеров
 const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
   const minerTypes = [
-    { id: "basic", name: "Базовый", icon: Zap },
-    { id: "advanced", name: "Продвинутый", icon: Gauge },
-    { id: "premium", name: "Премиум", icon: Crown },
+    { id: "basic", name: "Базовый", icon: Zap, color: "blue" },
+    { id: "advanced", name: "Продвинутый", icon: Gauge, color: "purple" },
+    { id: "premium", name: "Премиум", icon: Crown, color: "yellow" },
   ]
 
   return (
-    <div className="bg-[#151B26] rounded-xl p-2 mb-4">
-      <div className="flex gap-2">
+    <div className="bg-[#151B26] rounded-lg p-1.5 mb-3 shadow-md">
+      <div className="flex gap-1.5">
         {minerTypes.map((type) => {
           const Icon = type.icon
           const isActive = activeType === type.id
@@ -271,17 +108,17 @@ const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
               key={type.id}
               onClick={() => onTypeChange(type.id)}
               className={`
-                flex items-center gap-2 py-2 px-4 rounded-lg flex-1
-                transition-all duration-200
+                flex items-center gap-1.5 py-1.5 px-2.5 rounded-md flex-1
+                transition-all duration-200 text-xs
                 ${
                   isActive
-                    ? "bg-[#1F2937] text-[#5B9DFF] shadow-lg"
+                    ? `bg-[#1F2937] text-${type.color}-400 shadow-sm`
                     : "text-gray-400 hover:bg-[#1A2231] hover:text-gray-300"
                 }
               `}
             >
-              <Icon size={16} />
-              <span className="text-sm font-medium">{type.name}</span>
+              <Icon size={14} />
+              <span className="font-medium">{type.name}</span>
             </button>
           )
         })}
@@ -300,8 +137,8 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
   ]
 
   return (
-    <div className="bg-[#151B26] rounded-xl p-2 mb-4">
-      <div className="flex gap-2">
+    <div className="bg-[#151B26] rounded-lg p-1.5 mb-3 shadow-md">
+      <div className="flex gap-1.5">
         {navCategories.map((category) => {
           const Icon = category.icon
           const isActive = activeCategory === category.id
@@ -311,17 +148,17 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
               key={category.id}
               onClick={() => onCategoryChange(category.id)}
               className={`
-                flex items-center justify-center gap-2 flex-1 py-2 px-4 rounded-lg
-                transition-all duration-200
+                flex items-center justify-center gap-1.5 flex-1 py-1.5 px-2.5 rounded-md
+                transition-all duration-200 text-xs
                 ${
                   isActive
-                    ? "bg-[#1F2937] text-white shadow-lg"
+                    ? "bg-[#1F2937] text-white shadow-sm"
                     : "text-gray-400 hover:bg-[#1A2231] hover:text-gray-300"
                 }
               `}
             >
-              <Icon size={18} />
-              <span className="text-sm font-medium">{category.name}</span>
+              <Icon size={14} />
+              <span className="font-medium">{category.name}</span>
             </button>
           )
         })}
@@ -565,17 +402,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
         }
       }
     }
-
-    console.log("Категории майнеров:", categoryTypes)
-    console.log("Модели по категориям:", modelsByType)
   }, [categories, models, activeType])
-
-  // Типы майнеров
-  const minerTypes = [
-    { id: "basic", name: "Базовый", icon: Zap },
-    { id: "advanced", name: "Продвинутый", icon: Gauge },
-    { id: "premium", name: "Премиум", icon: Crown },
-  ]
 
   // Описания для категорий
   const categoryDescriptions = {
@@ -591,19 +418,27 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
     premium: "Премиум майнеры",
   }
 
+  // Иконки для категорий
+  const categoryIcons = {
+    basic: Zap,
+    advanced: Gauge,
+    premium: Crown,
+  }
+
   return (
-    <div className="min-h-screen bg-[#0B0E14] p-4">
+    <div className="min-h-screen bg-[#0B0E14] p-3">
       {/* Верхняя панель с балансом */}
-      <div className="bg-[#151B26] rounded-xl p-4 mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#1F2937] flex items-center justify-center">
-            <ShoppingCart className="text-[#5B9DFF]" size={20} />
+      <div className="bg-[#151B26] rounded-lg p-3 mb-3 flex items-center justify-between shadow-md">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-[#1F2937] flex items-center justify-center">
+            <ShoppingCart className="text-[#5B9DFF]" size={16} />
           </div>
-          <span className="text-white font-medium">Магазин</span>
+          <span className="text-white text-sm font-medium">Магазин</span>
         </div>
-        <div className="flex items-center gap-2 bg-[#1F2937] py-2 px-4 rounded-xl">
-          <span className="text-green-400 font-medium">{balance}</span>
-          <span className="text-gray-400">монет</span>
+        <div className="flex items-center gap-1.5 bg-[#1F2937] py-1.5 px-3 rounded-lg">
+          <Coins size={14} className="text-green-400" />
+          <span className="text-green-400 text-sm font-medium">{balance}</span>
+          <span className="text-gray-400 text-xs">монет</span>
         </div>
       </div>
 
@@ -615,73 +450,73 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
 
       {/* Заголовок и описание категории */}
       {activeCategory === "shop" && (
-        <div className="mb-6">
-          <h2 className="text-white text-xl font-medium flex items-center gap-2 mb-1">
-            <Zap size={20} className="text-[#5B9DFF]" />
-            {categoryTitles[activeType]}
-          </h2>
-          <p className="text-gray-400 text-sm">{categoryDescriptions[activeType]}</p>
+        <div className="mb-3">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            {React.createElement(categoryIcons[activeType], { size: 16, className: "text-[#5B9DFF]" })}
+            <h2 className="text-white text-sm font-medium">{categoryTitles[activeType]}</h2>
+          </div>
+          <p className="text-gray-400 text-xs">{categoryDescriptions[activeType]}</p>
         </div>
       )}
 
       {/* Отображаем соответствующий раздел */}
       {activeCategory === "shop" && (
-        <>
+        <div className="space-y-3">
           {/* Список майнеров по категориям */}
-          {activeType === "basic" && (
-            <MinerCategory
-              miners={filteredModels.basic || []}
-              onBuy={handleBuyMiner}
-              userBalance={balance}
-              loading={loading}
-              userMiners={userMiners}
-              hasMinerPass={hasMinerPass}
-            />
-          )}
-          {activeType === "advanced" && (
-            <MinerCategory
-              miners={filteredModels.advanced || []}
-              onBuy={handleBuyMiner}
-              userBalance={balance}
-              loading={loading}
-              userMiners={userMiners}
-              hasMinerPass={hasMinerPass}
-            />
-          )}
-          {activeType === "premium" && (
-            <MinerCategory
-              miners={filteredModels.premium || []}
-              onBuy={handleBuyMiner}
-              userBalance={balance}
-              loading={loading}
-              userMiners={userMiners}
-              hasMinerPass={hasMinerPass}
-            />
-          )}
-        </>
+          {(activeType === "basic"
+            ? filteredModels.basic
+            : activeType === "advanced"
+              ? filteredModels.advanced
+              : filteredModels.premium
+          )?.map((miner) => {
+            // Находим текущее количество этого майнера у пользователя
+            const userMiner = userMiners.find((um) => um.model_id === miner.id)
+            const currentQuantity = userMiner ? userMiner.quantity : 0
+
+            return (
+              <MinerCard
+                key={miner.id}
+                miner={miner}
+                onBuy={handleBuyMiner}
+                userBalance={balance}
+                loading={loading}
+                currentQuantity={currentQuantity}
+                purchaseLimit={miner.purchase_limit}
+                hasMinerPass={hasMinerPass}
+              />
+            )
+          })}
+
+          {/* Если нет майнеров */}
+          {(activeType === "basic" && (!filteredModels.basic || filteredModels.basic.length === 0)) ||
+          (activeType === "advanced" && (!filteredModels.advanced || filteredModels.advanced.length === 0)) ||
+          (activeType === "premium" && (!filteredModels.premium || filteredModels.premium.length === 0)) ? (
+            <div className="text-center py-6 text-gray-400 text-sm">В этой категории пока нет доступных майнеров</div>
+          ) : null}
+        </div>
       )}
 
       {/* Раздел специальных предметов */}
       {activeCategory === "special" && (
         <>
-          <p className="text-gray-500 text-sm mb-6">Уникальные предметы и улучшения для вашего майнинга</p>
-          <SpecialItemsSection
-            items={specialItems}
-            onBuy={handleBuySpecialItem}
-            userBalance={balance}
-            loading={loading}
-            userItems={userSpecialItems}
-          />
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <Sparkles size={16} className="text-yellow-400" />
+            <h2 className="text-white text-sm font-medium">Специальные предметы</h2>
+          </div>
+          <p className="text-gray-400 text-xs mb-3">Уникальные предметы и улучшения для вашего майнинга</p>
+
+          {/* Здесь будет список специальных предметов */}
+          <div className="text-center py-6 text-gray-400 text-sm">Специальные предметы в разработке</div>
         </>
       )}
 
       {/* Заглушки для других разделов */}
       {activeCategory === "premium" && (
-        <div className="text-center py-8 text-gray-400">Премиум раздел находится в разработке</div>
+        <div className="text-center py-6 text-gray-400 text-sm">Премиум раздел находится в разработке</div>
       )}
 
       {activeCategory === "boosts" && (
-        <div className="text-center py-8 text-gray-400">Раздел бустов находится в разработке</div>
+        <div className="text-center py-6 text-gray-400 text-sm">Раздел бустов находится в разработке</div>
       )}
     </div>
   )
