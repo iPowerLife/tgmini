@@ -52,7 +52,7 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-gray-400">
               <Gauge size={16} className="text-green-400" />
-              <span>Эффективность:</span>
+              <span>Эффе��тивность:</span>
             </div>
             <span className="font-medium">
               {miner.efficiency || Math.round((miner.mining_power / miner.energy_consumption) * 10)}%
@@ -260,8 +260,8 @@ const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
   ]
 
   return (
-    <div className="bg-[#0B0E14] border-b border-gray-800">
-      <div className="flex px-4">
+    <div className="bg-[#151B26] rounded-xl p-2 mb-4">
+      <div className="flex gap-2">
         {minerTypes.map((type) => {
           const Icon = type.icon
           const isActive = activeType === type.id
@@ -271,14 +271,17 @@ const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
               key={type.id}
               onClick={() => onTypeChange(type.id)}
               className={`
-                flex items-center gap-2 py-3 px-4
-                transition-all duration-200 relative
-                ${isActive ? "text-[#5B9DFF]" : "text-gray-500 hover:text-gray-400"}
+                flex items-center gap-2 py-2 px-4 rounded-lg flex-1
+                transition-all duration-200
+                ${
+                  isActive
+                    ? "bg-[#1F2937] text-[#5B9DFF] shadow-lg"
+                    : "text-gray-400 hover:bg-[#1A2231] hover:text-gray-300"
+                }
               `}
             >
               <Icon size={16} />
               <span className="text-sm font-medium">{type.name}</span>
-              {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#5B9DFF]" />}
             </button>
           )
         })}
@@ -291,14 +294,14 @@ const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
 const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
   const navCategories = [
     { id: "shop", name: "Магазин", icon: ShoppingCart },
-    { id: "premium", name: "Премиум", icon: Crown },
     { id: "special", name: "Специальные", icon: Sparkles },
+    { id: "premium", name: "Премиум", icon: Crown },
     { id: "boosts", name: "Бусты", icon: Rocket },
   ]
 
   return (
-    <div className="bg-[#0B0E14] border-b border-gray-800">
-      <div className="flex">
+    <div className="bg-[#151B26] rounded-xl p-2 mb-4">
+      <div className="flex gap-2">
         {navCategories.map((category) => {
           const Icon = category.icon
           const isActive = activeCategory === category.id
@@ -308,14 +311,17 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
               key={category.id}
               onClick={() => onCategoryChange(category.id)}
               className={`
-                flex items-center justify-center gap-2 flex-1 py-3 px-4
-                transition-all duration-200 relative
-                ${isActive ? "text-white" : "text-gray-500 hover:text-gray-400"}
+                flex items-center justify-center gap-2 flex-1 py-2 px-4 rounded-lg
+                transition-all duration-200
+                ${
+                  isActive
+                    ? "bg-[#1F2937] text-white shadow-lg"
+                    : "text-gray-400 hover:bg-[#1A2231] hover:text-gray-300"
+                }
               `}
             >
               <Icon size={18} />
               <span className="text-sm font-medium">{category.name}</span>
-              {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />}
             </button>
           )
         })}
@@ -586,105 +592,97 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0E14]">
-      {/* Навигация (теперь не фиксированная) */}
+    <div className="min-h-screen bg-[#0B0E14] p-4">
+      {/* Верхняя панель с балансом */}
+      <div className="bg-[#151B26] rounded-xl p-4 mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#1F2937] flex items-center justify-center">
+            <ShoppingCart className="text-[#5B9DFF]" size={20} />
+          </div>
+          <span className="text-white font-medium">Магазин</span>
+        </div>
+        <div className="flex items-center gap-2 bg-[#1F2937] py-2 px-4 rounded-xl">
+          <span className="text-green-400 font-medium">{balance}</span>
+          <span className="text-gray-400">монет</span>
+        </div>
+      </div>
+
+      {/* Основная навигация */}
       <CategoryNavigation activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
 
       {/* Подкатегории для раздела магазина */}
       {activeCategory === "shop" && <MinerTypesNavigation activeType={activeType} onTypeChange={setActiveType} />}
 
-      {/* Основной контент */}
-      <div className="p-4">
-        {/* Верхняя панель с балансом */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <ShoppingCart className="text-[#5B9DFF]" size={20} />
-            <span className="text-[#5B9DFF] text-xl font-medium">
-              {activeCategory === "shop"
-                ? "Магазин"
-                : activeCategory === "special"
-                  ? "Специальные предметы"
-                  : activeCategory === "premium"
-                    ? "Премиум"
-                    : "Бусты"}
-            </span>
-          </div>
-          <div className="bg-green-500/10 px-3 py-1.5 rounded-lg">
-            <span className="text-green-400 font-medium">{balance} монет</span>
-          </div>
+      {/* Заголовок и описание категории */}
+      {activeCategory === "shop" && (
+        <div className="mb-6">
+          <h2 className="text-white text-xl font-medium flex items-center gap-2 mb-1">
+            <Zap size={20} className="text-[#5B9DFF]" />
+            {categoryTitles[activeType]}
+          </h2>
+          <p className="text-gray-400 text-sm">{categoryDescriptions[activeType]}</p>
         </div>
+      )}
 
-        {/* Заголовок и описание категории */}
-        {activeCategory === "shop" && (
-          <div className="mb-6">
-            <h2 className="text-white text-lg font-medium flex items-center gap-2 mb-1">
-              <Zap size={20} className="text-[#5B9DFF]" />
-              {categoryTitles[activeType]}
-            </h2>
-            <p className="text-gray-500 text-sm">{categoryDescriptions[activeType]}</p>
-          </div>
-        )}
-
-        {/* Отображаем соответствующий раздел */}
-        {activeCategory === "shop" && (
-          <>
-            {/* Список майнеров по категориям */}
-            {activeType === "basic" && (
-              <MinerCategory
-                miners={filteredModels.basic || []}
-                onBuy={handleBuyMiner}
-                userBalance={balance}
-                loading={loading}
-                userMiners={userMiners}
-                hasMinerPass={hasMinerPass}
-              />
-            )}
-            {activeType === "advanced" && (
-              <MinerCategory
-                miners={filteredModels.advanced || []}
-                onBuy={handleBuyMiner}
-                userBalance={balance}
-                loading={loading}
-                userMiners={userMiners}
-                hasMinerPass={hasMinerPass}
-              />
-            )}
-            {activeType === "premium" && (
-              <MinerCategory
-                miners={filteredModels.premium || []}
-                onBuy={handleBuyMiner}
-                userBalance={balance}
-                loading={loading}
-                userMiners={userMiners}
-                hasMinerPass={hasMinerPass}
-              />
-            )}
-          </>
-        )}
-
-        {/* Раздел специальных предметов */}
-        {activeCategory === "special" && (
-          <>
-            <p className="text-gray-500 text-sm mb-6">Уникальные предметы и улучшения для вашего майнинга</p>
-            <SpecialItemsSection
-              items={specialItems}
-              onBuy={handleBuySpecialItem}
+      {/* Отображаем соответствующий раздел */}
+      {activeCategory === "shop" && (
+        <>
+          {/* Список майнеров по категориям */}
+          {activeType === "basic" && (
+            <MinerCategory
+              miners={filteredModels.basic || []}
+              onBuy={handleBuyMiner}
               userBalance={balance}
               loading={loading}
-              userItems={userSpecialItems}
+              userMiners={userMiners}
+              hasMinerPass={hasMinerPass}
             />
-          </>
-        )}
+          )}
+          {activeType === "advanced" && (
+            <MinerCategory
+              miners={filteredModels.advanced || []}
+              onBuy={handleBuyMiner}
+              userBalance={balance}
+              loading={loading}
+              userMiners={userMiners}
+              hasMinerPass={hasMinerPass}
+            />
+          )}
+          {activeType === "premium" && (
+            <MinerCategory
+              miners={filteredModels.premium || []}
+              onBuy={handleBuyMiner}
+              userBalance={balance}
+              loading={loading}
+              userMiners={userMiners}
+              hasMinerPass={hasMinerPass}
+            />
+          )}
+        </>
+      )}
 
-        {/* Заглушки для других разделов */}
-        {activeCategory === "premium" && (
-          <div className="text-center py-8 text-gray-400">Премиум раздел находится в разработке</div>
-        )}
+      {/* Раздел специальных предметов */}
+      {activeCategory === "special" && (
+        <>
+          <p className="text-gray-500 text-sm mb-6">Уникальные предметы и улучшения для вашего майнинга</p>
+          <SpecialItemsSection
+            items={specialItems}
+            onBuy={handleBuySpecialItem}
+            userBalance={balance}
+            loading={loading}
+            userItems={userSpecialItems}
+          />
+        </>
+      )}
 
-        {activeCategory === "boosts" && (
-          <div className="text-center py-8 text-gray-400">Раздел бустов находится в разработке</div>
-        )}
-      </div>
+      {/* Заглушки для других разделов */}
+      {activeCategory === "premium" && (
+        <div className="text-center py-8 text-gray-400">Премиум раздел находится в разработке</div>
+      )}
+
+      {activeCategory === "boosts" && (
+        <div className="text-center py-8 text-gray-400">Раздел бустов находится в разработке</div>
+      )}
     </div>
   )
 }
