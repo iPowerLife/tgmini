@@ -11,10 +11,8 @@ import {
   Rocket,
   Shield,
   Cpu,
-  Layers,
   Gem,
   Droplet,
-  Flame,
   Bolt,
   Coins,
   Loader,
@@ -25,16 +23,13 @@ import {
 } from "lucide-react"
 import { supabase } from "../supabase"
 
-// Обновляем компонент карточки майнера с цветовой схемой в зависимости от типа
+// Обновляем компонент карточки майнера, убирая поля Энергия, Эффект и Количество
 const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purchaseLimit, hasMinerPass, minerType }) => {
   // Проверяем, может ли пользователь купить майнер
   const canBuy = userBalance >= miner.price
 
   // Проверяем, не достигнут ли лимит
   const limitReached = purchaseLimit !== null && currentQuantity >= purchaseLimit && !hasMinerPass
-
-  // Текст для кнопки при достижении лимита
-  const limitText = hasMinerPass ? `${currentQuantity}` : `${currentQuantity}/${purchaseLimit}`
 
   // Цветовые схемы для разных типов майнеров
   const colorSchemes = {
@@ -74,39 +69,20 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
       </div>
 
       <div className={`bg-[#0F1520] rounded-lg p-3 mb-3 bg-gradient-to-br ${colorScheme.gradient}`}>
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-3">
           <div className={`w-16 h-16 ${colorScheme.iconBg} rounded-lg flex items-center justify-center`}>
             <Cpu className={colorScheme.icon} size={32} />
           </div>
-          <div className="flex-1 grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-1.5">
+          <div className="flex-1">
+            <div className="flex items-center gap-1.5 mb-2">
               <Bolt size={14} className={colorScheme.icon} />
               <span className="text-xs text-gray-400">Хешрейт:</span>
               <span className="text-xs font-medium ml-auto">{miner.mining_power}</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Flame size={14} className="text-orange-400" />
-              <span className="text-xs text-gray-400">Энергия:</span>
-              <span className="text-xs font-medium ml-auto">{miner.energy_consumption}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Gauge size={14} className="text-green-400" />
-              <span className="text-xs text-gray-400">Эффект:</span>
-              <span className="text-xs font-medium ml-auto">
-                {miner.efficiency || Math.round((miner.mining_power / miner.energy_consumption) * 10)}%
-              </span>
-            </div>
-            {purchaseLimit !== null && (
-              <div className="flex items-center gap-1.5">
-                <Layers size={14} className="text-yellow-400" />
-                <span className="text-xs text-gray-400">Кол-во:</span>
-                <span className={`text-xs font-medium ml-auto ${limitReached ? "text-red-400" : ""}`}>{limitText}</span>
-              </div>
-            )}
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-3">
           <div className="flex items-center gap-1.5">
             <Coins size={14} className="text-yellow-400" />
             <span className="text-sm font-medium text-yellow-400">{miner.price}</span>
@@ -630,14 +606,24 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
       {/* Подкатегории для раздела магазина */}
       {activeCategory === "shop" && <MinerTypesNavigation activeType={activeType} onTypeChange={setActiveType} />}
 
-      {/* Заголовок и описание категории */}
+      {/* Заголовок и описание категории с информацией о доступном количестве */}
       {activeCategory === "shop" && (
         <div className="mb-3 h-14">
-          {" "}
-          {/* Добавлена фиксированная высота */}
           <div className="flex items-center gap-1.5 mb-0.5">
             {React.createElement(categoryIcons[activeType], { size: 16, className: "text-[#5B9DFF]" })}
             <h2 className="text-white text-sm font-medium">{categoryTitles[activeType]}</h2>
+
+            {/* Добавляем информацию о доступном количестве */}
+            {activeType && filteredModels[activeType] && (
+              <span className="text-xs text-gray-400 ml-auto">
+                Доступно: {filteredModels[activeType].length}{" "}
+                {filteredModels[activeType].length === 1
+                  ? "модель"
+                  : filteredModels[activeType].length >= 2 && filteredModels[activeType].length <= 4
+                    ? "модели"
+                    : "моделей"}
+              </span>
+            )}
           </div>
           <p className="text-gray-400 text-xs">{categoryDescriptions[activeType]}</p>
         </div>
