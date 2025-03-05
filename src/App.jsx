@@ -55,6 +55,8 @@ function AppContent({
   handleTaskComplete,
   ratingData,
 }) {
+  console.log("AppContent rendered with:", { user, balance, minersData })
+
   return (
     <div className="root-container">
       <ScrollToTop />
