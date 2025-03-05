@@ -93,61 +93,53 @@ const RewardsCollection = ({ hashrate, efficiency, rewards }) => {
   )
 }
 
-// Компонент общей статистики
-const Statistics = ({ stats }) => (
-  <div className="bg-gray-900 rounded-2xl p-4 mb-4">
-    <div className="flex justify-between items-center mb-4">
-      <div className="flex items-center gap-2">
-        <BarChart3 className="text-gray-400" size={20} />
-        <span className="font-medium">Общая статистика</span>
-      </div>
-      <span className="text-gray-400 text-sm">Обновлено</span>
-    </div>
+// Обновленный компонент общей статистики
+const Statistics = ({ minersData }) => {
+  const totalHashrate = minersData?.totalPower || 0
+  const minersCount = minersData?.miners?.length || 0
 
-    <div className="grid grid-cols-2 gap-4 mb-4">
-      <div>
-        <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-          <Zap size={14} />
-          <span>Текущий хешрейт</span>
-          <span className="text-green-500">+2.5%</span>
-        </div>
-        <div className="font-medium">256 TH/s</div>
-      </div>
-      <div>
-        <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-          <Clock size={14} />
-          <span>Средний 24ч</span>
-          <span className="text-green-500">±5%</span>
-        </div>
-        <div className="font-medium">243 TH/s</div>
-      </div>
-    </div>
+  // Вычисляем средний хешрейт, если есть майнеры
+  const averageHashrate = minersCount > 0 ? totalHashrate / minersCount : 0
 
-    <div className="grid grid-cols-3 gap-4">
+  return (
+    <div className="bg-gray-900 rounded-2xl p-4 mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="text-gray-400" size={20} />
+          <span className="font-medium">Общая статистика</span>
+        </div>
+        <span className="text-gray-400 text-sm">Обновлено</span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
+            <Zap size={14} />
+            <span>Текущий хешрейт</span>
+            <span className="text-green-500">+2.5%</span>
+          </div>
+          <div className="font-medium">{totalHashrate} h/s</div>
+        </div>
+        <div>
+          <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
+            <Clock size={14} />
+            <span>Средний хешрейт</span>
+            <span className="text-green-500">±5%</span>
+          </div>
+          <div className="font-medium">{averageHashrate.toFixed(1)} h/s</div>
+        </div>
+      </div>
+
       <div>
         <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
           <Server size={14} />
           <span>Майнеров</span>
         </div>
-        <div className="font-medium">1</div>
-      </div>
-      <div>
-        <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-          <Cpu size={14} />
-          <span>Блоков</span>
-        </div>
-        <div className="font-medium">12</div>
-      </div>
-      <div>
-        <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
-          <Zap size={14} />
-          <span>Мощность</span>
-        </div>
-        <div className="font-medium">3.2 kW</div>
+        <div className="font-medium">{minersCount}</div>
       </div>
     </div>
-  </div>
-)
+  )
+}
 
 // Компонент пула майнинга
 const MiningPool = ({ pools, selectedPool }) => (
@@ -275,7 +267,7 @@ const Miners = ({ miners }) => (
   </div>
 )
 
-// Главная страница
+// Обновленная главная страница
 const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ranksData }) => {
   // Данные для примера
   const rewardsData = [
@@ -286,14 +278,20 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
   ]
 
   return (
-    <div className="home-page bg-black min-h-screen p-4">
-      <RewardsCollection hashrate={256} efficiency={85} rewards={rewardsData} />
+    <div className="home-page">
+      <div className="app-container">
+        <div className="background-gradient"></div>
+        <div className="decorative-circle-1"></div>
+        <div className="decorative-circle-2"></div>
 
-      <Statistics />
+        <RewardsCollection hashrate={minersData?.totalPower || 0} efficiency={85} rewards={rewardsData} />
 
-      <MiningPool />
+        <Statistics minersData={minersData} />
 
-      <Miners />
+        <MiningPool />
+
+        <Miners />
+      </div>
     </div>
   )
 }
