@@ -560,18 +560,14 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
       </div>
 
       {/* Основная навигация - с исправленной кликабельностью */}
-      <CategoryNavigation 
-        key={`nav-${updateCounter}`} 
-        activeCategory={activeCategory} 
-        onCategoryChange={handleCategoryChange} 
+      <CategoryNavigation
+        key={`nav-${updateCounter}`}
+        activeCategory={activeCategory}
+        onCategoryChange={handleCategoryChange}
       />
 
       {/* Подкатегории для раздела магазина */}
       {activeCategory === "shop" && <MinerTypesNavigation activeType={activeType} onTypeChange={setActiveType} />}
-
-      {/* Заголовок и описание категории */}
-      {activeCategory === "shop" && (
-          />}
 
       {/* Заголовок и описание категории */}
       {activeCategory === "shop" && (
@@ -592,7 +588,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
             ? filteredModels.basic
             : activeType === "advanced"
               ? filteredModels.advanced
-              : filteredModels.premium
+              : activeType === "premium"
           )?.map((miner) => {
             // Находим текущее количество этого майнера у пользователя
             const userMiner = userMiners.find((um) => um.model_id === miner.id)
