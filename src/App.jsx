@@ -8,6 +8,8 @@ import { MinersList } from "./components/miners-list"
 import { supabase } from "./supabase"
 import HomePage from "./pages/home-page" // Импортируем новую главную страницу
 import { Shop } from "./components/shop" // Обновленный импорт Shop
+// Добавьте этот импорт в начало файла, вместе с другими импортами
+import { useMinerPass } from "./hooks/useMinerPass"
 
 // Ленивая загрузка тяжелых компонентов
 const TasksSection = lazy(() =>
@@ -56,9 +58,13 @@ function AppContent({
   ratingData,
   transactionsData,
   ranksData,
+  hasMinerPass, // Добавьте этот параметр
 }) {
-  console.log("AppContent rendered with:", { user, balance, minersData, ratingData, ranksData })
+  console.log("AppContent rendered with:", { user, balance, minersData, ratingData, ranksData, hasMinerPass })
 
+  // Остальной код AppContent остается без изменений
+
+  // В маршруте /shop передайте hasMinerPass в компонент Shop
   return (
     <div className="root-container">
       <ScrollToTop />
@@ -112,6 +118,7 @@ function AppContent({
                     onPurchase={handleBalanceUpdate}
                     categories={shopData.categories}
                     models={shopData.models}
+                    hasMinerPass={hasMinerPass} // Добавьте этот проп
                   />
                 </div>
               </div>
@@ -164,6 +171,7 @@ function AppContent({
 }
 
 function App() {
+  // Существующие состояния и хуки остаются без изменений
   const [user, setUser] = useState(null)
   const [balance, setBalance] = useState(0)
   const [error, setError] = useState(null)
@@ -177,6 +185,9 @@ function App() {
   const [transactionsData, setTransactionsData] = useState({ transactions: [] })
   // Добавим новое состояние для рангов и функцию их загрузки
   const [ranksData, setRanksData] = useState({ ranks: [] })
+
+  // Добавьте хук для проверки Miner Pass
+  const { hasMinerPass } = useMinerPass(user?.id)
 
   // Загрузка данных магазина
   const loadShopData = useCallback(async () => {
@@ -578,6 +589,7 @@ function App() {
         ratingData={ratingData}
         transactionsData={transactionsData}
         ranksData={ranksData}
+        hasMinerPass={hasMinerPass} // Добавьте этот проп
       />
     )
   }, [
@@ -591,6 +603,7 @@ function App() {
     ratingData,
     transactionsData,
     ranksData,
+    hasMinerPass, // Добавьте эту зависимость
   ])
 
   if (loading) {
