@@ -131,12 +131,12 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
   )
 }
 
-// Обновляем компонент навигации по типам майнеров
+// Обновляем компонент навигации по типам майнеров с более короткими названиями
 const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
   const minerTypes = [
     {
       id: "basic",
-      name: "Базовый",
+      name: "Basic",
       icon: Zap,
       color: "blue",
       gradient: "from-blue-600/20 to-blue-500/5",
@@ -145,7 +145,7 @@ const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
     },
     {
       id: "advanced",
-      name: "Продвинутый",
+      name: "Pro",
       icon: Gauge,
       color: "purple",
       gradient: "from-purple-600/20 to-purple-500/5",
@@ -154,7 +154,7 @@ const MinerTypesNavigation = ({ activeType, onTypeChange }) => {
     },
     {
       id: "premium",
-      name: "Премиум",
+      name: "Premium",
       icon: Crown,
       color: "yellow",
       gradient: "from-yellow-600/20 to-yellow-500/5",
@@ -563,9 +563,9 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
 
   // Заголовки для категорий
   const categoryTitles = {
-    basic: "Базовые майнеры",
-    advanced: "Продвинутые майнеры",
-    premium: "Премиум майнеры",
+    basic: "Basic майнеры",
+    advanced: "Pro майнеры",
+    premium: "Premium майнеры",
   }
 
   // Иконки для категорий
