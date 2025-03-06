@@ -5,14 +5,23 @@ import { HardDrive, Zap, Battery, Clock, Gauge, ChevronDown, ChevronUp } from "l
 
 export const MyMiners = ({ miners = [], miningStats = {} }) => {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [debugInfo, setDebugInfo] = useState(null)
 
   // Подробное логирование для отладки
   useEffect(() => {
     console.log("MyMiners component received miners:", miners)
+
     if (miners && miners.length > 0) {
-      console.log("First miner example with all properties:", JSON.stringify(miners[0], null, 2))
+      const firstMiner = miners[0]
+      console.log("First miner example:", firstMiner)
+
+      // Сохраняем информацию о структуре данных для отображения
+      setDebugInfo({
+        minerKeys: Object.keys(firstMiner),
+        minerExample: JSON.stringify(firstMiner, null, 2),
+      })
     }
-  }, [miners, miningStats])
+  }, [miners])
 
   // Проверка на валидность данных
   const validMiners = Array.isArray(miners) && miners.length > 0
@@ -34,54 +43,69 @@ export const MyMiners = ({ miners = [], miningStats = {} }) => {
     )
   }
 
-  // Безопасный доступ к свойствам
-  const getSafe = (obj, path, defaultValue = 0) => {
-    try {
-      const parts = path.split(".")
-      let result = obj
-      for (const part of parts) {
-        result = result[part]
-        if (result === undefined || result === null) return defaultValue
-      }
-      return result
-    } catch (e) {
-      return defaultValue
-    }
-  }
-
-  // Рассчитываем общую мощность и потребление
-  const totalPower = miners.reduce((sum, miner) => {
-    const power = getSafe(miner, "mining_power", 0)
-    const quantity = getSafe(miner, "quantity", 1)
-    return sum + power * quantity
-  }, 0)
-
-  const totalConsumption = miners.reduce((sum, miner) => {
-    const consumption = getSafe(miner, "energy_consumption", 0)
-    const quantity = getSafe(miner, "quantity", 1)
-    return sum + consumption * quantity
-  }, 0)
-
-  // Используем данные из miningStats, если они есть, иначе рассчитываем
-  const hourlyIncome = getSafe(miningStats, "hourly_rate", totalPower * 0.5)
-  const efficiency = totalConsumption > 0 ? totalPower / totalConsumption : 0
-
   // Форматируем числа
   const formatNumber = (num) => {
     if (isNaN(num) || num === null || num === undefined) return "0.00"
     return Number.parseFloat(num).toFixed(2)
   }
 
-  // Получаем название майнера
-  const getMinerName = (miner) => {
-    // Проверяем все возможные свойства, где может быть название
-    if (miner.model_name) return miner.model_name
-    if (miner.name) return miner.name
-    if (miner.display_name) return miner.display_name
+  // Пытаемся определить общую мощность и потребление
+  let totalPower = 0
+  let totalConsumption = 0
 
-    // Если есть модель, используем её
-    const modelId = miner.model_id || miner.id || "unknown"
-    return `Майнер #${modelId}`
+  // Пробуем разные варианты структуры данных
+  miners.forEach((miner) => {
+    // Вариант 1: прямые свойства
+    if (typeof miner.mining_power === "number" && typeof miner.quantity === "number") {
+      totalPower += miner.mining_power * miner.quantity
+    }
+    // Вариант 2: вложенные свойства
+    else if (miner.model && typeof miner.model.mining_power === "number" && typeof miner.quantity === "number") {
+      totalPower += miner.model.mining_power * miner.quantity
+    }
+    // Вариант 3: другие имена свойств
+    else if (typeof miner.power === "number" && typeof miner.count === "number") {
+      totalPower += miner.power * miner.count
+    }
+    // Вариант 4: другие имена свойств
+    else if (typeof miner.hashrate === "number" && typeof miner.quantity === "number") {
+      totalPower += miner.hashrate * miner.quantity
+    }
+
+    // Аналогично для потребления энергии
+    if (typeof miner.energy_consumption === "number" && typeof miner.quantity === "number") {
+      totalConsumption += miner.energy_consumption * miner.quantity
+    } else if (
+      miner.model &&
+      typeof miner.model.energy_consumption === "number" &&
+      typeof miner.quantity === "number"
+    ) {
+      totalConsumption += miner.model.energy_consumption * miner.quantity
+    } else if (typeof miner.consumption === "number" && typeof miner.quantity === "number") {
+      totalConsumption += miner.consumption * miner.quantity
+    } else if (typeof miner.energy === "number" && typeof miner.quantity === "number") {
+      totalConsumption += miner.energy * miner.quantity
+    }
+  })
+
+  // Используем данные из miningStats, если они есть, иначе рассчитываем
+  const hourlyIncome = miningStats.hourly_rate || totalPower * 0.5
+  const efficiency = totalConsumption > 0 ? totalPower / totalConsumption : 0
+
+  // Функция для получения значения свойства с учетом разных возможных структур
+  const getMinerProperty = (miner, propertyNames, defaultValue = 0) => {
+    for (const name of propertyNames) {
+      // Проверяем прямое свойство
+      if (miner[name] !== undefined && miner[name] !== null) {
+        return miner[name]
+      }
+
+      // Проверяем вложенное свойство model.name
+      if (miner.model && miner.model[name] !== undefined && miner.model[name] !== null) {
+        return miner.model[name]
+      }
+    }
+    return defaultValue
   }
 
   return (
@@ -145,12 +169,11 @@ export const MyMiners = ({ miners = [], miningStats = {} }) => {
       {isExpanded && (
         <div className="space-y-2">
           {miners.map((miner, index) => {
-            const minerName = getMinerName(miner)
-            const miningPower = getSafe(miner, "mining_power", 0)
-            const quantity = getSafe(miner, "quantity", 1)
-            const energyConsumption = getSafe(miner, "energy_consumption", 0)
-            const totalPower = miningPower * quantity
-            const totalConsumption = energyConsumption * quantity
+            // Пытаемся получить все возможные свойства
+            const name = getMinerProperty(miner, ["model_name", "name", "display_name"], `Майнер #${index + 1}`)
+            const power = getMinerProperty(miner, ["mining_power", "power", "hashrate"], 0)
+            const quantity = getMinerProperty(miner, ["quantity", "count"], 1)
+            const consumption = getMinerProperty(miner, ["energy_consumption", "consumption", "energy"], 0)
 
             return (
               <div key={miner.id || index} className="bg-[#1A2234] rounded-lg p-3">
@@ -160,20 +183,28 @@ export const MyMiners = ({ miners = [], miningStats = {} }) => {
                       <HardDrive size={16} className="text-purple-400" />
                     </div>
                     <div>
-                      <div className="text-sm text-white">{minerName}</div>
+                      <div className="text-sm text-white">{name}</div>
                       <div className="text-xs text-gray-400">
-                        {formatNumber(miningPower)} H/s × {quantity} шт.
+                        {formatNumber(power)} H/s × {quantity} шт.
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-white">{formatNumber(totalPower)} H/s</div>
-                    <div className="text-xs text-gray-400">{formatNumber(totalConsumption)} W</div>
+                    <div className="text-sm text-white">{formatNumber(power * quantity)} H/s</div>
+                    <div className="text-xs text-gray-400">{formatNumber(consumption * quantity)} W</div>
                   </div>
                 </div>
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Отладочная информация */}
+      {isExpanded && debugInfo && (
+        <div className="mt-3 p-2 bg-[#1A2234] rounded-lg text-xs text-gray-400">
+          <div>Доступные свойства майнера: {debugInfo.minerKeys.join(", ")}</div>
+          <pre className="mt-1 overflow-x-auto">{debugInfo.minerExample}</pre>
         </div>
       )}
     </div>
