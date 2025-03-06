@@ -70,11 +70,18 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     if (!userId || !isComponentMounted.current) return
 
     try {
-      await supabase.rpc("update_mining_progress", {
-        user_id_param: userId,
-        current_mined_param: currentMined.value,
-        last_update_param: new Date(lastUpdate).toISOString(),
-      })
+      // Вместо RPC используем прямой запрос к таблице
+      const { error } = await supabase
+        .from("mining_stats")
+        .update({
+          current_mined: currentMined.value,
+          last_update: new Date(lastUpdate).toISOString(),
+        })
+        .eq("user_id", userId)
+
+      if (error) {
+        console.error("Error syncing progress:", error)
+      }
     } catch (err) {
       console.error("Error syncing progress:", err)
     }
@@ -90,61 +97,121 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     try {
       setError(null)
 
-      const { data, error } = await supabase.rpc("get_mining_info", {
-        user_id_param: userId,
-      })
+      // Получаем данные о майнинге напрямую из таблиц
+      const { data: miningStats, error: miningStatsError } = await supabase
+        .from("mining_stats")
+        .select("*")
+        .eq("user_id", userId)
+        .single()
+
+      if (miningStatsError) {
+        throw miningStatsError
+      }
+
+      const { data: userInfo, error: userError } = await supabase
+        .from("users")
+        .select("has_miner_pass, balance")
+        .eq("id", userId)
+        .single()
+
+      if (userError) {
+        throw userError
+      }
+
+      const { data: miners, error: minersError } = await supabase.from("miners").select("*").eq("user_id", userId)
+
+      if (minersError) {
+        throw minersError
+      }
+
+      const { data: poolInfo, error: poolError } = await supabase
+        .from("mining_pools")
+        .select("*")
+        .eq("id", miningStats?.pool_id || 1)
+        .single()
+
+      if (poolError && poolError.code !== "PGRST116") {
+        // Игнорируем ошибку "не найдено"
+        throw poolError
+      }
+
+      // Рассчитываем общий хешрейт
+      const totalHashrate = miners.reduce((sum, miner) => sum + miner.hashrate, 0)
+
+      // Рассчитываем время до следующего сбора
+      const now = new Date()
+      const lastCollection = miningStats?.last_collection ? new Date(miningStats.last_collection) : null
+      const collectionIntervalHours = getCollectionIntervalHours()
+      const collectionIntervalMs = collectionIntervalHours * 60 * 60 * 1000
+
+      let timeUntilNextCollection = 0
+      if (lastCollection && !userInfo.has_miner_pass) {
+        const nextCollectionTime = new Date(lastCollection.getTime() + collectionIntervalMs)
+        timeUntilNextCollection = Math.max(0, (nextCollectionTime.getTime() - now.getTime()) / 1000)
+      }
+
+      // Собираем все данные в один объект
+      const miningInfo = {
+        miners: miners,
+        total_hashrate: totalHashrate,
+        pool: poolInfo || { display_name: "Стандартный", multiplier: 1, fee_percent: 0 },
+        has_miner_pass: userInfo.has_miner_pass,
+        time_until_next_collection: timeUntilNextCollection,
+        last_collection: miningStats?.last_collection,
+        current_mined: miningStats?.current_mined || 0,
+        last_update: miningStats?.last_update,
+        stats: {
+          total_mined: miningStats?.total_mined || 0,
+          daily_average: miningStats?.daily_average || 0,
+          mining_days: miningStats?.mining_days || 0,
+        },
+      }
 
       if (!isComponentMounted.current) return
 
-      if (error) throw error
-      if (!data) throw new Error("Данные о майнинге не найдены")
-
-      setMiningInfo(data)
+      setMiningInfo(miningInfo)
 
       // Устанавливаем начальные значения из базы данных
-      if (data.current_mined !== undefined) {
+      if (miningInfo.current_mined !== undefined) {
         setCurrentMined({
-          value: Number(data.current_mined) || 0,
-          lastUpdateTime: data.last_update ? new Date(data.last_update).getTime() : Date.now(),
+          value: Number(miningInfo.current_mined) || 0,
+          lastUpdateTime: miningInfo.last_update ? new Date(miningInfo.last_update).getTime() : Date.now(),
         })
       }
-      if (data.last_update) {
-        setLastUpdate(new Date(data.last_update).getTime())
+      if (miningInfo.last_update) {
+        setLastUpdate(new Date(miningInfo.last_update).getTime())
       }
 
       // Проверяем, должен ли майнинг быть активным
-      const canCollect = data.time_until_next_collection === 0 || data.has_miner_pass
+      const canCollect = miningInfo.time_until_next_collection === 0 || miningInfo.has_miner_pass
       setIsMiningActive(!canCollect) // Инвертируем логику: если нельзя собирать, значит майнинг активен
 
-      // Если мы в тестовом режиме, используем интервал в минутах
-      const collectionIntervalHours = getCollectionIntervalHours()
-
-      if (data.time_until_next_collection > 0) {
+      if (miningInfo.time_until_next_collection > 0) {
         // Если мы в тестовом режиме, возможно нужно скорректировать время
         if (systemSettings.test_mode) {
           // Проверяем, не превышает ли оставшееся время тестовый интервал
           const testIntervalSeconds = systemSettings.test_collection_interval_minutes * 60
-          if (data.time_until_next_collection > testIntervalSeconds) {
+          if (miningInfo.time_until_next_collection > testIntervalSeconds) {
             setTimeLeft(testIntervalSeconds * 1000)
           } else {
-            setTimeLeft(data.time_until_next_collection * 1000)
+            setTimeLeft(miningInfo.time_until_next_collection * 1000)
           }
         } else {
-          setTimeLeft(data.time_until_next_collection * 1000)
+          setTimeLeft(miningInfo.time_until_next_collection * 1000)
         }
       } else {
         setTimeLeft(0)
       }
 
       // Обновляем время последнего сбора
-      if (data.last_collection !== lastCollectionTime) {
-        setLastCollectionTime(data.last_collection)
+      if (miningInfo.last_collection !== lastCollectionTime) {
+        setLastCollectionTime(miningInfo.last_collection)
         setCurrentPeriodMined(0)
       }
 
       // Рассчитываем текущую добычу
-      if (data.total_hashrate && !collecting) {
-        const hourlyRate = data.total_hashrate * 0.5 * (data.pool?.multiplier || 1.0)
+      if (miningInfo.total_hashrate && !collecting) {
+        const hourlyRate = miningInfo.total_hashrate * 0.5 * (miningInfo.pool?.multiplier || 1.0)
         const timeSinceLastCollection = lastCollectionTime
           ? (Date.now() - new Date(lastCollectionTime).getTime()) / (1000 * 60 * 60)
           : 0
@@ -273,66 +340,98 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         timeSinceLastCollection,
       })
 
-      const { data, error } = await supabase.rpc("collect_mining_rewards_test", {
-        user_id_param: userId,
-        period_hours_param: collectionIntervalHours,
-        calculated_reward: calculatedReward,
-      })
+      // Получаем текущий баланс пользователя
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("balance, has_miner_pass")
+        .eq("id", userId)
+        .single()
 
-      if (!isComponentMounted.current) return
-
-      if (error) {
-        console.error("Error from collect_mining_rewards:", error)
-        throw error
+      if (userError) {
+        throw userError
       }
 
-      if (data && data.success) {
-        // Вызываем onCollect с новым балансом
-        if (typeof onCollect === "function") {
-          onCollect(data.new_balance)
+      // Проверяем, прошло ли достаточно времени с последнего сбора
+      if (!userData.has_miner_pass && lastCollectionTime) {
+        const lastCollectionDate = new Date(lastCollectionTime)
+        const hoursSinceLastCollection = (now - lastCollectionDate.getTime()) / (1000 * 60 * 60)
+
+        if (hoursSinceLastCollection < collectionIntervalHours) {
+          throw new Error("Слишком рано для сбора наград")
         }
+      }
 
-        // Обновляем локальное состояние
-        if (!miningInfo.has_miner_pass) {
-          // Используем интервал из настроек (в часах или минутах)
-          const intervalMs = collectionIntervalHours * 60 * 60 * 1000
-          setTimeLeft(intervalMs)
-        }
-        setCurrentPeriodMined(0)
-        setCurrentMined({ value: 0, lastUpdateTime: Date.now() }) // Сбрасываем добытые монеты
-        setLastUpdate(Date.now()) // Важно: обновляем время последнего обновления
-        setIsMiningActive(true) // Активируем майнинг после сбора
+      // Обновляем баланс пользователя
+      const newBalance = Number.parseFloat(userData.balance) + calculatedReward
+      const { error: updateUserError } = await supabase.from("users").update({ balance: newBalance }).eq("id", userId)
 
-        // Обновляем lastCollectionTime на текущее время
-        const now = new Date().toISOString()
-        setLastCollectionTime(now)
+      if (updateUserError) {
+        throw updateUserError
+      }
 
-        // Синхронизируем с базой данных
-        await supabase.rpc("update_mining_progress", {
-          user_id_param: userId,
-          current_mined_param: 0,
-          last_update_param: now,
-        })
+      // Обновляем статистику майнинга
+      const nowIso = new Date().toISOString()
+      const { data: miningStats, error: statsError } = await supabase
+        .from("mining_stats")
+        .select("total_mined")
+        .eq("user_id", userId)
+        .single()
 
-        // Обновляем miningInfo локально
-        setMiningInfo((prev) => ({
-          ...prev,
-          last_collection: now,
-          time_until_next_collection: miningInfo.has_miner_pass ? 0 : collectionIntervalHours * 60 * 60,
-          collection_progress: miningInfo.has_miner_pass ? 100 : 0,
+      if (statsError && statsError.code !== "PGRST116") {
+        throw statsError
+      }
+
+      const totalMined = Number.parseFloat(miningStats?.total_mined || 0) + calculatedReward
+
+      const { error: updateStatsError } = await supabase
+        .from("mining_stats")
+        .update({
+          last_collection: nowIso,
           current_mined: 0,
-          last_update: now,
-          stats: {
-            ...prev.stats,
-            total_mined: (Number.parseFloat(prev.stats.total_mined) + calculatedReward).toFixed(2),
-          },
-        }))
+          last_update: nowIso,
+          total_mined: totalMined,
+        })
+        .eq("user_id", userId)
 
-        // Перезагружаем данные
-        loadMiningInfoRef.current()
-      } else {
-        setError(data?.error || "Неизвестная ошибка при сборе наград")
+      if (updateStatsError) {
+        throw updateStatsError
       }
+
+      // Вызываем onCollect с новым балансом
+      if (typeof onCollect === "function") {
+        onCollect(newBalance)
+      }
+
+      // Обновляем локальное состояние
+      if (!miningInfo.has_miner_pass) {
+        // Используем интервал из настроек (в часах или минутах)
+        const intervalMs = collectionIntervalHours * 60 * 60 * 1000
+        setTimeLeft(intervalMs)
+      }
+      setCurrentPeriodMined(0)
+      setCurrentMined({ value: 0, lastUpdateTime: Date.now() }) // Сбрасываем добытые монеты
+      setLastUpdate(Date.now()) // Важно: обновляем время последнего обновления
+      setIsMiningActive(true) // Активируем майнинг после сбора
+
+      // Обновляем lastCollectionTime на текущее время
+      setLastCollectionTime(nowIso)
+
+      // Обновляем miningInfo локально
+      setMiningInfo((prev) => ({
+        ...prev,
+        last_collection: nowIso,
+        time_until_next_collection: miningInfo.has_miner_pass ? 0 : collectionIntervalHours * 60 * 60,
+        collection_progress: miningInfo.has_miner_pass ? 100 : 0,
+        current_mined: 0,
+        last_update: nowIso,
+        stats: {
+          ...prev.stats,
+          total_mined: totalMined.toFixed(2),
+        },
+      }))
+
+      // Перезагружаем данные
+      loadMiningInfoRef.current()
     } catch (err) {
       console.error("Error collecting rewards:", err)
       if (isComponentMounted.current) {
