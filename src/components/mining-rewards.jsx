@@ -15,13 +15,35 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   const [currentMined, setCurrentMined] = useState({ value: 0, lastUpdateTime: Date.now() })
   const [lastUpdate, setLastUpdate] = useState(Date.now())
   const [syncTimeout, setSyncTimeout] = useState(null)
-  const [isMiningActive, setIsMiningActive] = useState(true) // Новое состояние для отслеживания активности майнинга
+  const [isMiningActive, setIsMiningActive] = useState(true)
+  const [systemSettings, setSystemSettings] = useState({ collection_interval_hours: 8 })
 
   // Используем useRef для предотвращения утечек памяти
   const timerRef = useRef(null)
   const miningTimerRef = useRef(null)
   const syncTimeoutRef = useRef(null)
   const isComponentMounted = useRef(true)
+
+  // Загружаем системные настройки
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const { data, error } = await supabase.from("system_settings").select("*").single()
+
+        if (error) {
+          console.error("Error fetching system settings:", error)
+          return
+        }
+
+        if (isComponentMounted.current && data) {
+          setSystemSettings(data)
+        }
+      } catch (err) {
+        console.error("Error loading system settings:", err)
+      }
+    }
+    loadSettings()
+  }, [])
 
   // Функция для синхронизации прогресса с базой данных
   const syncProgressRef = useRef(null)
@@ -31,7 +53,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     try {
       await supabase.rpc("update_mining_progress", {
         user_id_param: userId,
-        current_mined_param: currentMined,
+        current_mined_param: currentMined.value,
         last_update_param: new Date(lastUpdate).toISOString(),
       })
     } catch (err) {
@@ -93,7 +115,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         const timeSinceLastCollection = lastCollectionTime
           ? (Date.now() - new Date(lastCollectionTime).getTime()) / (1000 * 60 * 60)
           : 0
-        const minedAmount = hourlyRate * Math.min(timeSinceLastCollection, 8)
+        const minedAmount = hourlyRate * Math.min(timeSinceLastCollection, systemSettings.collection_interval_hours)
         setCurrentPeriodMined(Math.round(minedAmount * 100) / 100)
       }
     } catch (err) {
@@ -201,15 +223,20 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
       // Рассчитываем награду на основе времени и хешрейта
       const now = Date.now()
-      const collectionTime = lastCollectionTime ? new Date(lastCollectionTime).getTime() : now - 8 * 60 * 60 * 1000
-      const timeSinceLastCollection = Math.min((now - collectionTime) / (1000 * 60 * 60), 8) // в часах, максимум 8 часов
+      const collectionTime = lastCollectionTime
+        ? new Date(lastCollectionTime).getTime()
+        : now - systemSettings.collection_interval_hours * 60 * 60 * 1000
+      const timeSinceLastCollection = Math.min(
+        (now - collectionTime) / (1000 * 60 * 60),
+        systemSettings.collection_interval_hours,
+      )
       const hourlyRate = totalHashrate * 0.5 * (miningInfo.pool?.multiplier || 1.0)
       const calculatedReward = hourlyRate * timeSinceLastCollection
 
-      const { data, error } = await supabase.rpc("collect_mining_rewards_period_hours_param", {
+      const { data, error } = await supabase.rpc("collect_mining_rewards", {
         user_id_param: userId,
-        period_hours_param: 8,
-        calculated_reward: calculatedReward, // Передаем рассчитанную награду
+        period_hours_param: systemSettings.collection_interval_hours,
+        calculated_reward: calculatedReward,
       })
 
       if (!isComponentMounted.current) return
@@ -224,7 +251,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
         // Обновляем локальное состояние
         if (!miningInfo.has_miner_pass) {
-          setTimeLeft(8 * 60 * 60 * 1000)
+          setTimeLeft(systemSettings.collection_interval_hours * 60 * 60 * 1000)
         }
         setCurrentPeriodMined(0)
         setCurrentMined({ value: 0, lastUpdateTime: Date.now() }) // Сбрасываем добытые монеты
@@ -246,7 +273,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         setMiningInfo((prev) => ({
           ...prev,
           last_collection: now,
-          time_until_next_collection: miningInfo.has_miner_pass ? 0 : 8 * 60 * 60,
+          time_until_next_collection: miningInfo.has_miner_pass
+            ? 0
+            : systemSettings.collection_interval_hours * 60 * 60,
           collection_progress: miningInfo.has_miner_pass ? 100 : 0,
           current_mined: 0,
           last_update: now,
@@ -281,7 +310,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   // Рассчитываем прогресс для прогресс-бара
   const calculateProgress = () => {
     if (!timeLeft || miningInfo?.has_miner_pass) return 100
-    const totalTime = 8 * 60 * 60 * 1000 // 8 часов в миллисекундах
+    const totalTime = systemSettings.collection_interval_hours * 60 * 60 * 1000 // часы в миллисекундах
     const progress = (timeLeft / totalTime) * 100
     return 100 - progress // Инвертируем прогресс
   }
