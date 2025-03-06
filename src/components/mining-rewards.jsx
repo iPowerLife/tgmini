@@ -62,7 +62,10 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
       // Устанавливаем начальные значения из базы данных
       if (data.current_mined !== undefined) {
-        setCurrentMined(Number(data.current_mined))
+        setCurrentMined({
+          value: Number(data.current_mined) || 0,
+          lastUpdateTime: data.last_update ? new Date(data.last_update).getTime() : Date.now(),
+        })
       }
       if (data.last_update) {
         setLastUpdate(new Date(data.last_update).getTime())
@@ -139,7 +142,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       if (miningTimerRef.current) clearInterval(miningTimerRef.current)
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
     }
-  }, [userId])
+  }, [userId, loadMiningInfo])
 
   // Обновляем значение добытых монет каждую секунду и синхронизируем с базой данных
   useEffect(() => {
@@ -153,18 +156,17 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       const timeDiff = (now - lastUpdate) / 1000 / 3600 // разница в часах
 
       // Базовая ставка 0.5 монет за единицу хешрейта в час
-      const newMined = totalHashrate * 0.5 * poolMultiplier * timeDiff
+      const newMined = (totalHashrate || 0) * 0.5 * (poolMultiplier || 1) * timeDiff
 
       setCurrentMined((prev) => {
-        // Проверяем, не было ли сброса
         if (lastUpdate > prev.lastUpdateTime) {
           return {
-            value: newMined,
+            value: newMined || 0,
             lastUpdateTime: now,
           }
         }
         return {
-          value: prev.value + newMined,
+          value: prev.value + newMined || 0,
           lastUpdateTime: now,
         }
       })
@@ -205,9 +207,17 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       setCollecting(true)
       setError(null)
 
+      // Рассчитываем награду на основе времени и хешрейта
+      const now = Date.now()
+      const collectionTime = lastCollectionTime ? new Date(lastCollectionTime).getTime() : now - 8 * 60 * 60 * 1000
+      const timeSinceLastCollection = Math.min((now - collectionTime) / (1000 * 60 * 60), 8) // в часах, максимум 8 часов
+      const hourlyRate = totalHashrate * 0.5 * (miningInfo.pool?.multiplier || 1.0)
+      const calculatedReward = hourlyRate * timeSinceLastCollection
+
       const { data, error } = await supabase.rpc("collect_mining_rewards", {
         user_id_param: userId,
         period_hours_param: 8,
+        calculated_reward: calculatedReward, // Передаем рассчитанную награду
       })
 
       if (!isComponentMounted.current) return
@@ -236,7 +246,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         // Синхронизируем с базой данных
         await supabase.rpc("update_mining_progress", {
           user_id_param: userId,
-          current_mined_param: 0, // Явно устанавливаем 0 в базе данных
+          current_mined_param: 0,
           last_update_param: now,
         })
 
@@ -246,11 +256,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           last_collection: now,
           time_until_next_collection: miningInfo.has_miner_pass ? 0 : 8 * 60 * 60,
           collection_progress: miningInfo.has_miner_pass ? 100 : 0,
-          current_mined: 0, // Добавляем сброс current_mined в miningInfo
-          last_update: now, // Обновляем время последнего обновления
+          current_mined: 0,
+          last_update: now,
           stats: {
             ...prev.stats,
-            total_mined: (Number.parseFloat(prev.stats.total_mined) + data.amount).toFixed(2),
+            total_mined: (Number.parseFloat(prev.stats.total_mined) + calculatedReward).toFixed(2),
           },
         }))
 
