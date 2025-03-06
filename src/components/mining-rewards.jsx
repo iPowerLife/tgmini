@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Coins } from "lucide-react"
 import { supabase } from "../supabase"
 
@@ -14,6 +14,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   const [lastCollectionTime, setLastCollectionTime] = useState(null)
   const [currentMined, setCurrentMined] = useState(0)
   const [lastUpdate, setLastUpdate] = useState(Date.now())
+
+  // Используем useRef для предотвращения утечек памяти
+  const timerRef = useRef(null)
+  const intervalRef = useRef(null)
+  const miningTimerRef = useRef(null)
 
   useEffect(() => {
     if (!userId) return
@@ -62,20 +67,28 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     }
 
     loadMiningInfo()
-    const interval = setInterval(loadMiningInfo, 30 * 1000)
-    const timer = setInterval(() => {
+
+    // Очищаем предыдущие интервалы, если они есть
+    if (intervalRef.current) clearInterval(intervalRef.current)
+    if (timerRef.current) clearInterval(timerRef.current)
+
+    intervalRef.current = setInterval(loadMiningInfo, 30 * 1000)
+    timerRef.current = setInterval(() => {
       setTimeLeft((prev) => (prev <= 1000 ? 0 : prev - 1000))
     }, 1000)
 
     return () => {
-      clearInterval(interval)
-      clearInterval(timer)
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      if (timerRef.current) clearInterval(timerRef.current)
     }
   }, [userId, lastCollectionTime, collecting])
 
   // Обновляем значение добытых монет каждую секунду
   useEffect(() => {
-    const timer = setInterval(() => {
+    // Очищаем предыдущий таймер, если он есть
+    if (miningTimerRef.current) clearInterval(miningTimerRef.current)
+
+    miningTimerRef.current = setInterval(() => {
       const now = Date.now()
       const timeDiff = (now - lastUpdate) / 1000 / 3600 // разница в часах
 
@@ -86,7 +99,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       setLastUpdate(now)
     }, 1000)
 
-    return () => clearInterval(timer)
+    return () => {
+      if (miningTimerRef.current) clearInterval(miningTimerRef.current)
+    }
   }, [totalHashrate, poolMultiplier, lastUpdate])
 
   const formatTime = (ms) => {
@@ -110,19 +125,29 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       if (error) throw error
 
       if (data.success) {
-        onCollect(data.new_balance)
+        // Вызываем onCollect с новым балансом, но не перезагружаем страницу
+        if (typeof onCollect === "function") {
+          onCollect(data.new_balance)
+        }
+
         if (!miningInfo.has_miner_pass) {
           setTimeLeft(8 * 60 * 60 * 1000)
         }
         setCurrentPeriodMined(0)
+        setCurrentMined(0) // Сбрасываем текущую добычу
 
-        const { data: miningData } = await supabase.rpc("get_mining_info", {
-          user_id_param: userId,
-        })
+        // Обновляем данные майнинга без перезагрузки страницы
+        try {
+          const { data: miningData } = await supabase.rpc("get_mining_info", {
+            user_id_param: userId,
+          })
 
-        if (miningData) {
-          setMiningInfo(miningData)
-          setLastCollectionTime(miningData.last_collection)
+          if (miningData) {
+            setMiningInfo(miningData)
+            setLastCollectionTime(miningData.last_collection)
+          }
+        } catch (err) {
+          console.error("Error updating mining info:", err)
         }
       } else {
         setError(data.error)
@@ -183,23 +208,6 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       </div>
 
       {/* Баланс */}
-      {/*
-      <div className="bg-[#0F1729]/90 p-3 rounded-xl space-y-1">
-        <div className="flex items-center gap-1">
-          <span className="text-gray-400">Баланс:</span>
-          <span className="text-white">{balance}</span>
-          <span className="text-blue-400">💎</span>
-        </div>
-        {!miningInfo.has_miner_pass && (
-          <div className="h-0.5 w-full bg-gray-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-1000"
-              style={{ width: `${miningInfo.collection_progress || 0}%` }}
-            />
-          </div>
-        )}
-      </div>
-      */}
       <div className="bg-[#0F1729]/90 p-3 rounded-xl space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
