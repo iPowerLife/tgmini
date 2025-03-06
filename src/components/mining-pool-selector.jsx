@@ -107,6 +107,7 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
 
   return (
     <div className="bg-gray-900 rounded-2xl p-4 mb-4">
+      {/* Заголовок */}
       <div className="flex items-center gap-2 mb-3">
         <Database className="text-blue-500" size={18} />
         <span className="font-medium">Пул майнинга</span>
@@ -122,8 +123,8 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
       )}
 
       {/* Вкладки пулов */}
-      <div className="bg-gray-800/50 rounded-lg p-1 mb-3">
-        <div className="flex">
+      <div className="mb-3">
+        <div className="flex gap-2">
           {pools.map((pool) => {
             const isActive = selectedPool === pool.name
             const isDisabled = isPoolDisabled(pool)
@@ -134,7 +135,7 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
                 onClick={() => !isDisabled && setSelectedPool(pool.name)}
                 disabled={isDisabled}
                 className={`
-                  flex-1 px-3 py-2 text-sm rounded-md transition-all
+                  px-3 py-1.5 text-sm rounded-lg transition-all whitespace-nowrap
                   ${isActive ? "bg-gray-800 text-white" : "text-gray-400 hover:text-white"}
                   ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
                 `}
@@ -147,65 +148,62 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
       </div>
 
       {/* Информация о выбранном пуле */}
-      <div className="bg-gray-800/50 rounded-lg p-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <Database className="text-blue-500" size={16} />
-            <span className="font-medium">{selectedPoolInfo.display_name}</span>
-            <span className="text-sm text-gray-500">
-              {selectedPoolInfo.name === "standard"
-                ? "Базовый пул"
-                : selectedPoolInfo.name === "advanced"
-                  ? "Продвинутый пул"
-                  : "Премиум пул"}
-            </span>
-          </div>
-          {currentPool === selectedPoolInfo.name && <span className="text-xs text-green-400">Активен</span>}
+      <div className="bg-gray-800/50 rounded-lg p-3 space-y-3">
+        {/* Название пула */}
+        <div className="flex items-center gap-2">
+          <Database className="text-blue-500" size={16} />
+          <span className="font-medium">{selectedPoolInfo.display_name}</span>
+          <span className="text-sm text-gray-500">
+            {selectedPoolInfo.name === "standard"
+              ? "Базовый пул"
+              : selectedPoolInfo.name === "advanced"
+                ? "Продвинутый пул"
+                : "Премиум пул"}
+          </span>
+          {currentPool === selectedPoolInfo.name && <span className="text-xs text-green-400 ml-auto">Активен</span>}
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <div className="bg-gray-800 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Zap size={14} className="text-blue-400" />
-              <span className="text-xs text-gray-400">Множитель</span>
-            </div>
-            <div className="text-lg font-medium">{selectedPoolInfo.multiplier}x</div>
+        {/* Множитель и комиссия */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gray-800 rounded-lg p-2 flex items-center">
+            <Zap size={14} className="text-blue-400 mr-2" />
+            <span className="text-xs text-gray-400 mr-2">Множитель</span>
+            <span className="text-sm font-medium ml-auto">{selectedPoolInfo.multiplier}x</span>
           </div>
 
-          <div className="bg-gray-800 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Percent size={14} className="text-blue-400" />
-              <span className="text-xs text-gray-400">Комиссия</span>
-            </div>
-            <div className="text-lg font-medium">{selectedPoolInfo.fee_percent}%</div>
+          <div className="bg-gray-800 rounded-lg p-2 flex items-center">
+            <Percent size={14} className="text-blue-400 mr-2" />
+            <span className="text-xs text-gray-400 mr-2">Комиссия</span>
+            <span className="text-sm font-medium ml-auto">{selectedPoolInfo.fee_percent}%</span>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Users size={14} className="text-gray-400" />
-            <span className="text-sm">
-              {selectedPoolInfo.min_miners > 0 ? (
-                <>Минимум {selectedPoolInfo.min_miners} майнеров</>
-              ) : (
-                <>Нет требований</>
-              )}
-              {selectedPoolInfo.name === "premium" && <span className="text-yellow-400 ml-1">(или Mining Pass)</span>}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Info size={14} className="text-gray-400" />
-            <span className="text-sm text-gray-400">{selectedPoolInfo.description}</span>
-          </div>
+        {/* Требования */}
+        <div className="flex items-center gap-2 text-sm">
+          <Users size={14} className="text-gray-400 shrink-0" />
+          <span className="truncate">
+            {selectedPoolInfo.min_miners > 0 ? (
+              <>Минимум {selectedPoolInfo.min_miners} майнеров</>
+            ) : (
+              <>Нет требований</>
+            )}
+            {selectedPoolInfo.name === "premium" && <span className="text-yellow-400 ml-1">(или Mining Pass)</span>}
+          </span>
         </div>
 
+        {/* Описание */}
+        <div className="flex items-center gap-2 text-sm">
+          <Info size={14} className="text-gray-400 shrink-0" />
+          <span className="text-gray-400 truncate">{selectedPoolInfo.description}</span>
+        </div>
+
+        {/* Кнопка выбора пула */}
         {selectedPool !== currentPool && (
           <button
             onClick={() => handlePoolChange(selectedPoolInfo.name)}
             disabled={isPoolDisabled(selectedPoolInfo) || loading}
             className={`
-              w-full mt-3 py-2 rounded-lg text-sm font-medium transition-all
+              w-full py-2 rounded-lg text-sm font-medium transition-all
               ${
                 isPoolDisabled(selectedPoolInfo) || loading
                   ? "bg-gray-700 text-gray-400 cursor-not-allowed"
