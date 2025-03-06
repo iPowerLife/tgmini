@@ -1,13 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Coins, RefreshCw } from "lucide-react"
+import { Coins } from "lucide-react"
 import { supabase } from "../supabase"
 
 export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 0, poolMultiplier = 1 }) => {
   const [loading, setLoading] = useState(true)
   const [collecting, setCollecting] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
   const [miningInfo, setMiningInfo] = useState(null)
   const [error, setError] = useState(null)
   const [timeLeft, setTimeLeft] = useState(0)
@@ -26,7 +25,6 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     if (!userId || !isComponentMounted.current) return
 
     try {
-      setRefreshing(true)
       setError(null)
 
       const { data, error } = await supabase.rpc("get_mining_info", {
@@ -69,7 +67,6 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     } finally {
       if (isComponentMounted.current) {
         setLoading(false)
-        setRefreshing(false)
       }
     }
   }
@@ -192,13 +189,6 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     }
   }
 
-  // Ручное обновление данных
-  const handleRefresh = () => {
-    if (!refreshing) {
-      loadMiningInfo()
-    }
-  }
-
   // Форматируем число с 8 знаками после запятой
   const formatNumber = (num) => {
     return Number.parseFloat(num).toFixed(8)
@@ -236,19 +226,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
               <span className="text-orange-400 font-medium">{formatTime(timeLeft)}</span>
             )}
             <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="p-1 rounded bg-gray-800 text-white text-sm hover:bg-gray-700 disabled:opacity-50"
-              title="Обновить данные"
-            >
-              <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
-            </button>
-            <button
               onClick={handleCollect}
               disabled={collecting || (timeLeft > 0 && !miningInfo.has_miner_pass)}
               className="px-3 py-1 rounded bg-gray-800 text-white text-sm hover:bg-gray-700 disabled:opacity-50"
             >
-              Собрать
+              {collecting ? "Сбор..." : "Собрать"}
             </button>
           </div>
         </div>
