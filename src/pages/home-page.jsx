@@ -9,7 +9,10 @@ const HomePage = ({ user, minersData, onPurchase }) => {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    console.log("HomePage rendered with user:", user?.id, "and miners:", minersData?.miners?.length)
+    console.log("HomePage rendered with user:", user?.id)
+    console.log("minersData:", minersData)
+    console.log("miners array:", minersData?.miners)
+    console.log("mining stats:", minersData?.stats)
   }, [user, minersData])
 
   // Если пользователь не загружен, показываем загрузку
@@ -25,7 +28,10 @@ const HomePage = ({ user, minersData, onPurchase }) => {
     <div className="container mx-auto px-4 py-6 max-w-lg">
       {/* Компоненты майнинга */}
       <MiningRewards userId={user.id} onCollect={onPurchase} />
-      <MyMiners miners={minersData?.miners || []} miningStats={minersData?.stats || {}} />
+      <MyMiners
+        miners={Array.isArray(minersData?.miners) ? minersData.miners : []}
+        miningStats={typeof minersData?.stats === "object" ? minersData.stats : {}}
+      />
       <MiningPoolSelector userId={user.id} onPoolChange={() => {}} />
     </div>
   )
