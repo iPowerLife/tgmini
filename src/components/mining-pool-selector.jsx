@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Database, Shield, Zap, Percent, AlertCircle } from "lucide-react"
+import { Database, Zap, Percent, AlertCircle, Info, Users } from "lucide-react"
 import { supabase } from "../supabase"
 
 export const MiningPoolSelector = ({ userId, onPoolChange }) => {
   const [loading, setLoading] = useState(true)
   const [pools, setPools] = useState([])
   const [currentPool, setCurrentPool] = useState(null)
+  const [selectedPool, setSelectedPool] = useState(null)
   const [minerCount, setMinerCount] = useState(0)
   const [hasMinerPass, setHasMinerPass] = useState(false)
   const [error, setError] = useState(null)
@@ -30,7 +31,9 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
 
         // Устанавливаем текущий пул и наличие Miner Pass
         if (miningInfo) {
-          setCurrentPool(miningInfo.pool?.name || "standard")
+          const poolName = miningInfo.pool?.name || "standard"
+          setCurrentPool(poolName)
+          setSelectedPool(poolName)
           setHasMinerPass(miningInfo.has_miner_pass || false)
           setMinerCount(miningInfo.miners?.length || 0)
         }
@@ -57,33 +60,36 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
 
   // Смена пула
   const handlePoolChange = async (poolId) => {
-    if (poolId === currentPool) return
+      if (poolId === currentPool) return
 
-    try {
-      setLoading(true)
-      setError(null)
+      setLoading(true) // Fix: Move setLoading(true) before the try block
 
-      const { data, error } = await supabase.rpc("change_mining_pool", {
-        user_id_param: userId,
-        pool_name_param: poolId,
-      })
+      try {
+        setError(null)
 
-      if (error) throw error
+        const { data, error } = await supabase.rpc("change_mining_pool", {
+          user_id_param: userId,
+          pool_name_param: poolId,
+        })
 
-      if (data.success) {
-        setCurrentPool(poolId)
-        if (onPoolChange) onPoolChange(poolId)
-        alert(`Пул майнинга изменен на ${poolId}`)
-      } else {
-        setError(data.error)
+        if (error) throw error
+
+        if (data.success) {
+          setCurrentPool(poolId)
+          if (onPoolChange) onPoolChange(poolId)
+          alert(`Пул майнинга изменен на ${poolId}`)
+        } else {
+          setError(data.error)
+        }
+      } catch (err) {
+        console.error("Error changing pool:", err)
+        setError("Ошибка при смене пула")
+      } finally {
+        setLoading(false)
       }
-    } catch (err) {
-      console.error("Error changing pool:", err)
-      setError("Ошибка при смене пула")
-    } finally {
-      setLoading(false)
-    }
-  }
+    },
+    [currentPool, userId, onPoolChange]
+  )
 
   // Если данные загружаются, показываем индикатор загрузки
   if (loading) {
@@ -100,6 +106,26 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
         </div>
       </div>
     )
+  }
+
+  // Получаем выбранный пул
+  const selectedPoolInfo = pools.find((pool) => pool.name === selectedPool) || pools[0]
+
+  // Определяем цвет для пула
+  const getPoolColor = (poolName) => {
+    switch (poolName) {
+      case "premium":
+        return "yellow"
+      case "advanced":
+        return "purple"
+      default:
+        return "blue"
+    }
+  }
+
+  // Проверяем, доступен ли пул
+  const isPoolDisabled = (pool) => {
+    return pool.min_miners > 0 && minerCount < pool.min_miners && !(pool.name === "premium" && hasMinerPass)
   }
 
   return (
@@ -120,52 +146,85 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
         </div>
       )}
 
-      <div className="space-y-2">
-        {pools.map((pool) => {
-          // Определяем цвет для пула
-          const color = pool.name === "premium" ? "yellow" : pool.name === "advanced" ? "purple" : "blue"
+      <div className="flex">
+        {/* Вертикальные вкладки */}
+        <div className="w-1/4 pr-2">
+          <div className="space-y-1">
+            {pools.map((pool) => {
+              const color = getPoolColor(pool.name)
+              const isActive = selectedPool === pool.name
+              const isDisabled = isPoolDisabled(pool)
 
-          // Проверяем, доступен ли пул
-          const isDisabled =
-            pool.min_miners > 0 && minerCount < pool.min_miners && !(pool.name === "premium" && hasMinerPass)
-
-          return (
-            <div
-              key={pool.id}
-              onClick={() => !isDisabled && !loading && handlePoolChange(pool.name)}
-              className={`
-                bg-gray-800 rounded-lg p-3 border border-${color}-500/20
-                ${currentPool === pool.name ? `bg-${color}-900/30` : ""}
-                ${isDisabled ? "opacity-50" : "cursor-pointer hover:bg-gray-750"}
-              `}
-            >
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full bg-${color}-500`}></div>
-                  <span className="font-medium">{pool.display_name}</span>
+              return (
+                <div
+                  key={pool.id}
+                  onClick={() => !isDisabled && setSelectedPool(pool.name)}
+                  className={`
+                  p-2 rounded-lg text-center text-sm font-medium cursor-pointer
+                  ${isActive ? `bg-${color}-900/30 border border-${color}-500/20` : "bg-gray-800"}
+                  ${isDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-750"}
+                `}
+                >
+                  <div className="flex flex-col items-center">
+                    <div className={`w-2 h-2 rounded-full bg-${color}-500 mb-1`}></div>
+                    <span className="text-xs">{pool.display_name}</span>
+                  </div>
                 </div>
-                {currentPool === pool.name && (
-                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Активен</span>
-                )}
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Информация о выбранном пуле */}
+        <div className="w-3/4 pl-2">
+          <div className={`bg-gray-800 rounded-lg p-3 border border-${getPoolColor(selectedPoolInfo.name)}-500/20`}>
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full bg-${getPoolColor(selectedPoolInfo.name)}-500`}></div>
+                <span className="font-medium">{selectedPoolInfo.display_name}</span>
               </div>
+              {currentPool === selectedPoolInfo.name && (
+                <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Активен</span>
+              )}
+            </div>
 
-              <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
-                <div className="flex items-center gap-1">
-                  <Zap size={12} className={`text-${color}-400`} />
-                  <span>Множитель: {pool.multiplier}x</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Percent size={12} className={`text-${color}-400`} />
-                  <span>Комиссия: {pool.fee_percent}%</span>
-                </div>
-                <div className="col-span-2 flex items-center gap-1">
-                  <Shield size={12} className="text-gray-400" />
-                  <span>{pool.description}</span>
-                </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <Zap size={14} className={`text-${getPoolColor(selectedPoolInfo.name)}-400`} />
+                <span>Множитель: {selectedPoolInfo.multiplier}x</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Percent size={14} className={`text-${getPoolColor(selectedPoolInfo.name)}-400`} />
+                <span>Комиссия: {selectedPoolInfo.fee_percent}%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users size={14} className="text-gray-400" />
+                <span>Мин. майнеров: {selectedPoolInfo.min_miners}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Info size={14} className="text-gray-400" />
+                <span className="text-gray-400">{selectedPoolInfo.description}</span>
               </div>
             </div>
-          )
-        })}
+
+            {selectedPool !== currentPool && (
+              <button
+                onClick={() => handlePoolChange(selectedPoolInfo.name)}
+                disabled={isPoolDisabled(selectedPoolInfo) || loading}
+                className={`
+                w-full mt-3 py-2 rounded-lg text-sm font-medium
+                ${
+                  isPoolDisabled(selectedPoolInfo) || loading
+                    ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                    : `bg-${getPoolColor(selectedPoolInfo.name)}-500/20 text-${getPoolColor(selectedPoolInfo.name)}-400 hover:bg-${getPoolColor(selectedPoolInfo.name)}-500/30`
+                }
+              `}
+              >
+                {loading ? "Загрузка..." : "Выбрать пул"}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

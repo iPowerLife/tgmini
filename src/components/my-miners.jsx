@@ -1,146 +1,130 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, ChevronUp, Cpu, Zap, Flame, Clock, Coins, BarChart3, Hash } from "lucide-react"
+import { HardDrive, ChevronDown, ChevronUp, Zap, Battery, Clock } from "lucide-react"
 
 export const MyMiners = ({ miners = [], miningStats = {} }) => {
-  const [showMiners, setShowMiners] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
 
-  // Рассчитываем общую мощность майнеров
-  const totalPower = miners.reduce((sum, miner) => sum + (miner.model?.mining_power || 0) * (miner.quantity || 1), 0)
+  // Если нет майнеров, показываем сообщение
+  if (!miners || miners.length === 0) {
+    return (
+      <div className="bg-gray-900 rounded-2xl p-4 mb-4">
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-2">
+            <HardDrive className="text-purple-500" size={18} />
+            <span className="font-medium">Мои майнеры</span>
+          </div>
+        </div>
+        <div className="bg-gray-800 rounded-lg p-4 text-center text-gray-400">
+          У вас пока нет майнеров. Приобретите майнеры в магазине, чтобы начать добывать монеты.
+        </div>
+      </div>
+    )
+  }
 
-  // Рассчитываем общее энергопотребление
-  const totalEnergy = miners.reduce(
-    (sum, miner) => sum + (miner.model?.energy_consumption || 0) * (miner.quantity || 1),
-    0,
-  )
+  // Группируем майнеры по категориям
+  const minersByCategory = miners.reduce((acc, miner) => {
+    const category = miner.category || "other"
+    if (!acc[category]) {
+      acc[category] = []
+    }
+    acc[category].push(miner)
+    return acc
+  }, {})
 
-  // Получаем общее количество майнеров (с учетом количества каждого типа)
-  const totalMinersCount = miners.reduce((sum, miner) => sum + (miner.quantity || 1), 0)
+  // Рассчитываем общую мощность и потребление
+  const totalPower = miners.reduce((sum, miner) => sum + miner.mining_power * miner.quantity, 0)
+  const totalConsumption = miners.reduce((sum, miner) => sum + miner.energy_consumption * miner.quantity, 0)
 
-  // Заглушки для данных, которые могут отсутствовать
-  const averageHashrate = miningStats.dailyAverage || Math.round(totalPower * 0.85)
-  const totalCoins = miningStats.totalMined || 1250
-  const totalMiningTime = miningStats.totalTime || "14д 6ч"
+  // Форматируем статистику
+  const formatStat = (value) => {
+    if (value >= 1000000) {
+      return (value / 1000000).toFixed(2) + "M"
+    }
+    if (value >= 1000) {
+      return (value / 1000).toFixed(2) + "K"
+    }
+    return value.toFixed(2)
+  }
 
   return (
     <div className="bg-gray-900 rounded-2xl p-4 mb-4">
-      <div className="flex justify-between items-center mb-3">
+      <div className="flex justify-between items-center mb-3 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <div className="flex items-center gap-2">
-          <Cpu className="text-blue-500" size={18} />
-          <span className="font-medium">Статистика майнинга</span>
+          <HardDrive className="text-purple-500" size={18} />
+          <span className="font-medium">Мои майнеры</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-gray-400">Всего: {miners.length}</span>
+          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </div>
       </div>
 
       {/* Статистика майнинга */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="bg-gray-800 rounded-lg p-3">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Cpu size={14} className="text-blue-400" />
-            <span className="text-xs text-gray-400">Всего майнеров</span>
+          <div className="flex items-center gap-2 mb-1">
+            <Zap size={14} className="text-yellow-500" />
+            <span className="text-sm font-medium">Хешрейт</span>
           </div>
-          <div className="text-lg font-semibold">{totalMinersCount}</div>
+          <div className="text-lg font-semibold">{formatStat(totalPower)} H/s</div>
         </div>
-
         <div className="bg-gray-800 rounded-lg p-3">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Hash size={14} className="text-green-400" />
-            <span className="text-xs text-gray-400">Общий хешрейт</span>
+          <div className="flex items-center gap-2 mb-1">
+            <Battery size={14} className="text-green-500" />
+            <span className="text-sm font-medium">Энергия</span>
           </div>
-          <div className="text-lg font-semibold">{totalPower}</div>
+          <div className="text-lg font-semibold">{formatStat(totalConsumption)} W</div>
         </div>
-
         <div className="bg-gray-800 rounded-lg p-3">
-          <div className="flex items-center gap-1.5 mb-1">
-            <BarChart3 size={14} className="text-purple-400" />
-            <span className="text-xs text-gray-400">Средний за 24ч</span>
+          <div className="flex items-center gap-2 mb-1">
+            <Clock size={14} className="text-blue-500" />
+            <span className="text-sm font-medium">Доход в час</span>
           </div>
-          <div className="text-lg font-semibold">{averageHashrate}</div>
+          <div className="text-lg font-semibold">{formatStat(miningStats.hourly_rate || totalPower * 0.5)} 💎</div>
         </div>
-
         <div className="bg-gray-800 rounded-lg p-3">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Flame size={14} className="text-orange-400" />
-            <span className="text-xs text-gray-400">Энергопотребление</span>
+          <div className="flex items-center gap-2 mb-1">
+            <Zap size={14} className="text-purple-500" />
+            <span className="text-sm font-medium">Эффективность</span>
           </div>
-          <div className="text-lg font-semibold">{totalEnergy}</div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-3">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Coins size={14} className="text-yellow-400" />
-            <span className="text-xs text-gray-400">Добыто монет</span>
+          <div className="text-lg font-semibold">
+            {totalConsumption > 0 ? formatStat(totalPower / totalConsumption) : "N/A"} H/W
           </div>
-          <div className="text-lg font-semibold">{totalCoins}</div>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-3">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Clock size={14} className="text-blue-400" />
-            <span className="text-xs text-gray-400">Общее время</span>
-          </div>
-          <div className="text-lg font-semibold">{totalMiningTime}</div>
         </div>
       </div>
 
-      {/* Кнопка для отображения списка майнеров */}
-      <button
-        onClick={() => setShowMiners(!showMiners)}
-        className="w-full flex items-center justify-center gap-1 text-sm text-blue-400 bg-gray-800 rounded-lg py-2 hover:bg-gray-750 transition-colors mb-3"
-      >
-        {showMiners ? (
-          <>
-            <ChevronUp size={16} />
-            <span>Скрыть майнеры</span>
-          </>
-        ) : (
-          <>
-            <ChevronDown size={16} />
-            <span>Показать мои майнеры ({miners.length})</span>
-          </>
-        )}
-      </button>
-
-      {/* Список майнеров (отображается только если showMiners = true) */}
-      {showMiners && miners.length > 0 && (
-        <div className="space-y-2">
-          {miners.map((miner) => {
-            const categoryName = miner.model?.category?.name?.toLowerCase() || ""
-            const color = categoryName.includes("premium")
-              ? "yellow"
-              : categoryName.includes("advanced")
-                ? "purple"
-                : "blue"
-
-            return (
-              <div key={miner.id} className={`bg-gray-800 rounded-lg p-3 border border-${color}-500/20`}>
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <div className="font-medium">{miner.model?.display_name || miner.model?.name}</div>
-                    <div className="text-xs text-gray-400">{miner.model?.category?.name || "Базовый майнер"}</div>
+      {/* Список майнеров по категориям */}
+      {isExpanded && (
+        <div className="space-y-3">
+          {Object.entries(minersByCategory).map(([category, categoryMiners]) => (
+            <div key={category} className="bg-gray-800 rounded-lg p-3">
+              <div className="text-sm font-medium mb-2 capitalize">{category}</div>
+              <div className="space-y-2">
+                {categoryMiners.map((miner) => (
+                  <div key={miner.id} className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                        <HardDrive size={16} className="text-purple-400" />
+                      </div>
+                      <div>
+                        <div className="text-sm">{miner.model_name || `Майнер #${miner.model_id}`}</div>
+                        <div className="text-xs text-gray-400">
+                          {miner.mining_power} H/s × {miner.quantity} шт.
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium">{miner.mining_power * miner.quantity} H/s</div>
+                      <div className="text-xs text-gray-400">{miner.energy_consumption * miner.quantity} W</div>
+                    </div>
                   </div>
-                  <div className="text-sm bg-gray-700 px-2 py-0.5 rounded">x{miner.quantity}</div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1">
-                    <Zap size={12} className={`text-${color}-400`} />
-                    <span>Мощность: {miner.model?.mining_power || 0}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Flame size={12} className="text-orange-400" />
-                    <span>Энергия: {miner.model?.energy_consumption || 0}</span>
-                  </div>
-                </div>
+                ))}
               </div>
-            )
-          })}
+            </div>
+          ))}
         </div>
-      )}
-
-      {/* Сообщение, если у пользователя нет майнеров */}
-      {showMiners && miners.length === 0 && (
-        <div className="text-center text-gray-400 py-4">У вас пока нет майнеров. Приобретите их в магазине.</div>
       )}
     </div>
   )
