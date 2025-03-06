@@ -143,85 +143,113 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
         </div>
       )}
 
-      <div className="flex">
-        {/* Вертикальные вкладки */}
-        <div className="w-1/4 pr-2">
-          <div className="space-y-1">
-            {pools.map((pool) => {
-              const color = getPoolColor(pool.name)
-              const isActive = selectedPool === pool.name
-              const isDisabled = isPoolDisabled(pool)
+      {/* Горизонтальные вкладки */}
+      <div className="mb-3">
+        <div className="flex overflow-x-auto gap-2 pb-2">
+          {pools.map((pool) => {
+            const color = getPoolColor(pool.name)
+            const isActive = selectedPool === pool.name
+            const isDisabled = isPoolDisabled(pool)
 
-              return (
-                <div
-                  key={pool.id}
-                  onClick={() => !isDisabled && setSelectedPool(pool.name)}
-                  className={`
-                  p-2 rounded-lg text-center text-sm font-medium cursor-pointer
+            return (
+              <div
+                key={pool.id}
+                onClick={() => !isDisabled && setSelectedPool(pool.name)}
+                className={`
+                  flex-shrink-0 px-4 py-2 rounded-lg text-center cursor-pointer transition-all
                   ${isActive ? `bg-${color}-900/30 border border-${color}-500/20` : "bg-gray-800"}
                   ${isDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-750"}
                 `}
-                >
-                  <div className="flex flex-col items-center">
-                    <div className={`w-2 h-2 rounded-full bg-${color}-500 mb-1`}></div>
-                    <span className="text-xs">{pool.display_name}</span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Информация о выбранном пуле */}
-        <div className="w-3/4 pl-2">
-          <div className={`bg-gray-800 rounded-lg p-3 border border-${getPoolColor(selectedPoolInfo.name)}-500/20`}>
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full bg-${getPoolColor(selectedPoolInfo.name)}-500`}></div>
-                <span className="font-medium">{selectedPoolInfo.display_name}</span>
-              </div>
-              {currentPool === selectedPoolInfo.name && (
-                <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Активен</span>
-              )}
-            </div>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <Zap size={14} className={`text-${getPoolColor(selectedPoolInfo.name)}-400`} />
-                <span>Множитель: {selectedPoolInfo.multiplier}x</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Percent size={14} className={`text-${getPoolColor(selectedPoolInfo.name)}-400`} />
-                <span>Комиссия: {selectedPoolInfo.fee_percent}%</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users size={14} className="text-gray-400" />
-                <span>Мин. майнеров: {selectedPoolInfo.min_miners}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Info size={14} className="text-gray-400" />
-                <span className="text-gray-400">{selectedPoolInfo.description}</span>
-              </div>
-            </div>
-
-            {selectedPool !== currentPool && (
-              <button
-                onClick={() => handlePoolChange(selectedPoolInfo.name)}
-                disabled={isPoolDisabled(selectedPoolInfo) || loading}
-                className={`
-                w-full mt-3 py-2 rounded-lg text-sm font-medium
-                ${
-                  isPoolDisabled(selectedPoolInfo) || loading
-                    ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                    : `bg-${getPoolColor(selectedPoolInfo.name)}-500/20 text-${getPoolColor(selectedPoolInfo.name)}-400 hover:bg-${getPoolColor(selectedPoolInfo.name)}-500/30`
-                }
-              `}
               >
-                {loading ? "Загрузка..." : "Выбрать пул"}
-              </button>
-            )}
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full bg-${color}-500`}></div>
+                  <span className="text-sm font-medium whitespace-nowrap">{pool.display_name}</span>
+                  {currentPool === pool.name && (
+                    <span className="text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">Активен</span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Информация о выбранном пуле */}
+      <div className={`bg-gray-800 rounded-lg p-4 border border-${getPoolColor(selectedPoolInfo.name)}-500/20`}>
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded-full bg-${getPoolColor(selectedPoolInfo.name)}-500`}></div>
+            <span className="font-medium text-lg">{selectedPoolInfo.display_name}</span>
           </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className={`bg-gray-750 rounded-lg p-3 border border-${getPoolColor(selectedPoolInfo.name)}-500/10`}>
+            <div className="flex items-center gap-2 mb-1">
+              <Zap size={16} className={`text-${getPoolColor(selectedPoolInfo.name)}-400`} />
+              <span className="text-sm font-medium">Множитель</span>
+            </div>
+            <div className={`text-xl font-bold text-${getPoolColor(selectedPoolInfo.name)}-400`}>
+              {selectedPoolInfo.multiplier}x
+            </div>
+          </div>
+
+          <div className={`bg-gray-750 rounded-lg p-3 border border-${getPoolColor(selectedPoolInfo.name)}-500/10`}>
+            <div className="flex items-center gap-2 mb-1">
+              <Percent size={16} className={`text-${getPoolColor(selectedPoolInfo.name)}-400`} />
+              <span className="text-sm font-medium">Комиссия</span>
+            </div>
+            <div className={`text-xl font-bold text-${getPoolColor(selectedPoolInfo.name)}-400`}>
+              {selectedPoolInfo.fee_percent}%
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Users size={16} className="text-gray-400" />
+            <span className="text-sm font-medium">Требования</span>
+          </div>
+          <div className="bg-gray-750 rounded-lg p-3">
+            <div className="text-sm">
+              {selectedPoolInfo.min_miners > 0 ? (
+                <>
+                  Минимум <span className="font-medium">{selectedPoolInfo.min_miners}</span> майнеров
+                </>
+              ) : (
+                <>Нет требований</>
+              )}
+              {selectedPoolInfo.name === "premium" && <span className="ml-2 text-yellow-400">(или Mining Pass)</span>}
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Info size={16} className="text-gray-400" />
+            <span className="text-sm font-medium">Описание</span>
+          </div>
+          <div className="bg-gray-750 rounded-lg p-3">
+            <div className="text-sm text-gray-300">{selectedPoolInfo.description}</div>
+          </div>
+        </div>
+
+        {selectedPool !== currentPool && (
+          <button
+            onClick={() => handlePoolChange(selectedPoolInfo.name)}
+            disabled={isPoolDisabled(selectedPoolInfo) || loading}
+            className={`
+              w-full py-3 rounded-lg text-sm font-medium transition-all
+              ${
+                isPoolDisabled(selectedPoolInfo) || loading
+                  ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                  : `bg-${getPoolColor(selectedPoolInfo.name)}-500/20 text-${getPoolColor(selectedPoolInfo.name)}-400 hover:bg-${getPoolColor(selectedPoolInfo.name)}-500/30`
+              }
+            `}
+          >
+            {loading ? "Загрузка..." : "Выбрать пул"}
+          </button>
+        )}
       </div>
     </div>
   )
