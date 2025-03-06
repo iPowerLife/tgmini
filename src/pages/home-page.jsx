@@ -3,6 +3,8 @@
 import { useState } from "react"
 import { MiningChart } from "../components/mining-chart"
 import { MyMiners } from "../components/my-miners"
+import { MiningRewards } from "../components/mining-rewards"
+import { MiningPoolSelector } from "../components/mining-pool-selector"
 import { Shield, Check, AlertCircle, TrendingUp } from "lucide-react"
 
 // Встроенный компонент MinerPassInfo
@@ -91,12 +93,19 @@ const MinerPassInfo = ({ userId, hasMinerPass }) => {
 }
 
 // Обновленная главная страница
-const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ranksData }) => {
+const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ranksData, onPurchase }) => {
   const [chartData, setChartData] = useState({
     data: [10, 15, 20, 18, 25, 30, 28, 35],
     labels: ["1/6", "2/6", "3/6", "4/6", "5/6", "6/6", "7/6", "8/6"],
   })
   const [isLoading, setIsLoading] = useState(false) // Изменено на false, чтобы не показывать загрузку при первом рендере
+
+  // Обработчик обновления баланса
+  const handleBalanceUpdate = (newBalance) => {
+    if (onPurchase) {
+      onPurchase(newBalance)
+    }
+  }
 
   // Загрузка данных для графика - закомментируем для упрощения сборки
   /*
@@ -195,6 +204,12 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
             </div>
           </div>
         </div>
+
+        {/* Компонент сбора наград */}
+        <MiningRewards userId={user?.id} onCollect={handleBalanceUpdate} />
+
+        {/* Компонент выбора пула */}
+        <MiningPoolSelector userId={user?.id} onPoolChange={(pool) => console.log("Pool changed:", pool)} />
 
         {/* График майнинга */}
         <MiningChart data={chartData.data} labels={chartData.labels} title="Доход от майнинга (💎 в день)" />
