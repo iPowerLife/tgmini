@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Coins } from "lucide-react"
+import { Coins, Clock, ChevronDown, ChevronUp } from "lucide-react"
 import { supabase } from "../supabase"
 
 export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 0, poolMultiplier = 1 }) => {
@@ -14,6 +14,8 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   const [lastCollectionTime, setLastCollectionTime] = useState(null)
   const [currentMined, setCurrentMined] = useState(0)
   const [lastUpdate, setLastUpdate] = useState(Date.now())
+  const [selectedPeriod, setSelectedPeriod] = useState(null)
+  const [showPeriods, setShowPeriods] = useState(false)
 
   // Используем useRef для предотвращения утечек памяти
   const timerRef = useRef(null)
@@ -80,13 +82,22 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         setCurrentPeriodMined(0)
       }
 
+      // Устанавливаем выбранный период по умолчанию
+      if (data.rewards && data.rewards.length > 0 && !selectedPeriod) {
+        // Выбираем стандартный период (обычно второй в списке)
+        const defaultPeriodIndex = Math.min(1, data.rewards.length - 1)
+        setSelectedPeriod(data.rewards[defaultPeriodIndex])
+      }
+
       // Рассчитываем текущую добычу
       if (data.total_hashrate && !collecting) {
-        const hourlyRate = data.total_hashrate * 0.5 * (data.pool?.multiplier || 1.0)
+        const baseRewardRate = data.settings?.base_reward_rate || 0.5
+        const hourlyRate = data.total_hashrate * baseRewardRate * (data.pool?.multiplier || 1.0)
         const timeSinceLastCollection = lastCollectionTime
           ? (Date.now() - new Date(lastCollectionTime).getTime()) / (1000 * 60 * 60)
           : 0
-        const minedAmount = hourlyRate * Math.min(timeSinceLastCollection, 8)
+        const collectionIntervalHours = data.settings?.collection_interval_hours || 8
+        const minedAmount = hourlyRate * Math.min(timeSinceLastCollection, collectionIntervalHours)
         setCurrentPeriodMined(Math.round(minedAmount * 100) / 100)
       }
     } catch (err) {
@@ -143,9 +154,10 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
       const now = Date.now()
       const timeDiff = (now - lastUpdate) / 1000 / 3600 // разница в часах
+      const baseRewardRate = miningInfo?.settings?.base_reward_rate || 0.5
 
-      // Базовая ставка 0.5 монет за единицу хешрейта в час
-      const newMined = totalHashrate * 0.5 * poolMultiplier * timeDiff
+      // Базовая ставка за единицу хешрейта в час
+      const newMined = totalHashrate * baseRewardRate * poolMultiplier * timeDiff
 
       setCurrentMined((prev) => {
         const updated = prev + newMined
@@ -169,7 +181,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       if (miningTimerRef.current) clearInterval(miningTimerRef.current)
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
     }
-  }, [totalHashrate, poolMultiplier, lastUpdate])
+  }, [totalHashrate, poolMultiplier, lastUpdate, miningInfo])
 
   const formatTime = (ms) => {
     if (!ms) return "00:00:00"
@@ -180,7 +192,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   }
 
   const handleCollect = async () => {
-    if (!userId || !isComponentMounted.current) return
+    if (!userId || !isComponentMounted.current || !selectedPeriod) return
 
     try {
       setCollecting(true)
@@ -188,7 +200,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
       const { data, error } = await supabase.rpc("collect_mining_rewards", {
         user_id_param: userId,
-        period_hours_param: 8,
+        period_hours_param: selectedPeriod.period,
       })
 
       if (!isComponentMounted.current) return
@@ -202,8 +214,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         }
 
         // Обновляем локальное состояние
+        const collectionIntervalHours = miningInfo?.settings?.collection_interval_hours || 8
         if (!miningInfo.has_miner_pass) {
-          setTimeLeft(8 * 60 * 60 * 1000)
+          setTimeLeft(collectionIntervalHours * 60 * 60 * 1000)
         }
         setCurrentPeriodMined(0)
         setCurrentMined(0)
@@ -220,7 +233,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         setMiningInfo((prev) => ({
           ...prev,
           last_collection: now,
-          time_until_next_collection: miningInfo.has_miner_pass ? 0 : 8 * 60 * 60,
+          time_until_next_collection: miningInfo.has_miner_pass ? 0 : collectionIntervalHours * 60 * 60,
           collection_progress: miningInfo.has_miner_pass ? 100 : 0,
           stats: {
             ...prev.stats,
@@ -252,7 +265,8 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   // Рассчитываем прогресс для прогресс-бара
   const calculateProgress = () => {
     if (!timeLeft || miningInfo?.has_miner_pass) return 100
-    const totalTime = 8 * 60 * 60 * 1000 // 8 часов в миллисекундах
+    const collectionIntervalHours = miningInfo?.settings?.collection_interval_hours || 8
+    const totalTime = collectionIntervalHours * 60 * 60 * 1000 // в миллисекундах
     const elapsed = totalTime - timeLeft
     return (elapsed / totalTime) * 100
   }
@@ -280,7 +294,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     <div className="space-y-2">
       {/* Сбор наград */}
       <div className="bg-[#0F1729]/90 p-3 rounded-xl">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Coins className="text-yellow-500" size={16} />
             <span className="text-white">Сбор наград</span>
@@ -289,15 +303,68 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
             {timeLeft > 0 && !miningInfo.has_miner_pass && (
               <span className="text-orange-400 font-medium">{formatTime(timeLeft)}</span>
             )}
-            <button
-              onClick={handleCollect}
-              disabled={collecting || (timeLeft > 0 && !miningInfo.has_miner_pass)}
-              className="px-3 py-1 rounded bg-gray-800 text-white text-sm hover:bg-gray-700 disabled:opacity-50"
-            >
-              {collecting ? "Сбор..." : "Собрать"}
-            </button>
           </div>
         </div>
+
+        {/* Выбор периода сбора */}
+        <div className="mb-2">
+          <div
+            className="flex items-center justify-between bg-gray-800/50 p-2 rounded-lg cursor-pointer"
+            onClick={() => setShowPeriods(!showPeriods)}
+          >
+            <div className="flex items-center gap-2">
+              <Clock size={14} className="text-blue-400" />
+              <span className="text-sm text-gray-300">
+                {selectedPeriod ? `Период: ${selectedPeriod.period} ч` : "Выберите период"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {selectedPeriod && <span className="text-sm text-green-400">+{selectedPeriod.amount} 💎</span>}
+              {showPeriods ? (
+                <ChevronUp size={16} className="text-gray-400" />
+              ) : (
+                <ChevronDown size={16} className="text-gray-400" />
+              )}
+            </div>
+          </div>
+
+          {/* Выпадающий список периодов */}
+          {showPeriods && miningInfo.rewards && (
+            <div className="mt-1 bg-gray-800/30 rounded-lg overflow-hidden">
+              {miningInfo.rewards.map((reward, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center justify-between p-2 cursor-pointer hover:bg-gray-800/70 ${
+                    selectedPeriod?.period === reward.period ? "bg-gray-800/70" : ""
+                  }`}
+                  onClick={() => {
+                    setSelectedPeriod(reward)
+                    setShowPeriods(false)
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Clock size={14} className="text-blue-400" />
+                    <span className="text-sm text-gray-300">{reward.period} ч</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-green-400">+{reward.amount} 💎</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Кнопка сбора */}
+        <button
+          onClick={handleCollect}
+          disabled={collecting || (timeLeft > 0 && !miningInfo.has_miner_pass) || !selectedPeriod}
+          className="w-full py-2 rounded-lg text-sm font-medium transition-all
+            bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400
+            disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {collecting ? "Сбор..." : "Собрать награды"}
+        </button>
       </div>
 
       {/* Баланс */}
