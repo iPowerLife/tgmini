@@ -27,6 +27,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     if (!userId || !isComponentMounted.current) return
 
     try {
+      console.log("Syncing progress to database:", {
+        current_mined: currentMined,
+        last_update: new Date(lastUpdate).toISOString(),
+      })
+
       await supabase.rpc("update_mining_progress", {
         user_id_param: userId,
         current_mined_param: currentMined,
@@ -53,6 +58,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       if (error) throw error
       if (!data) throw new Error("Данные о майнинге не найдены")
 
+      console.log("Mining info loaded:", data)
       setMiningInfo(data)
 
       // Устанавливаем начальные значения из базы данных
@@ -101,6 +107,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     if (!userId) return
 
     isComponentMounted.current = true
+    console.log("MiningRewards component mounted")
 
     const fetchData = async () => {
       await loadMiningInfo()
@@ -119,6 +126,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     }, 1000)
 
     return () => {
+      console.log("MiningRewards component unmounted")
       isComponentMounted.current = false
       if (timerRef.current) clearInterval(timerRef.current)
       if (miningTimerRef.current) clearInterval(miningTimerRef.current)
@@ -260,7 +268,8 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     )
   }
 
-  if (!miningInfo?.miners?.length) {
+  // Проверяем наличие майнеров более надежным способом
+  if (!miningInfo?.miners || miningInfo.miners.length === 0) {
     return (
       <div className="bg-[#0F1729]/90 p-4 rounded-xl">
         <div className="text-sm text-gray-400">У вас пока нет майнеров</div>
