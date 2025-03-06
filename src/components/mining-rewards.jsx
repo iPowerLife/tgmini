@@ -20,7 +20,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   const [isMiningActive, setIsMiningActive] = useState(true)
   const [systemSettings, setSystemSettings] = useState({
     collection_interval_hours: 8,
-    test_mode: false,
+    test_mode: true,
     test_collection_interval_minutes: 1,
   })
 
@@ -458,142 +458,38 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         return
       }
 
-      // Сначала пробуем использовать RPC функции
-      const functionNames = [
-        "collect_mining_rewards",
-        "coll_mining_rewards",
-        "collect_mining_d_hours_param",
-        "collect_mining_rewards_test",
-      ]
+      // Вызываем основную функцию сбора наград
+      const { data, error } = await supabase.rpc("collect_mining_rewards", {
+        user_id_param: userId,
+        calculated_reward: amountToCollect,
+      })
 
-      let success = false
-
-      for (const funcName of functionNames) {
-        console.log(`Trying to call ${funcName}...`)
-        const { data, error } = await supabase.rpc(funcName, {
-          user_id_param: userId,
-          period_hours_param: getCollectionIntervalHours(),
-          calculated_reward: amountToCollect,
-        })
-
-        console.log(`Result of ${funcName}:`, { data, error })
-
-        if (!error) {
-          success = true
-          console.log(`Successfully called ${funcName}:`, data)
-
-          // Обновляем локальное состояние
-          if (typeof onCollect === "function") {
-            onCollect(data.new_balance)
-          }
-
-          // Сбрасываем накопленные монеты
-          setCurrentMined({ value: 0, lastUpdateTime: Date.now() })
-
-          // Устанавливаем новый таймер для обычных пользователей
-          if (!miningInfo.has_miner_pass) {
-            const intervalMs = getCollectionIntervalHours() * 60 * 60 * 1000
-            setTimeLeft(intervalMs)
-          }
-
-          const nowIso = new Date().toISOString()
-          setLastCollectionTime(nowIso)
-          setCurrentPeriodMined(0)
-          setLastUpdate(Date.now())
-
-          // Перезагружаем данные
-          await loadMiningInfo()
-          break
-        }
+      if (error) {
+        console.error("Error collecting rewards:", error)
+        throw new Error(error.message || "Ошибка при сборе наград")
       }
 
-      // Если все RPC вызовы не сработали, используем прямые запросы
-      if (!success) {
-        console.log("All RPC calls failed, using direct queries")
-
-        // Получаем текущий баланс пользователя
-        const { data: userData, error: userError } = await supabase
-          .from("users")
-          .select("balance, has_miner_pass")
-          .eq("id", userId)
-          .single()
-
-        console.log("User data:", userData, "Error:", userError)
-
-        if (userError) throw userError
-
-        // Проверяем время последнего сбора только для пользователей без пропуска
-        if (!userData.has_miner_pass && lastCollectionTime) {
-          const lastCollection = new Date(lastCollectionTime)
-          const now = new Date()
-          const hoursSinceLastCollection = (now - lastCollection) / (1000 * 60 * 60)
-
-          if (hoursSinceLastCollection < getCollectionIntervalHours()) {
-            throw new Error(
-              `Подождите ещё ${formatTime(getCollectionIntervalHours() * 60 * 60 * 1000 - (now - lastCollection))}`,
-            )
-          }
-        }
-
-        // Обновляем баланс пользователя
-        const newBalance = Number.parseFloat(userData.balance) + amountToCollect
-
-        console.log("Updating user balance:", newBalance)
-
-        const { error: updateUserError } = await supabase.from("users").update({ balance: newBalance }).eq("id", userId)
-
-        console.log("Update user result:", updateUserError)
-
-        if (updateUserError) throw updateUserError
-
-        // Обновляем статистику майнинга
-        const nowIso = new Date().toISOString()
-        const { data: miningStats, error: statsError } = await supabase
-          .from("mining_stats")
-          .select("total_mined")
-          .eq("user_id", userId)
-          .single()
-
-        console.log("Mining stats:", miningStats, "Error:", statsError)
-
-        if (statsError && statsError.code !== "PGRST116") {
-          throw statsError
-        }
-
-        const totalMined = Number.parseFloat(miningStats?.total_mined || 0) + amountToCollect
-
-        console.log("Updating mining stats, total mined:", totalMined)
-
-        const { error: updateStatsError } = await supabase
-          .from("mining_stats")
-          .update({
-            last_collection: nowIso,
-            current_mined: 0,
-            last_update: nowIso,
-            total_mined: totalMined,
-          })
-          .eq("user_id", userId)
-
-        console.log("Update stats result:", updateStatsError)
-
-        if (updateStatsError) throw updateStatsError
+      if (data) {
+        console.log("Successfully collected rewards:", data)
 
         // Обновляем локальное состояние
         if (typeof onCollect === "function") {
-          onCollect(newBalance)
+          onCollect(data.new_balance)
         }
 
-        // Сбрасываем накопленные монеты и обновляем состояние
+        // Сбрасываем накопленные монеты
         setCurrentMined({ value: 0, lastUpdateTime: Date.now() })
-        setLastCollectionTime(nowIso)
-        setCurrentPeriodMined(0)
-        setLastUpdate(Date.now())
 
         // Устанавливаем новый таймер для обычных пользователей
-        if (!userData.has_miner_pass) {
+        if (!miningInfo.has_miner_pass) {
           const intervalMs = getCollectionIntervalHours() * 60 * 60 * 1000
           setTimeLeft(intervalMs)
         }
+
+        const nowIso = new Date().toISOString()
+        setLastCollectionTime(nowIso)
+        setCurrentPeriodMined(0)
+        setLastUpdate(Date.now())
 
         // Перезагружаем данные
         await loadMiningInfo()
