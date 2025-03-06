@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Coins, Loader } from "lucide-react"
+import { Coins } from "lucide-react"
 import { supabase } from "../supabase"
 
 export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
@@ -119,9 +119,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
 
   if (loading) {
     return (
-      <div className="bg-[#0B1018] p-4 rounded space-y-2">
+      <div className="p-4 space-y-2">
         <div className="flex justify-center">
-          <Loader className="animate-spin text-blue-500" size={20} />
+          <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
         </div>
       </div>
     )
@@ -129,46 +129,45 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
 
   if (!miningInfo?.miners?.length) {
     return (
-      <div className="bg-[#0B1018] p-4 rounded">
+      <div className="p-4">
         <div className="text-sm text-gray-500">У вас пока нет майнеров</div>
       </div>
     )
   }
 
   return (
-    <div className="bg-[#0B1018] p-4 rounded space-y-2.5">
-      {/* Заголовок и награда */}
+    <div className="p-4 space-y-2.5">
+      {/* Сбор наград в одну строку */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Coins className="text-yellow-500" size={16} />
-          <span className="text-gray-200">Сбор наград</span>
+          <span>Сбор наград</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-blue-400 font-medium">{currentPeriodMined.toFixed(2)} 💎</span>
           {timeLeft > 0 && !miningInfo.has_miner_pass && (
-            <span className="text-orange-400 font-medium">{new Date(timeLeft).toISOString().substr(11, 8)}</span>
+            <span className="text-orange-400">{formatTime(timeLeft)}</span>
           )}
           <button
             onClick={handleCollect}
             disabled={collecting || (timeLeft > 0 && !miningInfo.has_miner_pass)}
-            className="px-3 py-1 rounded bg-gray-800 text-sm text-gray-200 hover:bg-gray-700"
+            className="px-3 py-1 rounded bg-gray-800 text-sm hover:bg-gray-700 disabled:opacity-50"
           >
             Собрать
           </button>
         </div>
       </div>
 
-      {/* Баланс */}
+      {/* Баланс и прогресс-бар */}
       <div className="space-y-1">
         <div className="flex items-center gap-1">
-          <span className="text-gray-500">Баланс:</span>
-          <span className="text-gray-300">{balance}</span>
+          <span className="text-gray-400">Баланс:</span>
+          <span>{balance}</span>
           <span className="text-blue-400">💎</span>
         </div>
         {!miningInfo.has_miner_pass && (
-          <div className="h-0.5 w-full bg-gray-800 rounded-full overflow-hidden">
+          <div className="h-0.5 w-full bg-gray-800/50 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-1000"
+              className="h-full bg-blue-500 transition-all duration-1000"
               style={{ width: `${miningInfo.collection_progress || 0}%` }}
             />
           </div>
@@ -179,38 +178,42 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-1.5">
           <span className="text-blue-400">⊟</span>
-          <span className="text-gray-300">Пул: {miningInfo.pool?.display_name}</span>
+          <span>Пул: {miningInfo.pool?.display_name}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-blue-400">{miningInfo.pool?.multiplier}x</span>
-          <span className="text-gray-500">{miningInfo.pool?.fee_percent}%</span>
+          <span className="text-gray-400">{miningInfo.pool?.fee_percent}%</span>
         </div>
       </div>
 
-      {/* Статистика */}
-      <div className="grid grid-cols-2 gap-y-1.5 text-sm">
-        <div className="flex items-center gap-1.5">
-          <span className="text-green-500">↗</span>
-          <span className="text-gray-500">Всего добыто:</span>
-          <span className="text-gray-300">{miningInfo.stats?.total_mined}</span>
-          <span className="text-blue-400">💎</span>
+      {/* Статистика в одну строку */}
+      <div className="space-y-1.5 text-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="text-green-500">↗</span>
+            <span className="text-gray-400">Всего добыто:</span>
+            <span>{miningInfo.stats?.total_mined}</span>
+            <span className="text-blue-400">💎</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-yellow-500">💰</span>
+            <span className="text-gray-400">Средний доход:</span>
+            <span>{miningInfo.stats?.daily_average}</span>
+            <span className="text-blue-400">💎/день</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-yellow-500">💰</span>
-          <span className="text-gray-500">Средний доход:</span>
-          <span className="text-gray-300">{miningInfo.stats?.daily_average}</span>
-          <span className="text-blue-400">💎/день</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-blue-400">⚡</span>
-          <span className="text-gray-500">Хешрейт:</span>
-          <span className="text-gray-300">{miningInfo.total_hashrate}</span>
-          <span className="text-gray-500">H/s</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-purple-400">🕒</span>
-          <span className="text-gray-500">Дней в майнинге:</span>
-          <span className="text-gray-300">{miningInfo.stats?.mining_days}</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="text-blue-400">⚡</span>
+            <span className="text-gray-400">Хешрейт:</span>
+            <span>{miningInfo.total_hashrate}</span>
+            <span>H/s</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-purple-400">🕒</span>
+            <span className="text-gray-400">Дней в майнинге:</span>
+            <span>{miningInfo.stats?.mining_days}</span>
+          </div>
         </div>
       </div>
 
