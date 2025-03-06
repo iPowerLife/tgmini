@@ -273,7 +273,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         timeSinceLastCollection,
       })
 
-      const { data, error } = await supabase.rpc("collect_mining_rewards", {
+      const { data, error } = await supabase.rpc("collect_mining_rewards_test", {
         user_id_param: userId,
         period_hours_param: collectionIntervalHours,
         calculated_reward: calculatedReward,
