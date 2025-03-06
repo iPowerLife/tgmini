@@ -119,7 +119,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
 
   if (loading) {
     return (
-      <div className="p-4 space-y-2">
+      <div className="bg-[#0F1729]/90 p-4 rounded-xl">
         <div className="flex justify-center">
           <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
         </div>
@@ -129,28 +129,28 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
 
   if (!miningInfo?.miners?.length) {
     return (
-      <div className="p-4">
-        <div className="text-sm text-gray-500">У вас пока нет майнеров</div>
+      <div className="bg-[#0F1729]/90 p-4 rounded-xl">
+        <div className="text-sm text-gray-400">У вас пока нет майнеров</div>
       </div>
     )
   }
 
   return (
-    <div className="p-4 space-y-2.5">
+    <div className="bg-[#0F1729]/90 p-4 rounded-xl space-y-2.5">
       {/* Сбор наград в одну строку */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Coins className="text-yellow-500" size={16} />
-          <span>Сбор наград</span>
+          <span className="text-white">Сбор наград</span>
         </div>
         <div className="flex items-center gap-2">
           {timeLeft > 0 && !miningInfo.has_miner_pass && (
-            <span className="text-orange-400">{formatTime(timeLeft)}</span>
+            <span className="text-orange-400 font-medium">{formatTime(timeLeft)}</span>
           )}
           <button
             onClick={handleCollect}
             disabled={collecting || (timeLeft > 0 && !miningInfo.has_miner_pass)}
-            className="px-3 py-1 rounded bg-gray-800 text-sm hover:bg-gray-700 disabled:opacity-50"
+            className="px-3 py-1 rounded bg-gray-800 text-white text-sm hover:bg-gray-700 disabled:opacity-50"
           >
             Собрать
           </button>
@@ -161,13 +161,13 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
       <div className="space-y-1">
         <div className="flex items-center gap-1">
           <span className="text-gray-400">Баланс:</span>
-          <span>{balance}</span>
+          <span className="text-white">{balance}</span>
           <span className="text-blue-400">💎</span>
         </div>
         {!miningInfo.has_miner_pass && (
-          <div className="h-0.5 w-full bg-gray-800/50 rounded-full overflow-hidden">
+          <div className="h-0.5 w-full bg-gray-800 rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-500 transition-all duration-1000"
+              className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-1000"
               style={{ width: `${miningInfo.collection_progress || 0}%` }}
             />
           </div>
@@ -178,7 +178,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-1.5">
           <span className="text-blue-400">⊟</span>
-          <span>Пул: {miningInfo.pool?.display_name}</span>
+          <span className="text-white">Пул: {miningInfo.pool?.display_name}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-blue-400">{miningInfo.pool?.multiplier}x</span>
@@ -192,13 +192,13 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
           <div className="flex items-center gap-1.5">
             <span className="text-green-500">↗</span>
             <span className="text-gray-400">Всего добыто:</span>
-            <span>{miningInfo.stats?.total_mined}</span>
+            <span className="text-white">{miningInfo.stats?.total_mined}</span>
             <span className="text-blue-400">💎</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-yellow-500">💰</span>
             <span className="text-gray-400">Средний доход:</span>
-            <span>{miningInfo.stats?.daily_average}</span>
+            <span className="text-white">{miningInfo.stats?.daily_average}</span>
             <span className="text-blue-400">💎/день</span>
           </div>
         </div>
@@ -206,13 +206,13 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
           <div className="flex items-center gap-1.5">
             <span className="text-blue-400">⚡</span>
             <span className="text-gray-400">Хешрейт:</span>
-            <span>{miningInfo.total_hashrate}</span>
-            <span>H/s</span>
+            <span className="text-white">{miningInfo.total_hashrate}</span>
+            <span className="text-gray-400">H/s</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-purple-400">🕒</span>
             <span className="text-gray-400">Дней в майнинге:</span>
-            <span>{miningInfo.stats?.mining_days}</span>
+            <span className="text-white">{miningInfo.stats?.mining_days}</span>
           </div>
         </div>
       </div>
