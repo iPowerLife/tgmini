@@ -12,35 +12,30 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   const [timeLeft, setTimeLeft] = useState(0)
   const [currentPeriodMined, setCurrentPeriodMined] = useState(0)
   const [lastCollectionTime, setLastCollectionTime] = useState(null)
-  const [currentMined, setCurrentMined] = useState(() => {
-    // Пытаемся восстановить значение из localStorage
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(`mining_current_mined_${userId}`)
-      return saved ? Number(saved) : 0
-    }
-    return 0
-  })
-  const [lastUpdate, setLastUpdate] = useState(() => {
-    // Пытаемся восстановить время последнего обновления из localStorage
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(`mining_last_update_${userId}`)
-      return saved ? Number(saved) : Date.now()
-    }
-    return Date.now()
-  })
+  const [currentMined, setCurrentMined] = useState(0)
+  const [lastUpdate, setLastUpdate] = useState(Date.now())
+  const [syncTimeout, setSyncTimeout] = useState(null)
 
   // Используем useRef для предотвращения утечек памяти
   const timerRef = useRef(null)
   const miningTimerRef = useRef(null)
+  const syncTimeoutRef = useRef(null)
   const isComponentMounted = useRef(true)
 
-  // Сохраняем значения в localStorage при изменении
-  useEffect(() => {
-    if (typeof window !== "undefined" && userId) {
-      localStorage.setItem(`mining_current_mined_${userId}`, currentMined.toString())
-      localStorage.setItem(`mining_last_update_${userId}`, lastUpdate.toString())
+  // Функция для синхронизации прогресса с базой данных
+  const syncProgress = async () => {
+    if (!userId || !isComponentMounted.current) return
+
+    try {
+      await supabase.rpc("update_mining_progress", {
+        user_id_param: userId,
+        current_mined_param: currentMined,
+        last_update_param: new Date(lastUpdate).toISOString(),
+      })
+    } catch (err) {
+      console.error("Error syncing progress:", err)
     }
-  }, [currentMined, lastUpdate, userId])
+  }
 
   // Функция загрузки данных о майнинге
   const loadMiningInfo = async () => {
@@ -59,6 +54,14 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       if (!data) throw new Error("Данные о майнинге не найдены")
 
       setMiningInfo(data)
+
+      // Устанавливаем начальные значения из базы данных
+      if (data.current_mined !== undefined) {
+        setCurrentMined(Number(data.current_mined))
+      }
+      if (data.last_update) {
+        setLastUpdate(new Date(data.last_update).getTime())
+      }
 
       if (data.time_until_next_collection > 0) {
         setTimeLeft(data.time_until_next_collection * 1000)
@@ -119,10 +122,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       isComponentMounted.current = false
       if (timerRef.current) clearInterval(timerRef.current)
       if (miningTimerRef.current) clearInterval(miningTimerRef.current)
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
     }
   }, [userId])
 
-  // Обновляем значение добытых монет каждую секунду
+  // Обновляем значение добытых монет каждую секунду и синхронизируем с базой данных
   useEffect(() => {
     // Очищаем предыдущий таймер, если он есть
     if (miningTimerRef.current) clearInterval(miningTimerRef.current)
@@ -136,12 +140,27 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       // Базовая ставка 0.5 монет за единицу хешрейта в час
       const newMined = totalHashrate * 0.5 * poolMultiplier * timeDiff
 
-      setCurrentMined((prev) => prev + newMined)
+      setCurrentMined((prev) => {
+        const updated = prev + newMined
+
+        // Устанавливаем таймер для синхронизации
+        if (syncTimeoutRef.current) {
+          clearTimeout(syncTimeoutRef.current)
+        }
+
+        // Синхронизируем с базой данных каждые 10 секунд
+        syncTimeoutRef.current = setTimeout(() => {
+          syncProgress()
+        }, 10000)
+
+        return updated
+      })
       setLastUpdate(now)
     }, 1000)
 
     return () => {
       if (miningTimerRef.current) clearInterval(miningTimerRef.current)
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
     }
   }, [totalHashrate, poolMultiplier, lastUpdate])
 
@@ -182,16 +201,13 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         setCurrentPeriodMined(0)
         setCurrentMined(0)
 
-        // Очищаем localStorage
-        if (typeof window !== "undefined") {
-          localStorage.removeItem(`mining_current_mined_${userId}`)
-          localStorage.removeItem(`mining_last_update_${userId}`)
-        }
-
         // Обновляем lastCollectionTime на текущее время
         const now = new Date().toISOString()
         setLastCollectionTime(now)
         setLastUpdate(Date.now())
+
+        // Синхронизируем с базой данных
+        await syncProgress()
 
         // Обновляем miningInfo локально
         setMiningInfo((prev) => ({
