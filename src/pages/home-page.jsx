@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { MiningChart } from "../components/mining-chart"
-import { createMiningService } from "../services/mining-service"
-import { Shield, Check, AlertCircle } from "lucide-react"
+import { Shield, Check, AlertCircle, TrendingUp } from "lucide-react"
 
 // Встроенный компонент MinerPassInfo
 const MinerPassInfo = ({ userId, hasMinerPass }) => {
@@ -92,37 +91,15 @@ const MinerPassInfo = ({ userId, hasMinerPass }) => {
 
 // Обновленная главная страница
 const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ranksData }) => {
-  const [miningStats, setMiningStats] = useState(null)
-  const [chartData, setChartData] = useState({ data: [], labels: [] })
+  // Используем статические данные для графика вместо загрузки из сервиса
+  const [chartData] = useState({
+    data: [10, 15, 20, 18, 25, 30, 28, 35],
+    labels: ["1/6", "2/6", "3/6", "4/6", "5/6", "6/6", "7/6", "8/6"],
+  })
 
-  // Загрузка статистики майнинга
-  useEffect(() => {
-    if (!user?.id) return
-
-    const loadMiningStats = async () => {
-      const service = await createMiningService(user.id)
-      const stats = await service.getMiningStats()
-
-      if (stats) {
-        setMiningStats(stats)
-
-        // Подготавливаем данные для графика
-        const chartLabels = stats.history.map((item) => {
-          const date = new Date(item.date)
-          return `${date.getDate()}/${date.getMonth() + 1}`
-        })
-
-        const chartValues = stats.history.map((item) => item.amount)
-
-        setChartData({
-          data: chartValues,
-          labels: chartLabels,
-        })
-      }
-    }
-
-    loadMiningStats()
-  }, [user?.id])
+  // Рассчитываем общую мощность майнеров
+  const totalPower =
+    minersData?.miners?.reduce((sum, miner) => sum + (miner.model?.mining_power || 0) * (miner.quantity || 1), 0) || 0
 
   return (
     <div className="home-page">
@@ -131,8 +108,25 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
         <div className="decorative-circle-1"></div>
         <div className="decorative-circle-2"></div>
 
+        {/* Информация о балансе и мощности */}
+        <div className="bg-gray-900 rounded-2xl p-4 mb-4">
+          <div className="flex justify-between">
+            <div>
+              <div className="text-gray-400 text-sm">Баланс</div>
+              <div className="text-xl font-bold">{balance.toFixed(2)} 💎</div>
+            </div>
+            <div className="text-right">
+              <div className="text-gray-400 text-sm">Общая мощность</div>
+              <div className="text-xl font-bold flex items-center justify-end">
+                <TrendingUp size={16} className="text-green-500 mr-1" />
+                {totalPower}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* График майнинга */}
-        {chartData.data.length > 0 && <MiningChart data={chartData.data} labels={chartData.labels} />}
+        <MiningChart data={chartData.data} labels={chartData.labels} />
 
         {/* Блок информации о Miner Pass */}
         <MinerPassInfo userId={user?.id} hasMinerPass={user?.has_miner_pass} />
