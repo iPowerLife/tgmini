@@ -6,13 +6,23 @@ import { HardDrive, Zap, Battery, Clock, Gauge, ChevronDown, ChevronUp } from "l
 export const MyMiners = ({ miners = [], miningStats = {} }) => {
   const [isExpanded, setIsExpanded] = useState(false)
 
-  // Логирование для отладки
+  // Подробное логирование для отладки
   useEffect(() => {
-    console.log("MyMiners component received:", { miners, miningStats })
+    console.log("MyMiners component received miners:", miners)
+    console.log("MyMiners component received miningStats:", miningStats)
+    console.log("Miners array type:", Array.isArray(miners))
+    console.log("Miners length:", miners?.length)
+
+    if (miners && miners.length > 0) {
+      console.log("First miner example:", miners[0])
+    }
   }, [miners, miningStats])
 
+  // Проверка на валидность данных
+  const validMiners = Array.isArray(miners) && miners.length > 0
+
   // Если нет майнеров, показываем сообщение
-  if (!miners || miners.length === 0) {
+  if (!validMiners) {
     return (
       <div className="bg-[#0F1729]/90 p-4 rounded-xl">
         <div className="flex justify-between items-center mb-3">
@@ -28,22 +38,36 @@ export const MyMiners = ({ miners = [], miningStats = {} }) => {
     )
   }
 
-  // Группируем майнеры по категориям
-  const minersByCategory = miners.reduce((acc, miner) => {
-    const category = miner.category || "other"
-    if (!acc[category]) {
-      acc[category] = []
+  // Безопасный доступ к свойствам
+  const getSafe = (obj, path, defaultValue = 0) => {
+    try {
+      const parts = path.split(".")
+      let result = obj
+      for (const part of parts) {
+        result = result[part]
+        if (result === undefined || result === null) return defaultValue
+      }
+      return result
+    } catch (e) {
+      return defaultValue
     }
-    acc[category].push(miner)
-    return acc
-  }, {})
+  }
 
   // Рассчитываем общую мощность и потребление
-  const totalPower = miners.reduce((sum, miner) => sum + miner.mining_power * miner.quantity, 0)
-  const totalConsumption = miners.reduce((sum, miner) => sum + miner.energy_consumption * miner.quantity, 0)
+  const totalPower = miners.reduce((sum, miner) => {
+    const power = getSafe(miner, "mining_power", 0)
+    const quantity = getSafe(miner, "quantity", 1)
+    return sum + power * quantity
+  }, 0)
+
+  const totalConsumption = miners.reduce((sum, miner) => {
+    const consumption = getSafe(miner, "energy_consumption", 0)
+    const quantity = getSafe(miner, "quantity", 1)
+    return sum + consumption * quantity
+  }, 0)
 
   // Используем данные из miningStats, если они есть, иначе рассчитываем
-  const hourlyIncome = miningStats.hourly_rate || totalPower * 0.5
+  const hourlyIncome = getSafe(miningStats, "hourly_rate", totalPower * 0.5)
   const efficiency = totalConsumption > 0 ? totalPower / totalConsumption : 0
 
   // Форматируем числа
@@ -109,32 +133,33 @@ export const MyMiners = ({ miners = [], miningStats = {} }) => {
         </div>
       </div>
 
-      {/* Список майнеров по категориям */}
+      {/* Список майнеров */}
       {isExpanded && (
-        <div className="space-y-3">
-          {Object.entries(minersByCategory).map(([category, categoryMiners]) => (
-            <div key={category} className="bg-[#1A2234] rounded-lg p-3">
-              <div className="text-sm font-medium mb-2 text-white capitalize">{category}</div>
-              <div className="space-y-2">
-                {categoryMiners.map((miner) => (
-                  <div key={miner.id} className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-[#0F1729] rounded-full flex items-center justify-center">
-                        <HardDrive size={16} className="text-purple-400" />
-                      </div>
-                      <div>
-                        <div className="text-sm text-white">{miner.model_name || `Майнер #${miner.model_id}`}</div>
-                        <div className="text-xs text-gray-400">
-                          {miner.mining_power} H/s × {miner.quantity} шт.
-                        </div>
-                      </div>
+        <div className="space-y-2">
+          {miners.map((miner, index) => (
+            <div key={miner.id || index} className="bg-[#1A2234] rounded-lg p-3">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-[#0F1729] rounded-full flex items-center justify-center">
+                    <HardDrive size={16} className="text-purple-400" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-white">
+                      {miner.model_name || `Майнер #${miner.model_id || index + 1}`}
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm text-white">{miner.mining_power * miner.quantity} H/s</div>
-                      <div className="text-xs text-gray-400">{miner.energy_consumption * miner.quantity} W</div>
+                    <div className="text-xs text-gray-400">
+                      {getSafe(miner, "mining_power", 0)} H/s × {getSafe(miner, "quantity", 1)} шт.
                     </div>
                   </div>
-                ))}
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-white">
+                    {formatNumber(getSafe(miner, "mining_power", 0) * getSafe(miner, "quantity", 1))} H/s
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {formatNumber(getSafe(miner, "energy_consumption", 0) * getSafe(miner, "quantity", 1))} W
+                  </div>
+                </div>
               </div>
             </div>
           ))}
