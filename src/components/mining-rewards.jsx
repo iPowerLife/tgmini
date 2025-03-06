@@ -244,9 +244,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     }
   }
 
-  // Форматируем число с 8 знаками после запятой
+  // Форматируем число с 2 знаками после запятой
   const formatNumber = (num) => {
-    return Number.parseFloat(num).toFixed(8)
+    return Number.parseFloat(num).toFixed(2)
   }
 
   // Рассчитываем прогресс для прогресс-бара
@@ -305,7 +305,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             <span className="text-gray-400">Баланс:</span>
-            <span className="text-white">{balance}</span>
+            <span className="text-white">{Number(balance).toFixed(2)}</span>
             <span className="text-blue-400">💎</span>
           </div>
           <div className="flex items-center gap-1">
