@@ -263,7 +263,7 @@ export const MiningRewards = ({ userId, onCollect }) => {
             <div key={reward.period} className="bg-gray-800 rounded-lg p-3">
               <div className="flex justify-between items-center">
                 <div>
-                  <div className="text-sm text-gray-400">За {reward.period} часов:</div>
+                  <div className="text-sm text-gray-400">За 8 часов:</div>
                   <div className="text-lg font-semibold">{reward.amount} 💎</div>
                   <div className="flex items-center gap-1 text-xs text-gray-500">
                     <Percent size={10} />
@@ -271,18 +271,18 @@ export const MiningRewards = ({ userId, onCollect }) => {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleCollect(reward.period)}
+                  onClick={() => handleCollect(8)}
                   disabled={collecting || (timeLeft > 0 && !miningInfo.has_miner_pass)}
                   className={`
-                flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium
-                ${
-                  collecting
-                    ? "bg-gray-700 text-gray-400 cursor-wait"
-                    : timeLeft > 0 && !miningInfo.has_miner_pass
-                      ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                      : "bg-gradient-to-r from-yellow-500 to-amber-500 text-black hover:shadow-md"
-                }
-              `}
+              flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium
+              ${
+                collecting
+                  ? "bg-gray-700 text-gray-400 cursor-wait"
+                  : timeLeft > 0 && !miningInfo.has_miner_pass
+                    ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-yellow-500 to-amber-500 text-black hover:shadow-md"
+              }
+            `}
                 >
                   {collecting ? (
                     <>
