@@ -12,13 +12,35 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   const [timeLeft, setTimeLeft] = useState(0)
   const [currentPeriodMined, setCurrentPeriodMined] = useState(0)
   const [lastCollectionTime, setLastCollectionTime] = useState(null)
-  const [currentMined, setCurrentMined] = useState(0)
-  const [lastUpdate, setLastUpdate] = useState(Date.now())
+  const [currentMined, setCurrentMined] = useState(() => {
+    // Пытаемся восстановить значение из localStorage
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`mining_current_mined_${userId}`)
+      return saved ? Number(saved) : 0
+    }
+    return 0
+  })
+  const [lastUpdate, setLastUpdate] = useState(() => {
+    // Пытаемся восстановить время последнего обновления из localStorage
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`mining_last_update_${userId}`)
+      return saved ? Number(saved) : Date.now()
+    }
+    return Date.now()
+  })
 
   // Используем useRef для предотвращения утечек памяти
   const timerRef = useRef(null)
   const miningTimerRef = useRef(null)
   const isComponentMounted = useRef(true)
+
+  // Сохраняем значения в localStorage при изменении
+  useEffect(() => {
+    if (typeof window !== "undefined" && userId) {
+      localStorage.setItem(`mining_current_mined_${userId}`, currentMined.toString())
+      localStorage.setItem(`mining_last_update_${userId}`, lastUpdate.toString())
+    }
+  }, [currentMined, lastUpdate, userId])
 
   // Функция загрузки данных о майнинге
   const loadMiningInfo = async () => {
@@ -86,7 +108,10 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     // Устанавливаем таймер для обратного отсчета
     timerRef.current = setInterval(() => {
       if (isComponentMounted.current) {
-        setTimeLeft((prev) => (prev <= 1000 ? 0 : prev - 1000))
+        setTimeLeft((prev) => {
+          const newTime = prev <= 1000 ? 0 : prev - 1000
+          return newTime
+        })
       }
     }, 1000)
 
@@ -157,9 +182,16 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         setCurrentPeriodMined(0)
         setCurrentMined(0)
 
+        // Очищаем localStorage
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(`mining_current_mined_${userId}`)
+          localStorage.removeItem(`mining_last_update_${userId}`)
+        }
+
         // Обновляем lastCollectionTime на текущее время
         const now = new Date().toISOString()
         setLastCollectionTime(now)
+        setLastUpdate(Date.now())
 
         // Обновляем miningInfo локально
         setMiningInfo((prev) => ({
@@ -192,6 +224,14 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   // Форматируем число с 8 знаками после запятой
   const formatNumber = (num) => {
     return Number.parseFloat(num).toFixed(8)
+  }
+
+  // Рассчитываем прогресс для прогресс-бара
+  const calculateProgress = () => {
+    if (!timeLeft || miningInfo?.has_miner_pass) return 100
+    const totalTime = 8 * 60 * 60 * 1000 // 8 часов в миллисекундах
+    const elapsed = totalTime - timeLeft
+    return (elapsed / totalTime) * 100
   }
 
   if (loading) {
@@ -253,7 +293,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         <div className="h-0.5 w-full bg-gray-800 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-1000"
-            style={{ width: `${Math.min((currentMined / 100) * 100, 100)}%` }}
+            style={{ width: `${calculateProgress()}%` }}
           />
         </div>
       </div>
