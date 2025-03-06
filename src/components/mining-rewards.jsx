@@ -16,13 +16,25 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   const [lastUpdate, setLastUpdate] = useState(Date.now())
   const [syncTimeout, setSyncTimeout] = useState(null)
   const [isMiningActive, setIsMiningActive] = useState(true)
-  const [systemSettings, setSystemSettings] = useState({ collection_interval_hours: 8 })
+  const [systemSettings, setSystemSettings] = useState({
+    collection_interval_hours: 8,
+    test_mode: false,
+    test_collection_interval_minutes: 1,
+  })
 
   // Используем useRef для предотвращения утечек памяти
   const timerRef = useRef(null)
   const miningTimerRef = useRef(null)
   const syncTimeoutRef = useRef(null)
   const isComponentMounted = useRef(true)
+
+  // Получаем актуальный интервал сбора в часах
+  const getCollectionIntervalHours = () => {
+    if (systemSettings.test_mode) {
+      return systemSettings.test_collection_interval_minutes / 60 // конвертируем минуты в часы
+    }
+    return systemSettings.collection_interval_hours
+  }
 
   // Загружаем системные настройки
   useEffect(() => {
@@ -36,14 +48,21 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         }
 
         if (isComponentMounted.current && data) {
+          console.log("Loaded system settings:", data)
           setSystemSettings(data)
+
+          // Если мы в тестовом режиме и таймер уже запущен, обновляем его
+          if (data.test_mode && timeLeft > 0) {
+            const collectionIntervalMs = data.test_collection_interval_minutes * 60 * 1000
+            setTimeLeft(collectionIntervalMs)
+          }
         }
       } catch (err) {
         console.error("Error loading system settings:", err)
       }
     }
     loadSettings()
-  }, [])
+  }, [timeLeft])
 
   // Функция для синхронизации прогресса с базой данных
   const syncProgressRef = useRef(null)
@@ -97,8 +116,22 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       const canCollect = data.time_until_next_collection === 0 || data.has_miner_pass
       setIsMiningActive(!canCollect) // Инвертируем логику: если нельзя собирать, значит майнинг активен
 
+      // Если мы в тестовом режиме, используем интервал в минутах
+      const collectionIntervalHours = getCollectionIntervalHours()
+
       if (data.time_until_next_collection > 0) {
-        setTimeLeft(data.time_until_next_collection * 1000)
+        // Если мы в тестовом режиме, возможно нужно скорректировать время
+        if (systemSettings.test_mode) {
+          // Проверяем, не превышает ли оставшееся время тестовый интервал
+          const testIntervalSeconds = systemSettings.test_collection_interval_minutes * 60
+          if (data.time_until_next_collection > testIntervalSeconds) {
+            setTimeLeft(testIntervalSeconds * 1000)
+          } else {
+            setTimeLeft(data.time_until_next_collection * 1000)
+          }
+        } else {
+          setTimeLeft(data.time_until_next_collection * 1000)
+        }
       } else {
         setTimeLeft(0)
       }
@@ -115,7 +148,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         const timeSinceLastCollection = lastCollectionTime
           ? (Date.now() - new Date(lastCollectionTime).getTime()) / (1000 * 60 * 60)
           : 0
-        const minedAmount = hourlyRate * Math.min(timeSinceLastCollection, systemSettings.collection_interval_hours)
+        const minedAmount = hourlyRate * Math.min(timeSinceLastCollection, collectionIntervalHours)
         setCurrentPeriodMined(Math.round(minedAmount * 100) / 100)
       }
     } catch (err) {
@@ -221,29 +254,39 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       setCollecting(true)
       setError(null)
 
+      // Получаем актуальный интервал сбора
+      const collectionIntervalHours = getCollectionIntervalHours()
+
       // Рассчитываем награду на основе времени и хешрейта
       const now = Date.now()
       const collectionTime = lastCollectionTime
         ? new Date(lastCollectionTime).getTime()
-        : now - systemSettings.collection_interval_hours * 60 * 60 * 1000
-      const timeSinceLastCollection = Math.min(
-        (now - collectionTime) / (1000 * 60 * 60),
-        systemSettings.collection_interval_hours,
-      )
+        : now - collectionIntervalHours * 60 * 60 * 1000
+      const timeSinceLastCollection = Math.min((now - collectionTime) / (1000 * 60 * 60), collectionIntervalHours)
       const hourlyRate = totalHashrate * 0.5 * (miningInfo.pool?.multiplier || 1.0)
       const calculatedReward = hourlyRate * timeSinceLastCollection
 
+      console.log("Collecting rewards with params:", {
+        userId,
+        collectionIntervalHours,
+        calculatedReward,
+        timeSinceLastCollection,
+      })
+
       const { data, error } = await supabase.rpc("collect_mining_rewards", {
         user_id_param: userId,
-        period_hours_param: systemSettings.collection_interval_hours,
+        period_hours_param: collectionIntervalHours,
         calculated_reward: calculatedReward,
       })
 
       if (!isComponentMounted.current) return
 
-      if (error) throw error
+      if (error) {
+        console.error("Error from collect_mining_rewards:", error)
+        throw error
+      }
 
-      if (data.success) {
+      if (data && data.success) {
         // Вызываем onCollect с новым балансом
         if (typeof onCollect === "function") {
           onCollect(data.new_balance)
@@ -251,7 +294,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
         // Обновляем локальное состояние
         if (!miningInfo.has_miner_pass) {
-          setTimeLeft(systemSettings.collection_interval_hours * 60 * 60 * 1000)
+          // Используем интервал из настроек (в часах или минутах)
+          const intervalMs = collectionIntervalHours * 60 * 60 * 1000
+          setTimeLeft(intervalMs)
         }
         setCurrentPeriodMined(0)
         setCurrentMined({ value: 0, lastUpdateTime: Date.now() }) // Сбрасываем добытые монеты
@@ -273,9 +318,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         setMiningInfo((prev) => ({
           ...prev,
           last_collection: now,
-          time_until_next_collection: miningInfo.has_miner_pass
-            ? 0
-            : systemSettings.collection_interval_hours * 60 * 60,
+          time_until_next_collection: miningInfo.has_miner_pass ? 0 : collectionIntervalHours * 60 * 60,
           collection_progress: miningInfo.has_miner_pass ? 100 : 0,
           current_mined: 0,
           last_update: now,
@@ -288,12 +331,12 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         // Перезагружаем данные
         loadMiningInfoRef.current()
       } else {
-        setError(data.error)
+        setError(data?.error || "Неизвестная ошибка при сборе наград")
       }
     } catch (err) {
       console.error("Error collecting rewards:", err)
       if (isComponentMounted.current) {
-        setError("Ошибка при сборе наград")
+        setError(`Ошибка при сборе наград: ${err.message || err}`)
       }
     } finally {
       if (isComponentMounted.current) {
@@ -310,7 +353,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   // Рассчитываем прогресс для прогресс-бара
   const calculateProgress = () => {
     if (!timeLeft || miningInfo?.has_miner_pass) return 100
-    const totalTime = systemSettings.collection_interval_hours * 60 * 60 * 1000 // часы в миллисекундах
+
+    // Используем интервал из настроек (в часах или минутах)
+    const collectionIntervalHours = getCollectionIntervalHours()
+    const totalTime = collectionIntervalHours * 60 * 60 * 1000 // часы в миллисекундах
+
     const progress = (timeLeft / totalTime) * 100
     return 100 - progress // Инвертируем прогресс
   }
@@ -333,6 +380,10 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     )
   }
 
+  // Получаем текущий интервал сбора для отображения
+  const collectionIntervalHours = getCollectionIntervalHours()
+  const isTestMode = systemSettings.test_mode
+
   return (
     <div className="space-y-2">
       {/* Сбор наград */}
@@ -341,6 +392,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           <div className="flex items-center gap-2">
             <Coins className="text-yellow-500" size={16} />
             <span className="text-white">Сбор наград</span>
+            {isTestMode && (
+              <span className="text-xs text-orange-400 ml-1">
+                (Тестовый режим: {systemSettings.test_collection_interval_minutes} мин)
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {timeLeft > 0 && !miningInfo.has_miner_pass && (
