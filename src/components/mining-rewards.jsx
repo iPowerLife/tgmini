@@ -182,7 +182,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       if (miningTimerRef.current) clearInterval(miningTimerRef.current)
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
     }
-  }, [totalHashrate, poolMultiplier, lastUpdate, isMiningActive])
+  }, [totalHashrate, poolMultiplier, lastUpdate, isMiningActive, currentMined.lastUpdateTime])
 
   const formatTime = (ms) => {
     if (!ms) return "00:00:00"
@@ -206,7 +206,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       const hourlyRate = totalHashrate * 0.5 * (miningInfo.pool?.multiplier || 1.0)
       const calculatedReward = hourlyRate * timeSinceLastCollection
 
-      const { data, error } = await supabase.rpc("collect_mining_rewards", {
+      const { data, error } = await supabase.rpc("collect_mining_rewards_period_hours_param", {
         user_id_param: userId,
         period_hours_param: 8,
         calculated_reward: calculatedReward, // Передаем рассчитанную награду
