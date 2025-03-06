@@ -490,6 +490,7 @@ function App() {
             display_name: userData.username
               ? `@${userData.username}`
               : userData.first_name || "Неизвестный пользователь",
+            has_miner_pass: hasMinerPass, // Добавьте это свойство
           }
 
           setUser(userWithDisplay)
@@ -524,7 +525,7 @@ function App() {
     return () => {
       mounted = false
     }
-  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData, loadTransactionsData, loadRanksData])
+  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData, loadTransactionsData, loadRanksData, hasMinerPass])
 
   // Добавляем эффект для перенаправления на главную страницу при обновлении
   useEffect(() => {
@@ -553,6 +554,17 @@ function App() {
       window.removeEventListener("load", handlePageLoad)
     }
   }, [])
+
+  // Также обновите useEffect, который следит за изменением hasMinerPass
+  // Добавьте этот эффект после других useEffect
+  useEffect(() => {
+    if (user?.id && hasMinerPass !== undefined) {
+      setUser((prev) => ({
+        ...prev,
+        has_miner_pass: hasMinerPass,
+      }))
+    }
+  }, [hasMinerPass, user?.id])
 
   // Обработчик обновления баланса
   const handleBalanceUpdate = useCallback(
