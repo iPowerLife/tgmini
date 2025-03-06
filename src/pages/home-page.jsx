@@ -1,30 +1,26 @@
 "use client"
-
-import { useState, useEffect } from "react"
 import MiningRewards from "../components/mining-rewards"
 import MiningPoolSelector from "../components/mining-pool-selector"
 import MyMiners from "../components/my-miners"
 
 const HomePage = ({ user, minersData, onPurchase }) => {
-  const [isLoading, setIsLoading] = useState(false)
+  // Получаем общий хешрейт и множитель пула
+  const totalHashrate =
+    minersData?.miners?.reduce((sum, miner) => {
+      return sum + (miner.model?.mining_power || 0) * miner.quantity
+    }, 0) || 0
 
-  useEffect(() => {
-    console.log("HomePage rendered with user:", user?.id, "and miners:", minersData?.miners?.length)
-  }, [user, minersData])
-
-  // Если пользователь не загружен, показываем загрузку
-  if (!user) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-      </div>
-    )
-  }
+  const poolMultiplier = minersData?.pool?.multiplier || 1
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-lg">
-      {/* Компоненты майнинга */}
-      <MiningRewards userId={user.id} onCollect={onPurchase} />
+      <MiningRewards
+        userId={user.id}
+        onCollect={onPurchase}
+        balance={user.balance || 0}
+        totalHashrate={totalHashrate}
+        poolMultiplier={poolMultiplier}
+      />
       <MyMiners miners={minersData?.miners || []} miningStats={minersData?.stats || {}} />
       <MiningPoolSelector userId={user.id} onPoolChange={() => {}} />
     </div>

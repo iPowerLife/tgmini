@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Coins } from "lucide-react"
 import { supabase } from "../supabase"
 
-export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
+export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 0, poolMultiplier = 1 }) => {
   const [loading, setLoading] = useState(true)
   const [collecting, setCollecting] = useState(false)
   const [miningInfo, setMiningInfo] = useState(null)
@@ -12,6 +12,8 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
   const [timeLeft, setTimeLeft] = useState(0)
   const [currentPeriodMined, setCurrentPeriodMined] = useState(0)
   const [lastCollectionTime, setLastCollectionTime] = useState(null)
+  const [currentMined, setCurrentMined] = useState(0)
+  const [lastUpdate, setLastUpdate] = useState(Date.now())
 
   useEffect(() => {
     if (!userId) return
@@ -71,6 +73,22 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
     }
   }, [userId, lastCollectionTime, collecting])
 
+  // Обновляем значение добытых монет каждую секунду
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = Date.now()
+      const timeDiff = (now - lastUpdate) / 1000 / 3600 // разница в часах
+
+      // Базовая ставка 0.5 монет за единицу хешрейта в час
+      const newMined = totalHashrate * 0.5 * poolMultiplier * timeDiff
+
+      setCurrentMined((prev) => prev + newMined)
+      setLastUpdate(now)
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [totalHashrate, poolMultiplier, lastUpdate])
+
   const formatTime = (ms) => {
     if (!ms) return "00:00:00"
     const hours = Math.floor(ms / (1000 * 60 * 60))
@@ -117,6 +135,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
     }
   }
 
+  // Форматируем число с 8 знаками после запятой
+  const formatNumber = (num) => {
+    return Number.parseFloat(num).toFixed(8)
+  }
+
   if (loading) {
     return (
       <div className="bg-[#0F1729]/90 p-4 rounded-xl">
@@ -160,6 +183,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
       </div>
 
       {/* Баланс */}
+      {/*
       <div className="bg-[#0F1729]/90 p-3 rounded-xl space-y-1">
         <div className="flex items-center gap-1">
           <span className="text-gray-400">Баланс:</span>
@@ -174,6 +198,27 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
             />
           </div>
         )}
+      </div>
+      */}
+      <div className="bg-[#0F1729]/90 p-3 rounded-xl space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <span className="text-gray-400">Баланс:</span>
+            <span className="text-white">{balance}</span>
+            <span className="text-blue-400">💎</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-gray-400">+</span>
+            <span className="text-green-400">{formatNumber(currentMined)}</span>
+            <span className="text-blue-400">💎</span>
+          </div>
+        </div>
+        <div className="h-0.5 w-full bg-gray-800 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-1000"
+            style={{ width: `${Math.min((currentMined / 100) * 100, 100)}%` }}
+          />
+        </div>
       </div>
 
       {/* Пул */}
