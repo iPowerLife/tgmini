@@ -113,6 +113,73 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     }
   }
 
+  // Функция для принудительного сброса счетчика
+  const resetMiningCounter = async () => {
+    if (!userId || !isComponentMounted.current) return
+
+    try {
+      console.log("Resetting mining counter...")
+
+      // Останавливаем все таймеры и обновления
+      resetInProgressRef.current = true
+      if (miningTimerRef.current) clearInterval(miningTimerRef.current)
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
+
+      // Сбрасываем счетчик в базе данных
+      const { data, error } = await supabase.rpc("reset_mining_counter", {
+        user_id_param: userId,
+      })
+
+      if (error) throw error
+
+      // Сбрасываем локальный счетчик
+      setCurrentMined(0)
+      setLastUpdate(Date.now())
+
+      console.log("Mining counter reset successful:", data)
+
+      // Перезапускаем таймеры после небольшой задержки
+      setTimeout(() => {
+        if (isComponentMounted.current) {
+          resetInProgressRef.current = false
+
+          // Перезапускаем таймер майнинга
+          if (miningTimerRef.current) clearInterval(miningTimerRef.current)
+          miningTimerRef.current = setInterval(() => {
+            if (!isComponentMounted.current || resetInProgressRef.current) return
+
+            const now = Date.now()
+            const timeDiff = (now - lastUpdate) / 1000 / 3600 // разница в часах
+            const baseRewardRate = miningInfo?.settings?.base_reward_rate || 0.5
+
+            // Базовая ставка за единицу хешрейта в час
+            const newMined = totalHashrate * baseRewardRate * poolMultiplier * timeDiff
+
+            setCurrentMined((prev) => {
+              const updated = prev + newMined
+
+              // Устанавливаем таймер для синхронизации
+              if (syncTimeoutRef.current) {
+                clearTimeout(syncTimeoutRef.current)
+              }
+
+              // Синхронизируем с базой данных каждые 10 секунд
+              syncTimeoutRef.current = setTimeout(() => {
+                syncProgress()
+              }, 10000)
+
+              return updated
+            })
+            setLastUpdate(now)
+          }, 1000)
+        }
+      }, 500)
+    } catch (err) {
+      console.error("Error resetting mining counter:", err)
+      resetInProgressRef.current = false
+    }
+  }
+
   // Загружаем данные при монтировании компонента
   useEffect(() => {
     if (!userId) return
@@ -122,6 +189,10 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
     const fetchData = async () => {
       await loadMiningInfo()
+
+      // Сбрасываем счетчик при монтировании компонента
+      // для синхронизации с сервером
+      await resetMiningCounter()
     }
 
     fetchData()
@@ -149,6 +220,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   useEffect(() => {
     // Очищаем предыдущий таймер, если он есть
     if (miningTimerRef.current) clearInterval(miningTimerRef.current)
+
+    // Не запускаем таймер, если идет сброс
+    if (resetInProgressRef.current) return
 
     miningTimerRef.current = setInterval(() => {
       if (!isComponentMounted.current || resetInProgressRef.current) return
@@ -182,7 +256,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       if (miningTimerRef.current) clearInterval(miningTimerRef.current)
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
     }
-  }, [totalHashrate, poolMultiplier, lastUpdate, miningInfo])
+  }, [totalHashrate, poolMultiplier, lastUpdate, miningInfo, resetInProgressRef.current])
 
   const formatTime = (ms) => {
     if (!ms) return "00:00:00"
@@ -199,8 +273,10 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       setCollecting(true)
       setError(null)
 
-      // Устанавливаем флаг сброса, чтобы предотвратить обновление счетчика во время сбора
+      // Останавливаем все таймеры и обновления
       resetInProgressRef.current = true
+      if (miningTimerRef.current) clearInterval(miningTimerRef.current)
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
 
       const { data, error } = await supabase.rpc("collect_mining_rewards", {
         user_id_param: userId,
@@ -224,21 +300,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           setTimeLeft(collectionIntervalHours * 60 * 60 * 1000)
         }
 
-        // ВАЖНО: Сбрасываем счетчики добытых монет
-        setCurrentPeriodMined(0)
-        setCurrentMined(0)
-
-        // Обновляем lastCollectionTime на текущее время
+        // Обновляем время последнего сбора
         const now = new Date().toISOString()
         setLastCollectionTime(now)
-        setLastUpdate(Date.now())
-
-        // Синхронизируем с базой данных
-        await supabase.rpc("update_mining_progress", {
-          user_id_param: userId,
-          current_mined_param: 0, // Явно устанавливаем 0
-          last_update_param: new Date().toISOString(),
-        })
 
         // Обновляем miningInfo локально
         setMiningInfo((prev) => ({
@@ -247,28 +311,31 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           time_until_next_collection:
             miningInfo.has_miner_pass || allowAnytimeCollection ? 0 : collectionIntervalHours * 60 * 60,
           collection_progress: miningInfo.has_miner_pass || allowAnytimeCollection ? 100 : 0,
-          current_mined: 0, // Явно устанавливаем 0
+          current_mined: 0,
           stats: {
             ...prev.stats,
             total_mined: (Number.parseFloat(prev.stats.total_mined) + data.amount).toFixed(2),
           },
         }))
 
+        // Принудительно сбрасываем счетчик
+        await resetMiningCounter()
+
         // Перезагружаем данные о майнинге
         await loadMiningInfo()
       } else {
         setError(data.error)
+        resetInProgressRef.current = false
       }
     } catch (err) {
       console.error("Error collecting rewards:", err)
       if (isComponentMounted.current) {
         setError("Ошибка при сборе наград")
+        resetInProgressRef.current = false
       }
     } finally {
       if (isComponentMounted.current) {
         setCollecting(false)
-        // Снимаем флаг сброса
-        resetInProgressRef.current = false
       }
     }
   }
