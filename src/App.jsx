@@ -77,7 +77,7 @@ function AppContent({
             element={
               <div className="page-content" key="home-page">
                 <HomePage
-                  user={user}
+                  user={{ ...user, has_miner_pass: hasMinerPass }}
                   balance={balance}
                   minersData={minersData}
                   ratingData={ratingData}

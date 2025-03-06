@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MiningRewards } from "../components/mining-rewards"
+import { MiningRewards } from "../components/mining-rewards.jsx"
+import { MiningPools } from "../components/mining-pools.jsx"
 import { Statistics } from "../components/statistics"
 import { MyMiners } from "../components/my-miners"
 import { MiningChart } from "../components/mining-chart"
 import { createMiningService } from "../services/mining-service"
 // Добавьте импорты новых компонентов в начало файла
-import { MinerPassInfo } from "../components/miner-pass-info"
-import { MiningPoolsEnhanced } from "../components/mining-pools-enhanced"
+import { MinerPassInfo } from "../components/miner-pass-info.jsx"
 
 // Обновленная главная страница
 const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ranksData }) => {
@@ -102,9 +102,11 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
         {/* Блок статистики */}
         <Statistics minersData={minersData} miningStats={miningStats} />
 
-        {/* Блок пулов майнинга */}
+        {/* Блок информации о Miner Pass */}
         <MinerPassInfo userId={user?.id} hasMinerPass={user?.has_miner_pass} />
-        <MiningPoolsEnhanced user={user} onPoolChanged={handlePoolChanged} />
+
+        {/* Блок пулов майнинга - используем обычный компонент, чтобы избежать ошибок */}
+        <MiningPools user={user} onPoolChanged={handlePoolChanged} />
 
         {/* Блок майнеров */}
         <MyMiners miners={minersData?.miners || []} />
