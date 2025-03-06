@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { Coins } from "lucide-react"
 import { supabase } from "../supabase"
 
-const DEBUG = false // Включите true для отладки
+const DEBUG = true // Включаем отладку для поиска проблемы
 
 export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 0, poolMultiplier = 1 }) => {
   const [loading, setLoading] = useState(true)
@@ -31,12 +31,12 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   const isComponentMounted = useRef(true)
 
   // Получаем актуальный интервал сбора в часах
-  const getCollectionIntervalHours = () => {
+  const getCollectionIntervalHours = useCallback(() => {
     if (systemSettings.test_mode) {
       return systemSettings.test_collection_interval_minutes / 60 // конвертируем минуты в часы
     }
     return systemSettings.collection_interval_hours
-  }
+  }, [systemSettings])
 
   // Загружаем системные настройки
   useEffect(() => {
@@ -69,8 +69,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   }, [timeLeft])
 
   // Функция для синхронизации прогресса с базой данных
-  const syncProgressRef = useRef(null)
-  syncProgressRef.current = async () => {
+  const syncProgress = useCallback(async () => {
     if (!userId || !isComponentMounted.current) return
 
     try {
@@ -89,7 +88,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     } catch (err) {
       console.error("Error syncing progress:", err)
     }
-  }
+  }, [userId, currentMined.value, lastUpdate])
 
   // Функция загрузки данных о майнинге
   const loadMiningInfo = useCallback(async () => {
@@ -372,7 +371,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       if (miningTimerRef.current) clearInterval(miningTimerRef.current)
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
     }
-  }, [userId, loadMiningInfo, miningInfo?.miners?.length])
+  }, [userId, loadMiningInfo])
 
   // Обновляем значение добытых монет каждую секунду и синхронизируем с базой данных
   useEffect(() => {
@@ -410,17 +409,26 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       setLastUpdate(now)
     }, 1000)
 
+    // Устанавливаем таймер для синхронизации
+    const syncInterval = setInterval(() => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current)
+      }
+
+      // Синхронизируем с базой данных каждые 10 секунд
+      syncTimeoutRef.current = setTimeout(() => {
+        if (currentMined.value > 0) {
+          syncProgress()
+        }
+      }, 10000)
+    }, 10000)
+
     return () => {
+      clearInterval(syncInterval)
       if (miningTimerRef.current) clearInterval(miningTimerRef.current)
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
     }
-  }, [
-    miningInfo?.total_hashrate,
-    miningInfo?.has_miner_pass,
-    miningInfo?.pool?.multiplier,
-    timeLeft,
-    currentMined.lastUpdateTime,
-    collecting,
-  ])
+  }, [miningInfo, timeLeft, currentMined.lastUpdateTime, currentMined.value, collecting, syncProgress])
 
   const formatTime = (ms) => {
     if (!ms) return "00:00:00"
@@ -433,6 +441,8 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   const handleCollect = async () => {
     if (!userId || !isComponentMounted.current) return
 
+    console.log("Collect button clicked, current amount:", currentMined.value)
+
     try {
       setCollecting(true)
       setError(null)
@@ -442,7 +452,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
       // Проверяем, есть ли что собирать
       if (amountToCollect <= 0) {
+        console.log("Nothing to collect")
         setError("Нет доступных наград для сбора")
+        setCollecting(false)
         return
       }
 
@@ -457,14 +469,18 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       let success = false
 
       for (const funcName of functionNames) {
+        console.log(`Trying to call ${funcName}...`)
         const { data, error } = await supabase.rpc(funcName, {
           user_id_param: userId,
           period_hours_param: getCollectionIntervalHours(),
           calculated_reward: amountToCollect,
         })
 
+        console.log(`Result of ${funcName}:`, { data, error })
+
         if (!error) {
           success = true
+          console.log(`Successfully called ${funcName}:`, data)
 
           // Обновляем локальное состояние
           if (typeof onCollect === "function") {
@@ -493,12 +509,16 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
       // Если все RPC вызовы не сработали, используем прямые запросы
       if (!success) {
+        console.log("All RPC calls failed, using direct queries")
+
         // Получаем текущий баланс пользователя
         const { data: userData, error: userError } = await supabase
           .from("users")
           .select("balance, has_miner_pass")
           .eq("id", userId)
           .single()
+
+        console.log("User data:", userData, "Error:", userError)
 
         if (userError) throw userError
 
@@ -518,7 +538,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         // Обновляем баланс пользователя
         const newBalance = Number.parseFloat(userData.balance) + amountToCollect
 
+        console.log("Updating user balance:", newBalance)
+
         const { error: updateUserError } = await supabase.from("users").update({ balance: newBalance }).eq("id", userId)
+
+        console.log("Update user result:", updateUserError)
 
         if (updateUserError) throw updateUserError
 
@@ -530,11 +554,15 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           .eq("user_id", userId)
           .single()
 
+        console.log("Mining stats:", miningStats, "Error:", statsError)
+
         if (statsError && statsError.code !== "PGRST116") {
           throw statsError
         }
 
         const totalMined = Number.parseFloat(miningStats?.total_mined || 0) + amountToCollect
+
+        console.log("Updating mining stats, total mined:", totalMined)
 
         const { error: updateStatsError } = await supabase
           .from("mining_stats")
@@ -545,6 +573,8 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
             total_mined: totalMined,
           })
           .eq("user_id", userId)
+
+        console.log("Update stats result:", updateStatsError)
 
         if (updateStatsError) throw updateStatsError
 
@@ -577,9 +607,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   }
 
   // Форматируем число с 8 знаками после запятой
-  const formatNumber = useCallback((num) => {
+  const formatNumber = (num) => {
     return Number.parseFloat(num).toFixed(8)
-  }, [])
+  }
 
   // Рассчитываем прогресс для прогресс-бара
   const calculateProgress = () => {
@@ -645,7 +675,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
             )}
             <button
               onClick={handleCollect}
-              disabled={collecting || (timeLeft > 0 && !miningInfo.has_miner_pass)}
+              disabled={collecting || (timeLeft > 0 && !miningInfo.has_miner_pass) || currentMined.value <= 0}
               className="px-3 py-1 rounded bg-gray-800 text-white text-sm hover:bg-gray-700 disabled:opacity-50"
             >
               {collecting ? "Сбор..." : "Собрать"}
