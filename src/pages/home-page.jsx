@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MiningRewards } from "../components/mining-rewards"
 import { MiningPools } from "../components/mining-pools"
 import { Statistics } from "../components/statistics"
 import { MyMiners } from "../components/my-miners"
@@ -128,42 +127,6 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
     loadMiningStats()
   }, [user?.id])
 
-  // Обработчик сбора наград
-  const handleRewardCollected = (amount, newBalance) => {
-    // Обновляем статистику майнинга
-    if (miningStats) {
-      const updatedStats = { ...miningStats }
-
-      // Добавляем новую запись в историю
-      const today = new Date().toISOString().split("T")[0]
-      const todayIndex = updatedStats.history.findIndex((item) => item.date === today)
-
-      if (todayIndex >= 0) {
-        updatedStats.history[todayIndex].amount += amount
-      } else {
-        updatedStats.history.push({
-          date: today,
-          amount,
-        })
-      }
-
-      setMiningStats(updatedStats)
-
-      // Обновляем данные графика
-      const chartLabels = updatedStats.history.map((item) => {
-        const date = new Date(item.date)
-        return `${date.getDate()}/${date.getMonth() + 1}`
-      })
-
-      const chartValues = updatedStats.history.map((item) => item.amount)
-
-      setChartData({
-        data: chartValues,
-        labels: chartLabels,
-      })
-    }
-  }
-
   // Обработчик смены пула
   const handlePoolChanged = (poolName) => {
     console.log(`Пул изменен на: ${poolName}`)
@@ -176,9 +139,6 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
         <div className="background-gradient"></div>
         <div className="decorative-circle-1"></div>
         <div className="decorative-circle-2"></div>
-
-        {/* Блок сбора наград */}
-        <MiningRewards user={user} onRewardCollected={handleRewardCollected} />
 
         {/* График майнинга */}
         {chartData.data.length > 0 && <MiningChart data={chartData.data} labels={chartData.labels} />}
