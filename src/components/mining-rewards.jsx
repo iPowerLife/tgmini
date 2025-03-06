@@ -73,7 +73,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
       // Проверяем, должен ли майнинг быть активным
       const canCollect = data.time_until_next_collection === 0 || data.has_miner_pass
-      setIsMiningActive(canCollect ? false : true) // Если можно собирать, значит майнинг должен быть остановлен
+      setIsMiningActive(!canCollect) // Инвертируем логику: если нельзя собирать, значит майнинг активен
 
       if (data.time_until_next_collection > 0) {
         setTimeLeft(data.time_until_next_collection * 1000)
@@ -153,23 +153,15 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       if (!isComponentMounted.current || !isMiningActive) return // Проверяем, активен ли майнинг
 
       const now = Date.now()
-      const timeDiff = (now - lastUpdate) / 1000 / 3600 // разница в часах
+      const timeDiff = (now - currentMined.lastUpdateTime) / 1000 / 3600 // разница в часах
 
       // Базовая ставка 0.5 монет за единицу хешрейта в час
       const newMined = (totalHashrate || 0) * 0.5 * (poolMultiplier || 1) * timeDiff
 
-      setCurrentMined((prev) => {
-        if (lastUpdate > prev.lastUpdateTime) {
-          return {
-            value: newMined || 0,
-            lastUpdateTime: now,
-          }
-        }
-        return {
-          value: prev.value + newMined || 0,
-          lastUpdateTime: now,
-        }
-      })
+      setCurrentMined((prev) => ({
+        value: Math.max(0, prev.value + newMined),
+        lastUpdateTime: now,
+      }))
       setLastUpdate(now)
     }, 1000)
 
@@ -290,8 +282,8 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   const calculateProgress = () => {
     if (!timeLeft || miningInfo?.has_miner_pass) return 100
     const totalTime = 8 * 60 * 60 * 1000 // 8 часов в миллисекундах
-    const elapsed = totalTime - timeLeft
-    return (elapsed / totalTime) * 100
+    const progress = (timeLeft / totalTime) * 100
+    return 100 - progress // Инвертируем прогресс
   }
 
   if (loading) {
