@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MiningPools } from "../components/mining-pools"
 import { Statistics } from "../components/statistics"
 import { MyMiners } from "../components/my-miners"
 import { MiningChart } from "../components/mining-chart"
@@ -127,12 +126,6 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
     loadMiningStats()
   }, [user?.id])
 
-  // Обработчик смены пула
-  const handlePoolChanged = (poolName) => {
-    console.log(`Пул изменен на: ${poolName}`)
-    // Здесь можно обновить данные пользователя, если нужно
-  }
-
   return (
     <div className="home-page">
       <div className="app-container">
@@ -148,9 +141,6 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
 
         {/* Блок информации о Miner Pass */}
         <MinerPassInfo userId={user?.id} hasMinerPass={user?.has_miner_pass} />
-
-        {/* Блок пулов майнинга */}
-        <MiningPools user={user} onPoolChanged={handlePoolChanged} />
 
         {/* Блок майнеров */}
         <MyMiners miners={minersData?.miners || []} />
