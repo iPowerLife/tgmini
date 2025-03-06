@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { MiningChart } from "../components/mining-chart"
 import { MyMiners } from "../components/my-miners"
 import { Shield, Check, AlertCircle, TrendingUp } from "lucide-react"
+import { supabase } from "../utils/supabaseClient"
 
 // Встроенный компонент MinerPassInfo
 const MinerPassInfo = ({ userId, hasMinerPass }) => {
@@ -92,11 +93,71 @@ const MinerPassInfo = ({ userId, hasMinerPass }) => {
 
 // Обновленная главная страница
 const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ranksData }) => {
-  // Используем статические данные для графика вместо загрузки из сервиса
-  const [chartData] = useState({
-    data: [10, 15, 20, 18, 25, 30, 28, 35],
-    labels: ["1/6", "2/6", "3/6", "4/6", "5/6", "6/6", "7/6", "8/6"],
-  })
+  const [chartData, setChartData] = useState({ data: [], labels: [] })
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Загрузка данных для графика
+  useEffect(() => {
+    const loadMiningHistory = async () => {
+      if (!user?.id) return
+
+      try {
+        setIsLoading(true)
+
+        // Получаем историю майнинга за последние 8 дней
+        const { data: history, error } = await supabase
+          .from("mining_history")
+          .select("amount, created_at")
+          .eq("user_id", user.id)
+          .gte("created_at", new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString())
+          .order("created_at", { ascending: true })
+
+        if (error) throw error
+
+        // Группируем данные по дням
+        const dailyData = history.reduce((acc, record) => {
+          const date = new Date(record.created_at).toLocaleDateString()
+          acc[date] = (acc[date] || 0) + record.amount
+          return acc
+        }, {})
+
+        // Получаем последние 8 дней
+        const last8Days = Array.from({ length: 8 }, (_, i) => {
+          const date = new Date()
+          date.setDate(date.getDate() - (7 - i))
+          return date.toLocaleDateString()
+        })
+
+        // Формируем данные для графика
+        const data = last8Days.map((date) => dailyData[date] || 0)
+        const labels = last8Days.map((date) => {
+          const [day, month] = date.split(".")
+          return `${day}/${month}`
+        })
+
+        setChartData({ data, labels })
+      } catch (error) {
+        console.error("Error loading mining history:", error)
+        // В случае ошибки показываем примерные данные
+        const last8Days = Array.from({ length: 8 }, (_, i) => {
+          const date = new Date()
+          date.setDate(date.getDate() - (7 - i))
+          return date.toLocaleDateString()
+        })
+        setChartData({
+          data: [10, 15, 20, 18, 25, 30, 28, 35],
+          labels: last8Days.map((date) => {
+            const [day, month] = date.split(".")
+            return `${day}/${month}`
+          }),
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadMiningHistory()
+  }, [user?.id])
 
   // Создаем объект с данными статистики майнинга
   // В будущем эти данные могут приходить из API
@@ -131,8 +192,14 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
           </div>
         </div>
 
-        {/* График майнинга */}
-        <MiningChart data={chartData.data} labels={chartData.labels} />
+        {/* График майнинга с состоянием загрузки */}
+        {isLoading ? (
+          <div className="bg-gray-900 rounded-2xl p-4 mb-4 h-[200px] flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          <MiningChart data={chartData.data} labels={chartData.labels} title="Доход от майнинга (💎 в день)" />
+        )}
 
         {/* Блок информации о Miner Pass */}
         <MinerPassInfo userId={user?.id} hasMinerPass={user?.has_miner_pass} />
