@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Clock, Coins, Loader, Database, TrendingUp, Zap } from "lucide-react"
+import { Coins, Loader } from "lucide-react"
 import { supabase } from "../supabase"
 
 export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
@@ -119,9 +119,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
 
   if (loading) {
     return (
-      <div className="bg-gray-900 rounded-2xl p-4">
-        <div className="flex justify-center items-center py-4">
-          <Loader className="animate-spin text-blue-500" size={24} />
+      <div className="bg-[#0B1018] p-4 rounded space-y-2">
+        <div className="flex justify-center">
+          <Loader className="animate-spin text-blue-500" size={20} />
         </div>
       </div>
     )
@@ -129,103 +129,92 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
 
   if (!miningInfo?.miners?.length) {
     return (
-      <div className="bg-gray-900 rounded-2xl p-4">
-        <div className="text-sm text-gray-400 text-center">
-          У вас пока нет майнеров. Приобретите майнеры в магазине, чтобы начать добывать монеты.
-        </div>
+      <div className="bg-[#0B1018] p-4 rounded">
+        <div className="text-sm text-gray-500">У вас пока нет майнеров</div>
       </div>
     )
   }
 
   return (
-    <div className="bg-gray-900 rounded-2xl p-4">
-      {/* Заголовок с текущей добычей и кнопкой сбора */}
-      <div className="flex items-center justify-between mb-3">
+    <div className="bg-[#0B1018] p-4 rounded space-y-2.5">
+      {/* Заголовок и награда */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Coins className="text-yellow-500" size={18} />
-          <span className="font-medium">Сбор наград</span>
+          <Coins className="text-yellow-500" size={16} />
+          <span className="text-gray-200">Сбор наград</span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-blue-400">{currentPeriodMined.toFixed(2)} 💎</span>
+        <div className="flex items-center gap-2">
+          <span className="text-blue-400 font-medium">{currentPeriodMined.toFixed(2)} 💎</span>
           {timeLeft > 0 && !miningInfo.has_miner_pass && (
-            <span className="text-orange-400">{formatTime(timeLeft)}</span>
+            <span className="text-orange-400 font-medium">{new Date(timeLeft).toISOString().substr(11, 8)}</span>
           )}
           <button
             onClick={handleCollect}
             disabled={collecting || (timeLeft > 0 && !miningInfo.has_miner_pass)}
-            className={`
-              px-3 py-1 rounded-lg text-sm font-medium transition-all
-              ${
-                collecting
-                  ? "bg-gray-700 text-gray-400 cursor-wait"
-                  : timeLeft > 0 && !miningInfo.has_miner_pass
-                    ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                    : "bg-blue-500 text-white hover:bg-blue-400"
-              }
-            `}
+            className="px-3 py-1 rounded bg-gray-800 text-sm text-gray-200 hover:bg-gray-700"
           >
-            {collecting ? "Сбор..." : "Собрать"}
+            Собрать
           </button>
         </div>
       </div>
 
-      {/* Баланс и прогресс-бар */}
-      <div className="mb-3">
-        <div className="flex items-center gap-1 mb-2">
-          <span className="text-gray-400">Баланс:</span>
-          <span className="font-medium">{balance} 💎</span>
+      {/* Баланс */}
+      <div className="space-y-1">
+        <div className="flex items-center gap-1">
+          <span className="text-gray-500">Баланс:</span>
+          <span className="text-gray-300">{balance}</span>
+          <span className="text-blue-400">💎</span>
         </div>
         {!miningInfo.has_miner_pass && (
-          <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+          <div className="h-0.5 w-full bg-gray-800 rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-500 transition-all duration-1000"
+              className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-1000"
               style={{ width: `${miningInfo.collection_progress || 0}%` }}
             />
           </div>
         )}
       </div>
 
-      {/* Информация о пуле */}
-      <div className="flex items-center justify-between mb-3">
+      {/* Пул */}
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center gap-1.5">
+          <span className="text-blue-400">⊟</span>
+          <span className="text-gray-300">Пул: {miningInfo.pool?.display_name}</span>
+        </div>
         <div className="flex items-center gap-2">
-          <Database className="text-blue-500" size={14} />
-          <span className="text-sm">Пул: {miningInfo.pool?.display_name}</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
           <span className="text-blue-400">{miningInfo.pool?.multiplier}x</span>
-          <span className="text-gray-400">{miningInfo.pool?.fee_percent}%</span>
+          <span className="text-gray-500">{miningInfo.pool?.fee_percent}%</span>
         </div>
       </div>
 
-      {/* Статистика майнинга */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TrendingUp size={14} className="text-green-400" />
-            <span className="text-sm text-gray-400">Всего добыто:</span>
-            <span className="text-sm">{miningInfo.stats?.total_mined} 💎</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Coins size={14} className="text-yellow-400" />
-            <span className="text-sm text-gray-400">Средний доход:</span>
-            <span className="text-sm">{miningInfo.stats?.daily_average} 💎/день</span>
-          </div>
+      {/* Статистика */}
+      <div className="grid grid-cols-2 gap-y-1.5 text-sm">
+        <div className="flex items-center gap-1.5">
+          <span className="text-green-500">↗</span>
+          <span className="text-gray-500">Всего добыто:</span>
+          <span className="text-gray-300">{miningInfo.stats?.total_mined}</span>
+          <span className="text-blue-400">💎</span>
         </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Zap size={14} className="text-blue-400" />
-            <span className="text-sm text-gray-400">Хешрейт:</span>
-            <span className="text-sm">{miningInfo.total_hashrate} H/s</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock size={14} className="text-purple-400" />
-            <span className="text-sm text-gray-400">Дней в майнинге:</span>
-            <span className="text-sm">{miningInfo.stats?.mining_days}</span>
-          </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-yellow-500">💰</span>
+          <span className="text-gray-500">Средний доход:</span>
+          <span className="text-gray-300">{miningInfo.stats?.daily_average}</span>
+          <span className="text-blue-400">💎/день</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-blue-400">⚡</span>
+          <span className="text-gray-500">Хешрейт:</span>
+          <span className="text-gray-300">{miningInfo.total_hashrate}</span>
+          <span className="text-gray-500">H/s</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-purple-400">🕒</span>
+          <span className="text-gray-500">Дней в майнинге:</span>
+          <span className="text-gray-300">{miningInfo.stats?.mining_days}</span>
         </div>
       </div>
 
-      {error && <div className="mt-3 text-sm text-red-400 text-center">{error}</div>}
+      {error && <div className="text-sm text-red-400 text-center">{error}</div>}
     </div>
   )
 }
