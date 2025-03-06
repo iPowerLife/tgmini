@@ -4,7 +4,6 @@ import { useState } from "react"
 import { ChevronDown, ChevronUp, Cpu, Zap, Flame, Clock, Coins, BarChart3, Hash } from "lucide-react"
 
 export const MyMiners = ({ miners = [], miningStats = {} }) => {
-  const [isExpanded, setIsExpanded] = useState(false)
   const [showMiners, setShowMiners] = useState(false)
 
   // Рассчитываем общую мощность майнеров
@@ -20,27 +19,9 @@ export const MyMiners = ({ miners = [], miningStats = {} }) => {
   const totalMinersCount = miners.reduce((sum, miner) => sum + (miner.quantity || 1), 0)
 
   // Заглушки для данных, которые могут отсутствовать
-  const averageHashrate = miningStats.dailyAverage || Math.round(totalPower * 0.85) // Примерно 85% от общего хешрейта
-  const totalCoins = miningStats.totalMined || 1250 // Заглушка
-  const totalMiningTime = miningStats.totalTime || "14д 6ч" // Заглушка
-
-  // Определяем, сколько майнеров показывать в свернутом состоянии
-  const visibleMiners = isExpanded ? miners : miners.slice(0, 2)
-
-  // Определяем цветовую схему для категории майнера
-  const getCategoryColor = (miner) => {
-    const categoryName = miner.model?.category?.name?.toLowerCase() || ""
-
-    if (categoryName.includes("basic") || categoryName.includes("базов")) {
-      return "blue"
-    } else if (categoryName.includes("advanced") || categoryName.includes("продвинут")) {
-      return "purple"
-    } else if (categoryName.includes("premium") || categoryName.includes("премиум")) {
-      return "yellow"
-    }
-
-    return "blue" // По умолчанию
-  }
+  const averageHashrate = miningStats.dailyAverage || Math.round(totalPower * 0.85)
+  const totalCoins = miningStats.totalMined || 1250
+  const totalMiningTime = miningStats.totalTime || "14д 6ч"
 
   return (
     <div className="bg-gray-900 rounded-2xl p-4 mb-4">
@@ -122,56 +103,39 @@ export const MyMiners = ({ miners = [], miningStats = {} }) => {
 
       {/* Список майнеров (отображается только если showMiners = true) */}
       {showMiners && miners.length > 0 && (
-        <>
-          <div className="space-y-2 mb-2">
-            {visibleMiners.map((miner) => {
-              const color = getCategoryColor(miner)
+        <div className="space-y-2">
+          {miners.map((miner) => {
+            const categoryName = miner.model?.category?.name?.toLowerCase() || ""
+            const color = categoryName.includes("premium")
+              ? "yellow"
+              : categoryName.includes("advanced")
+                ? "purple"
+                : "blue"
 
-              return (
-                <div key={miner.id} className={`bg-gray-800 rounded-lg p-3 border border-${color}-500/20`}>
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <div className="font-medium">{miner.model?.display_name || miner.model?.name}</div>
-                      <div className="text-xs text-gray-400">{miner.model?.category?.name || "Базовый майнер"}</div>
-                    </div>
-                    <div className="text-sm bg-gray-700 px-2 py-0.5 rounded">x{miner.quantity}</div>
+            return (
+              <div key={miner.id} className={`bg-gray-800 rounded-lg p-3 border border-${color}-500/20`}>
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="font-medium">{miner.model?.display_name || miner.model?.name}</div>
+                    <div className="text-xs text-gray-400">{miner.model?.category?.name || "Базовый майнер"}</div>
                   </div>
+                  <div className="text-sm bg-gray-700 px-2 py-0.5 rounded">x{miner.quantity}</div>
+                </div>
 
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1">
-                      <Zap size={12} className={`text-${color}-400`} />
-                      <span>Мощность: {miner.model?.mining_power || 0}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Flame size={12} className="text-orange-400" />
-                      <span>Энергия: {miner.model?.energy_consumption || 0}</span>
-                    </div>
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1">
+                    <Zap size={12} className={`text-${color}-400`} />
+                    <span>Мощность: {miner.model?.mining_power || 0}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Flame size={12} className="text-orange-400" />
+                    <span>Энергия: {miner.model?.energy_consumption || 0}</span>
                   </div>
                 </div>
-              )
-            })}
-          </div>
-
-          {/* Кнопка "Показать все" внутри списка майнеров */}
-          {miners.length > 2 && (
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="w-full flex items-center justify-center gap-1 text-sm text-blue-400 bg-gray-800 rounded-lg py-2 hover:bg-gray-750 transition-colors"
-            >
-              {isExpanded ? (
-                <>
-                  <ChevronUp size={16} />
-                  <span>Свернуть</span>
-                </>
-              ) : (
-                <>
-                  <ChevronDown size={16} />
-                  <span>Показать все ({miners.length})</span>
-                </>
-              )}
-            </button>
-          )}
-        </>
+              </div>
+            )
+          })}
+        </div>
       )}
 
       {/* Сообщение, если у пользователя нет майнеров */}
