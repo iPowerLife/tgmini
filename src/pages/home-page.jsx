@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MyMiners } from "../components/my-miners"
 import { MiningChart } from "../components/mining-chart"
 import { createMiningService } from "../services/mining-service"
 import { Shield, Check, AlertCircle } from "lucide-react"
@@ -138,8 +137,37 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
         {/* Блок информации о Miner Pass */}
         <MinerPassInfo userId={user?.id} hasMinerPass={user?.has_miner_pass} />
 
-        {/* Блок майнеров */}
-        <MyMiners miners={minersData?.miners || []} />
+        {/* Информация о майнерах пользователя */}
+        <div className="bg-gray-900 rounded-2xl p-4 mb-4">
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Мои майнеры</span>
+            </div>
+            <span className="text-sm text-gray-400">{minersData?.miners?.length || 0} шт.</span>
+          </div>
+
+          {minersData?.miners?.length > 0 ? (
+            <div className="space-y-2">
+              {minersData.miners.slice(0, 3).map((miner) => (
+                <div key={miner.id} className="bg-gray-800 rounded-lg p-3 flex justify-between items-center">
+                  <div>
+                    <div className="font-medium">{miner.model?.display_name || miner.model?.name}</div>
+                    <div className="text-sm text-gray-400">Мощность: {miner.model?.mining_power || 0}</div>
+                  </div>
+                  <div className="text-sm">x{miner.quantity}</div>
+                </div>
+              ))}
+
+              {minersData.miners.length > 3 && (
+                <div className="text-center text-sm text-blue-400 mt-2">
+                  И ещё {minersData.miners.length - 3} майнеров
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center text-gray-400 py-4">У вас пока нет майнеров. Приобретите их в магазине.</div>
+          )}
+        </div>
       </div>
     </div>
   )
