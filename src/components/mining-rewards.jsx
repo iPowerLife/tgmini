@@ -26,10 +26,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
         })
 
         if (error) throw error
-
-        if (!data) {
-          throw new Error("Данные о майнинге не найдены")
-        }
+        if (!data) throw new Error("Данные о майнинге не найдены")
 
         setMiningInfo(data)
 
@@ -42,10 +39,10 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
         // Обновляем время последнего сбора
         if (data.last_collection !== lastCollectionTime) {
           setLastCollectionTime(data.last_collection)
-          setCurrentPeriodMined(0) // Сбрасываем счетчик при новом периоде
+          setCurrentPeriodMined(0)
         }
 
-        // Рассчитываем количество добытых монет за текущий период
+        // Рассчитываем текущую добычу
         if (data.total_hashrate && !collecting) {
           const hourlyRate = data.total_hashrate * 0.5 * (data.pool?.multiplier || 1.0)
           const timeSinceLastCollection = lastCollectionTime
@@ -63,12 +60,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
     }
 
     loadMiningInfo()
-    const interval = setInterval(loadMiningInfo, 30 * 1000) // Обновляем каждые 30 секунд
+    const interval = setInterval(loadMiningInfo, 30 * 1000)
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1000) return 0
-        return prev - 1000
-      })
+      setTimeLeft((prev) => (prev <= 1000 ? 0 : prev - 1000))
     }, 1000)
 
     return () => {
@@ -102,7 +96,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
         if (!miningInfo.has_miner_pass) {
           setTimeLeft(8 * 60 * 60 * 1000)
         }
-        setCurrentPeriodMined(0) // Сбрасываем счетчик после сбора
+        setCurrentPeriodMined(0)
 
         const { data: miningData } = await supabase.rpc("get_mining_info", {
           user_id_param: userId,
@@ -112,8 +106,6 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
           setMiningInfo(miningData)
           setLastCollectionTime(miningData.last_collection)
         }
-
-        alert(`Успешно собрано ${data.amount} монет! (Комиссия пула: ${data.fee_amount} монет)`)
       } else {
         setError(data.error)
       }
@@ -127,7 +119,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
 
   if (loading) {
     return (
-      <div className="bg-gray-900 rounded-2xl p-4 mb-4">
+      <div className="bg-gray-900 rounded-2xl p-4">
         <div className="flex justify-center items-center py-4">
           <Loader className="animate-spin text-blue-500" size={24} />
         </div>
@@ -135,9 +127,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
     )
   }
 
-  if (!miningInfo || !miningInfo.miners || miningInfo.miners.length === 0) {
+  if (!miningInfo?.miners?.length) {
     return (
-      <div className="bg-gray-900 rounded-2xl p-4 mb-4">
+      <div className="bg-gray-900 rounded-2xl p-4">
         <div className="text-sm text-gray-400 text-center">
           У вас пока нет майнеров. Приобретите майнеры в магазине, чтобы начать добывать монеты.
         </div>
@@ -145,26 +137,24 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
     )
   }
 
-  const collectionProgress = miningInfo.has_miner_pass ? 100 : miningInfo.collection_progress || 0
-
   return (
-    <div className="bg-gray-900 rounded-2xl p-4 mb-4">
-      {/* Заголовок, таймер и кнопка сбора */}
-      <div className="flex justify-between items-center mb-3">
+    <div className="bg-gray-900 rounded-2xl p-4">
+      {/* Заголовок с текущей добычей и кнопкой сбора */}
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Coins className="text-yellow-500" size={18} />
           <span className="font-medium">Сбор наград</span>
-          <span className="text-blue-400">• {currentPeriodMined.toFixed(2)} 💎</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <span className="text-blue-400">{currentPeriodMined.toFixed(2)} 💎</span>
           {timeLeft > 0 && !miningInfo.has_miner_pass && (
-            <span className="text-sm text-orange-400">{formatTime(timeLeft)}</span>
+            <span className="text-orange-400">{formatTime(timeLeft)}</span>
           )}
           <button
             onClick={handleCollect}
             disabled={collecting || (timeLeft > 0 && !miningInfo.has_miner_pass)}
             className={`
-              flex items-center gap-1 px-3 py-1 rounded-lg text-sm font-medium
+              px-3 py-1 rounded-lg text-sm font-medium transition-all
               ${
                 collecting
                   ? "bg-gray-700 text-gray-400 cursor-wait"
@@ -174,53 +164,42 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
               }
             `}
           >
-            {collecting ? (
-              <>
-                <Loader size={14} className="animate-spin" />
-                <span>Сбор...</span>
-              </>
-            ) : (
-              <span>Собрать</span>
-            )}
+            {collecting ? "Сбор..." : "Собрать"}
           </button>
         </div>
       </div>
 
-      {/* Баланс */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-gray-400">Баланс:</span>
-        <span className="text-lg font-medium">{balance} 💎</span>
-      </div>
-
-      {/* Прогресс-бар */}
-      {!miningInfo.has_miner_pass && (
-        <div className="mb-3">
-          <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+      {/* Баланс и прогресс-бар */}
+      <div className="mb-3">
+        <div className="flex items-center gap-1 mb-2">
+          <span className="text-gray-400">Баланс:</span>
+          <span className="font-medium">{balance} 💎</span>
+        </div>
+        {!miningInfo.has_miner_pass && (
+          <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
             <div
               className="h-full bg-blue-500 transition-all duration-1000"
-              style={{ width: `${collectionProgress}%` }}
+              style={{ width: `${miningInfo.collection_progress || 0}%` }}
             />
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Информация о пуле */}
-      <div className="bg-gray-800/50 rounded-lg p-2.5 mb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Database className="text-blue-500" size={14} />
-            <span className="text-sm">Пул: {miningInfo.pool?.display_name}</span>
-          </div>
-          <div className="flex items-center gap-3 text-sm">
-            <span>{miningInfo.pool?.multiplier}x</span>
-            <span>{miningInfo.pool?.fee_percent}%</span>
-          </div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Database className="text-blue-500" size={14} />
+          <span className="text-sm">Пул: {miningInfo.pool?.display_name}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-blue-400">{miningInfo.pool?.multiplier}x</span>
+          <span className="text-gray-400">{miningInfo.pool?.fee_percent}%</span>
         </div>
       </div>
 
       {/* Статистика майнинга */}
-      <div className="bg-gray-800/50 rounded-lg p-2.5">
-        <div className="grid grid-cols-2 gap-y-2">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp size={14} className="text-green-400" />
             <span className="text-sm text-gray-400">Всего добыто:</span>
@@ -231,6 +210,8 @@ export const MiningRewards = ({ userId, onCollect, balance = 0 }) => {
             <span className="text-sm text-gray-400">Средний доход:</span>
             <span className="text-sm">{miningInfo.stats?.daily_average} 💎/день</span>
           </div>
+        </div>
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap size={14} className="text-blue-400" />
             <span className="text-sm text-gray-400">Хешрейт:</span>
