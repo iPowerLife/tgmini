@@ -20,11 +20,28 @@ export const MiningRewards = ({ userId, onCollect }) => {
         setLoading(true)
         setError(null)
 
+        // Проверяем соединение с базой данных
+        const { data: healthCheck, error: healthError } = await supabase.rpc("get_mining_info", {
+          user_id_param: userId,
+        })
+
+        if (healthError) {
+          console.error("Health check failed:", healthError)
+          throw new Error("Не удалось подключиться к серверу. Пожалуйста, попробуйте позже.")
+        }
+
         const { data, error } = await supabase.rpc("get_mining_info", {
           user_id_param: userId,
         })
 
-        if (error) throw error
+        if (error) {
+          console.error("Error loading mining info:", error)
+          throw new Error("Ошибка при загрузке данных о майнинге")
+        }
+
+        if (!data) {
+          throw new Error("Данные о майнинге не найдены")
+        }
 
         setMiningInfo(data)
 
@@ -35,8 +52,8 @@ export const MiningRewards = ({ userId, onCollect }) => {
           setTimeLeft(0)
         }
       } catch (err) {
-        console.error("Error loading mining info:", err)
-        setError("Ошибка при загрузке данных о майнинге")
+        console.error("Error in loadMiningInfo:", err)
+        setError(err.message || "Произошла неизвестная ошибка")
       } finally {
         setLoading(false)
       }
