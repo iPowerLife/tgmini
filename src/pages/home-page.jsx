@@ -98,9 +98,14 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
     labels: ["1/6", "2/6", "3/6", "4/6", "5/6", "6/6", "7/6", "8/6"],
   })
 
-  // Рассчитываем общую мощность майнеров
-  const totalPower =
-    minersData?.miners?.reduce((sum, miner) => sum + (miner.model?.mining_power || 0) * (miner.quantity || 1), 0) || 0
+  // Создаем объект с данными статистики майнинга
+  // В будущем эти данные могут приходить из API
+  const miningStats = {
+    dailyAverage: Math.round((chartData.data.reduce((sum, val) => sum + val, 0) / chartData.data.length) * 1.2),
+    totalMined: chartData.data.reduce((sum, val) => sum + val, 0) * 3,
+    totalTime: "14д 6ч",
+    // Другие статистические данные...
+  }
 
   return (
     <div className="home-page">
@@ -109,7 +114,7 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
         <div className="decorative-circle-1"></div>
         <div className="decorative-circle-2"></div>
 
-        {/* Информация о балансе и мощности */}
+        {/* Информация о балансе */}
         <div className="bg-gray-900 rounded-2xl p-4 mb-4">
           <div className="flex justify-between">
             <div>
@@ -117,10 +122,10 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
               <div className="text-xl font-bold">{balance.toFixed(2)} 💎</div>
             </div>
             <div className="text-right">
-              <div className="text-gray-400 text-sm">Общая мощность</div>
+              <div className="text-gray-400 text-sm">Позиция в рейтинге</div>
               <div className="text-xl font-bold flex items-center justify-end">
                 <TrendingUp size={16} className="text-green-500 mr-1" />
-                {totalPower}
+                {ratingData?.users?.findIndex((u) => u.id === user?.id) + 1 || "N/A"}
               </div>
             </div>
           </div>
@@ -132,8 +137,8 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
         {/* Блок информации о Miner Pass */}
         <MinerPassInfo userId={user?.id} hasMinerPass={user?.has_miner_pass} />
 
-        {/* Список майнеров пользователя с возможностью раскрытия */}
-        <MyMiners miners={minersData?.miners || []} />
+        {/* Статистика майнинга и список майнеров */}
+        <MyMiners miners={minersData?.miners || []} miningStats={miningStats} />
       </div>
     </div>
   )
