@@ -60,36 +60,33 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
 
   // Смена пула
   const handlePoolChange = async (poolId) => {
-      if (poolId === currentPool) return
+    if (poolId === currentPool) return
 
-      setLoading(true) // Fix: Move setLoading(true) before the try block
+    try {
+      setLoading(true)
+      setError(null)
 
-      try {
-        setError(null)
+      const { data, error } = await supabase.rpc("change_mining_pool", {
+        user_id_param: userId,
+        pool_name_param: poolId,
+      })
 
-        const { data, error } = await supabase.rpc("change_mining_pool", {
-          user_id_param: userId,
-          pool_name_param: poolId,
-        })
+      if (error) throw error
 
-        if (error) throw error
-
-        if (data.success) {
-          setCurrentPool(poolId)
-          if (onPoolChange) onPoolChange(poolId)
-          alert(`Пул майнинга изменен на ${poolId}`)
-        } else {
-          setError(data.error)
-        }
-      } catch (err) {
-        console.error("Error changing pool:", err)
-        setError("Ошибка при смене пула")
-      } finally {
-        setLoading(false)
+      if (data.success) {
+        setCurrentPool(poolId)
+        if (onPoolChange) onPoolChange(poolId)
+        alert(`Пул майнинга изменен на ${poolId}`)
+      } else {
+        setError(data.error)
       }
-    },
-    [currentPool, userId, onPoolChange]
-  )
+    } catch (err) {
+      console.error("Error changing pool:", err)
+      setError("Ошибка при смене пула")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Если данные загружаются, показываем индикатор загрузки
   if (loading) {
