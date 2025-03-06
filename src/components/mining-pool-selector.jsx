@@ -153,13 +153,6 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
         <div className="flex items-center gap-2">
           <Database className="text-blue-500" size={16} />
           <span className="font-medium">{selectedPoolInfo.display_name}</span>
-          <span className="text-sm text-gray-500">
-            {selectedPoolInfo.name === "standard"
-              ? "Базовый пул"
-              : selectedPoolInfo.name === "advanced"
-                ? "Продвинутый пул"
-                : "Премиум пул"}
-          </span>
           {currentPool === selectedPoolInfo.name && <span className="text-xs text-green-400 ml-auto">Активен</span>}
         </div>
 
