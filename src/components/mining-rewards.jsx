@@ -14,7 +14,6 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   const [lastCollectionTime, setLastCollectionTime] = useState(null)
   const [currentMined, setCurrentMined] = useState(0)
   const [lastUpdate, setLastUpdate] = useState(Date.now())
-  const [syncTimeout, setSyncTimeout] = useState(null)
 
   // Используем useRef для предотвращения утечек памяти
   const timerRef = useRef(null)
