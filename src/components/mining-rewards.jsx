@@ -13,36 +13,32 @@ export const MiningRewards = ({ userId, onCollect }) => {
 
   // Загрузка информации о майнинге
   useEffect(() => {
-    if (!userId) return
+    if (!userId) {
+      console.log("MiningRewards: userId is not provided")
+      return
+    }
 
     const loadMiningInfo = async () => {
       try {
         setLoading(true)
         setError(null)
 
-        // Проверяем соединение с базой данных
-        const { data: healthCheck, error: healthError } = await supabase.rpc("get_mining_info", {
-          user_id_param: userId,
-        })
-
-        if (healthError) {
-          console.error("Health check failed:", healthError)
-          throw new Error("Не удалось подключиться к серверу. Пожалуйста, попробуйте позже.")
-        }
-
+        console.log("Loading mining info for user:", userId)
         const { data, error } = await supabase.rpc("get_mining_info", {
           user_id_param: userId,
         })
 
         if (error) {
           console.error("Error loading mining info:", error)
-          throw new Error("Ошибка при загрузке данных о майнинге")
+          throw new Error(error.message || "Ошибка при загрузке данных о майнинге")
         }
 
         if (!data) {
+          console.error("No data received from get_mining_info")
           throw new Error("Данные о майнинге не найдены")
         }
 
+        console.log("Mining info loaded:", data)
         setMiningInfo(data)
 
         // Устанавливаем таймер до следующего сбора
