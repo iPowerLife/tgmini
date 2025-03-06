@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { Coins } from "lucide-react"
 import { supabase } from "../supabase"
 
+const DEBUG = false // Включите true для отладки
+
 export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 0, poolMultiplier = 1 }) => {
   const [loading, setLoading] = useState(true)
   const [collecting, setCollecting] = useState(false)
@@ -48,7 +50,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         }
 
         if (isComponentMounted.current && data) {
-          console.log("Loaded system settings:", data)
+          if (DEBUG) {
+            console.log("Loaded system settings:", data)
+          }
           setSystemSettings(data)
 
           // Если мы в тестовом режиме и таймер уже запущен, обновляем его
@@ -100,7 +104,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       })
 
       if (!rpcError && rpcData) {
-        console.log("Loaded mining info via RPC:", rpcData)
+        if (DEBUG) {
+          console.log("Loaded mining info via RPC:", rpcData)
+        }
 
         if (!isComponentMounted.current) return
 
@@ -161,7 +167,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         return
       }
 
-      console.log("RPC failed, falling back to direct queries:", rpcError)
+      if (DEBUG) {
+        console.log("RPC failed, falling back to direct queries:", rpcError)
+      }
 
       // Если RPC не сработал, используем прямые запросы
       // Получаем данные о майнинге напрямую из таблиц
@@ -185,7 +193,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         throw userError
       }
 
-      // П��лучаем данные о майнерах пользователя
+      // Получаем данные о майнерах пользователя
       const { data: userMiners, error: userMinersError } = await supabase
         .from("user_miners")
         .select("*, miner:miner_id(*)")
@@ -195,7 +203,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         console.error("Error fetching user miners:", userMinersError)
       }
 
-      console.log("User miners:", userMiners)
+      if (DEBUG) {
+        console.log("User miners:", userMiners)
+      }
 
       // Если таблица user_miners не существует или пуста, попробуем другую структуру
       let miners = []
@@ -209,7 +219,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           console.error("Error fetching direct miners:", directMinersError)
         } else {
           miners = directMiners || []
-          console.log("Direct miners:", miners)
+          if (DEBUG) {
+            console.log("Direct miners:", miners)
+          }
         }
       } else {
         // Преобразуем данные из user_miners в формат, который ожидает компонент
@@ -267,7 +279,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
       if (!isComponentMounted.current) return
 
-      console.log("Constructed mining info:", miningInfo)
+      if (DEBUG) {
+        console.log("Constructed mining info:", miningInfo)
+      }
       setMiningInfo(miningInfo)
 
       // Устанавливаем начальные значения из базы данных
@@ -333,7 +347,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         setLoading(false)
       }
     }
-  }, [userId, lastCollectionTime, collecting, systemSettings])
+  }, [userId, lastCollectionTime, collecting, systemSettings, getCollectionIntervalHours])
 
   // Загружаем данные при монтировании компонента
   useEffect(() => {
@@ -358,11 +372,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       if (miningTimerRef.current) clearInterval(miningTimerRef.current)
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
     }
-  }, [userId, loadMiningInfo])
+  }, [userId, loadMiningInfo, miningInfo?.miners?.length])
 
   // Обновляем значение добытых монет каждую секунду и синхронизируем с базой данных
   useEffect(() => {
-    if (!miningInfo?.miners?.length || !miningInfo.total_hashrate) return
+    if (!miningInfo?.miners?.length || !miningInfo.total_hashrate || collecting) return
 
     // Очищаем предыдущий таймер, если он есть
     if (miningTimerRef.current) clearInterval(miningTimerRef.current)
@@ -371,7 +385,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       if (!isComponentMounted.current) return
 
       // Проверяем условия для активного майнинга
-      const shouldMine = miningInfo.has_miner_pass || timeLeft === 0
+      const shouldMine = miningInfo?.has_miner_pass || timeLeft === 0
 
       if (!shouldMine) {
         setIsMiningActive(false)
@@ -396,26 +410,17 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       setLastUpdate(now)
     }, 1000)
 
-    // Устанавливаем таймер для синхронизации
-    const syncInterval = setInterval(() => {
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current)
-      }
-
-      // Синхронизируем с базой данных каждые 10 секунд
-      syncTimeoutRef.current = setTimeout(() => {
-        if (currentMined.value > 0) {
-          syncProgressRef.current()
-        }
-      }, 10000)
-    }, 10000)
-
     return () => {
-      clearInterval(syncInterval)
       if (miningTimerRef.current) clearInterval(miningTimerRef.current)
-      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
     }
-  }, [miningInfo, timeLeft, currentMined.lastUpdateTime])
+  }, [
+    miningInfo?.total_hashrate,
+    miningInfo?.has_miner_pass,
+    miningInfo?.pool?.multiplier,
+    timeLeft,
+    currentMined.lastUpdateTime,
+    collecting,
+  ])
 
   const formatTime = (ms) => {
     if (!ms) return "00:00:00"
@@ -432,11 +437,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       setCollecting(true)
       setError(null)
 
-      // Получаем актуальный интервал сбора
-      const collectionIntervalHours = getCollectionIntervalHours()
+      // Сохраняем текущее значение перед сбором
+      const amountToCollect = currentMined.value
 
       // Проверяем, есть ли что собирать
-      if (currentMined.value <= 0) {
+      if (amountToCollect <= 0) {
         setError("Нет доступных наград для сбора")
         return
       }
@@ -450,18 +455,15 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       ]
 
       let success = false
-      let rpcError = null
 
       for (const funcName of functionNames) {
-        console.log(`Trying to call ${funcName}...`)
         const { data, error } = await supabase.rpc(funcName, {
           user_id_param: userId,
-          period_hours_param: collectionIntervalHours,
-          calculated_reward: currentMined.value,
+          period_hours_param: getCollectionIntervalHours(),
+          calculated_reward: amountToCollect,
         })
 
         if (!error) {
-          console.log(`Successfully called ${funcName}:`, data)
           success = true
 
           // Обновляем локальное состояние
@@ -474,7 +476,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
           // Устанавливаем новый таймер для обычных пользователей
           if (!miningInfo.has_miner_pass) {
-            const intervalMs = collectionIntervalHours * 60 * 60 * 1000
+            const intervalMs = getCollectionIntervalHours() * 60 * 60 * 1000
             setTimeLeft(intervalMs)
           }
 
@@ -486,16 +488,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           // Перезагружаем данные
           await loadMiningInfo()
           break
-        } else {
-          console.error(`Error calling ${funcName}:`, error)
-          rpcError = error
         }
       }
 
       // Если все RPC вызовы не сработали, используем прямые запросы
       if (!success) {
-        console.log("All RPC calls failed, using direct queries")
-
         // Получаем текущий баланс пользователя
         const { data: userData, error: userError } = await supabase
           .from("users")
@@ -511,16 +508,15 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           const now = new Date()
           const hoursSinceLastCollection = (now - lastCollection) / (1000 * 60 * 60)
 
-          if (hoursSinceLastCollection < collectionIntervalHours) {
+          if (hoursSinceLastCollection < getCollectionIntervalHours()) {
             throw new Error(
-              `Подождите ещё ${formatTime(collectionIntervalHours * 60 * 60 * 1000 - (now - lastCollection))}`,
+              `Подождите ещё ${formatTime(getCollectionIntervalHours() * 60 * 60 * 1000 - (now - lastCollection))}`,
             )
           }
         }
 
         // Обновляем баланс пользователя
-        const rewardAmount = currentMined.value
-        const newBalance = Number.parseFloat(userData.balance) + rewardAmount
+        const newBalance = Number.parseFloat(userData.balance) + amountToCollect
 
         const { error: updateUserError } = await supabase.from("users").update({ balance: newBalance }).eq("id", userId)
 
@@ -538,7 +534,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           throw statsError
         }
 
-        const totalMined = Number.parseFloat(miningStats?.total_mined || 0) + rewardAmount
+        const totalMined = Number.parseFloat(miningStats?.total_mined || 0) + amountToCollect
 
         const { error: updateStatsError } = await supabase
           .from("mining_stats")
@@ -557,18 +553,17 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           onCollect(newBalance)
         }
 
-        // Сбрасываем накопленные монеты
+        // Сбрасываем накопленные монеты и обновляем состояние
         setCurrentMined({ value: 0, lastUpdateTime: Date.now() })
-
-        // Устанавливаем новый таймер для обычных пользователей
-        if (!userData.has_miner_pass) {
-          const intervalMs = collectionIntervalHours * 60 * 60 * 1000
-          setTimeLeft(intervalMs)
-        }
-
         setLastCollectionTime(nowIso)
         setCurrentPeriodMined(0)
         setLastUpdate(Date.now())
+
+        // Устанавливаем новый таймер для обычных пользователей
+        if (!userData.has_miner_pass) {
+          const intervalMs = getCollectionIntervalHours() * 60 * 60 * 1000
+          setTimeLeft(intervalMs)
+        }
 
         // Перезагружаем данные
         await loadMiningInfo()
@@ -582,9 +577,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   }
 
   // Форматируем число с 8 знаками после запятой
-  const formatNumber = (num) => {
+  const formatNumber = useCallback((num) => {
     return Number.parseFloat(num).toFixed(8)
-  }
+  }, [])
 
   // Рассчитываем прогресс для прогресс-бара
   const calculateProgress = () => {
@@ -609,8 +604,10 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   }
 
   // Проверяем наличие майнеров и выводим отладочную информацию
-  console.log("Mining info:", miningInfo)
-  console.log("Miners:", miningInfo?.miners)
+  if (DEBUG) {
+    console.log("Mining info:", miningInfo)
+    console.log("Miners:", miningInfo?.miners)
+  }
 
   // Проверяем, есть ли у пользователя майнеры
   const hasMiners = miningInfo?.miners && miningInfo.miners.length > 0
