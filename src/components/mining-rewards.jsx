@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Coins } from "lucide-react"
+import { Coins, RefreshCw } from "lucide-react"
 import { supabase } from "../supabase"
 
 export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 0, poolMultiplier = 1 }) => {
   const [loading, setLoading] = useState(true)
   const [collecting, setCollecting] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [miningInfo, setMiningInfo] = useState(null)
   const [error, setError] = useState(null)
   const [timeLeft, setTimeLeft] = useState(0)
@@ -17,81 +18,87 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
   // Используем useRef для предотвращения утечек памяти
   const timerRef = useRef(null)
-  const intervalRef = useRef(null)
   const miningTimerRef = useRef(null)
+  const isComponentMounted = useRef(true)
 
+  // Функция загрузки данных о майнинге
+  const loadMiningInfo = async () => {
+    if (!userId || !isComponentMounted.current) return
+
+    try {
+      setRefreshing(true)
+      setError(null)
+
+      const { data, error } = await supabase.rpc("get_mining_info", {
+        user_id_param: userId,
+      })
+
+      if (!isComponentMounted.current) return
+
+      if (error) throw error
+      if (!data) throw new Error("Данные о майнинге не найдены")
+
+      setMiningInfo(data)
+
+      if (data.time_until_next_collection > 0) {
+        setTimeLeft(data.time_until_next_collection * 1000)
+      } else {
+        setTimeLeft(0)
+      }
+
+      // Обновляем время последнего сбора
+      if (data.last_collection !== lastCollectionTime) {
+        setLastCollectionTime(data.last_collection)
+        setCurrentPeriodMined(0)
+      }
+
+      // Рассчитываем текущую добычу
+      if (data.total_hashrate && !collecting) {
+        const hourlyRate = data.total_hashrate * 0.5 * (data.pool?.multiplier || 1.0)
+        const timeSinceLastCollection = lastCollectionTime
+          ? (Date.now() - new Date(lastCollectionTime).getTime()) / (1000 * 60 * 60)
+          : 0
+        const minedAmount = hourlyRate * Math.min(timeSinceLastCollection, 8)
+        setCurrentPeriodMined(Math.round(minedAmount * 100) / 100)
+      }
+    } catch (err) {
+      console.error("Error in loadMiningInfo:", err)
+      if (isComponentMounted.current) {
+        setError(err.message || "Произошла неизвестная ошибка")
+      }
+    } finally {
+      if (isComponentMounted.current) {
+        setLoading(false)
+        setRefreshing(false)
+      }
+    }
+  }
+
+  // Загружаем данные при монтировании компонента
   useEffect(() => {
     if (!userId) return
 
-    console.log("Setting up mining info loading")
+    isComponentMounted.current = true
 
-    // Используем useRef для предотвращения утечек памяти
-    const loadMiningInfo = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const { data, error } = await supabase.rpc("get_mining_info", {
-          user_id_param: userId,
-        })
-
-        if (error) throw error
-        if (!data) throw new Error("Данные о майнинге не найдены")
-
-        setMiningInfo(data)
-
-        if (data.time_until_next_collection > 0) {
-          setTimeLeft(data.time_until_next_collection * 1000)
-        } else {
-          setTimeLeft(0)
-        }
-
-        // Обновляем время последнего сбора без вызова дополнительных запросов
-        if (data.last_collection !== lastCollectionTime) {
-          setLastCollectionTime(data.last_collection)
-          setCurrentPeriodMined(0)
-        }
-
-        // Рассчитываем текущую добычу
-        if (data.total_hashrate && !collecting) {
-          const hourlyRate = data.total_hashrate * 0.5 * (data.pool?.multiplier || 1.0)
-          const timeSinceLastCollection = lastCollectionTime
-            ? (Date.now() - new Date(lastCollectionTime).getTime()) / (1000 * 60 * 60)
-            : 0
-          const minedAmount = hourlyRate * Math.min(timeSinceLastCollection, 8)
-          setCurrentPeriodMined(Math.round(minedAmount * 100) / 100)
-        }
-      } catch (err) {
-        console.error("Error in loadMiningInfo:", err)
-        setError(err.message || "Произошла неизвестная ошибка")
-      } finally {
-        setLoading(false)
-      }
+    const fetchData = async () => {
+      await loadMiningInfo()
     }
 
-    // Загружаем данные при монтировании компонента
-    loadMiningInfo()
+    fetchData()
 
-    // Очищаем предыдущие интервалы, если они есть
-    if (intervalRef.current) clearInterval(intervalRef.current)
-    if (timerRef.current) clearInterval(timerRef.current)
-
-    // Устанавливаем новые интервалы
-    intervalRef.current = setInterval(() => {
-      console.log("Mining info refresh interval triggered")
-      loadMiningInfo()
-    }, 30 * 1000)
-
+    // Устанавливаем таймер для обратного отсчета
     timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => (prev <= 1000 ? 0 : prev - 1000))
+      if (isComponentMounted.current) {
+        setTimeLeft((prev) => (prev <= 1000 ? 0 : prev - 1000))
+      }
     }, 1000)
 
     return () => {
-      console.log("Cleaning up mining info intervals")
-      if (intervalRef.current) clearInterval(intervalRef.current)
+      isComponentMounted.current = false
       if (timerRef.current) clearInterval(timerRef.current)
+      if (miningTimerRef.current) clearInterval(miningTimerRef.current)
     }
-  }, [userId, lastCollectionTime, collecting])
+  }, [userId])
 
   // Обновляем значение добытых монет каждую секунду
   useEffect(() => {
@@ -99,6 +106,8 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     if (miningTimerRef.current) clearInterval(miningTimerRef.current)
 
     miningTimerRef.current = setInterval(() => {
+      if (!isComponentMounted.current) return
+
       const now = Date.now()
       const timeDiff = (now - lastUpdate) / 1000 / 3600 // разница в часах
 
@@ -123,8 +132,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   }
 
   const handleCollect = async () => {
+    if (!userId || !isComponentMounted.current) return
+
     try {
-      console.log("Starting reward collection")
       setCollecting(true)
       setError(null)
 
@@ -133,42 +143,59 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         period_hours_param: 8,
       })
 
+      if (!isComponentMounted.current) return
+
       if (error) throw error
 
       if (data.success) {
-        console.log("Collection successful, new balance:", data.new_balance)
-
-        // Вызываем onCollect с новым балансом, но не перезагружаем страницу
+        // Вызываем onCollect с новым балансом
         if (typeof onCollect === "function") {
           onCollect(data.new_balance)
         }
 
-        // Обновляем локальное состояние без дополнительных запросов
+        // Обновляем локальное состояние
         if (!miningInfo.has_miner_pass) {
           setTimeLeft(8 * 60 * 60 * 1000)
         }
         setCurrentPeriodMined(0)
-        setCurrentMined(0) // Сбрасываем текущую добычу
+        setCurrentMined(0)
 
         // Обновляем lastCollectionTime на текущее время
         const now = new Date().toISOString()
         setLastCollectionTime(now)
 
-        // Обновляем miningInfo локально без дополнительного запроса
+        // Обновляем miningInfo локально
         setMiningInfo((prev) => ({
           ...prev,
           last_collection: now,
           time_until_next_collection: miningInfo.has_miner_pass ? 0 : 8 * 60 * 60,
           collection_progress: miningInfo.has_miner_pass ? 100 : 0,
+          stats: {
+            ...prev.stats,
+            total_mined: (Number.parseFloat(prev.stats.total_mined) + data.amount).toFixed(2),
+          },
         }))
+
+        loadMiningInfo()
       } else {
         setError(data.error)
       }
     } catch (err) {
       console.error("Error collecting rewards:", err)
-      setError("Ошибка при сборе наград")
+      if (isComponentMounted.current) {
+        setError("Ошибка при сборе наград")
+      }
     } finally {
-      setCollecting(false)
+      if (isComponentMounted.current) {
+        setCollecting(false)
+      }
+    }
+  }
+
+  // Ручное обновление данных
+  const handleRefresh = () => {
+    if (!refreshing) {
+      loadMiningInfo()
     }
   }
 
@@ -208,6 +235,14 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
             {timeLeft > 0 && !miningInfo.has_miner_pass && (
               <span className="text-orange-400 font-medium">{formatTime(timeLeft)}</span>
             )}
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-1 rounded bg-gray-800 text-white text-sm hover:bg-gray-700 disabled:opacity-50"
+              title="Обновить данные"
+            >
+              <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+            </button>
             <button
               onClick={handleCollect}
               disabled={collecting || (timeLeft > 0 && !miningInfo.has_miner_pass)}
