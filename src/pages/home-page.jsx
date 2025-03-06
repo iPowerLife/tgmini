@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Statistics } from "../components/statistics"
 import { MyMiners } from "../components/my-miners"
 import { MiningChart } from "../components/mining-chart"
 import { createMiningService } from "../services/mining-service"
@@ -135,9 +134,6 @@ const HomePage = ({ user, balance, minersData, ratingData, transactionsData, ran
 
         {/* График майнинга */}
         {chartData.data.length > 0 && <MiningChart data={chartData.data} labels={chartData.labels} />}
-
-        {/* Блок статистики */}
-        <Statistics minersData={minersData} miningStats={miningStats} />
 
         {/* Блок информации о Miner Pass */}
         <MinerPassInfo userId={user?.id} hasMinerPass={user?.has_miner_pass} />
