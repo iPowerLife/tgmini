@@ -1,10 +1,34 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { HardDrive, ChevronDown, ChevronUp, Zap, Battery, Clock } from "lucide-react"
 
 export const MyMiners = ({ miners = [], miningStats = {} }) => {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [totalPower, setTotalPower] = useState(0)
+  const [totalConsumption, setTotalConsumption] = useState(0)
+
+  useEffect(() => {
+    // Рассчитываем общую мощность и потребление
+    const newTotalPower = miners.reduce(
+      (sum, miner) => sum + (Number(miner.mining_power) || 0) * (Number(miner.quantity) || 1),
+      0,
+    )
+    const newTotalConsumption = miners.reduce(
+      (sum, miner) => sum + (Number(miner.energy_consumption) || 0) * (Number(miner.quantity) || 1),
+      0,
+    )
+    setTotalPower(newTotalPower)
+    setTotalConsumption(newTotalConsumption)
+
+    console.log("MyMiners component data:", {
+      miners,
+      miningStats,
+      totalPower: newTotalPower,
+      totalConsumption: newTotalConsumption,
+      firstMiner: miners.length > 0 ? miners[0] : null,
+    })
+  }, [miners, miningStats])
 
   // Если нет майнеров, показываем сообщение
   if (!miners || miners.length === 0) {
@@ -33,12 +57,13 @@ export const MyMiners = ({ miners = [], miningStats = {} }) => {
     return acc
   }, {})
 
-  // Рассчитываем общую мощность и потребление
-  const totalPower = miners.reduce((sum, miner) => sum + miner.mining_power * miner.quantity, 0)
-  const totalConsumption = miners.reduce((sum, miner) => sum + miner.energy_consumption * miner.quantity, 0)
-
   // Форматируем статистику
   const formatStat = (value) => {
+    // Check if value is undefined, null, NaN, or not a number
+    if (value === undefined || value === null || isNaN(value) || typeof value !== "number") {
+      return "0"
+    }
+
     if (value >= 1000000) {
       return (value / 1000000).toFixed(2) + "M"
     }
@@ -90,7 +115,7 @@ export const MyMiners = ({ miners = [], miningStats = {} }) => {
             <span className="text-sm font-medium">Эффективность</span>
           </div>
           <div className="text-lg font-semibold">
-            {totalConsumption > 0 ? formatStat(totalPower / totalConsumption) : "N/A"} H/W
+            {totalConsumption > 0 ? formatStat(totalPower / totalConsumption) : "0"} H/W
           </div>
         </div>
       </div>
