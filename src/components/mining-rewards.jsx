@@ -22,10 +22,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   const miningTimerRef = useRef(null)
   const syncTimeoutRef = useRef(null)
   const isComponentMounted = useRef(true)
+  const resetInProgressRef = useRef(false) // Флаг для отслеживания процесса сброса
 
   // Функция для синхронизации прогресса с базой данных
   const syncProgress = async () => {
-    if (!userId || !isComponentMounted.current) return
+    if (!userId || !isComponentMounted.current || resetInProgressRef.current) return
 
     try {
       console.log("Syncing progress to database:", {
@@ -150,7 +151,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     if (miningTimerRef.current) clearInterval(miningTimerRef.current)
 
     miningTimerRef.current = setInterval(() => {
-      if (!isComponentMounted.current) return
+      if (!isComponentMounted.current || resetInProgressRef.current) return
 
       const now = Date.now()
       const timeDiff = (now - lastUpdate) / 1000 / 3600 // разница в часах
@@ -198,6 +199,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       setCollecting(true)
       setError(null)
 
+      // Устанавливаем флаг сброса, чтобы предотвратить обновление счетчика во время сбора
+      resetInProgressRef.current = true
+
       const { data, error } = await supabase.rpc("collect_mining_rewards", {
         user_id_param: userId,
         period_hours_param: selectedPeriod.period,
@@ -215,9 +219,12 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
         // Обновляем локальное состояние
         const collectionIntervalHours = miningInfo?.settings?.collection_interval_hours || 8
-        if (!miningInfo.has_miner_pass) {
+        const allowAnytimeCollection = miningInfo?.settings?.allow_anytime_collection || false
+        if (!miningInfo.has_miner_pass && !allowAnytimeCollection) {
           setTimeLeft(collectionIntervalHours * 60 * 60 * 1000)
         }
+
+        // ВАЖНО: Сбрасываем счетчики добытых монет
         setCurrentPeriodMined(0)
         setCurrentMined(0)
 
@@ -227,21 +234,28 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         setLastUpdate(Date.now())
 
         // Синхронизируем с базой данных
-        await syncProgress()
+        await supabase.rpc("update_mining_progress", {
+          user_id_param: userId,
+          current_mined_param: 0, // Явно устанавливаем 0
+          last_update_param: new Date().toISOString(),
+        })
 
         // Обновляем miningInfo локально
         setMiningInfo((prev) => ({
           ...prev,
           last_collection: now,
-          time_until_next_collection: miningInfo.has_miner_pass ? 0 : collectionIntervalHours * 60 * 60,
-          collection_progress: miningInfo.has_miner_pass ? 100 : 0,
+          time_until_next_collection:
+            miningInfo.has_miner_pass || allowAnytimeCollection ? 0 : collectionIntervalHours * 60 * 60,
+          collection_progress: miningInfo.has_miner_pass || allowAnytimeCollection ? 100 : 0,
+          current_mined: 0, // Явно устанавливаем 0
           stats: {
             ...prev.stats,
             total_mined: (Number.parseFloat(prev.stats.total_mined) + data.amount).toFixed(2),
           },
         }))
 
-        loadMiningInfo()
+        // Перезагружаем данные о майнинге
+        await loadMiningInfo()
       } else {
         setError(data.error)
       }
@@ -253,6 +267,8 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
     } finally {
       if (isComponentMounted.current) {
         setCollecting(false)
+        // Снимаем флаг сброса
+        resetInProgressRef.current = false
       }
     }
   }
@@ -264,7 +280,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
   // Рассчитываем прогресс для прогресс-бара
   const calculateProgress = () => {
-    if (!timeLeft || miningInfo?.has_miner_pass) return 100
+    if (!timeLeft || miningInfo?.has_miner_pass || miningInfo?.settings?.allow_anytime_collection) return 100
     const collectionIntervalHours = miningInfo?.settings?.collection_interval_hours || 8
     const totalTime = collectionIntervalHours * 60 * 60 * 1000 // в миллисекундах
     const elapsed = totalTime - timeLeft
@@ -300,7 +316,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
             <span className="text-white">Сбор наград</span>
           </div>
           <div className="flex items-center gap-2">
-            {timeLeft > 0 && !miningInfo.has_miner_pass && (
+            {timeLeft > 0 && !miningInfo.has_miner_pass && !miningInfo.settings?.allow_anytime_collection && (
               <span className="text-orange-400 font-medium">{formatTime(timeLeft)}</span>
             )}
           </div>
@@ -358,7 +374,11 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
         {/* Кнопка сбора */}
         <button
           onClick={handleCollect}
-          disabled={collecting || (timeLeft > 0 && !miningInfo.has_miner_pass) || !selectedPeriod}
+          disabled={
+            collecting ||
+            (timeLeft > 0 && !miningInfo.has_miner_pass && !miningInfo.settings?.allow_anytime_collection) ||
+            !selectedPeriod
+          }
           className="w-full py-2 rounded-lg text-sm font-medium transition-all
             bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400
             disabled:opacity-50 disabled:cursor-not-allowed"
