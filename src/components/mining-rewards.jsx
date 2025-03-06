@@ -23,6 +23,9 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   useEffect(() => {
     if (!userId) return
 
+    console.log("Setting up mining info loading")
+
+    // Используем useRef для предотвращения утечек памяти
     const loadMiningInfo = async () => {
       try {
         setLoading(true)
@@ -43,7 +46,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           setTimeLeft(0)
         }
 
-        // Обновляем время последнего сбора
+        // Обновляем время последнего сбора без вызова дополнительных запросов
         if (data.last_collection !== lastCollectionTime) {
           setLastCollectionTime(data.last_collection)
           setCurrentPeriodMined(0)
@@ -66,18 +69,25 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       }
     }
 
+    // Загружаем данные при монтировании компонента
     loadMiningInfo()
 
     // Очищаем предыдущие интервалы, если они есть
     if (intervalRef.current) clearInterval(intervalRef.current)
     if (timerRef.current) clearInterval(timerRef.current)
 
-    intervalRef.current = setInterval(loadMiningInfo, 30 * 1000)
+    // Устанавливаем новые интервалы
+    intervalRef.current = setInterval(() => {
+      console.log("Mining info refresh interval triggered")
+      loadMiningInfo()
+    }, 30 * 1000)
+
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => (prev <= 1000 ? 0 : prev - 1000))
     }, 1000)
 
     return () => {
+      console.log("Cleaning up mining info intervals")
       if (intervalRef.current) clearInterval(intervalRef.current)
       if (timerRef.current) clearInterval(timerRef.current)
     }
@@ -114,6 +124,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
 
   const handleCollect = async () => {
     try {
+      console.log("Starting reward collection")
       setCollecting(true)
       setError(null)
 
@@ -125,30 +136,31 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       if (error) throw error
 
       if (data.success) {
+        console.log("Collection successful, new balance:", data.new_balance)
+
         // Вызываем onCollect с новым балансом, но не перезагружаем страницу
         if (typeof onCollect === "function") {
           onCollect(data.new_balance)
         }
 
+        // Обновляем локальное состояние без дополнительных запросов
         if (!miningInfo.has_miner_pass) {
           setTimeLeft(8 * 60 * 60 * 1000)
         }
         setCurrentPeriodMined(0)
         setCurrentMined(0) // Сбрасываем текущую добычу
 
-        // Обновляем данные майнинга без перезагрузки страницы
-        try {
-          const { data: miningData } = await supabase.rpc("get_mining_info", {
-            user_id_param: userId,
-          })
+        // Обновляем lastCollectionTime на текущее время
+        const now = new Date().toISOString()
+        setLastCollectionTime(now)
 
-          if (miningData) {
-            setMiningInfo(miningData)
-            setLastCollectionTime(miningData.last_collection)
-          }
-        } catch (err) {
-          console.error("Error updating mining info:", err)
-        }
+        // Обновляем miningInfo локально без дополнительного запроса
+        setMiningInfo((prev) => ({
+          ...prev,
+          last_collection: now,
+          time_until_next_collection: miningInfo.has_miner_pass ? 0 : 8 * 60 * 60,
+          collection_progress: miningInfo.has_miner_pass ? 100 : 0,
+        }))
       } else {
         setError(data.error)
       }
