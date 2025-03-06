@@ -12,7 +12,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
   const [timeLeft, setTimeLeft] = useState(0)
   const [currentPeriodMined, setCurrentPeriodMined] = useState(0)
   const [lastCollectionTime, setLastCollectionTime] = useState(null)
-  const [currentMined, setCurrentMined] = useState(0)
+  const [currentMined, setCurrentMined] = useState({ value: 0, lastUpdateTime: Date.now() })
   const [lastUpdate, setLastUpdate] = useState(Date.now())
   const [syncTimeout, setSyncTimeout] = useState(null)
   const [isMiningActive, setIsMiningActive] = useState(true) // Новое состояние для отслеживания активности майнинга
@@ -156,8 +156,17 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
       const newMined = totalHashrate * 0.5 * poolMultiplier * timeDiff
 
       setCurrentMined((prev) => {
-        const updated = prev + newMined
-        return updated
+        // Проверяем, не было ли сброса
+        if (lastUpdate > prev.lastUpdateTime) {
+          return {
+            value: newMined,
+            lastUpdateTime: now,
+          }
+        }
+        return {
+          value: prev.value + newMined,
+          lastUpdateTime: now,
+        }
       })
       setLastUpdate(now)
     }, 1000)
@@ -216,16 +225,20 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           setTimeLeft(8 * 60 * 60 * 1000)
         }
         setCurrentPeriodMined(0)
-        setCurrentMined(0) // Сбрасываем добытые монеты
+        setCurrentMined({ value: 0, lastUpdateTime: Date.now() }) // Сбрасываем добытые монеты
+        setLastUpdate(Date.now()) // Важно: обновляем время последнего обновления
         setIsMiningActive(true) // Активируем майнинг после сбора
 
         // Обновляем lastCollectionTime на текущее время
         const now = new Date().toISOString()
         setLastCollectionTime(now)
-        setLastUpdate(Date.now())
 
         // Синхронизируем с базой данных
-        await syncProgress()
+        await supabase.rpc("update_mining_progress", {
+          user_id_param: userId,
+          current_mined_param: 0, // Явно устанавливаем 0 в базе данных
+          last_update_param: now,
+        })
 
         // Обновляем miningInfo локально
         setMiningInfo((prev) => ({
@@ -233,12 +246,15 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           last_collection: now,
           time_until_next_collection: miningInfo.has_miner_pass ? 0 : 8 * 60 * 60,
           collection_progress: miningInfo.has_miner_pass ? 100 : 0,
+          current_mined: 0, // Добавляем сброс current_mined в miningInfo
+          last_update: now, // Обновляем время последнего обновления
           stats: {
             ...prev.stats,
             total_mined: (Number.parseFloat(prev.stats.total_mined) + data.amount).toFixed(2),
           },
         }))
 
+        // Перезагружаем данные
         loadMiningInfoRef.current()
       } else {
         setError(data.error)
@@ -321,7 +337,7 @@ export const MiningRewards = ({ userId, onCollect, balance = 0, totalHashrate = 
           <div className="flex items-center gap-1">
             <span className="text-gray-400">+</span>
             <span className={`${isMiningActive ? "text-green-400" : "text-yellow-400"}`}>
-              {formatNumber(currentMined)}
+              {formatNumber(currentMined.value)}
               {!isMiningActive && " (остановлено)"}
             </span>
             <span className="text-blue-400">💎</span>
