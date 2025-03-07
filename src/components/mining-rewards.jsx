@@ -5,7 +5,7 @@ import { supabase } from "../supabase"
 import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Cpu, Zap, Calendar, Wallet } from "lucide-react"
 
 export const MiningRewards = ({ userId }) => {
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [collecting, setCollecting] = useState(false)
   const [miningInfo, setMiningInfo] = useState(null)
   const [error, setError] = useState(null)
@@ -112,20 +112,6 @@ export const MiningRewards = ({ userId }) => {
     } else {
       return `${minutes} мин`
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="bg-[#0F1729]/90 p-4 rounded-xl mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Cpu className="text-blue-500" size={18} />
-          <span className="font-medium">Майнинг</span>
-        </div>
-        <div className="flex justify-center items-center py-6">
-          <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-        </div>
-      </div>
-    )
   }
 
   if (!miningInfo) {

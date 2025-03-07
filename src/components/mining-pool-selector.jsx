@@ -5,7 +5,7 @@ import { Database, Zap, Percent, AlertCircle, Info, Users } from "lucide-react"
 import { supabase } from "../supabase"
 
 export const MiningPoolSelector = ({ userId, onPoolChange }) => {
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [pools, setPools] = useState([])
   const [currentPool, setCurrentPool] = useState(null)
   const [selectedPool, setSelectedPool] = useState(null)
@@ -24,7 +24,6 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
 
     const loadData = async () => {
       try {
-        setLoading(true)
         setError(null)
 
         const { data: miningInfo, error: miningError } = await supabase.rpc("get_mining_info", {
@@ -108,20 +107,6 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
         setLoading(false)
       }
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="bg-gray-900 rounded-2xl p-4 mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Database className="text-blue-500" size={18} />
-          <span className="font-medium">Пул майнинга</span>
-        </div>
-        <div className="flex justify-center items-center py-6">
-          <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-        </div>
-      </div>
-    )
   }
 
   // Если пулы не загрузились, показываем сообщение об ошибке

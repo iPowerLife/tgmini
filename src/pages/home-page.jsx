@@ -6,8 +6,8 @@ import MiningPoolSelector from "../components/mining-pool-selector"
 import MyMiners from "../components/my-miners"
 import MiningRewards from "../components/mining-rewards"
 
-const HomePage = ({ user }) => {
-  const [miningInfo, setMiningInfo] = useState(null)
+const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
+  const [miningInfo, setMiningInfo] = useState(cachedMiningInfo || null)
   const [error, setError] = useState(null)
   const isInitialMount = useRef(true)
   const dataFetchedRef = useRef(false)
@@ -35,6 +35,9 @@ const HomePage = ({ user }) => {
         if (error) throw error
 
         setMiningInfo(data)
+        if (onCacheUpdate) {
+          onCacheUpdate(data)
+        }
         dataFetchedRef.current = true
       } catch (err) {
         console.error("Error loading mining info:", err)
