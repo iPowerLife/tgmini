@@ -10,7 +10,7 @@ import HomePage from "./pages/home-page" // Импортируем новую г
 import { Shop } from "./components/shop" // Обновленный импорт Shop
 import { useMinerPass } from "./hooks/useMinerPass"
 import React from "react"
-import SplashScreen from "./components/splash-screen" // Импортируем компонент загрузочного экрана
+import LoadingScreen from "./components/loading-screen" // Исправляем импорт на правильное имя файла
 
 // Простой компонент для уведомлений
 const Toast = ({ message, type, onClose }) => {
@@ -814,7 +814,7 @@ function App() {
   // Показываем загрузочный экран, если он активен
   if (showSplash) {
     return (
-      <SplashScreen
+      <LoadingScreen
         isLoading={loading}
         loadingSteps={loadingSteps}
         progress={loadingProgress}
