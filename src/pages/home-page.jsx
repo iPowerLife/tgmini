@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
-import MiningPoolSelector from "../components/mining-pool-selector"
+import { MiningPoolSelector } from "../components/mining-pool-selector"
 import MyMiners from "../components/my-miners"
 import MiningRewards from "../components/mining-rewards"
 
