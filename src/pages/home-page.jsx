@@ -11,7 +11,6 @@ const HomePage = ({ user }) => {
   const [miningInfo, setMiningInfo] = useState(null)
   const [error, setError] = useState(null)
 
-  // Добавляем логирование для отслеживания жизненного цикла компонента
   useEffect(() => {
     console.log("HomePage mounted with user:", user?.id)
 
@@ -20,7 +19,6 @@ const HomePage = ({ user }) => {
     }
   }, [user?.id])
 
-  // Загрузка данных майнинга
   useEffect(() => {
     if (!user) return
 
@@ -47,11 +45,9 @@ const HomePage = ({ user }) => {
     loadMiningInfo()
   }, [user])
 
-  // Обработчик изменения пула
   const handlePoolChange = () => {
     if (!user) return
 
-    // Перезагружаем данные майнинга
     const loadMiningInfo = async () => {
       try {
         setIsLoading(true)
@@ -75,17 +71,13 @@ const HomePage = ({ user }) => {
     loadMiningInfo()
   }
 
-  // Если пользователь не загружен, показываем загрузку
   if (!user) {
-    console.log("User not loaded, showing loading")
     return (
       <div className="flex justify-center items-center h-64">
         <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
       </div>
     )
   }
-
-  console.log("Rendering HomePage with user:", user.id)
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-lg">
@@ -95,12 +87,12 @@ const HomePage = ({ user }) => {
         </div>
       ) : (
         <>
+          <MiningRewards userId={user.id} />
           <MyMiners
             miners={miningInfo?.miners || []}
             miningStats={miningInfo?.stats || {}}
             hourlyRate={miningInfo?.rewards?.hourly_rate || 0}
           />
-          <MiningRewards userId={user.id} />
           <MiningPoolSelector userId={user.id} onPoolChange={handlePoolChange} />
         </>
       )}

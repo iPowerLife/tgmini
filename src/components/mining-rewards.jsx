@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
-import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Terminal, Cpu, Server, Zap } from "lucide-react"
+import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Cpu, Zap, Calendar, Wallet } from "lucide-react"
 
 export const MiningRewards = ({ userId }) => {
   const [loading, setLoading] = useState(true)
@@ -11,12 +11,8 @@ export const MiningRewards = ({ userId }) => {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [lastUpdate, setLastUpdate] = useState(Date.now())
-  const [showLogs, setShowLogs] = useState(false)
-  const [miningLogs, setMiningLogs] = useState([])
   const intervalRef = useRef(null)
-  const logIntervalRef = useRef(null)
   const isComponentMounted = useRef(true)
-  const logsContainerRef = useRef(null)
 
   // Загрузка данных
   useEffect(() => {
@@ -37,7 +33,6 @@ export const MiningRewards = ({ userId }) => {
         if (error) throw error
 
         setMiningInfo(data)
-        console.log("Mining info loaded:", data)
       } catch (err) {
         console.error("Error loading mining info:", err)
         if (isComponentMounted.current) {
@@ -52,7 +47,6 @@ export const MiningRewards = ({ userId }) => {
 
     loadData()
 
-    // Обновляем данные каждые 30 секунд
     intervalRef.current = setInterval(() => {
       if (isComponentMounted.current) {
         setLastUpdate(Date.now())
@@ -64,76 +58,8 @@ export const MiningRewards = ({ userId }) => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
-      if (logIntervalRef.current) {
-        clearInterval(logIntervalRef.current)
-      }
     }
   }, [userId, lastUpdate])
-
-  // Генерация логов майнинга
-  useEffect(() => {
-    if (!miningInfo || !showLogs) return
-
-    const generateLog = () => {
-      if (!isComponentMounted.current) return
-
-      const hashrate = miningInfo.total_hashrate || 0
-      const hourlyRate = miningInfo.rewards?.hourly_rate || 0
-
-      const logTypes = [
-        () => {
-          const hash = Math.random().toString(16).substring(2, 10).toUpperCase()
-          return `[INFO] Найден блок: 0x${hash}... (${(Math.random() * 0.01).toFixed(4)} 💎)`
-        },
-        () => `[SYSTEM] Хешрейт стабилен: ${formatNumber(hashrate)} H/s`,
-        () => `[MINER] Текущая скорость: ${formatNumber(hourlyRate)} 💎/час`,
-        () => {
-          const temp = Math.floor(55 + Math.random() * 15)
-          return `[HARDWARE] Температура: ${temp}°C (норма)`
-        },
-        () => {
-          const efficiency = Math.floor(90 + Math.random() * 9)
-          return `[SYSTEM] Эффективность: ${efficiency}%`
-        },
-      ]
-
-      const newLog = logTypes[Math.floor(Math.random() * logTypes.length)]()
-
-      setMiningLogs((prevLogs) => {
-        const updatedLogs = [...prevLogs, newLog]
-        // Ограничиваем количество логов до 100
-        return updatedLogs.slice(-100)
-      })
-
-      // Прокручиваем контейнер с логами вниз
-      if (logsContainerRef.current) {
-        logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight
-      }
-    }
-
-    // Генерируем начальные логи
-    if (miningLogs.length === 0) {
-      setMiningLogs([
-        "[SYSTEM] Инициализация майнера...",
-        "[SYSTEM] Подключение к пулу...",
-        `[SYSTEM] Майнер запущен, хешрейт: ${formatNumber(miningInfo.total_hashrate)} H/s`,
-      ])
-    }
-
-    // Генерируем новые логи каждые 3-5 секунд
-    logIntervalRef.current = setInterval(
-      () => {
-        generateLog()
-      },
-      3000 + Math.random() * 2000,
-    )
-
-    return () => {
-      if (logIntervalRef.current) {
-        clearInterval(logIntervalRef.current)
-      }
-    }
-  }, [miningInfo, showLogs])
 
   // Сбор наград
   const collectRewards = async () => {
@@ -154,13 +80,7 @@ export const MiningRewards = ({ userId }) => {
 
       if (data.success) {
         setSuccess(`Вы успешно собрали ${data.amount} монет!`)
-
-        // Добавляем лог о сборе наград
-        if (showLogs) {
-          setMiningLogs((prevLogs) => [...prevLogs, `[REWARD] Собрано ${formatNumber(data.amount)} 💎!`])
-        }
-
-        setLastUpdate(Date.now()) // Обновляем данные
+        setLastUpdate(Date.now())
       } else {
         setError(data.error || "Не удалось собрать награды")
       }
@@ -176,13 +96,11 @@ export const MiningRewards = ({ userId }) => {
     }
   }
 
-  // Форматирование чисел
   const formatNumber = (num, decimals = 2) => {
     if (num === undefined || num === null || isNaN(num)) return "0.00"
     return Number.parseFloat(num).toFixed(decimals)
   }
 
-  // Форматирование времени
   const formatTime = (seconds) => {
     if (!seconds || seconds <= 0) return "Доступно сейчас"
 
@@ -198,10 +116,10 @@ export const MiningRewards = ({ userId }) => {
 
   if (loading) {
     return (
-      <div className="bg-[#0F1729]/90 p-4 rounded-xl">
+      <div className="bg-[#0F1729]/90 p-4 rounded-xl mb-4">
         <div className="flex items-center gap-2 mb-3">
-          <Coins className="text-yellow-500" size={18} />
-          <span className="font-medium">Награды за майнинг</span>
+          <Cpu className="text-blue-500" size={18} />
+          <span className="font-medium">Майнинг</span>
         </div>
         <div className="flex justify-center items-center py-6">
           <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
@@ -212,39 +130,44 @@ export const MiningRewards = ({ userId }) => {
 
   if (!miningInfo) {
     return (
-      <div className="bg-[#0F1729]/90 p-4 rounded-xl">
+      <div className="bg-[#0F1729]/90 p-4 rounded-xl mb-4">
         <div className="flex items-center gap-2 mb-3">
-          <Coins className="text-yellow-500" size={18} />
-          <span className="font-medium">Награды за майнинг</span>
+          <Cpu className="text-blue-500" size={18} />
+          <span className="font-medium">Майнинг</span>
         </div>
-        <div className="bg-[#1A2234] rounded-lg p-4 text-center text-gray-400">Информация о наградах недоступна</div>
+        <div className="bg-[#1A2234] rounded-lg p-4 text-center text-gray-400">Информация о майнинге недоступна</div>
       </div>
     )
   }
 
-  const { rewards, total_hashrate, config } = miningInfo
+  const { rewards, total_hashrate, pool } = miningInfo
   const canCollect = rewards?.can_collect || false
   const rewardAmount = Number.parseFloat(rewards?.amount || 0)
   const hourlyRate = Number.parseFloat(rewards?.hourly_rate || 0)
   const timeUntilCollection = Number.parseInt(rewards?.time_until_collection || 0)
   const collectionProgress = Number.parseFloat(rewards?.collection_progress || 0)
-  const coinsPerHs = Number.parseFloat(config?.coins_per_hs || 0)
+
+  // Рассчитываем средний доход в день
+  const dailyIncome = hourlyRate * 24
+
+  // Получаем количество дней в майнинге (пока заглушка)
+  const daysInMining = 1
 
   return (
-    <div className="bg-[#0F1729]/90 p-4 rounded-xl">
-      {/* Заголовок */}
-      <div className="flex items-center justify-between mb-3">
+    <div className="bg-[#0F1729]/90 p-4 rounded-xl mb-4">
+      {/* Заголовок с информацией о пуле */}
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Cpu className="text-blue-500" size={18} />
           <span className="font-medium">Майнинг</span>
         </div>
-        <button
-          onClick={() => setShowLogs(!showLogs)}
-          className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors"
-        >
-          <Terminal size={14} />
-          <span>{showLogs ? "Скрыть логи" : "Показать логи"}</span>
-        </button>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-gray-400">Пул: {pool?.display_name || "Стандартный"}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-blue-400">{pool?.multiplier || 1}x</span>
+            <span className="text-gray-400">{pool?.fee_percent || 5}%</span>
+          </div>
+        </div>
       </div>
 
       {/* Сообщения об ошибках и успехе */}
@@ -266,118 +189,108 @@ export const MiningRewards = ({ userId }) => {
         </div>
       )}
 
-      {/* Логи майнинга */}
-      {showLogs && (
-        <div className="mb-3">
-          <div ref={logsContainerRef} className="bg-black/80 rounded-lg p-3 h-40 overflow-y-auto font-mono text-xs">
-            {miningLogs.map((log, index) => {
-              // Определяем цвет для разных типов логов
-              let logColor = "text-gray-300"
-              if (log.includes("[INFO]")) logColor = "text-blue-400"
-              if (log.includes("[SYSTEM]")) logColor = "text-green-400"
-              if (log.includes("[HARDWARE]")) logColor = "text-yellow-400"
-              if (log.includes("[MINER]")) logColor = "text-purple-400"
-              if (log.includes("[REWARD]")) logColor = "text-yellow-300"
-              if (log.includes("Ошибка")) logColor = "text-red-400"
+      {/* Основная информация */}
+      <div className="bg-[#1A2234] rounded-xl overflow-hidden mb-3">
+        {/* Статистика майнинга */}
+        <div className="space-y-3 p-4">
+          {/* Всего добыто */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-gray-400">
+              <Wallet size={16} className="text-green-400" />
+              <span>Всего добыто:</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="font-medium text-white">{formatNumber(rewardAmount)}</span>
+              <span className="text-blue-400">💎</span>
+            </div>
+          </div>
 
-              return (
-                <div key={index} className={`${logColor} mb-1`}>
-                  {log}
-                </div>
-              )
-            })}
+          {/* Средний доход */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-gray-400">
+              <Coins size={16} className="text-yellow-400" />
+              <span>Средний доход:</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="font-medium text-white">{formatNumber(dailyIncome)}</span>
+              <span className="text-blue-400">💎/день</span>
+            </div>
+          </div>
+
+          {/* Хешрейт */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-gray-400">
+              <Zap size={16} className="text-purple-400" />
+              <span>Хешрейт:</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="font-medium text-white">{formatNumber(total_hashrate)}</span>
+              <span className="text-blue-400">H/s</span>
+            </div>
+          </div>
+
+          {/* Дней в майнинге */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-gray-400">
+              <Calendar size={16} className="text-blue-400" />
+              <span>Дней в майнинге:</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="font-medium text-white">{daysInMining}</span>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Основная информация */}
-      <div className="bg-gradient-to-b from-[#1A2234] to-[#131B2E] rounded-lg p-4 mb-3 border border-blue-900/30">
-        <div className="flex flex-col">
-          {/* Верхняя панель с индикаторами */}
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-              <span className="text-xs text-green-400">Активен</span>
+        {/* Прогресс и кнопка сбора */}
+        <div className="border-t border-gray-800">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1 text-sm text-gray-400">
+                <Clock size={14} />
+                <span>{canCollect ? "Можно собрать сейчас" : `До сбора: ${formatTime(timeUntilCollection)}`}</span>
+              </div>
+              <div className="text-sm text-gray-400">{formatNumber(collectionProgress)}%</div>
             </div>
-            <div className="flex items-center gap-2">
-              <Server size={14} className="text-blue-400" />
-              <span className="text-xs text-gray-400">Пул: {miningInfo.pool?.name || "standard"}</span>
-            </div>
-          </div>
 
-          {/* Основная информация о добыче */}
-          <div className="flex flex-col items-center">
-            <div className="text-gray-400 text-sm mb-1">Добыто монет</div>
-            <div className="text-2xl font-bold mb-2 text-blue-300">{formatNumber(rewardAmount)} 💎</div>
-
-            {/* Прогресс-бар с анимацией */}
-            <div className="w-full bg-gray-800 rounded-full h-2 mb-3 overflow-hidden">
+            <div className="w-full bg-gray-800 rounded-full h-1.5 mb-3 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-blue-600 to-blue-400 h-2 rounded-full relative"
-                style={{ width: `${Math.min(100, collectionProgress)}%` }}
+                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 relative"
+                style={{
+                  width: `${Math.min(100, collectionProgress)}%`,
+                  transition: "width 0.3s ease-in-out",
+                }}
               >
-                {/* Анимированный эффект пульсации */}
                 <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 text-sm text-gray-400 mb-3">
-              <Clock size={14} className="text-blue-400" />
-              <span>{canCollect ? "Можно собрать сейчас" : `До сбора: ${formatTime(timeUntilCollection)}`}</span>
-            </div>
-
-            {/* Информация о скорости майнинга */}
-            <div className="w-full grid grid-cols-2 gap-3 mb-3">
-              <div className="bg-[#0F1729]/80 rounded-lg p-2 flex flex-col items-center">
-                <div className="text-xs text-gray-400 mb-1">Скорость майнинга</div>
-                <div className="text-lg font-medium text-blue-300 flex items-center gap-1">
-                  <Zap size={14} className="text-yellow-400" />
-                  {formatNumber(hourlyRate)} 💎/час
-                </div>
-              </div>
-
-              <div className="bg-[#0F1729]/80 rounded-lg p-2 flex flex-col items-center">
-                <div className="text-xs text-gray-400 mb-1">Хешрейт</div>
-                <div className="text-lg font-medium text-blue-300 flex items-center gap-1">
-                  <Cpu size={14} className="text-blue-400" />
-                  {formatNumber(total_hashrate)} H/s
-                </div>
-              </div>
-            </div>
-
-            {/* Формула расчета */}
-            <div className="text-xs text-gray-500 bg-[#0F1729]/50 p-2 rounded-lg w-full text-center">
-              {formatNumber(total_hashrate)} H/s × {formatNumber(coinsPerHs, 6)} 💎 = {formatNumber(hourlyRate)} 💎/час
-            </div>
+            <button
+              onClick={collectRewards}
+              disabled={!canCollect || collecting || rewardAmount <= 0}
+              className={`
+                w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
+                ${
+                  canCollect && rewardAmount > 0 && !collecting
+                    ? "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
+                    : "bg-gray-800 text-gray-400 cursor-not-allowed"
+                }
+              `}
+            >
+              {collecting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Сбор наград...</span>
+                </>
+              ) : (
+                <>
+                  <ArrowDown size={18} />
+                  <span>Собрать награды</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
-
-      {/* Кнопка сбора */}
-      <button
-        onClick={collectRewards}
-        disabled={!canCollect || collecting || rewardAmount <= 0}
-        className={`
-          w-full py-3 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
-          ${
-            canCollect && rewardAmount > 0 && !collecting
-              ? "bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black shadow-lg shadow-yellow-500/20"
-              : "bg-gray-800 text-gray-400 cursor-not-allowed"
-          }
-        `}
-      >
-        {collecting ? (
-          <>
-            <div className="w-4 h-4 border-2 border-gray-500/30 border-t-gray-500 rounded-full animate-spin"></div>
-            <span>Сбор наград...</span>
-          </>
-        ) : (
-          <>
-            <ArrowDown size={18} />
-            <span>Собрать награды</span>
-          </>
-        )}
-      </button>
     </div>
   )
 }
