@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { HardDrive, Zap, Battery, Gauge, ChevronDown, ChevronUp } from "lucide-react"
+import { HardDrive, Zap, Battery, Gauge, ChevronDown, ChevronUp, Clock } from "lucide-react"
 
-export const MyMiners = ({ miners = [], miningStats = {} }) => {
+export const MyMiners = ({ miners = [], miningStats = {}, hourlyRate = 0 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
 
   // Используем useRef для отслеживания монтирования компонента
@@ -92,8 +92,17 @@ export const MyMiners = ({ miners = [], miningStats = {} }) => {
           <div className="text-white">{formatNumber(totals.consumption)} W</div>
         </div>
 
+        {/* Доход в час */}
+        <div className="bg-[#1A2234] p-2.5 rounded-lg">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Clock size={14} className="text-blue-500" />
+            <span className="text-sm text-gray-400">Доход в час</span>
+          </div>
+          <div className="text-white">{formatNumber(hourlyRate)} 💎</div>
+        </div>
+
         {/* Эффективность */}
-        <div className="bg-[#1A2234] p-2.5 rounded-lg col-span-2">
+        <div className="bg-[#1A2234] p-2.5 rounded-lg">
           <div className="flex items-center gap-1.5 mb-1">
             <Gauge size={14} className="text-purple-500" />
             <span className="text-sm text-gray-400">Эффективность</span>
