@@ -8,17 +8,19 @@ import MiningRewards from "../components/mining-rewards"
 
 const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
   const [miningInfo, setMiningInfo] = useState(cachedMiningInfo || null)
+  const [loading, setLoading] = useState(!cachedMiningInfo) // Если есть кэш, не показываем загрузку
   const [error, setError] = useState(null)
   const isInitialMount = useRef(true)
   const dataFetchedRef = useRef(false)
 
   useEffect(() => {
     console.log("HomePage mounted with user:", user?.id)
+    console.log("Using cached mining info:", !!cachedMiningInfo)
 
     return () => {
       console.log("HomePage unmounted")
     }
-  }, [user?.id])
+  }, [user?.id, cachedMiningInfo])
 
   useEffect(() => {
     if (!user) return
@@ -26,6 +28,9 @@ const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
     // Функция для загрузки данных майнинга
     const loadMiningInfo = async () => {
       try {
+        if (!cachedMiningInfo) {
+          setLoading(true)
+        }
         setError(null)
 
         const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
@@ -42,6 +47,8 @@ const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
       } catch (err) {
         console.error("Error loading mining info:", err)
         setError("Ошибка при загрузке данных майнинга")
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -50,7 +57,7 @@ const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
       loadMiningInfo()
       isInitialMount.current = false
     }
-  }, [user, onCacheUpdate])
+  }, [user, onCacheUpdate, cachedMiningInfo])
 
   const handlePoolChange = () => {
     if (!user) return
@@ -82,16 +89,27 @@ const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
     return null
   }
 
-  // Всегда отображаем компоненты, даже если данные еще не загружены
+  // Показываем загрузку для всей страницы, если данные еще не загружены
+  if (loading && !miningInfo) {
+    return (
+      <div className="container mx-auto px-4 py-6 max-w-lg">
+        <div className="flex justify-center items-center h-64">
+          <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+        </div>
+      </div>
+    )
+  }
+
+  // Всегда отображаем компоненты с данными из кэша или загруженными данными
   return (
     <div className="container mx-auto px-4 py-6 max-w-lg">
-      <MiningRewards userId={user.id} />
+      <MiningRewards userId={user.id} initialData={miningInfo} />
       <MyMiners
         miners={miningInfo?.miners || []}
         miningStats={miningInfo?.stats || {}}
         hourlyRate={miningInfo?.rewards?.hourly_rate || 0}
       />
-      <MiningPoolSelector userId={user.id} onPoolChange={handlePoolChange} />
+      <MiningPoolSelector userId={user.id} onPoolChange={handlePoolChange} initialData={miningInfo} />
     </div>
   )
 }

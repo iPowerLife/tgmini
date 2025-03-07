@@ -386,6 +386,28 @@ function App() {
     }
   }, [])
 
+  // Добавляем предварительную загрузку данных для главной страницы
+
+  // Добавляем новую функцию для предварительной загрузки данных
+  // Добавьте эту функцию после loadRanksData
+  const preloadMiningData = useCallback(async () => {
+    if (!user?.id) return
+
+    try {
+      console.log("Preloading mining data...")
+      const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
+        user_id_param: user.id,
+      })
+
+      if (error) throw error
+
+      setCachedMiningInfo(data)
+      console.log("Mining data preloaded successfully")
+    } catch (error) {
+      console.error("Error preloading mining data:", error)
+    }
+  }, [user?.id])
+
   // Добавьте функцию для обновления кэша
   const updateMiningInfoCache = useCallback((data) => {
     console.log("Updating mining info cache:", data)
@@ -554,6 +576,9 @@ function App() {
           console.log("User initialized:", userWithDisplay)
 
           // Загружаем все данные сразу после инициализации пользователя
+          // Обновляем useEffect для инициализации приложения, чтобы загружать данные майнинга
+          // Найдите блок кода, где загружаются все данные сразу после инициализации пользователя
+          // и добавьте preloadMiningData в Promise.all
           await Promise.all([
             loadShopData(),
             loadMinersData(),
@@ -561,6 +586,7 @@ function App() {
             loadRatingData(),
             loadTransactionsData(),
             loadRanksData(),
+            preloadMiningData(), // Добавляем предварительную загрузку данных майнинга
           ])
           console.log("All data loaded successfully")
         }
@@ -590,6 +616,7 @@ function App() {
     loadRanksData,
     hasMinerPass,
     updateMiningInfoCache,
+    preloadMiningData,
   ])
 
   // Добавляем эффект для перенаправления на главную страницу при обновлении
@@ -630,6 +657,26 @@ function App() {
       }))
     }
   }, [hasMinerPass, user?.id])
+
+  // Обновляем обработчик смены маршрута, чтобы предварительно загружать данные для главной страницы
+  // Добавьте этот useEffect после других useEffect
+  useEffect(() => {
+    // Функция для предварительной загрузки данных при переходе на главную страницу
+    const handleRouteChange = () => {
+      const currentPath = window.location.pathname
+      // Если пользователь находится не на главной странице, предварительно загружаем данные
+      if (currentPath !== "/" && user?.id) {
+        preloadMiningData()
+      }
+    }
+
+    // Добавляем обработчик события popstate (когда пользователь нажимает кнопку "назад" в браузере)
+    window.addEventListener("popstate", handleRouteChange)
+
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange)
+    }
+  }, [preloadMiningData, user?.id])
 
   // Обработчик обновления баланса
   const handleBalanceUpdate = useCallback(

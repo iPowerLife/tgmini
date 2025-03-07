@@ -4,13 +4,16 @@ import { useState, useEffect, useRef } from "react"
 import { Database, Zap, Percent, AlertCircle, Info, Users } from "lucide-react"
 import { supabase } from "../supabase"
 
-export const MiningPoolSelector = ({ userId, onPoolChange }) => {
-  const [loading, setLoading] = useState(false)
+// Обновляем компонент MiningPoolSelector для использования initialData
+
+// Добавляем initialData в параметры компонента
+export const MiningPoolSelector = ({ userId, onPoolChange, initialData }) => {
+  const [loading, setLoading] = useState(!initialData) // Если есть initialData, не показываем загрузку
   const [pools, setPools] = useState([])
-  const [currentPool, setCurrentPool] = useState(null)
-  const [selectedPool, setSelectedPool] = useState(null)
-  const [minerCount, setMinerCount] = useState(0)
-  const [hasMinerPass, setHasMinerPass] = useState(false)
+  const [currentPool, setCurrentPool] = useState(initialData?.pool?.name || null)
+  const [selectedPool, setSelectedPool] = useState(initialData?.pool?.name || null)
+  const [minerCount, setMinerCount] = useState(initialData?.miners?.length || 0)
+  const [hasMinerPass, setHasMinerPass] = useState(initialData?.has_miner_pass || false)
   const [error, setError] = useState(null)
 
   // Используем useRef для отслеживания монтирования компонента
@@ -23,6 +26,11 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
     isComponentMounted.current = true
 
     const loadData = async () => {
+      // Если у нас уже есть initialData, не показываем состояние загрузки
+      if (!initialData) {
+        setLoading(true)
+      }
+
       try {
         setError(null)
 
@@ -69,7 +77,7 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
     return () => {
       isComponentMounted.current = false
     }
-  }, [userId])
+  }, [userId, initialData])
 
   // Смена пула
   const handlePoolChange = async (poolId) => {

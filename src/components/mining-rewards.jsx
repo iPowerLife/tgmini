@@ -4,10 +4,13 @@ import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
 import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Cpu, Zap, Calendar, Wallet } from "lucide-react"
 
-export const MiningRewards = ({ userId }) => {
-  const [loading, setLoading] = useState(false)
+// Обновляем компонент MiningRewards для использования initialData
+
+// Добавляем initialData в параметры компонента
+export const MiningRewards = ({ userId, initialData }) => {
+  const [loading, setLoading] = useState(!initialData) // Если есть initialData, не показываем загрузку
   const [collecting, setCollecting] = useState(false)
-  const [miningInfo, setMiningInfo] = useState(null)
+  const [miningInfo, setMiningInfo] = useState(initialData || null)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [lastUpdate, setLastUpdate] = useState(Date.now())
@@ -21,6 +24,11 @@ export const MiningRewards = ({ userId }) => {
     isComponentMounted.current = true
 
     const loadData = async () => {
+      // Если у нас уже есть initialData, не показываем состояние загрузки
+      if (!initialData) {
+        setLoading(true)
+      }
+
       try {
         setError(null)
 
@@ -59,7 +67,7 @@ export const MiningRewards = ({ userId }) => {
         clearInterval(intervalRef.current)
       }
     }
-  }, [userId, lastUpdate])
+  }, [userId, lastUpdate, initialData])
 
   // Сбор наград
   const collectRewards = async () => {
