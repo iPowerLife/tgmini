@@ -12,14 +12,11 @@ import {
   Shield,
   Gem,
   Droplet,
-  Bolt,
   Coins,
   Loader,
-  AlertCircle,
   ChevronRight,
   Lock,
   Bell,
-  Flame,
   AlertTriangle,
 } from "lucide-react"
 import { supabase } from "../supabase"
@@ -37,132 +34,101 @@ const WarningMessage = () => (
   </div>
 )
 
-// Обновляем компонент карточки майнера, добавляя обратно поле Энергия
+// Обновляем компонент карточки майнера в соответствии с новым дизайном
 const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purchaseLimit, hasMinerPass, minerType }) => {
-  // Функция для получения URL изображения майнера
-  const getMinerImageUrl = (model) => {
-    // Если у модели есть поле image_url, используем его
-    if (model.image_url) {
-      return model.image_url
-    }
-
-    // Иначе возвращаем заглушку
-    return "/images/miners/default.png"
-  }
   // Проверяем, может ли пользователь купить майнер
   const canBuy = userBalance >= miner.price
 
   // Проверяем, не достигнут ли лимит
   const limitReached = purchaseLimit !== null && currentQuantity >= purchaseLimit && !hasMinerPass
 
-  // Цветовые схемы для разных типов майнеров
-  const colorSchemes = {
-    basic: {
-      icon: "text-blue-400",
-      iconBg: "bg-blue-500/10",
-      border: "border-blue-500/30",
-      gradient: "from-blue-500/20 to-blue-600/5",
-    },
-    advanced: {
-      icon: "text-purple-400",
-      iconBg: "bg-purple-500/10",
-      border: "border-purple-500/30",
-      gradient: "from-purple-500/20 to-purple-600/5",
-    },
-    premium: {
-      icon: "text-yellow-400",
-      iconBg: "bg-yellow-500/10",
-      border: "border-yellow-500/30",
-      gradient: "from-yellow-500/20 to-yellow-600/5",
-    },
+  // Функция для получения URL изображения майнера
+  const getMinerImageUrl = (model) => {
+    if (model.image_url) {
+      return model.image_url
+    }
+    return "/images/miners/default.png"
   }
 
-  // Используем цветовую схему по умолчанию, если тип не указан
-  const colorScheme = colorSchemes[minerType] || colorSchemes.basic
-
   return (
-    <div className={`bg-[#151B26] rounded-xl p-3 mb-3 shadow-md border border-opacity-30 ${colorScheme.border}`}>
-      <div className="flex items-start justify-between mb-2">
-        <div>
-          <h3 className="font-medium text-base mb-0.5">{miner.display_name || miner.name}</h3>
-          <p className="text-xs text-gray-400">{miner.description || "Майнер для добычи криптовалюты"}</p>
-        </div>
-        {miner.is_new && (
-          <span className="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded-full">Новинка</span>
-        )}
+    <div className="bg-[#0F1520] rounded-xl overflow-hidden mb-3">
+      {/* Заголовок карточки */}
+      <div className="p-3 pb-1">
+        <h3 className="text-white text-lg font-medium mb-0.5">{miner.display_name || miner.name}</h3>
+        <p className="text-sm text-gray-400">{miner.description || "Компактный майнер для начинающих"}</p>
       </div>
 
-      <div className={`bg-[#0F1520] rounded-lg p-3 mb-3 bg-gradient-to-br ${colorScheme.gradient}`}>
-        <div className="flex items-center gap-3">
-          <div className={`w-16 h-16 rounded-lg overflow-hidden flex items-center justify-center bg-[#0A0F18]`}>
-            <img
-              src={getMinerImageUrl(miner) || "/placeholder.svg"}
-              alt={miner.display_name}
-              className="max-w-full max-h-full object-contain"
-              onError={(e) => {
-                e.target.src = "/images/miners/default.png"
-                e.target.onerror = null // Предотвращаем бесконечный цикл
-              }}
-            />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Bolt size={14} className={colorScheme.icon} />
-              <span className="text-xs text-gray-400">Хешрейт:</span>
-              <span className="text-xs font-medium ml-auto">{miner.mining_power}</span>
+      {/* Основной блок с изображением и характеристиками */}
+      <div className="p-3 pt-1">
+        <div className="bg-[#070B13] rounded-lg p-3">
+          <div className="flex gap-4">
+            {/* Изображение майнера */}
+            <div className="w-32 h-32 bg-[#0F1520] rounded-lg overflow-hidden flex items-center justify-center">
+              <img
+                src={getMinerImageUrl(miner) || "/placeholder.svg"}
+                alt={miner.display_name}
+                className="w-full h-full object-contain p-2"
+                onError={(e) => {
+                  e.target.src = "/images/miners/default.png"
+                  e.target.onerror = null
+                }}
+              />
             </div>
-            <div className="flex items-center gap-1.5">
-              <Flame size={14} className="text-orange-400" />
-              <span className="text-xs text-gray-400">Энергия:</span>
-              <span className="text-xs font-medium ml-auto">{miner.energy_consumption}</span>
-            </div>
-          </div>
-        </div>
 
-        <div className="flex items-center justify-between mt-3">
-          <div className="flex items-center gap-1.5">
-            <Coins size={14} className="text-yellow-400" />
-            <span className="text-sm font-medium text-yellow-400">{miner.price}</span>
+            {/* Характеристики и кнопка покупки */}
+            <div className="flex-1 flex flex-col justify-between">
+              {/* Характеристики */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Хешрейт:</span>
+                  <span className="text-white font-medium">{miner.mining_power} h/s</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Энергия:</span>
+                  <span className="text-white font-medium">{miner.energy_consumption} kw/h</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Эффективность:</span>
+                  <span className="text-white font-medium">
+                    {(miner.mining_power / miner.energy_consumption).toFixed(1)} h/w
+                  </span>
+                </div>
+              </div>
+
+              {/* Кнопка покупки */}
+              <button
+                onClick={() => onBuy(miner.id, miner.price)}
+                disabled={!canBuy || loading || limitReached}
+                className={`
+                  w-full mt-3 py-2 px-4 rounded-lg text-center font-medium
+                  transition-all duration-200
+                  ${
+                    loading
+                      ? "bg-gray-600 text-gray-300 cursor-wait"
+                      : limitReached
+                        ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                        : canBuy
+                          ? "bg-blue-500 hover:bg-blue-600 text-white"
+                          : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                  }
+                `}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  {loading ? (
+                    <>
+                      <Loader size={16} className="animate-spin" />
+                      <span>Покупка...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Купить</span>
+                      <span className="font-medium">{miner.price} монет</span>
+                    </>
+                  )}
+                </div>
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => onBuy(miner.id, miner.price)}
-            className={`
-              px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5
-              transition-all duration-200 shadow-sm
-              ${
-                loading
-                  ? "bg-gray-600 text-gray-300 cursor-wait"
-                  : limitReached
-                    ? "bg-gray-700/80 text-gray-400 cursor-not-allowed"
-                    : canBuy
-                      ? "bg-gradient-to-r from-green-500 to-emerald-500 text-black hover:shadow-md hover:translate-y-[-1px]"
-                      : "bg-gray-700/80 text-gray-400 cursor-not-allowed"
-              }
-            `}
-            disabled={!canBuy || loading || limitReached}
-          >
-            {loading ? (
-              <>
-                <Loader size={12} className="animate-spin" />
-                <span>Покупка...</span>
-              </>
-            ) : limitReached ? (
-              <>
-                <Shield size={12} />
-                <span>Лимит</span>
-              </>
-            ) : canBuy ? (
-              <>
-                <ShoppingCart size={12} />
-                <span>Купить</span>
-              </>
-            ) : (
-              <>
-                <AlertCircle size={12} />
-                <span>Недостаточно</span>
-              </>
-            )}
-          </button>
         </div>
       </div>
     </div>
