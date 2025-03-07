@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Database, Zap, Percent, AlertCircle, Info, Users } from "lucide-react"
 import { supabase } from "../supabase"
 
@@ -13,9 +13,14 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
   const [hasMinerPass, setHasMinerPass] = useState(false)
   const [error, setError] = useState(null)
 
+  // Используем useRef для отслеживания монтирования компонента
+  const isComponentMounted = useRef(true)
+
   // Загрузка данных
   useEffect(() => {
     if (!userId) return
+
+    isComponentMounted.current = true
 
     const loadData = async () => {
       try {
@@ -25,6 +30,8 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
         const { data: miningInfo, error: miningError } = await supabase.rpc("get_mining_info", {
           user_id_param: userId,
         })
+
+        if (!isComponentMounted.current) return
 
         if (miningError) throw miningError
 
@@ -41,23 +48,33 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
           .select("*")
           .order("min_miners")
 
+        if (!isComponentMounted.current) return
+
         if (poolsError) throw poolsError
 
         setPools(poolsData || [])
       } catch (err) {
         console.error("Error loading data:", err)
-        setError("Ошибка при загрузке данных")
+        if (isComponentMounted.current) {
+          setError("Ошибка при загрузке данных")
+        }
       } finally {
-        setLoading(false)
+        if (isComponentMounted.current) {
+          setLoading(false)
+        }
       }
     }
 
     loadData()
+
+    return () => {
+      isComponentMounted.current = false
+    }
   }, [userId])
 
   // Смена пула
   const handlePoolChange = async (poolId) => {
-    if (poolId === currentPool) return
+    if (poolId === currentPool || !isComponentMounted.current) return
 
     try {
       setLoading(true)
@@ -68,20 +85,28 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
         pool_name_param: poolId,
       })
 
+      if (!isComponentMounted.current) return
+
       if (error) throw error
 
-      if (data.success) {
+      if (data && data.success) {
         setCurrentPool(poolId)
         if (onPoolChange) onPoolChange(poolId)
         alert(`Пул майнинга изменен на ${poolId}`)
-      } else {
+      } else if (data && data.error) {
         setError(data.error)
+      } else {
+        setError("Неизвестная ошибка при смене пула")
       }
     } catch (err) {
       console.error("Error changing pool:", err)
-      setError("Ошибка при смене пула")
+      if (isComponentMounted.current) {
+        setError("Ошибка при смене пула")
+      }
     } finally {
-      setLoading(false)
+      if (isComponentMounted.current) {
+        setLoading(false)
+      }
     }
   }
 
@@ -94,6 +119,21 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
         </div>
         <div className="flex justify-center items-center py-6">
           <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+        </div>
+      </div>
+    )
+  }
+
+  // Если пулы не загрузились, показываем сообщение об ошибке
+  if (!pools || pools.length === 0) {
+    return (
+      <div className="bg-gray-900 rounded-2xl p-4 mb-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Database className="text-blue-500" size={18} />
+          <span className="font-medium">Пул майнинга</span>
+        </div>
+        <div className="bg-gray-800/50 rounded-lg p-3">
+          <div className="text-gray-400 text-sm">Информация о пулах недоступна</div>
         </div>
       </div>
     )
@@ -135,12 +175,12 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
                 onClick={() => !isDisabled && setSelectedPool(pool.name)}
                 disabled={isDisabled}
                 className={`
-                  px-3 py-1.5 text-sm rounded-lg transition-all whitespace-nowrap
-                  ${isActive ? "bg-gray-800 text-white" : "text-gray-400 hover:text-white"}
-                  ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
-                `}
+                px-3 py-1.5 text-sm rounded-lg transition-all whitespace-nowrap
+                ${isActive ? "bg-gray-800 text-white" : "text-gray-400 hover:text-white"}
+                ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+              `}
               >
-                {pool.display_name}
+                {pool.display_name || pool.name}
               </button>
             )
           })}
@@ -152,7 +192,7 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
         {/* Название пула */}
         <div className="flex items-center gap-2">
           <Database className="text-blue-500" size={16} />
-          <span className="font-medium">{selectedPoolInfo.display_name}</span>
+          <span className="font-medium">{selectedPoolInfo.display_name || selectedPoolInfo.name}</span>
           {currentPool === selectedPoolInfo.name && <span className="text-xs text-green-400 ml-auto">Активен</span>}
         </div>
 
@@ -187,7 +227,7 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
         {/* Описание */}
         <div className="flex items-center gap-2 text-sm">
           <Info size={14} className="text-gray-400 shrink-0" />
-          <span className="text-gray-400 truncate">{selectedPoolInfo.description}</span>
+          <span className="text-gray-400 truncate">{selectedPoolInfo.description || "Нет описания"}</span>
         </div>
 
         {/* Кнопка выбора пула */}
@@ -196,13 +236,13 @@ export const MiningPoolSelector = ({ userId, onPoolChange }) => {
             onClick={() => handlePoolChange(selectedPoolInfo.name)}
             disabled={isPoolDisabled(selectedPoolInfo) || loading}
             className={`
-              w-full py-2 rounded-lg text-sm font-medium transition-all
-              ${
-                isPoolDisabled(selectedPoolInfo) || loading
-                  ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                  : "bg-blue-500 text-white hover:bg-blue-400"
-              }
-            `}
+            w-full py-2 rounded-lg text-sm font-medium transition-all
+            ${
+              isPoolDisabled(selectedPoolInfo) || loading
+                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                : "bg-blue-500 text-white hover:bg-blue-400"
+            }
+          `}
           >
             {loading ? "Загрузка..." : "Выбрать пул"}
           </button>

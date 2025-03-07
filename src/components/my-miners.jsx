@@ -1,13 +1,25 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { HardDrive, Zap, Battery, Clock, Gauge, ChevronDown, ChevronUp } from "lucide-react"
 
 export const MyMiners = ({ miners = [], miningStats = {} }) => {
   const [isExpanded, setIsExpanded] = useState(false)
 
+  // Используем useRef для отслеживания монтирования компонента
+  const isComponentMounted = useRef(true)
+
+  useEffect(() => {
+    isComponentMounted.current = true
+
+    return () => {
+      isComponentMounted.current = false
+    }
+  }, [])
+
+  // Исправляем проверку наличия майнеров
   // Если нет майнеров, показываем сообщение
-  if (!miners?.length) {
+  if (!miners || miners.length === 0) {
     return (
       <div className="bg-[#0F1729]/90 p-4 rounded-xl">
         <div className="flex justify-between items-center mb-3">
@@ -24,8 +36,8 @@ export const MyMiners = ({ miners = [], miningStats = {} }) => {
   // Рассчитываем общие показатели
   const totals = miners.reduce(
     (acc, miner) => {
-      const power = (miner.model?.mining_power || 0) * miner.quantity
-      const consumption = (miner.model?.energy_consumption || 0) * miner.quantity
+      const power = (miner.model?.mining_power || 0) * miner.quantity || 0
+      const consumption = (miner.model?.energy_consumption || 0) * miner.quantity || 0
       return {
         power: acc.power + power,
         consumption: acc.consumption + consumption,
