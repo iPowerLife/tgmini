@@ -124,44 +124,6 @@ const HomePage = ({
           onCacheUpdate={onCacheUpdate}
         />
       </div>
-
-      {/* Секция с последними транзакциями */}
-      {transactionsData.transactions && transactionsData.transactions.length > 0 ? (
-        <div className="section-container">
-          <div className="section-header">
-            <h2>Последние транзакции</h2>
-          </div>
-          <div className="section-content">
-            <div className="bg-[#1A2234] rounded-lg p-3">
-              {transactionsData.transactions.map(
-                (tx) =>
-                  (
-                    <div key={tx.id} className="border-b border-gray-800 last:border-0 py-2">
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm">{tx.description}</div>
-                    <div className={`text-sm font-medium ${tx.amount > 0 ? "text-green-500" : "text-red-500"}`}>
-                      {tx.amount > 0 ? "+" : ""}
-                      {tx.amount} 💎
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-500">{new Date(tx.timestamp).toLocaleString()}</div>
-                </div>
-                  ),
-              )}
-            </div>
-          </div>
-        </div>
-      ) : (
-        (
-          <div className=\"section-container">
-          <div className="section-header">
-            <h2>Последние транзакции</h2>
-          </div>
-          <div className="section-content">
-            <div className="bg-[#1A2234] rounded-lg p-4 text-center text-gray-400">Нет транзакций</div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
