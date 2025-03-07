@@ -109,7 +109,13 @@ const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
         miningStats={miningInfo?.stats || {}}
         hourlyRate={miningInfo?.rewards?.hourly_rate || 0}
       />
-      <MiningPoolSelector userId={user.id} onPoolChange={handlePoolChange} initialData={miningInfo} />
+      <MiningPoolSelector
+        user={user}
+        onPoolChange={handlePoolChange}
+        initialData={miningInfo}
+        cachedMiningInfo={miningInfo}
+        onCacheUpdate={onCacheUpdate}
+      />
     </div>
   )
 }
