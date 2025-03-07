@@ -90,6 +90,8 @@ function AppContent({
   transactionsData,
   ranksData,
   hasMinerPass, // Добавьте этот параметр
+  cachedMiningInfo,
+  onCacheUpdate,
 }) {
   console.log("AppContent rendered with:", { user, balance, minersData, ratingData, ranksData, hasMinerPass })
 
@@ -125,6 +127,8 @@ function AppContent({
                     transactionsData={transactionsData}
                     ranksData={ranksData}
                     onPurchase={handleBalanceUpdate} // Добавляем проп для обновления баланса
+                    cachedMiningInfo={cachedMiningInfo} // Передаем кэшированные данные
+                    onCacheUpdate={onCacheUpdate} // Передаем функцию обновления кэша
                   />
                 </div>
               }
@@ -228,6 +232,9 @@ function App() {
   const [transactionsData, setTransactionsData] = useState({ transactions: [] })
   // Добавим новое состояние для рангов и функцию их загрузки
   const [ranksData, setRanksData] = useState({ ranks: [] })
+
+  // Добавьте новое состояние для кэширования данных о майнинге
+  const [cachedMiningInfo, setCachedMiningInfo] = useState(null)
 
   // Добавьте хук для проверки Miner Pass
   const { hasMinerPass } = useMinerPass(user?.id)
@@ -377,6 +384,12 @@ function App() {
     } catch (error) {
       console.error("Error loading ranks data:", error)
     }
+  }, [])
+
+  // Добавьте функцию для обновления кэша
+  const updateMiningInfoCache = useCallback((data) => {
+    console.log("Updating mining info cache:", data)
+    setCachedMiningInfo(data)
   }, [])
 
   // Инициализация приложения
@@ -568,7 +581,16 @@ function App() {
     return () => {
       mounted = false
     }
-  }, [loadShopData, loadMinersData, loadTasksData, loadRatingData, loadTransactionsData, loadRanksData, hasMinerPass])
+  }, [
+    loadShopData,
+    loadMinersData,
+    loadTasksData,
+    loadRatingData,
+    loadTransactionsData,
+    loadRanksData,
+    hasMinerPass,
+    updateMiningInfoCache,
+  ])
 
   // Добавляем эффект для перенаправления на главную страницу при обновлении
   useEffect(() => {
@@ -645,6 +667,8 @@ function App() {
         transactionsData={transactionsData}
         ranksData={ranksData}
         hasMinerPass={hasMinerPass} // Добавьте этот проп
+        cachedMiningInfo={cachedMiningInfo}
+        onCacheUpdate={updateMiningInfoCache}
       />
     )
   }, [
@@ -659,6 +683,8 @@ function App() {
     transactionsData,
     ranksData,
     hasMinerPass, // Добавьте эту зависимость
+    cachedMiningInfo,
+    updateMiningInfoCache,
   ])
 
   if (loading) {

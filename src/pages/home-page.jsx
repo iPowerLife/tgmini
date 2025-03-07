@@ -50,7 +50,7 @@ const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
       loadMiningInfo()
       isInitialMount.current = false
     }
-  }, [user])
+  }, [user, onCacheUpdate])
 
   const handlePoolChange = () => {
     if (!user) return
@@ -65,6 +65,9 @@ const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
         if (error) throw error
 
         setMiningInfo(data)
+        if (onCacheUpdate) {
+          onCacheUpdate(data)
+        }
       } catch (err) {
         console.error("Error loading mining info:", err)
         setError("Ошибка при загрузке данных майнинга")
