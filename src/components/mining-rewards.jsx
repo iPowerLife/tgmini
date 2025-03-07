@@ -183,7 +183,7 @@ export const MiningRewards = ({ userId }) => {
       <div className="bg-[#1A2234] rounded-lg p-4 mb-3">
         <div className="flex flex-col items-center">
           <div className="text-gray-400 text-sm mb-1">Добыто монет</div>
-          <div className="text-2xl font-bold mb-2">{formatNumber(rewardAmount, 6)} 💎</div>
+          <div className="text-2xl font-bold mb-2">{formatNumber(rewardAmount, 2)} 💎</div>
 
           <div className="w-full bg-gray-800 rounded-full h-2 mb-3">
             <div
@@ -198,11 +198,11 @@ export const MiningRewards = ({ userId }) => {
           </div>
 
           <div className="text-sm text-gray-400 mb-1">Скорость майнинга</div>
-          <div className="text-lg font-medium">{formatNumber(hourlyRate, 3)} 💎/час</div>
+          <div className="text-lg font-medium">{formatNumber(hourlyRate, 2)} 💎/час</div>
 
           <div className="text-xs text-gray-500 mt-2">
             Хешрейт: {formatNumber(total_hashrate)} H/s × {formatNumber(coinsPerHs, 6)} 💎 ={" "}
-            {formatNumber(hourlyRate, 3)} 💎/час
+            {formatNumber(hourlyRate, 2)} 💎/час
           </div>
         </div>
       </div>
