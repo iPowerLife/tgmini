@@ -10,7 +10,6 @@ import {
   Sparkles,
   Rocket,
   Shield,
-  Cpu,
   Gem,
   Droplet,
   Bolt,
@@ -40,6 +39,16 @@ const WarningMessage = () => (
 
 // Обновляем компонент карточки майнера, добавляя обратно поле Энергия
 const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purchaseLimit, hasMinerPass, minerType }) => {
+  // Функция для получения URL изображения майнера
+  const getMinerImageUrl = (model) => {
+    // Если у модели есть поле image_url, используем его
+    if (model.image_url) {
+      return model.image_url
+    }
+
+    // Иначе возвращаем заглушку
+    return "/images/miners/default.png"
+  }
   // Проверяем, может ли пользователь купить майнер
   const canBuy = userBalance >= miner.price
 
@@ -85,8 +94,16 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
 
       <div className={`bg-[#0F1520] rounded-lg p-3 mb-3 bg-gradient-to-br ${colorScheme.gradient}`}>
         <div className="flex items-center gap-3">
-          <div className={`w-16 h-16 ${colorScheme.iconBg} rounded-lg flex items-center justify-center`}>
-            <Cpu className={colorScheme.icon} size={32} />
+          <div className={`w-16 h-16 rounded-lg overflow-hidden flex items-center justify-center bg-[#0A0F18]`}>
+            <img
+              src={getMinerImageUrl(miner) || "/placeholder.svg"}
+              alt={miner.display_name}
+              className="max-w-full max-h-full object-contain"
+              onError={(e) => {
+                e.target.src = "/images/miners/default.png"
+                e.target.onerror = null // Предотвращаем бесконечный цикл
+              }}
+            />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-1.5 mb-2">
