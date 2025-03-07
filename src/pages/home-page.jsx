@@ -1,10 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-// Импортируем компонент без расширения
 import MiningPoolSelector from "../components/mining-pool-selector"
 import MyMiners from "../components/my-miners"
-import MiningSettings from "../components/mining-settings"
 
 const HomePage = ({ user, minersData: initialMinersData, onPurchase }) => {
   const [isLoading, setIsLoading] = useState(false)
@@ -44,12 +42,8 @@ const HomePage = ({ user, minersData: initialMinersData, onPurchase }) => {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-lg">
-      {/* Используем заглушку вместо компонента сбора наград */}
       <MyMiners miners={minersData?.miners || []} miningStats={minersData?.stats || {}} />
       <MiningPoolSelector userId={user.id} onPoolChange={() => {}} />
-
-      {/* Добавляем компонент настроек майнинга */}
-      <MiningSettings userId={user.id} />
     </div>
   )
 }
