@@ -150,18 +150,13 @@ function AppContent({
               path="/shop"
               element={
                 <div className="page-content" key="shop-page">
-                  <div className="app-container">
-                    <div className="background-gradient"></div>
-                    <div className="decorative-circle-1"></div>
-                    <div className="decorative-circle-2"></div>
-                    <Shop
-                      user={user}
-                      onPurchase={handleBalanceUpdate}
-                      categories={shopData.categories}
-                      models={shopData.models}
-                      hasMinerPass={hasMinerPass} // Добавьте этот проп
-                    />
-                  </div>
+                  <Shop
+                    user={user}
+                    onPurchase={handleBalanceUpdate}
+                    categories={shopData.categories}
+                    models={shopData.models}
+                    hasMinerPass={hasMinerPass}
+                  />
                 </div>
               }
             />
@@ -713,7 +708,7 @@ function App() {
     }
   }, [])
 
-  // Также обновите useEffect, который следит з�� изменением hasMinerPass
+  // Также обновите useEffect, который следит за изменением hasMinerPass
   // Добавьте этот эффект после других useEffect
   useEffect(() => {
     if (user?.id && hasMinerPass !== undefined) {
