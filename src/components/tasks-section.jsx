@@ -4,6 +4,7 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Clock, CheckCircle2, Trophy, ListTodo, Sparkles } from "lucide-react"
 import { TaskCard } from "./task-card"
+import { TaskStats } from "./task-stats"
 
 const TabButton = ({ active, onClick, children, icon: Icon, disabled }) => (
   <motion.button
@@ -37,29 +38,30 @@ export function TasksSection({ user, onBalanceUpdate, tasks, onTaskComplete }) {
 
   const filteredTasks = tasks
     .filter((task) => {
-      if (activeTab === "all") return true
-      return task.type === activeTab
+      // Фильтрация только по вкладке
+      if (activeTab !== "all" && task.type !== activeTab) return false
+      return true
     })
     .sort((a, b) => {
-      // Сначала сортируем по статусу выполнения
+      // Базовая сортировка по статусу и типу
       if (!a.is_completed && b.is_completed) return -1
       if (a.is_completed && !b.is_completed) return 1
-
-      // Затем по истечению срока
       if (!a.is_expired && b.is_expired) return -1
       if (a.is_expired && !b.is_expired) return 1
-
-      // Затем по типу (лимитированные первыми)
       if (a.type === "limited" && b.type !== "limited") return -1
       if (a.type !== "limited" && b.type === "limited") return 1
 
-      // И наконец по времени создания
+      // По умолчанию сортируем по дате создания (новые сверху)
       return new Date(b.created_at) - new Date(a.created_at)
     })
 
   return (
     <div className="min-h-[100vh] pb-[70px]">
       <div className="px-3">
+        {/* Статистика заданий */}
+        <TaskStats tasks={tasks} />
+
+        {/* Вкладки типов заданий */}
         <div className="flex items-center justify-between p-1.5 mb-2 bg-gray-800/50 rounded-lg backdrop-blur-sm border border-gray-700/50">
           <motion.div className="flex gap-0.5" initial={false}>
             <TabButton active={activeTab === "all"} onClick={() => setActiveTab("all")} icon={ListTodo}>
@@ -77,6 +79,7 @@ export function TasksSection({ user, onBalanceUpdate, tasks, onTaskComplete }) {
           </motion.div>
         </div>
 
+        {/* Список заданий */}
         <div className="flex flex-col gap-1">
           {filteredTasks.map((task) => (
             <TaskCard

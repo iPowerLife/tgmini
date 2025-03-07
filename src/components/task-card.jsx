@@ -4,6 +4,7 @@ import { useState, useCallback, memo, useEffect } from "react"
 import { motion } from "framer-motion"
 import { supabase } from "../supabase"
 import { initTelegram } from "../utils/telegram"
+import { TaskCategoryBadge } from "./task-category-badge"
 
 const VerificationTimer = memo(({ timeLeft, onComplete }) => {
   const [remainingTime, setRemainingTime] = useState(timeLeft)
@@ -109,9 +110,8 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     timeLeft: 15000,
   })
   // Пропускаем рендеринг реферальных заданий
-  if (task.type === "referral") {
-    return null
-  }
+  const isReferralTask = task.type === "referral"
+
   // Добавляем логирование для отладки
   useEffect(() => {
     console.log("Task data:", {
@@ -247,7 +247,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     }
 
     // Для реферальных заданий показываем особое состояние
-    if (task.type === "referral") {
+    if (isReferralTask) {
       const currentReferrals = user.referral_count || 0
       const requiredReferrals = task.required_referrals
 
@@ -406,7 +406,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   }
 
   const renderReferralProgress = () => {
-    if (task.type !== "referral") return null
+    if (!isReferralTask) return null
 
     const currentReferrals = user.referral_count || 0
     const requiredReferrals = task.required_referrals
@@ -459,6 +459,10 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     )
   }
 
+  if (isReferralTask) {
+    return null
+  }
+
   return (
     <div
       style={{
@@ -497,19 +501,34 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       )}
       <div style={{ padding: "4px" }}>
         <div style={{ marginBottom: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3
-            style={{
-              fontSize: "0.875rem",
-              fontWeight: 500,
-              margin: 0,
-              color:
-                task.type === "limited" && !task.is_completed && !task.is_expired
-                  ? "#f3e8ff"
-                  : "rgba(255, 255, 255, 0.9)",
-            }}
-          >
-            {task.title}
-          </h3>
+          <div className="flex flex-col gap-1">
+            <h3
+              style={{
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                margin: 0,
+                color:
+                  task.type === "limited" && !task.is_completed && !task.is_expired
+                    ? "#f3e8ff"
+                    : "rgba(255, 255, 255, 0.9)",
+              }}
+            >
+              {task.title}
+            </h3>
+            <div className="flex items-center gap-1.5">
+              <TaskCategoryBadge type={task.type} small />
+              {task.is_completed && (
+                <span className="inline-flex items-center px-1.5 py-0.5 bg-green-500/10 border border-green-500/20 rounded-md text-xs text-green-400">
+                  ✓ Выполнено
+                </span>
+              )}
+              {task.is_expired && !task.is_completed && (
+                <span className="inline-flex items-center px-1.5 py-0.5 bg-red-500/10 border border-red-500/20 rounded-md text-xs text-red-400">
+                  Истекло
+                </span>
+              )}
+            </div>
+          </div>
           <div
             style={{
               display: "flex",
