@@ -51,84 +51,80 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
   }
 
   return (
-    <div className="bg-[#0F1520] rounded-xl overflow-hidden mb-3">
-      {/* Заголовок карточки */}
-      <div className="p-3 pb-1">
-        <h3 className="text-white text-lg font-medium mb-0.5">{miner.display_name || miner.name}</h3>
+    <div className="bg-gradient-to-br from-[#1a1f2c] to-[#151822] rounded-xl p-4 mb-3">
+      {/* Верхняя часть с названием и описанием */}
+      <div className="mb-3">
+        <h3 className="text-white text-lg font-medium leading-tight">{miner.display_name || miner.name}</h3>
         <p className="text-sm text-gray-400">{miner.description || "Компактный майнер для начинающих"}</p>
       </div>
 
-      {/* Основной блок с изображением и характеристиками */}
-      <div className="p-3 pt-1">
-        <div className="bg-[#070B13] rounded-lg p-3">
-          <div className="flex gap-4">
-            {/* Изображение майнера */}
-            <div className="w-32 h-32 bg-[#0F1520] rounded-lg overflow-hidden flex items-center justify-center">
-              <img
-                src={getMinerImageUrl(miner) || "/placeholder.svg"}
-                alt={miner.display_name}
-                className="w-full h-full object-contain p-2"
-                onError={(e) => {
-                  e.target.src = "/images/miners/default.png"
-                  e.target.onerror = null
-                }}
-              />
+      {/* Основной контент */}
+      <div className="flex gap-4">
+        {/* Изображение майнера */}
+        <div className="w-24 h-24 rounded-lg overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#1a1f2c]/50 to-[#151822]/50">
+          <img
+            src={getMinerImageUrl(miner) || "/placeholder.svg"}
+            alt={miner.display_name}
+            className="w-full h-full object-contain p-2"
+            onError={(e) => {
+              e.target.src = "/images/miners/default.png"
+              e.target.onerror = null
+            }}
+          />
+        </div>
+
+        {/* Характеристики и кнопка */}
+        <div className="flex-1 flex flex-col justify-between">
+          {/* Характеристики */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400 text-sm">Хешрейт:</span>
+              <span className="text-white text-sm font-medium">{miner.mining_power} h/s</span>
             </div>
-
-            {/* Характеристики и кнопка покупки */}
-            <div className="flex-1 flex flex-col justify-between">
-              {/* Характеристики */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Хешрейт:</span>
-                  <span className="text-white font-medium">{miner.mining_power} h/s</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Энергия:</span>
-                  <span className="text-white font-medium">{miner.energy_consumption} kw/h</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Эффективность:</span>
-                  <span className="text-white font-medium">
-                    {(miner.mining_power / miner.energy_consumption).toFixed(1)} h/w
-                  </span>
-                </div>
-              </div>
-
-              {/* Кнопка покупки */}
-              <button
-                onClick={() => onBuy(miner.id, miner.price)}
-                disabled={!canBuy || loading || limitReached}
-                className={`
-                  w-full mt-3 py-2 px-4 rounded-lg text-center font-medium
-                  transition-all duration-200
-                  ${
-                    loading
-                      ? "bg-gray-600 text-gray-300 cursor-wait"
-                      : limitReached
-                        ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                        : canBuy
-                          ? "bg-blue-500 hover:bg-blue-600 text-white"
-                          : "bg-gray-700 text-gray-400 cursor-not-allowed"
-                  }
-                `}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  {loading ? (
-                    <>
-                      <Loader size={16} className="animate-spin" />
-                      <span>Покупка...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Купить</span>
-                      <span className="font-medium">{miner.price} монет</span>
-                    </>
-                  )}
-                </div>
-              </button>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400 text-sm">Энергия:</span>
+              <span className="text-white text-sm font-medium">{miner.energy_consumption} kw/h</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400 text-sm">Эффективность:</span>
+              <span className="text-white text-sm font-medium">
+                {(miner.mining_power / miner.energy_consumption).toFixed(1)} h/w
+              </span>
             </div>
           </div>
+
+          {/* Кнопка покупки */}
+          <button
+            onClick={() => onBuy(miner.id, miner.price)}
+            disabled={!canBuy || loading || limitReached}
+            className={`
+              w-full mt-2 py-2 px-4 rounded-lg text-center font-medium
+              transition-all duration-200
+              ${
+                loading
+                  ? "bg-gray-600 text-gray-300 cursor-wait"
+                  : limitReached
+                    ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                    : canBuy
+                      ? "bg-blue-500 hover:bg-blue-600 text-white"
+                      : "bg-gray-700 text-gray-400 cursor-not-allowed"
+              }
+            `}
+          >
+            <div className="flex items-center justify-center gap-2">
+              {loading ? (
+                <>
+                  <Loader size={16} className="animate-spin" />
+                  <span>Покупка...</span>
+                </>
+              ) : (
+                <>
+                  <span>Купить</span>
+                  <span className="font-medium">{miner.price} монет</span>
+                </>
+              )}
+            </div>
+          </button>
         </div>
       </div>
     </div>
