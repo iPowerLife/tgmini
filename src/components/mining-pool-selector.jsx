@@ -27,11 +27,44 @@ export const MiningPoolSelector = ({ userId, onPoolChange, initialData }) => {
 
     const loadData = async () => {
       // Если у нас уже есть initialData, не показываем состояние загрузки
-      if (!initialData) {
-        setLoading(true)
+      // и не делаем запрос к серверу, если у нас есть все необходимые данные
+      if (initialData && initialData.pool) {
+        const poolName = initialData.pool?.name || "standard"
+        setCurrentPool(poolName)
+        setSelectedPool(poolName)
+        setHasMinerPass(initialData.has_miner_pass || false)
+        setMinerCount(initialData.miners?.length || 0)
+
+        // Загружаем только список пулов, если у нас нет этих данных
+        if (pools.length === 0) {
+          try {
+            const { data: poolsData, error: poolsError } = await supabase
+              .from("mining_pools")
+              .select("*")
+              .order("min_miners")
+
+            if (!isComponentMounted.current) return
+            if (poolsError) throw poolsError
+            setPools(poolsData || [])
+          } catch (err) {
+            console.error("Error loading pools:", err)
+            if (isComponentMounted.current) {
+              setError("Ошибка при загрузке пулов")
+            }
+          } finally {
+            if (isComponentMounted.current) {
+              setLoading(false)
+            }
+          }
+        } else {
+          setLoading(false)
+        }
+        return
       }
 
+      // Если нет initialData, загружаем все данные
       try {
+        setLoading(true)
         setError(null)
 
         const { data: miningInfo, error: miningError } = await supabase.rpc("get_mining_info", {
@@ -39,7 +72,6 @@ export const MiningPoolSelector = ({ userId, onPoolChange, initialData }) => {
         })
 
         if (!isComponentMounted.current) return
-
         if (miningError) throw miningError
 
         if (miningInfo) {
@@ -56,9 +88,7 @@ export const MiningPoolSelector = ({ userId, onPoolChange, initialData }) => {
           .order("min_miners")
 
         if (!isComponentMounted.current) return
-
         if (poolsError) throw poolsError
-
         setPools(poolsData || [])
       } catch (err) {
         console.error("Error loading data:", err)
@@ -77,7 +107,7 @@ export const MiningPoolSelector = ({ userId, onPoolChange, initialData }) => {
     return () => {
       isComponentMounted.current = false
     }
-  }, [userId, initialData])
+  }, [userId, initialData, pools.length])
 
   // Смена пула
   const handlePoolChange = async (poolId) => {

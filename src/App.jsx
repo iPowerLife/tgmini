@@ -50,6 +50,7 @@ const RatingSection = lazy(() =>
   import("./components/rating-section").then((module) => ({ default: module.RatingSection })),
 )
 const UserProfile = lazy(() => import("./components/user-profile").then((module) => ({ default: module.UserProfile })))
+const MinerImagesPage = lazy(() => import("./pages/admin/miner-images"))
 
 // Компонент для отображения во время загрузки
 const LoadingFallback = () => (
@@ -201,6 +202,16 @@ function AppContent({
                 <div className="page-content" key="profile-page">
                   <Suspense fallback={<LoadingFallback />}>
                     <UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />
+                  </Suspense>
+                </div>
+              }
+            />
+            <Route
+              path="/admin/miner-images"
+              element={
+                <div className="page-content" key="miner-images-page">
+                  <Suspense fallback={<LoadingFallback />}>
+                    <MinerImagesPage />
                   </Suspense>
                 </div>
               }
@@ -395,6 +406,12 @@ function App() {
 
     try {
       console.log("Preloading mining data...")
+      // Проверяем, есть ли уже кэшированные данные
+      if (cachedMiningInfo) {
+        console.log("Using existing cached mining data")
+        return
+      }
+
       const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
         user_id_param: user.id,
       })
@@ -406,7 +423,7 @@ function App() {
     } catch (error) {
       console.error("Error preloading mining data:", error)
     }
-  }, [user?.id])
+  }, [user?.id, cachedMiningInfo])
 
   // Добавьте функцию для обновления кэша
   const updateMiningInfoCache = useCallback((data) => {
@@ -673,8 +690,21 @@ function App() {
     // Добавляем обработчик события popstate (когда пользователь нажимает кнопку "назад" в браузере)
     window.addEventListener("popstate", handleRouteChange)
 
+    // Добавляем обработчик для кликов по ссылкам
+    const handleLinkClick = (e) => {
+      // Проверяем, что клик был по ссылке
+      const link = e.target.closest("a")
+      if (link && link.getAttribute("href") === "/") {
+        // Если переход на главную страницу, предварительно загружаем данные
+        preloadMiningData()
+      }
+    }
+
+    document.body.addEventListener("click", handleLinkClick)
+
     return () => {
       window.removeEventListener("popstate", handleRouteChange)
+      document.body.removeEventListener("click", handleLinkClick)
     }
   }, [preloadMiningData, user?.id])
 
