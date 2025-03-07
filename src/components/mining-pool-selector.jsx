@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { supabase } from "../supabase"
 
-export const MiningPoolSelector = ({ user, cachedMiningInfo, onCacheUpdate }) => {
+export const MiningPoolSelector = ({ user, cachedMiningInfo, onCacheUpdate, initialData }) => {
   const [selectedPool, setSelectedPool] = useState(null)
   const [pools, setPools] = useState([])
   const [loading, setLoading] = useState(false)
@@ -12,17 +12,13 @@ export const MiningPoolSelector = ({ user, cachedMiningInfo, onCacheUpdate }) =>
 
   // Используем кэшированные данные, если они доступны
   useEffect(() => {
-    if (cachedMiningInfo) {
-      console.log("Using cached mining info:", cachedMiningInfo)
-      setMiningInfo(cachedMiningInfo)
-      setSelectedPool(cachedMiningInfo.current_pool?.id || null)
-      setPools(cachedMiningInfo.available_pools || [])
+    if (initialData) {
+      console.log("Using cached mining info:", initialData)
+      setSelectedPool(initialData.pool?.name || null)
+      setPools(initialData.available_pools || [])
       setLoading(false)
-    } else {
-      // Если кэшированных данных нет, загружаем их
-      loadMiningInfo()
     }
-  }, [cachedMiningInfo])
+  }, [initialData])
 
   // Функция загрузки данных о майнинге
   const loadMiningInfo = async () => {
