@@ -34,7 +34,7 @@ const WarningMessage = () => (
   </div>
 )
 
-// Обновляем компонент карточки майнера в соответствии с новым дизайном
+// Обновляем компонент карточки майнера с новым дизайном
 const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purchaseLimit, hasMinerPass, minerType }) => {
   // ... остальные функции и проверки остаются без изменений ...
 
@@ -52,30 +52,42 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
     return "/images/miners/default.png"
   }
 
-  // Цветовые схемы для разных типов майнеров остаются без изменений
+  // Цветовые схемы для разных типов майнеров
   const colorSchemes = {
     basic: {
       border: "#3b82f6",
       button: "from-blue-500 to-blue-600",
       hover: "hover:from-blue-600 hover:to-blue-700",
+      cardGradient: "from-blue-900/10 to-blue-800/5",
+      borderGlow: "0 0 10px rgba(59, 130, 246, 0.5)",
     },
     advanced: {
       border: "#8b5cf6",
       button: "from-purple-500 to-purple-600",
       hover: "hover:from-purple-600 hover:to-purple-700",
+      cardGradient: "from-purple-900/10 to-purple-800/5",
+      borderGlow: "0 0 10px rgba(139, 92, 246, 0.5)",
     },
     premium: {
       border: "#eab308",
       button: "from-yellow-500 to-yellow-600",
       hover: "hover:from-yellow-600 hover:to-yellow-700",
+      cardGradient: "from-yellow-900/10 to-yellow-800/5",
+      borderGlow: "0 0 10px rgba(234, 179, 8, 0.5)",
     },
   }
 
   const colorScheme = colorSchemes[minerType] || colorSchemes.basic
 
   return (
-    <div className="rounded-xl p-3 mb-3" style={{ background: "#0B1622" }}>
-      {/* Верхняя часть с названием �� описанием */}
+    <div
+      className={`rounded-xl p-3 mb-3 bg-gradient-to-br ${colorScheme.cardGradient}`}
+      style={{
+        background: "#0B1622",
+        boxShadow: `inset 0 1px 0 0 rgba(255, 255, 255, 0.05)`,
+      }}
+    >
+      {/* Верхняя часть с названием и описанием */}
       <div className="mb-2">
         <h3 className="text-white text-base font-medium leading-tight">{miner.display_name || miner.name}</h3>
         <p className="text-sm text-gray-400">{miner.description || "Компактный майнер для начинающих"}</p>
@@ -83,13 +95,14 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
 
       {/* Основной контент */}
       <div className="flex gap-3">
-        {/* Изображение майнера - увеличенный размер */}
+        {/* Изображение майнера - увеличенный размер и более яркая обводка */}
         <div
           className="w-28 h-28 rounded-lg overflow-hidden flex items-center justify-center relative shrink-0"
           style={{
             background: "linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%)",
-            padding: "2px",
-            border: `1px solid ${colorScheme.border}40`,
+            padding: "3px",
+            border: `2px solid ${colorScheme.border}80`,
+            boxShadow: colorScheme.borderGlow,
           }}
         >
           <img
@@ -124,13 +137,13 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
             </div>
           </div>
 
-          {/* Кнопка покупки - уменьшенная ширина */}
-          <div className="flex justify-end mt-2">
+          {/* Кнопка покупки - более широкая */}
+          <div className="mt-2">
             <button
               onClick={() => onBuy(miner.id, miner.price)}
               disabled={!canBuy || loading || limitReached}
               className={`
-                py-1.5 px-4 rounded-lg text-center text-sm
+                w-full py-1.5 px-4 rounded-lg text-center text-sm
                 transition-all duration-300 transform
                 ${
                   loading
@@ -786,6 +799,8 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
                 <button
                   className="px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5
                   transition-all duration-200 shadow-sm bg-gradient-to-r from-yellow-500 to-amber-500 text-black hover:shadow-md hover:translate-y-[-1px]"
+                  onClick={() => handleBuySpecialItem("miner_pass", 2500)}
+                  disabled={loading || balance < 2500 || hasMinerPass}
                 >
                   <ShoppingCart size={12} />
                   <span>Купить</span>
