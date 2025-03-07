@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
-import { MiningPoolSelector } from "../components/mining-pool-selector"
+import MiningPoolSelector from "../components/mining-pool-selector"
 import MyMiners from "../components/my-miners"
 import MiningRewards from "../components/mining-rewards"
 
@@ -109,13 +109,7 @@ const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
         miningStats={miningInfo?.stats || {}}
         hourlyRate={miningInfo?.rewards?.hourly_rate || 0}
       />
-      <MiningPoolSelector
-        user={user}
-        onPoolChange={handlePoolChange}
-        initialData={miningInfo}
-        cachedMiningInfo={miningInfo}
-        onCacheUpdate={onCacheUpdate}
-      />
+      <MiningPoolSelector userId={user.id} onPoolChange={handlePoolChange} initialData={miningInfo} />
     </div>
   )
 }
