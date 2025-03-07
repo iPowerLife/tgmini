@@ -17,6 +17,18 @@ export const MyMiners = ({ miners = [], miningStats = {}, hourlyRate = 0 }) => {
     }
   }, [])
 
+  // Предварительно загружаем изображения майнеров
+  useEffect(() => {
+    if (miners && miners.length > 0) {
+      miners.forEach((miner) => {
+        if (miner.model?.image_url) {
+          const img = new Image()
+          img.src = miner.model.image_url
+        }
+      })
+    }
+  }, [miners])
+
   // Исправляем проверку наличия майнеров
   // Если нет майнеров, показываем сообщение
   if (!miners || miners.length === 0) {
@@ -119,7 +131,15 @@ export const MyMiners = ({ miners = [], miningStats = {}, hourlyRate = 0 }) => {
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-[#0F1729] rounded-full flex items-center justify-center">
-                    <HardDrive size={16} className="text-purple-400" />
+                    <img
+                      src={miner.model?.image_url || "/images/miners/default.png"}
+                      alt={miner.model?.display_name || "Майнер"}
+                      className="max-w-full max-h-full object-contain"
+                      onError={(e) => {
+                        e.target.src = "/images/miners/default.png"
+                        e.target.onerror = null
+                      }}
+                    />
                   </div>
                   <div>
                     <div className="text-sm text-white">
