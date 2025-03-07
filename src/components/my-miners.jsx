@@ -55,7 +55,7 @@ export const MyMiners = ({ miners = [], miningStats = {}, hourlyRate = 0 }) => {
   }
 
   return (
-    <div className="bg-[#0F1729]/90 p-3 rounded-xl">
+    <div className="bg-[#0F1729]/90 p-3 rounded-xl mb-4">
       {/* Заголовок */}
       <div className="flex justify-between items-center mb-3 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <div className="flex items-center gap-2">
