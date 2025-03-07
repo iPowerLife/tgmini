@@ -1,42 +1,40 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { Loader, CheckCircle, XCircle } from "lucide-react"
 
-export const LoadingScreen = ({ onComplete, loadingSteps }) => {
-  const [currentStep, setCurrentStep] = useState(0)
-  const [stepStatus, setStepStatus] = useState({})
-  const [progress, setProgress] = useState(0)
+export const LoadingScreen = ({ isLoading, loadingSteps, progress, onAnimationComplete }) => {
+  // Преобразуем объект loadingSteps в массив для отображения
+  const stepsArray = Object.entries(loadingSteps).map(([key, value]) => ({
+    id: key,
+    status: value,
+    name: getStepName(key),
+  }))
 
-  useEffect(() => {
-    const loadData = async () => {
-      const totalSteps = loadingSteps.length
-
-      for (let i = 0; i < totalSteps; i++) {
-        const step = loadingSteps[i]
-        setCurrentStep(i)
-
-        try {
-          setStepStatus((prev) => ({ ...prev, [i]: "loading" }))
-          await step.action()
-          setStepStatus((prev) => ({ ...prev, [i]: "success" }))
-        } catch (error) {
-          console.error(`Error in loading step ${i}:`, error)
-          setStepStatus((prev) => ({ ...prev, [i]: "error" }))
-        }
-
-        // Обновляем прогресс
-        setProgress(Math.round(((i + 1) / totalSteps) * 100))
-      }
-
-      // Задержка перед завершением, чтобы пользователь увидел 100%
-      setTimeout(() => {
-        onComplete()
-      }, 500)
+  // Функция для получения понятного названия шага
+  function getStepName(stepId) {
+    const names = {
+      database: "Подключение к базе данных",
+      user: "Загрузка профиля",
+      miners: "Загрузка майнеров",
+      mining: "Загрузка данных майнинга",
     }
+    return names[stepId] || stepId
+  }
 
-    loadData()
-  }, [loadingSteps, onComplete])
+  // Эффект для завершения анимации загрузки
+  useEffect(() => {
+    if (progress >= 100 && !isLoading) {
+      // Небольшая задержка перед скрытием загрузочного экрана
+      const timer = setTimeout(() => {
+        if (onAnimationComplete) {
+          onAnimationComplete()
+        }
+      }, 1000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [progress, isLoading, onAnimationComplete])
 
   return (
     <div className="fixed inset-0 bg-[#0B1622] flex flex-col items-center justify-center z-50">
@@ -56,21 +54,29 @@ export const LoadingScreen = ({ onComplete, loadingSteps }) => {
 
         {/* Список шагов загрузки */}
         <div className="space-y-3 mb-8">
-          {loadingSteps.map((step, index) => (
-            <div key={index} className="flex items-center">
+          {stepsArray.map((step) => (
+            <div key={step.id} className="flex items-center">
               <div className="w-8 h-8 flex-shrink-0 mr-3">
-                {stepStatus[index] === "loading" ? (
+                {step.status === "loading" ? (
                   <Loader size={20} className="text-blue-500 animate-spin" />
-                ) : stepStatus[index] === "success" ? (
+                ) : step.status === "complete" ? (
                   <CheckCircle size={20} className="text-green-500" />
-                ) : stepStatus[index] === "error" ? (
+                ) : step.status === "error" ? (
                   <XCircle size={20} className="text-red-500" />
                 ) : (
                   <div className="w-5 h-5 rounded-full border-2 border-gray-600"></div>
                 )}
               </div>
               <div
-                className={`flex-1 ${currentStep === index ? "text-white" : currentStep > index ? "text-gray-400" : "text-gray-600"}`}
+                className={`flex-1 ${
+                  step.status === "loading"
+                    ? "text-white"
+                    : step.status === "complete"
+                      ? "text-gray-400"
+                      : step.status === "error"
+                        ? "text-red-400"
+                        : "text-gray-600"
+                }`}
               >
                 {step.name}
               </div>

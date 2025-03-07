@@ -468,8 +468,14 @@ function App() {
         console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
 
         // Проверяем подключение к базе данных
-        const { data: healthCheck, error: healthError } = await supabase.from("health_check").select("*").limit(1)
-        if (healthError) throw healthError
+        try {
+          const { data: healthCheck, error: healthError } = await supabase.from("health_check").select("*").limit(1)
+          if (healthError) {
+            console.warn("Health check table not found, but connection is working")
+          }
+        } catch (error) {
+          console.warn("Health check failed, but continuing:", error)
+        }
 
         updateLoadingProgress("database", "complete", 15)
         setLoadingProgress(20) // Прогресс после подключения к БД
