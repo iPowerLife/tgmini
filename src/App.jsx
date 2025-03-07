@@ -1,5 +1,7 @@
 "use client"
 
+import React from "react"
+
 import { useEffect, useState } from "react"
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from "react-router-dom"
 import "./App.css"
@@ -12,19 +14,50 @@ import ProfilePage from "./pages/profile-page"
 import AdminPanel from "./pages/admin-panel"
 import SupportPage from "./pages/support-page"
 import { AuthProvider, useAuth } from "./contexts/AuthContext"
-import { ToastContainer } from "react-toastify"
-import "react-toastify/dist/ReactToastify.css"
+
+// Простой компонент для уведомлений
+const Toast = ({ message, type, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose()
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [onClose])
+
+  return (
+    <div
+      className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg ${
+        type === "error" ? "bg-red-500" : "bg-green-500"
+      } text-white max-w-xs z-50`}
+    >
+      <div className="flex justify-between">
+        <span>{message}</span>
+        <button onClick={onClose} className="ml-2 font-bold">
+          &times;
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Контекст для уведомлений
+export const ToastContext = React.createContext({
+  showToast: () => {},
+})
 
 // Компонент для предотвращения перенаправления при обновлении страницы
 const AppContent = () => {
   const { user, loading } = useAuth()
   const location = useLocation()
-
-  // Добавляем кэширование данных на уровне приложения
-  // Находим компонент AppContent и добавляем в него кэширование состояния
   const [cachedMiningInfo, setCachedMiningInfo] = useState(null)
+  const [toast, setToast] = useState(null)
 
-  // Добавляем функцию для кэширования данных майнинга
+  // Функция для показа уведомлений
+  const showToast = (message, type = "success") => {
+    setToast({ message, type })
+  }
+
+  // Функция для кэширования данных майнинга
   const cacheMiningInfo = (data) => {
     setCachedMiningInfo(data)
   }
@@ -66,21 +99,24 @@ const AppContent = () => {
   }
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={<HomePage user={user} cachedMiningInfo={cachedMiningInfo} onCacheUpdate={cacheMiningInfo} />}
-      />
-      <Route path="/miners" element={<MinersPage />} />
-      <Route path="/rating" element={<RatingPage />} />
-      <Route path="/transactions" element={<TransactionsPage />} />
-      <Route path="/ranks" element={<RanksPage />} />
-      <Route path="/profile" element={<ProfilePage />} />
-      <Route path="/admin" element={<AdminPanel />} />
-      <Route path="/support" element={<SupportPage />} />
-      {/* Перенаправление на главную, если маршрут не найден */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <ToastContext.Provider value={{ showToast }}>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <Routes>
+        <Route
+          path="/"
+          element={<HomePage user={user} cachedMiningInfo={cachedMiningInfo} onCacheUpdate={cacheMiningInfo} />}
+        />
+        <Route path="/miners" element={<MinersPage />} />
+        <Route path="/rating" element={<RatingPage />} />
+        <Route path="/transactions" element={<TransactionsPage />} />
+        <Route path="/ranks" element={<RanksPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/support" element={<SupportPage />} />
+        {/* Перенаправление на главную, если маршрут не найден */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ToastContext.Provider>
   )
 }
 
@@ -106,17 +142,6 @@ const App = () => {
     <AuthProvider>
       <Router>
         <AppContent />
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-        />
       </Router>
     </AuthProvider>
   )
