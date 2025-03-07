@@ -1,10 +1,8 @@
 "use client"
 
-import React from "react"
+import React, { useEffect, useState } from "react"
 
-import { useEffect, useState } from "react"
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from "react-router-dom"
-import "./App.css"
 import HomePage from "./pages/home-page"
 import MinersPage from "./pages/miners-page"
 import RatingPage from "./pages/rating-page"
