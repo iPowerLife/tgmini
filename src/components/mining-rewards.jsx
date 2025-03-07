@@ -33,6 +33,7 @@ export const MiningRewards = ({ userId }) => {
         if (error) throw error
 
         setMiningInfo(data)
+        console.log("Mining info loaded:", data)
       } catch (err) {
         console.error("Error loading mining info:", err)
         if (isComponentMounted.current) {
@@ -143,12 +144,13 @@ export const MiningRewards = ({ userId }) => {
     )
   }
 
-  const { rewards, total_hashrate } = miningInfo
+  const { rewards, total_hashrate, config } = miningInfo
   const canCollect = rewards?.can_collect || false
   const rewardAmount = Number.parseFloat(rewards?.amount || 0)
   const hourlyRate = Number.parseFloat(rewards?.hourly_rate || 0)
   const timeUntilCollection = Number.parseInt(rewards?.time_until_collection || 0)
   const collectionProgress = Number.parseFloat(rewards?.collection_progress || 0)
+  const coinsPerHs = Number.parseFloat(config?.coins_per_hs || 0)
 
   return (
     <div className="bg-[#0F1729]/90 p-4 rounded-xl">
@@ -197,6 +199,11 @@ export const MiningRewards = ({ userId }) => {
 
           <div className="text-sm text-gray-400 mb-1">Скорость майнинга</div>
           <div className="text-lg font-medium">{formatNumber(hourlyRate, 6)} 💎/час</div>
+
+          <div className="text-xs text-gray-500 mt-2">
+            Хешрейт: {formatNumber(total_hashrate)} H/s × {formatNumber(coinsPerHs, 6)} 💎 ={" "}
+            {formatNumber(hourlyRate, 6)} 💎/час
+          </div>
         </div>
       </div>
 
