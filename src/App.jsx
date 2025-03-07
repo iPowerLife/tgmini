@@ -8,9 +8,9 @@ import { MinersList } from "./components/miners-list"
 import { supabase } from "./supabase"
 import HomePage from "./pages/home-page" // Импортируем новую главную страницу
 import { Shop } from "./components/shop" // Обновленный импорт Shop
-// Добавьте этот импорт в начало файла, вместе с другими импортами
 import { useMinerPass } from "./hooks/useMinerPass"
 import React from "react"
+import SplashScreen from "./components/splash-screen" // Импортируем компонент загрузочного экрана
 
 // Простой компонент для уведомлений
 const Toast = ({ message, type, onClose }) => {
@@ -50,8 +50,6 @@ const RatingSection = lazy(() =>
   import("./components/rating-section").then((module) => ({ default: module.RatingSection })),
 )
 const UserProfile = lazy(() => import("./components/user-profile").then((module) => ({ default: module.UserProfile })))
-const MinerImagesPage = lazy(() => import("./pages/admin/miner-images"))
-
 // Компонент для отображения во время загрузки
 const LoadingFallback = () => (
   <div className="section-container">
@@ -206,16 +204,6 @@ function AppContent({
                 </div>
               }
             />
-            <Route
-              path="/admin/miner-images"
-              element={
-                <div className="page-content" key="miner-images-page">
-                  <Suspense fallback={<LoadingFallback />}>
-                    <MinerImagesPage />
-                  </Suspense>
-                </div>
-              }
-            />
           </Routes>
         </div>
 
@@ -235,6 +223,16 @@ function App() {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // Новое состояние для загрузочного экрана
+  const [showSplash, setShowSplash] = useState(true)
+  const [loadingSteps, setLoadingSteps] = useState({
+    database: "pending",
+    user: "pending",
+    miners: "pending",
+    mining: "pending",
+  })
+  const [loadingProgress, setLoadingProgress] = useState(0)
+
   // Состояния для данных
   const [shopData, setShopData] = useState({ categories: [], models: [] })
   const [minersData, setMinersData] = useState({ miners: [], totalPower: 0 })
@@ -250,12 +248,22 @@ function App() {
   // Добавьте хук для проверки Miner Pass
   const { hasMinerPass } = useMinerPass(user?.id)
 
+  // Функция для обновления прогресса загрузки
+  const updateLoadingProgress = useCallback((step, status, progressIncrement = 0) => {
+    setLoadingSteps((prev) => ({ ...prev, [step]: status }))
+    if (progressIncrement > 0) {
+      setLoadingProgress((prev) => Math.min(100, prev + progressIncrement))
+    }
+  }, [])
+
   // Загрузка данных магазина
   const loadShopData = useCallback(async () => {
     if (!user?.id) return
 
     try {
       console.log("Loading shop data...")
+      updateLoadingProgress("miners", "loading")
+
       const [categoriesResponse, modelsResponse] = await Promise.all([
         supabase.from("miner_categories").select("*").order("id"),
         supabase.from("miner_models").select("*").order("category_id, price"),
@@ -269,10 +277,12 @@ function App() {
         models: modelsResponse.data || [],
       })
       console.log("Shop data loaded successfully")
+      updateLoadingProgress("miners", "complete", 20)
     } catch (error) {
       console.error("Error loading shop data:", error)
+      updateLoadingProgress("miners", "error")
     }
-  }, [user?.id])
+  }, [user?.id, updateLoadingProgress])
 
   // Загрузка данных майнеров
   const loadMinersData = useCallback(async () => {
@@ -280,6 +290,7 @@ function App() {
 
     try {
       console.log("Loading miners data...")
+
       const { data, error } = await supabase
         .from("user_miners")
         .select(`
@@ -311,6 +322,7 @@ function App() {
 
     try {
       console.log("Loading tasks data...")
+
       const { data, error } = await supabase.rpc("get_available_tasks", {
         user_id_param: user.id,
       })
@@ -330,6 +342,7 @@ function App() {
 
     try {
       console.log("Loading rating data...")
+
       const { data, error } = await supabase.rpc("get_users_rating")
 
       if (error) throw error
@@ -347,6 +360,7 @@ function App() {
 
     try {
       console.log("Loading transactions data...")
+
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
@@ -386,6 +400,7 @@ function App() {
   const loadRanksData = useCallback(async () => {
     try {
       console.log("Loading ranks data...")
+
       const { data, error } = await supabase.from("ranks").select("*").order("min_balance")
 
       if (error) throw error
@@ -406,9 +421,12 @@ function App() {
 
     try {
       console.log("Preloading mining data...")
+      updateLoadingProgress("mining", "loading")
+
       // Проверяем, есть ли уже кэшированные данные
       if (cachedMiningInfo) {
         console.log("Using existing cached mining data")
+        updateLoadingProgress("mining", "complete", 20)
         return
       }
 
@@ -420,10 +438,12 @@ function App() {
 
       setCachedMiningInfo(data)
       console.log("Mining data preloaded successfully")
+      updateLoadingProgress("mining", "complete", 20)
     } catch (error) {
       console.error("Error preloading mining data:", error)
+      updateLoadingProgress("mining", "error")
     }
-  }, [user?.id, cachedMiningInfo])
+  }, [user?.id, cachedMiningInfo, updateLoadingProgress])
 
   // Добавьте функцию для обновления кэша
   const updateMiningInfoCache = useCallback((data) => {
@@ -439,11 +459,22 @@ function App() {
       try {
         setLoading(true)
         setError(null)
+        setLoadingProgress(5) // Начальный прогресс
 
         console.log("Initializing app...")
+        updateLoadingProgress("database", "loading")
+
         const telegram = initTelegram()
         console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
 
+        // Проверяем подключение к базе данных
+        const { data: healthCheck, error: healthError } = await supabase.from("health_check").select("*").limit(1)
+        if (healthError) throw healthError
+
+        updateLoadingProgress("database", "complete", 15)
+        setLoadingProgress(20) // Прогресс после подключения к БД
+
+        updateLoadingProgress("user", "loading")
         const userData = getTelegramUser()
         console.log("User data:", userData)
 
@@ -573,6 +604,8 @@ function App() {
 
         const dbUser = await createOrUpdateUser(userData)
         console.log("Database user:", dbUser)
+        updateLoadingProgress("user", "complete", 15)
+        setLoadingProgress(35) // Прогресс после загрузки пользователя
 
         if (!dbUser) {
           throw new Error("Не удалось создать/обновить пользователя в базе")
@@ -606,11 +639,19 @@ function App() {
             preloadMiningData(), // Добавляем предварительную загрузку данных майнинга
           ])
           console.log("All data loaded successfully")
+          setLoadingProgress(95) // Почти завершено
+
+          // Небольшая задержка перед скрытием загрузочного экрана
+          setTimeout(() => {
+            setLoadingProgress(100) // Загрузка завершена
+            // Не скрываем загрузочный экран здесь, это будет сделано через анимацию
+          }, 500)
         }
       } catch (err) {
         console.error("Error initializing app:", err)
         if (mounted) {
           setError(err.message)
+          setLoadingProgress(100) // Завершаем прогресс даже при ошибке
         }
       } finally {
         if (mounted) {
@@ -634,6 +675,7 @@ function App() {
     hasMinerPass,
     updateMiningInfoCache,
     preloadMiningData,
+    updateLoadingProgress,
   ])
 
   // Добавляем эффект для перенаправления на главную страницу при обновлении
@@ -729,6 +771,11 @@ function App() {
     [loadTasksData],
   )
 
+  // Обработчик завершения анимации загрузочного экрана
+  const handleSplashAnimationComplete = useCallback(() => {
+    setShowSplash(false)
+  }, [])
+
   // Мемоизируем AppContent для предотвращения лишних рендеров
   const MemoizedAppContent = useMemo(() => {
     return (
@@ -764,15 +811,15 @@ function App() {
     updateMiningInfoCache,
   ])
 
-  if (loading) {
+  // Показываем загрузочный экран, если он активен
+  if (showSplash) {
     return (
-      <div className="root-container">
-        <div className="page-container">
-          <div className="section-container">
-            <div className="loading">Загрузка приложения...</div>
-          </div>
-        </div>
-      </div>
+      <SplashScreen
+        isLoading={loading}
+        loadingSteps={loadingSteps}
+        progress={loadingProgress}
+        onAnimationComplete={handleSplashAnimationComplete}
+      />
     )
   }
 
