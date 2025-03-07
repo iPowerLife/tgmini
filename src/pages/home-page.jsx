@@ -2,26 +2,30 @@
 
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
-import MiningPoolSelector from "../components/mining-pool-selector"
-import MyMiners from "../components/my-miners"
-import MiningRewards from "../components/mining-rewards"
+import { MiningPoolSelector } from "../components/mining-pool-selector"
+import { MinerCard } from "../components/miner-card"
+import { TransactionsList } from "../components/transactions-list"
+import { RankProgress } from "../components/rank-progress"
 
-const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
-  const [miningInfo, setMiningInfo] = useState(cachedMiningInfo || null)
-  const [loading, setLoading] = useState(!cachedMiningInfo) // Если есть кэш, не показываем загрузку
+const HomePage = ({
+  user,
+  balance,
+  minersData,
+  ratingData,
+  transactionsData,
+  ranksData,
+  onPurchase,
+  cachedMiningInfo,
+  onCacheUpdate,
+}) => {
+  const [miningData, setMiningData] = useState(null)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [miningInfo, setMiningInfo] = useState(null)
   const isInitialMount = useRef(true)
   const dataFetchedRef = useRef(false)
 
-  useEffect(() => {
-    console.log("HomePage mounted with user:", user?.id)
-    console.log("Using cached mining info:", !!cachedMiningInfo)
-
-    return () => {
-      console.log("HomePage unmounted")
-    }
-  }, [user?.id, cachedMiningInfo])
-
+  // Используем кэшированные данные, если они доступны
   useEffect(() => {
     if (!user) return
 
@@ -59,57 +63,115 @@ const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
     }
   }, [user, onCacheUpdate, cachedMiningInfo])
 
-  const handlePoolChange = () => {
-    if (!user) return
+  const loadMiningData = async () => {
+    if (!user?.id) return
 
-    // Обновляем данные при смене пула
-    const loadMiningInfo = async () => {
-      try {
-        const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
-          user_id_param: user.id,
-        })
+    try {
+      setLoading(true)
+      setError(null)
 
-        if (error) throw error
+      console.log("Loading mining data...")
+      const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
+        user_id_param: user.id,
+      })
 
-        setMiningInfo(data)
-        if (onCacheUpdate) {
-          onCacheUpdate(data)
-        }
-      } catch (err) {
-        console.error("Error loading mining info:", err)
-        setError("Ошибка при загрузке данных майнинга")
+      if (error) throw error
+
+      console.log("Mining data loaded:", data)
+      setMiningData(data)
+
+      // Обновляем кэш
+      if (onCacheUpdate) {
+        onCacheUpdate(data)
       }
+    } catch (err) {
+      console.error("Error loading mining data:", err)
+      setError("Не удалось загрузить данные майнинга")
+    } finally {
+      setLoading(false)
     }
-
-    loadMiningInfo()
   }
 
-  // Если пользователь не авторизован, не показываем ничего
-  if (!user) {
-    return null
+  // Определяем текущий ранг пользователя
+  const currentRank = ranksData.ranks.find(
+    (rank) => balance >= rank.min_balance && (!rank.max_balance || balance < rank.max_balance),
+  )
+
+  // Определяем следующий ранг
+  const nextRank = ranksData.ranks.find((rank) => rank.min_balance > balance)
+
+  // Вычисляем прогресс до следующего ранга
+  const calculateProgress = () => {
+    if (!currentRank || !nextRank) return 0
+
+    const currentMin = currentRank.min_balance
+    const nextMin = nextRank.min_balance
+    const range = nextMin - currentMin
+    const userProgress = balance - currentMin
+
+    return Math.min(100, Math.max(0, (userProgress / range) * 100))
   }
 
-  // Показываем загрузку для всей страницы, если данные еще не загружены
-  if (loading && !miningInfo) {
-    return (
-      <div className="container mx-auto px-4 py-6 max-w-lg">
-        <div className="flex justify-center items-center h-64">
-          <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+  const handlePoolChange = () => {
+    // Функция для обновления данных после смены пула
+    loadMiningData()
+  }
+
+  return (
+    <div className="home-page">
+      <div className="balance-card">
+        <div className="balance-background" />
+        <div className="balance-content">
+          <div className="balance-label">Баланс</div>
+          <div className="balance-amount">
+            <span>{balance.toFixed(2)}</span>
+            <span className="balance-currency">💎</span>
+          </div>
         </div>
       </div>
-    )
-  }
 
-  // Всегда отображаем компоненты с данными из кэша или загруженными данными
-  return (
-    <div className="container mx-auto px-4 py-6 max-w-lg">
-      <MiningRewards userId={user.id} initialData={miningInfo} />
-      <MyMiners
-        miners={miningInfo?.miners || []}
-        miningStats={miningInfo?.stats || {}}
-        hourlyRate={miningInfo?.rewards?.hourly_rate || 0}
-      />
-      <MiningPoolSelector userId={user.id} onPoolChange={handlePoolChange} initialData={miningInfo} />
+      {/* Секция с рангом пользователя */}
+      {ranksData.ranks.length > 0 && (
+        <RankProgress currentRank={currentRank} nextRank={nextRank} balance={balance} progress={calculateProgress()} />
+      )}
+
+      {/* Секция с майнером пользователя */}
+      <div className="section-container">
+        <div className="section-header">
+          <h2>Мой майнер</h2>
+        </div>
+        <div className="section-content">
+          {minersData.miners.length > 0 ? (
+            <div className="miners-grid">
+              {minersData.miners.map((miner) => (
+                <MinerCard key={miner.id} miner={miner} />
+              ))}
+            </div>
+          ) : (
+            <div className="no-miners">
+              <p>У вас пока нет майнеров</p>
+              <a href="/shop" className="shop-button">
+                Перейти в магазин
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Секция с пулом майнинга */}
+      <div className="section-container">
+        <MiningPoolSelector userId={user.id} onPoolChange={handlePoolChange} initialData={cachedMiningInfo} />
+      </div>
+
+      {/* Секция с последними транзакциями */}
+      <div className="section-container">
+        <div className="section-header">
+          <h2>Последние транзакции</h2>
+        </div>
+        <div className="section-content">
+          <TransactionsList transactions={transactionsData.transactions} />
+        </div>
+      </div>
     </div>
   )
 }

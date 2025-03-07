@@ -1,7 +1,7 @@
 "use client"
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
@@ -11,6 +11,10 @@ import { Shop } from "./components/shop" // Обновленный импорт 
 import { useMinerPass } from "./hooks/useMinerPass"
 import React from "react"
 import LoadingScreen from "./components/loading-screen" // Исправляем импорт на правильное имя файла
+// Импортируем все компоненты напрямую вместо ленивой загрузки
+import { TasksSection } from "./components/tasks-section"
+import { RatingSection } from "./components/rating-section"
+import { UserProfile } from "./components/user-profile"
 
 // Простой компонент для уведомлений
 const Toast = ({ message, type, onClose }) => {
@@ -42,14 +46,6 @@ const ToastContext = React.createContext({
   showToast: () => {},
 })
 
-// Ленивая загрузка тяжелых компонентов
-const TasksSection = lazy(() =>
-  import("./components/tasks-section").then((module) => ({ default: module.TasksSection })),
-)
-const RatingSection = lazy(() =>
-  import("./components/rating-section").then((module) => ({ default: module.RatingSection })),
-)
-const UserProfile = lazy(() => import("./components/user-profile").then((module) => ({ default: module.UserProfile })))
 // Компонент для отображения во время загрузки
 const LoadingFallback = () => (
   <div className="section-container">
@@ -173,14 +169,12 @@ function AppContent({
               path="/tasks"
               element={
                 <div className="page-content" key="tasks-page">
-                  <Suspense fallback={<LoadingFallback />}>
-                    <TasksSection
-                      user={user}
-                      onBalanceUpdate={handleBalanceUpdate}
-                      tasks={tasksData.tasks}
-                      onTaskComplete={handleTaskComplete}
-                    />
-                  </Suspense>
+                  <TasksSection
+                    user={user}
+                    onBalanceUpdate={handleBalanceUpdate}
+                    tasks={tasksData.tasks}
+                    onTaskComplete={handleTaskComplete}
+                  />
                 </div>
               }
             />
@@ -188,9 +182,7 @@ function AppContent({
               path="/rating"
               element={
                 <div className="page-content" key="rating-page">
-                  <Suspense fallback={<LoadingFallback />}>
-                    <RatingSection currentUserId={user?.id} users={ratingData.users} />
-                  </Suspense>
+                  <RatingSection currentUserId={user?.id} users={ratingData.users} />
                 </div>
               }
             />
@@ -198,9 +190,7 @@ function AppContent({
               path="/profile"
               element={
                 <div className="page-content" key="profile-page">
-                  <Suspense fallback={<LoadingFallback />}>
-                    <UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />
-                  </Suspense>
+                  <UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />
                 </div>
               }
             />
