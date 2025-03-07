@@ -58,21 +58,18 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
       border: "#3b82f6",
       button: "from-blue-500 to-blue-600",
       hover: "hover:from-blue-600 hover:to-blue-700",
-      cardGradient: "from-blue-900/10 to-blue-800/5",
       borderGlow: "0 0 10px rgba(59, 130, 246, 0.5)",
     },
     advanced: {
       border: "#8b5cf6",
       button: "from-purple-500 to-purple-600",
       hover: "hover:from-purple-600 hover:to-purple-700",
-      cardGradient: "from-purple-900/10 to-purple-800/5",
       borderGlow: "0 0 10px rgba(139, 92, 246, 0.5)",
     },
     premium: {
       border: "#eab308",
       button: "from-yellow-500 to-yellow-600",
       hover: "hover:from-yellow-600 hover:to-yellow-700",
-      cardGradient: "from-yellow-900/10 to-yellow-800/5",
       borderGlow: "0 0 10px rgba(234, 179, 8, 0.5)",
     },
   }
@@ -81,9 +78,9 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
 
   return (
     <div
-      className={`rounded-xl p-3 mb-3 bg-gradient-to-br ${colorScheme.cardGradient}`}
+      className="rounded-xl p-3 mb-3"
       style={{
-        background: "#0B1622",
+        background: `linear-gradient(to bottom right, ${colorScheme.border}15, #0B1622 70%)`,
         boxShadow: `inset 0 1px 0 0 rgba(255, 255, 255, 0.05)`,
       }}
     >
