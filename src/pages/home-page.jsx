@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
 import { MiningPoolSelector } from "../components/mining-pool-selector"
-import { MinerCard } from "../components/miner-card"
 import { TransactionsList } from "../components/transactions-list"
 import { RankProgress } from "../components/rank-progress"
+import { MyMiners } from "../components/my-miners" // Используем существующий компонент MyMiners вместо MinerCard
 
 const HomePage = ({
   user,
@@ -117,6 +117,9 @@ const HomePage = ({
     loadMiningData()
   }
 
+  // Получаем hourlyRate из miningInfo или используем значение по умолчанию
+  const hourlyRate = miningInfo?.rewards?.hourly_rate || 0
+
   return (
     <div className="home-page">
       <div className="balance-card">
@@ -135,32 +138,18 @@ const HomePage = ({
         <RankProgress currentRank={currentRank} nextRank={nextRank} balance={balance} progress={calculateProgress()} />
       )}
 
-      {/* Секция с майнером пользователя */}
-      <div className="section-container">
-        <div className="section-header">
-          <h2>Мой майнер</h2>
-        </div>
-        <div className="section-content">
-          {minersData.miners.length > 0 ? (
-            <div className="miners-grid">
-              {minersData.miners.map((miner) => (
-                <MinerCard key={miner.id} miner={miner} />
-              ))}
-            </div>
-          ) : (
-            <div className="no-miners">
-              <p>У вас пока нет майнеров</p>
-              <a href="/shop" className="shop-button">
-                Перейти в магазин
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Секция с майнером пользователя - используем MyMiners вместо MinerCard */}
+      <MyMiners miners={minersData.miners} miningStats={miningInfo?.stats || {}} hourlyRate={hourlyRate} />
 
       {/* Секция с пулом майнинга */}
       <div className="section-container">
-        <MiningPoolSelector userId={user.id} onPoolChange={handlePoolChange} initialData={cachedMiningInfo} />
+        <MiningPoolSelector
+          user={user}
+          onPoolChange={handlePoolChange}
+          initialData={cachedMiningInfo}
+          cachedMiningInfo={cachedMiningInfo}
+          onCacheUpdate={onCacheUpdate}
+        />
       </div>
 
       {/* Секция с последними транзакциями */}
