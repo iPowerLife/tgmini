@@ -139,7 +139,7 @@ const HomePage = ({
                     <div key={tx.id} className="border-b border-gray-800 last:border-0 py-2">
                   <div className="flex justify-between items-center">
                     <div className="text-sm">{tx.description}</div>
-                    <div={`text-sm font-medium ${tx.amount > 0 ? "text-green-500" : "text-red-500"}`}>
+                    <div className={`text-sm font-medium ${tx.amount > 0 ? "text-green-500" : "text-red-500"}`}>
                       {tx.amount > 0 ? "+" : ""}
                       {tx.amount} 💎
                     </div>
@@ -161,7 +161,6 @@ const HomePage = ({
             <div className="bg-[#1A2234] rounded-lg p-4 text-center text-gray-400">Нет транзакций</div>
           </div>
         </div>
-        )
       )}
     </div>
   )
