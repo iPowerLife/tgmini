@@ -637,7 +637,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
         </div>
         <div className="flex items-center gap-1.5 bg-[#1F2937] py-1.5 px-3 rounded-lg">
           <Coins size={14} className="text-green-400" />
-          <span className="text-green-400 text-sm font-medium">{balance}</span>
+          <span className="text-green-400 text-sm font-medium">{Number(balance).toFixed(2)}</span>
           <span className="text-gray-400 text-xs">монет</span>
         </div>
       </div>
