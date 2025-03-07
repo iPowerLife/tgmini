@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import MiningRewardsNew from "../components/mining-rewards-new"
+import MiningPlaceholder from "../components/mining-placeholder"
 import MiningPoolSelector from "../components/mining-pool-selector"
 import MyMiners from "../components/my-miners"
 import MiningSettings from "../components/mining-settings"
@@ -30,18 +30,6 @@ const HomePage = ({ user, minersData: initialMinersData, onPurchase }) => {
     console.log("userBalance changed:", userBalance)
   }, [userBalance])
 
-  // Обработчик обновления баланса
-  const handleBalanceUpdate = (newBalance) => {
-    console.log("handleBalanceUpdate called with:", newBalance)
-    setUserBalance(newBalance)
-
-    // Если есть родительский обработчик, вызываем его
-    if (typeof onPurchase === "function") {
-      console.log("Calling parent onPurchase")
-      onPurchase(newBalance)
-    }
-  }
-
   // Если пользователь не загружен, показываем загрузку
   if (!user) {
     console.log("User not loaded, showing loading")
@@ -56,8 +44,8 @@ const HomePage = ({ user, minersData: initialMinersData, onPurchase }) => {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-lg">
-      {/* Используем новый компонент для майнинга */}
-      <MiningRewardsNew userId={user.id} onCollect={handleBalanceUpdate} balance={userBalance} />
+      {/* Используем заглушку вместо компонента сбора наград */}
+      <MiningPlaceholder userId={user.id} />
       <MyMiners miners={minersData?.miners || []} miningStats={minersData?.stats || {}} />
       <MiningPoolSelector userId={user.id} onPoolChange={() => {}} />
 
