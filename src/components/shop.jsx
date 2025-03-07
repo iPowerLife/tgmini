@@ -50,22 +50,52 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
     return "/images/miners/default.png"
   }
 
+  // Цветовые схемы для разных типов майнеров
+  const colorSchemes = {
+    basic: {
+      border: "#3b82f6",
+      button: "from-blue-500 to-blue-600",
+      hover: "hover:from-blue-600 hover:to-blue-700",
+    },
+    advanced: {
+      border: "#8b5cf6",
+      button: "from-purple-500 to-purple-600",
+      hover: "hover:from-purple-600 hover:to-purple-700",
+    },
+    premium: {
+      border: "#eab308",
+      button: "from-yellow-500 to-yellow-600",
+      hover: "hover:from-yellow-600 hover:to-yellow-700",
+    },
+  }
+
+  // Используем цветовую схему по умолчанию, если тип не указан
+  const colorScheme = colorSchemes[minerType] || colorSchemes.basic
+
   return (
-    <div className="bg-gradient-to-br from-[#1a1f2c] to-[#151822] rounded-xl p-4 mb-3">
+    <div className="rounded-xl p-3 mb-3" style={{ background: "#0B1622" }}>
       {/* Верхняя часть с названием и описанием */}
-      <div className="mb-3">
-        <h3 className="text-white text-lg font-medium leading-tight">{miner.display_name || miner.name}</h3>
+      <div className="mb-2">
+        <h3 className="text-white text-base font-medium leading-tight">{miner.display_name || miner.name}</h3>
         <p className="text-sm text-gray-400">{miner.description || "Компактный майнер для начинающих"}</p>
       </div>
 
       {/* Основной контент */}
       <div className="flex gap-4">
         {/* Изображение майнера */}
-        <div className="w-24 h-24 rounded-lg overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#1a1f2c]/50 to-[#151822]/50">
+        <div
+          className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center relative"
+          style={{
+            background: "linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%)",
+            padding: "2px",
+            border: `1px solid ${colorScheme.border}40`,
+          }}
+        >
           <img
             src={getMinerImageUrl(miner) || "/placeholder.svg"}
             alt={miner.display_name}
-            className="w-full h-full object-contain p-2"
+            className="w-full h-full object-contain rounded-lg"
+            style={{ background: "#0B1622" }}
             onError={(e) => {
               e.target.src = "/images/miners/default.png"
               e.target.onerror = null
@@ -76,18 +106,18 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
         {/* Характеристики и кнопка */}
         <div className="flex-1 flex flex-col justify-between">
           {/* Характеристики */}
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <div className="flex items-center justify-between">
               <span className="text-gray-400 text-sm">Хешрейт:</span>
-              <span className="text-white text-sm font-medium">{miner.mining_power} h/s</span>
+              <span className="text-white text-sm">{miner.mining_power} h/s</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-400 text-sm">Энергия:</span>
-              <span className="text-white text-sm font-medium">{miner.energy_consumption} kw/h</span>
+              <span className="text-white text-sm">{miner.energy_consumption} kw/h</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-400 text-sm">Эффективность:</span>
-              <span className="text-white text-sm font-medium">
+              <span className="text-white text-sm">
                 {(miner.mining_power / miner.energy_consumption).toFixed(1)} h/w
               </span>
             </div>
@@ -98,29 +128,33 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
             onClick={() => onBuy(miner.id, miner.price)}
             disabled={!canBuy || loading || limitReached}
             className={`
-              w-full mt-2 py-2 px-4 rounded-lg text-center font-medium
-              transition-all duration-200
+              w-full mt-2 py-1.5 px-3 rounded-lg text-center text-sm
+              transition-all duration-300 transform
               ${
                 loading
                   ? "bg-gray-600 text-gray-300 cursor-wait"
                   : limitReached
                     ? "bg-gray-700 text-gray-400 cursor-not-allowed"
                     : canBuy
-                      ? "bg-blue-500 hover:bg-blue-600 text-white"
+                      ? `bg-gradient-to-r ${colorScheme.button} ${colorScheme.hover} text-white hover:shadow-lg hover:-translate-y-0.5`
                       : "bg-gray-700 text-gray-400 cursor-not-allowed"
               }
             `}
+            style={{
+              fontSize: "0.8125rem",
+              letterSpacing: "0.01em",
+            }}
           >
             <div className="flex items-center justify-center gap-2">
               {loading ? (
                 <>
-                  <Loader size={16} className="animate-spin" />
+                  <Loader size={12} className="animate-spin" />
                   <span>Покупка...</span>
                 </>
               ) : (
                 <>
                   <span>Купить</span>
-                  <span className="font-medium">{miner.price} монет</span>
+                  <span>{miner.price} монет</span>
                 </>
               )}
             </div>
