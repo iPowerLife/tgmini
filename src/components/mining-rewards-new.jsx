@@ -14,6 +14,7 @@ export const MiningRewardsNew = ({ userId, onCollect, balance = 0 }) => {
   const [rewards, setRewards] = useState([])
   const [timeLeft, setTimeLeft] = useState(0)
   const [updateInterval, setUpdateInterval] = useState(null)
+  const [debugInfo, setDebugInfo] = useState({})
 
   // Функция для загрузки прогресса майнинга
   const loadMiningProgress = useCallback(async () => {
@@ -22,6 +23,23 @@ export const MiningRewardsNew = ({ userId, onCollect, balance = 0 }) => {
     try {
       setError(null)
 
+      // Сначала получим информацию о майнерах напрямую
+      const { data: minersData, error: minersError } = await supabase.rpc("get_mining_info", {
+        user_id_param: userId,
+      })
+
+      if (minersError) throw minersError
+
+      // Сохраняем отладочную информацию
+      setDebugInfo((prev) => ({
+        ...prev,
+        miners: minersData?.miners || [],
+        total_hashrate: minersData?.total_hashrate || 0,
+      }))
+
+      console.log("Miners data:", minersData)
+
+      // Теперь получаем прогресс майнинга
       const { data, error } = await supabase.rpc("get_mining_progress", {
         user_id_param: userId,
       })
@@ -30,6 +48,10 @@ export const MiningRewardsNew = ({ userId, onCollect, balance = 0 }) => {
 
       console.log("Mining progress loaded:", data)
       setMiningProgress(data)
+      setDebugInfo((prev) => ({
+        ...prev,
+        progress: data,
+      }))
 
       // Устанавливаем время до следующего сбора
       if (data.time_until_collection > 0) {
@@ -39,7 +61,7 @@ export const MiningRewardsNew = ({ userId, onCollect, balance = 0 }) => {
       }
 
       // Генерируем варианты наград
-      if (data.hashrate > 0) {
+      if (data.hashrate > 0 || minersData?.total_hashrate > 0) {
         const settings = await supabase.rpc("get_mining_settings")
         if (settings.error) throw settings.error
 
@@ -48,35 +70,38 @@ export const MiningRewardsNew = ({ userId, onCollect, balance = 0 }) => {
         const maxPeriod = settings.data.max_collection_period_hours
         const baseRate = settings.data.base_reward_rate
 
+        // Используем хешрейт из get_mining_info, если get_mining_progress вернул 0
+        const hashrate = data.hashrate > 0 ? data.hashrate : minersData?.total_hashrate || 0
+
         // Получаем информацию о пуле
         const { data: poolData } = await supabase
           .from("mining_pools")
           .select("*")
-          .eq("name", data.pool_name || "standard")
+          .eq("name", data.pool_name || minersData?.pool?.name || "standard")
           .single()
 
-        const poolMultiplier = data.pool_multiplier
+        const poolMultiplier = data.pool_multiplier || minersData?.pool?.multiplier || 1
         const feePercent = poolData?.fee_percent || 5
 
         // Рассчитываем награды для разных периодов
         const rewardsData = [
           {
             period: minPeriod,
-            amount: calculateReward(data.hashrate, minPeriod, baseRate, poolMultiplier, feePercent),
-            fee_amount: calculateFee(data.hashrate, minPeriod, baseRate, poolMultiplier, feePercent),
-            total_amount: calculateTotal(data.hashrate, minPeriod, baseRate, poolMultiplier),
+            amount: calculateReward(hashrate, minPeriod, baseRate, poolMultiplier, feePercent),
+            fee_amount: calculateFee(hashrate, minPeriod, baseRate, poolMultiplier, feePercent),
+            total_amount: calculateTotal(hashrate, minPeriod, baseRate, poolMultiplier),
           },
           {
             period: standardPeriod,
-            amount: calculateReward(data.hashrate, standardPeriod, baseRate, poolMultiplier, feePercent),
-            fee_amount: calculateFee(data.hashrate, standardPeriod, baseRate, poolMultiplier, feePercent),
-            total_amount: calculateTotal(data.hashrate, standardPeriod, baseRate, poolMultiplier),
+            amount: calculateReward(hashrate, standardPeriod, baseRate, poolMultiplier, feePercent),
+            fee_amount: calculateFee(hashrate, standardPeriod, baseRate, poolMultiplier, feePercent),
+            total_amount: calculateTotal(hashrate, standardPeriod, baseRate, poolMultiplier),
           },
           {
             period: maxPeriod,
-            amount: calculateReward(data.hashrate, maxPeriod, baseRate, poolMultiplier, feePercent),
-            fee_amount: calculateFee(data.hashrate, maxPeriod, baseRate, poolMultiplier, feePercent),
-            total_amount: calculateTotal(data.hashrate, maxPeriod, baseRate, poolMultiplier),
+            amount: calculateReward(hashrate, maxPeriod, baseRate, poolMultiplier, feePercent),
+            fee_amount: calculateFee(hashrate, maxPeriod, baseRate, poolMultiplier, feePercent),
+            total_amount: calculateTotal(hashrate, maxPeriod, baseRate, poolMultiplier),
           },
         ]
 
@@ -218,14 +243,23 @@ export const MiningRewardsNew = ({ userId, onCollect, balance = 0 }) => {
     )
   }
 
-  // Проверяем наличие майнеров
-  if (!miningProgress || miningProgress.hashrate <= 0) {
+  // Проверяем наличие майнеров более надежным способом
+  const hasMiners = miningProgress?.hashrate > 0 || debugInfo?.total_hashrate > 0 || debugInfo?.miners?.length > 0
+
+  if (!hasMiners) {
     return (
       <div className="bg-[#0F1729]/90 p-4 rounded-xl">
         <div className="text-sm text-gray-400">У вас пока нет майнеров</div>
+        <div className="mt-2 text-xs text-gray-500">
+          Отладочная информация:
+          <pre className="mt-1 p-2 bg-gray-800 rounded overflow-auto text-xs">{JSON.stringify(debugInfo, null, 2)}</pre>
+        </div>
       </div>
     )
   }
+
+  // Используем хешрейт из get_mining_info, если get_mining_progress вернул 0
+  const effectiveHashrate = miningProgress?.hashrate > 0 ? miningProgress.hashrate : debugInfo?.total_hashrate || 0
 
   return (
     <div className="space-y-2">
@@ -318,7 +352,7 @@ export const MiningRewardsNew = ({ userId, onCollect, balance = 0 }) => {
           </div>
           <div className="flex items-center gap-1">
             <span className="text-gray-400">+</span>
-            <span className="text-green-400">{formatNumber(miningProgress.mined_amount)}</span>
+            <span className="text-green-400">{formatNumber(miningProgress?.mined_amount || 0)}</span>
             <span className="text-blue-400">💎</span>
           </div>
         </div>
@@ -338,7 +372,7 @@ export const MiningRewardsNew = ({ userId, onCollect, balance = 0 }) => {
             <span className="text-white">Множитель пула:</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-blue-400">{miningProgress.pool_multiplier}x</span>
+            <span className="text-blue-400">{miningProgress?.pool_multiplier || 1}x</span>
           </div>
         </div>
       </div>
@@ -351,7 +385,7 @@ export const MiningRewardsNew = ({ userId, onCollect, balance = 0 }) => {
             <div className="flex items-center gap-1.5">
               <span className="text-green-500">↗</span>
               <span className="text-gray-400">Всего добыто:</span>
-              <span className="text-white">{formatNumber(miningProgress.total_mined)}</span>
+              <span className="text-white">{formatNumber(miningProgress?.total_mined || 0)}</span>
               <span className="text-blue-400">💎</span>
             </div>
           </div>
@@ -363,7 +397,7 @@ export const MiningRewardsNew = ({ userId, onCollect, balance = 0 }) => {
             <div className="flex items-center gap-1.5">
               <span className="text-blue-400">⚡</span>
               <span className="text-gray-400">Хешрейт:</span>
-              <span className="text-white">{formatNumber(miningProgress.hashrate)}</span>
+              <span className="text-white">{formatNumber(effectiveHashrate)}</span>
               <span className="text-gray-400">H/s</span>
             </div>
           </div>
@@ -376,7 +410,7 @@ export const MiningRewardsNew = ({ userId, onCollect, balance = 0 }) => {
               <span className="text-yellow-500">💰</span>
               <span className="text-gray-400">Доход в час:</span>
               <span className="text-white">
-                {formatNumber(miningProgress.hashrate * miningProgress.pool_multiplier * 0.5)}
+                {formatNumber(effectiveHashrate * (miningProgress?.pool_multiplier || 1) * 0.5)}
               </span>
               <span className="text-blue-400">💎/час</span>
             </div>
