@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { HardDrive, Zap, Battery, Clock, Gauge, ChevronDown, ChevronUp } from "lucide-react"
+import { HardDrive, Zap, Battery, Gauge, ChevronDown, ChevronUp } from "lucide-react"
 
 export const MyMiners = ({ miners = [], miningStats = {} }) => {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -46,7 +46,6 @@ export const MyMiners = ({ miners = [], miningStats = {} }) => {
     { power: 0, consumption: 0 },
   )
 
-  const hourlyIncome = totals.power * 0.5 // Базовая ставка 0.5 монет в час
   const efficiency = totals.consumption > 0 ? totals.power / totals.consumption : 0
 
   // Форматируем числа
@@ -93,17 +92,8 @@ export const MyMiners = ({ miners = [], miningStats = {} }) => {
           <div className="text-white">{formatNumber(totals.consumption)} W</div>
         </div>
 
-        {/* Доход в час */}
-        <div className="bg-[#1A2234] p-2.5 rounded-lg">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Clock size={14} className="text-blue-500" />
-            <span className="text-sm text-gray-400">Доход в час</span>
-          </div>
-          <div className="text-white">{formatNumber(hourlyIncome)} 💎</div>
-        </div>
-
         {/* Эффективность */}
-        <div className="bg-[#1A2234] p-2.5 rounded-lg">
+        <div className="bg-[#1A2234] p-2.5 rounded-lg col-span-2">
           <div className="flex items-center gap-1.5 mb-1">
             <Gauge size={14} className="text-purple-500" />
             <span className="text-sm text-gray-400">Эффективность</span>
