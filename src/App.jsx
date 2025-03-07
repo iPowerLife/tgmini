@@ -7,7 +7,7 @@ import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { supabase } from "./supabase"
 import HomePage from "./pages/home-page" // Импортируем новую главную страницу
-import { Shop } from "./components/shop" // Обновленный импорт Shop
+import Shop from "./components/shop" // Обновленный импорт Shop
 import { useMinerPass } from "./hooks/useMinerPass"
 import React from "react"
 import LoadingScreen from "./components/loading-screen" // Исправляем импорт на правильное имя файла
