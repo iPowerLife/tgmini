@@ -11,7 +11,7 @@ export const MiningPoolSelector = ({ userId, onPoolChange, initialData }) => {
   const [currentPool, setCurrentPool] = useState(initialData?.pool?.name || null)
   const [selectedPool, setSelectedPool] = useState(initialData?.pool?.name || null)
   const [minerCount, setMinerCount] = useState(initialData?.miners?.length || 0)
-  const [hasMinerPass, setHasMinerPass] = useState(initialData?.has_miner_pass || false)
+  const [hasMinerPass, setHasMinerPass] = useState(initialData.has_miner_pass || false)
   const [error, setError] = useState(null)
 
   // Используем useRef для отслеживания монтирования компонента
@@ -147,7 +147,7 @@ export const MiningPoolSelector = ({ userId, onPoolChange, initialData }) => {
   }
 
   return (
-    <div className="bg-gray-900 rounded-2xl p-4 mb-4">
+    <div className="bg-[#151B26] p-4 rounded-xl mb-4">
       {/* Заголовок */}
       <div className="flex items-center gap-2 mb-3">
         <Database className="text-blue-500" size={18} />

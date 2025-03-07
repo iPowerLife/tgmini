@@ -148,7 +148,7 @@ export const MiningRewards = ({ userId, initialData }) => {
   const daysInMining = 1
 
   return (
-    <div className="bg-[#0F1729]/90 p-4 rounded-xl mb-4">
+    <div className="bg-[#151B26] p-4 rounded-xl mb-4">
       {/* Заголовок с информацией о пуле */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
