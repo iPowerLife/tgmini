@@ -33,15 +33,26 @@ const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
         }
         setError(null)
 
-        const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
-          user_id_param: user.id,
-        })
+        // Загружаем данные о майнинге и пулах параллельно
+        const [miningInfoResponse, poolsResponse] = await Promise.all([
+          supabase.rpc("get_mining_info_with_rewards", {
+            user_id_param: user.id,
+          }),
+          supabase.from("mining_pools").select("*").order("min_miners"),
+        ])
 
-        if (error) throw error
+        if (miningInfoResponse.error) throw miningInfoResponse.error
+        if (poolsResponse.error) throw poolsResponse.error
 
-        setMiningInfo(data)
+        // Объединяем данные
+        const combinedData = {
+          ...miningInfoResponse.data,
+          mining_pools: poolsResponse.data || [],
+        }
+
+        setMiningInfo(combinedData)
         if (onCacheUpdate) {
-          onCacheUpdate(data)
+          onCacheUpdate(combinedData)
         }
         dataFetchedRef.current = true
       } catch (err) {

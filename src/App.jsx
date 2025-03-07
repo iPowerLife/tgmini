@@ -420,14 +420,25 @@ function App() {
         return
       }
 
-      const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
-        user_id_param: user.id,
-      })
+      // Загружаем данные о майнинге и пулах параллельно
+      const [miningInfoResponse, poolsResponse] = await Promise.all([
+        supabase.rpc("get_mining_info_with_rewards", {
+          user_id_param: user.id,
+        }),
+        supabase.from("mining_pools").select("*").order("min_miners"),
+      ])
 
-      if (error) throw error
+      if (miningInfoResponse.error) throw miningInfoResponse.error
+      if (poolsResponse.error) throw poolsResponse.error
 
-      setCachedMiningInfo(data)
-      console.log("Mining data preloaded successfully")
+      // Добавляем данные о пулах в кэшированную информацию
+      const combinedData = {
+        ...miningInfoResponse.data,
+        mining_pools: poolsResponse.data || [],
+      }
+
+      setCachedMiningInfo(combinedData)
+      console.log("Mining data preloaded successfully with pools:", combinedData)
       updateLoadingProgress("mining", "complete", 20)
     } catch (error) {
       console.error("Error preloading mining data:", error)
@@ -702,7 +713,7 @@ function App() {
     }
   }, [])
 
-  // Также обновите useEffect, который следит за изменением hasMinerPass
+  // Также обновите useEffect, который следит з�� изменением hasMinerPass
   // Добавьте этот эффект после других useEffect
   useEffect(() => {
     if (user?.id && hasMinerPass !== undefined) {
