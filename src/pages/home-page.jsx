@@ -13,6 +13,7 @@ const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
   const isInitialMount = useRef(true)
   const dataFetchedRef = useRef(false)
 
+
   useEffect(() => {
     console.log("HomePage mounted with user:", user?.id)
     console.log("Using cached mining info:", !!cachedMiningInfo)
