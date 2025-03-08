@@ -12,7 +12,11 @@ import { useMinerPass } from "./hooks/useMinerPass"
 import React from "react"
 import LoadingScreen from "./components/loading-screen" // Исправляем импорт на правильное имя файла
 // Импортируем все компоненты напрямую вместо ленивой загрузки
-import { TasksSection } from "./components/tasks-section.jsx"
+// Удалим проблемный импорт
+// import { TasksSection } from "./components/tasks-section.jsx"
+
+// Добавим импорт TasksPage вместо TasksSection
+import TasksPage from "./pages/tasks"
 import { RatingSection } from "./components/rating-section"
 import { UserProfile } from "./components/user-profile"
 
@@ -164,12 +168,7 @@ function AppContent({
               path="/tasks"
               element={
                 <div className="page-content" key="tasks-page">
-                  <TasksSection
-                    user={user}
-                    onBalanceUpdate={handleBalanceUpdate}
-                    tasks={tasksData.tasks}
-                    onTaskComplete={handleTaskComplete}
-                  />
+                  <TasksPage user={user} onBalanceUpdate={handleBalanceUpdate} onTaskComplete={handleTaskComplete} />
                 </div>
               }
             />

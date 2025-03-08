@@ -3,7 +3,10 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { BottomMenu } from "../components/bottom-menu"
-import { TasksSection } from "../components/tasks-section"
+import { TasksSection as TasksSectionComponent } from "../components/tasks-section" // Импортируем с другим именем
+
+// Экспортируем TasksSection для использования в App.jsx
+export { TasksSectionComponent as TasksSection }
 
 export default function TasksPage({ user: initialUser }) {
   const [loading, setLoading] = useState(true)
@@ -124,7 +127,7 @@ export default function TasksPage({ user: initialUser }) {
 
   return (
     <div className="min-h-screen bg-[#1A1F2E]">
-      <TasksSection
+      <TasksSectionComponent
         tasks={tasks}
         user={user}
         onTaskComplete={handleTaskComplete}
