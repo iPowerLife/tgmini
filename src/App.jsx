@@ -6,13 +6,13 @@ import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/teleg
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { supabase } from "./supabase"
-import HomePage from "./pages/home-page" // Импортируем новую главную страницу
-import Shop from "./components/shop" // Обновленный импорт Shop
+import HomePage from "./pages/home-page"
+import Shop from "./components/shop"
 import { useMinerPass } from "./hooks/useMinerPass"
 import React from "react"
-import LoadingScreen from "./components/loading-screen" // Исправляем импорт на правильное имя файла
-// Импортируем все компоненты напрямую вместо ленивой загрузки
-import { TasksSection } from "./components/tasks-section"
+import LoadingScreen from "./components/loading-screen"
+// Импортируем только TasksPage
+import TasksPage from "./pages/tasks"
 import { RatingSection } from "./components/rating-section"
 import { UserProfile } from "./components/user-profile"
 
@@ -84,7 +84,7 @@ function AppContent({
   ratingData,
   transactionsData,
   ranksData,
-  hasMinerPass, // Добавьте этот параметр
+  hasMinerPass,
   cachedMiningInfo,
   onCacheUpdate,
 }) {
@@ -98,9 +98,6 @@ function AppContent({
     setToast({ message, type })
   }
 
-  // Остальной код AppContent остается без изменений
-
-  // В маршруте /shop передайте hasMinerPass в компонент Shop
   return (
     <ToastContext.Provider value={{ showToast }}>
       <div className="root-container">
@@ -121,9 +118,9 @@ function AppContent({
                     ratingData={ratingData}
                     transactionsData={transactionsData}
                     ranksData={ranksData}
-                    onPurchase={handleBalanceUpdate} // Добавляем проп для обновления баланса
-                    cachedMiningInfo={cachedMiningInfo} // Передаем кэшированные данные
-                    onCacheUpdate={onCacheUpdate} // Передаем функцию обновления кэша
+                    onPurchase={handleBalanceUpdate}
+                    cachedMiningInfo={cachedMiningInfo}
+                    onCacheUpdate={onCacheUpdate}
                   />
                 </div>
               }
@@ -164,12 +161,7 @@ function AppContent({
               path="/tasks"
               element={
                 <div className="page-content" key="tasks-page">
-                  <TasksSection
-                    user={user}
-                    onBalanceUpdate={handleBalanceUpdate}
-                    tasks={tasksData.tasks}
-                    onTaskComplete={handleTaskComplete}
-                  />
+                  <TasksPage user={user} onBalanceUpdate={handleBalanceUpdate} onTaskComplete={handleTaskComplete} />
                 </div>
               }
             />
@@ -398,9 +390,6 @@ function App() {
   }, [])
 
   // Добавляем предварительную загрузку данных для главной страницы
-
-  // Добавляем новую функцию для предварительной загрузки данных
-  // Добавьте эту функцию после loadRanksData
   const preloadMiningData = useCallback(async () => {
     if (!user?.id) return
 
@@ -628,9 +617,6 @@ function App() {
           console.log("User initialized:", userWithDisplay)
 
           // Загружаем все данные сразу после инициализации пользователя
-          // Обновляем useEffect для инициализации приложения, чтобы загружать данные майнинга
-          // Найдите блок кода, где загружаются все данные сразу после инициализации пользователя
-          // и добавьте preloadMiningData в Promise.all
           await Promise.all([
             loadShopData(),
             loadMinersData(),
@@ -709,7 +695,6 @@ function App() {
   }, [])
 
   // Также обновите useEffect, который следит за изменением hasMinerPass
-  // Добавьте этот эффект после других useEffect
   useEffect(() => {
     if (user?.id && hasMinerPass !== undefined) {
       setUser((prev) => ({
@@ -720,7 +705,6 @@ function App() {
   }, [hasMinerPass, user?.id])
 
   // Обновляем обработчик смены маршрута, чтобы предварительно загружать данные для главной страницы
-  // Добавьте этот useEffect после других useEffect
   useEffect(() => {
     // Функция для предварительной загрузки данных при переходе на главную страницу
     const handleRouteChange = () => {
@@ -792,7 +776,7 @@ function App() {
         ratingData={ratingData}
         transactionsData={transactionsData}
         ranksData={ranksData}
-        hasMinerPass={hasMinerPass} // Добавьте этот проп
+        hasMinerPass={hasMinerPass}
         cachedMiningInfo={cachedMiningInfo}
         onCacheUpdate={updateMiningInfoCache}
       />
@@ -808,7 +792,7 @@ function App() {
     ratingData,
     transactionsData,
     ranksData,
-    hasMinerPass, // Добавьте эту зависимость
+    hasMinerPass,
     cachedMiningInfo,
     updateMiningInfoCache,
   ])
