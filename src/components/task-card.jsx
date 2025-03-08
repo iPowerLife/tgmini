@@ -9,6 +9,12 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
   // Получаем иконку задания
   const getTaskIcon = () => {
+    // Если есть icon_url в задании, используем его
+    if (task.icon_url) {
+      return task.icon_url
+    }
+
+    // Иначе определяем иконку на основе типа и названия
     const title = task.title?.toLowerCase() || ""
     const type = task.type?.toLowerCase() || ""
 
@@ -57,6 +63,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
             alt={task.title}
             className="w-10 h-10 object-contain"
             onError={(e) => {
+              console.log(`Ошибка загрузки иконки для задания ${task.id}:`, e)
               e.target.src = "/icons/task-icon.png"
             }}
           />
