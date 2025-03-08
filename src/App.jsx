@@ -12,7 +12,7 @@ import { useMinerPass } from "./hooks/useMinerPass"
 import React from "react"
 import LoadingScreen from "./components/loading-screen" // Исправляем импорт на правильное имя файла
 // Импортируем все компоненты напрямую вместо ленивой загрузки
-import { TasksSection } from "./components/tasks-section"
+import { TasksSection } from "./components/tasks-section.jsx"
 import { RatingSection } from "./components/rating-section"
 import { UserProfile } from "./components/user-profile"
 
