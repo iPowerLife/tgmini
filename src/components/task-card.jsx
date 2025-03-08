@@ -36,6 +36,10 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         <div className="flex items-center mt-1">
           <span className="text-blue-400 font-bold text-sm">+{task.reward}</span>
         </div>
+        {/* Отладочная информация */}
+        <div className="text-[8px] text-gray-500 mt-1">
+          ID: {task.id}, Category: {task.category_id}
+        </div>
       </div>
 
       {/* Кнопка */}
