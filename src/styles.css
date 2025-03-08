@@ -1785,3 +1785,187 @@ button:active::after {
   color: #3b82f6;
 }
 
+/* Добавляем стили для страницы заданий */
+.bg-dark-blue {
+  background-color: #1a1f2e;
+}
+
+.bg-dark-blue-lighter {
+  background-color: #242838;
+}
+
+.bg-dark-blue-light {
+  background-color: #2a3142;
+}
+
+.border-dark-blue {
+  border-color: #2a3142;
+}
+
+.text-blue-highlight {
+  color: #3b82f6;
+}
+
+/* Стили для карточек заданий */
+.task-card {
+  background-color: #242838;
+  border: 1px solid rgba(42, 49, 66, 0.7);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.task-icon-container {
+  width: 3rem;
+  height: 3rem;
+  flex-shrink: 0;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-icon-inner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #2a3142;
+}
+
+.task-icon {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+}
+
+.task-content {
+  flex: 1;
+  padding: 0.75rem 0.5rem;
+}
+
+.task-title {
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.task-reward {
+  display: flex;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.task-reward-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.25rem;
+}
+
+.task-reward-amount {
+  color: #3b82f6;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.task-button-container {
+  padding-right: 0.75rem;
+}
+
+.task-button {
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.task-button-active {
+  background-color: #3b82f6;
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5);
+}
+
+.task-button-active:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.task-button-disabled {
+  background-color: #2a3142;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.task-completed-icon {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #2a3142;
+  border-radius: 0.5rem;
+  color: #9ca3af;
+}
+
+/* Стили для табов */
+.task-tabs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+  padding: 0 1rem;
+}
+
+.task-tab {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.task-tab-active {
+  background-color: #2a3142;
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.task-tab-inactive {
+  color: #9ca3af;
+}
+
+.task-tab-inactive:hover {
+  color: #d1d5db;
+  background-color: rgba(42, 49, 66, 0.5);
+}
+
+/* Стили для пустого состояния */
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 0;
+  color: #9ca3af;
+}
+
+.empty-state-icon {
+  margin: 0 auto 1rem;
+  width: 3rem;
+  height: 3rem;
+  opacity: 0.5;
+}
+
+.empty-state-text {
+  font-size: 0.875rem;
+}
+

@@ -1,13 +1,29 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { TaskCard } from "./task-card"
 
 export function TasksSection({ user, tasks, onBalanceUpdate, onTaskComplete }) {
   const [activeTab, setActiveTab] = useState("daily")
+  const [filteredTasks, setFilteredTasks] = useState([])
+
+  // Фильтруем задания при изменении активной вкладки или списка заданий
+  useEffect(() => {
+    if (!tasks || tasks.length === 0) {
+      setFilteredTasks([])
+      return
+    }
+
+    const filtered = tasks.filter((task) => {
+      const taskCategory = task.task_categories?.name || task.category
+      return taskCategory === activeTab
+    })
+
+    setFilteredTasks(filtered)
+  }, [activeTab, tasks])
 
   return (
-    <div className="min-h-[100vh] pb-[70px] bg-[#1A1F2E]">
+    <div className="min-h-[100vh] pb-[70px] bg-gradient-to-b from-[#1A1F2E] to-[#151A28]">
       {/* Заголовок */}
       <div className="px-4 pt-4 pb-6">
         <h1 className="text-2xl font-bold text-center mb-1 text-white">All Tasks</h1>
@@ -25,7 +41,7 @@ export function TasksSection({ user, tasks, onBalanceUpdate, onTaskComplete }) {
                 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all
                 ${
                   activeTab === tab
-                    ? "bg-[#2A3142] text-white"
+                    ? "bg-[#2A3142] text-white shadow-md"
                     : "text-gray-400 hover:text-gray-300 hover:bg-[#2A3142]/50"
                 }
               `}
@@ -37,10 +53,9 @@ export function TasksSection({ user, tasks, onBalanceUpdate, onTaskComplete }) {
       </div>
 
       {/* Список заданий */}
-      <div className="px-4 space-y-2 pb-24">
-        {tasks
-          .filter((task) => !task.category || task.category === activeTab)
-          .map((task) => (
+      <div className="px-4 space-y-3 pb-24">
+        {filteredTasks.length > 0 ? (
+          filteredTasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}
@@ -48,7 +63,12 @@ export function TasksSection({ user, tasks, onBalanceUpdate, onTaskComplete }) {
               onBalanceUpdate={onBalanceUpdate}
               onTaskComplete={onTaskComplete}
             />
-          ))}
+          ))
+        ) : (
+          <div className="text-center py-10 text-gray-400">
+            <p>Нет доступных заданий в этой категории</p>
+          </div>
+        )}
       </div>
     </div>
   )

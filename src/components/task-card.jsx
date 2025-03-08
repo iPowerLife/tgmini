@@ -117,7 +117,28 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   // Определяем какую иконку показывать в зависимости от типа задания
   const getTaskIcon = () => {
     const title = task.title.toLowerCase()
+    const type = task.type?.toLowerCase() || ""
 
+    // Сначала проверяем тип задания
+    if (type === "video") {
+      return "/icons/youtube-icon.png"
+    } else if (type === "social") {
+      if (title.includes("telegram") || title.includes("чат") || title.includes("канал")) {
+        return "/icons/telegram-icon.png"
+      } else if (title.includes("twitter") || title.includes("x ")) {
+        return "/icons/x-icon.png"
+      } else {
+        return "/icons/share-icon.png"
+      }
+    } else if (type === "premium" || type === "vip") {
+      return "/icons/vip-icon.png"
+    } else if (type === "app") {
+      return "/icons/game-icon.png"
+    } else if (type === "quiz") {
+      return "/icons/task-icon.png"
+    }
+
+    // Если тип не определен, определяем по названию
     if (title.includes("telegram") || title.includes("ton") || title.includes("чат") || title.includes("канал")) {
       return "/icons/telegram-icon.png"
     } else if (title.includes("twitter") || title.includes("x") || title.includes("лайк") || title.includes("пост")) {
@@ -205,7 +226,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   }
 
   return (
-    <div className="flex items-center bg-[#242838] rounded-xl overflow-hidden border border-[#2A3142]">
+    <div className="flex items-center bg-[#242838] rounded-xl overflow-hidden border border-[#2A3142]/70 shadow-lg">
       {/* Иконка задания */}
       <div className="w-16 h-16 flex-shrink-0 p-2 flex items-center justify-center">
         <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-[#2A3142]">
@@ -246,7 +267,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
                   ? "bg-[#2A3142] text-gray-400"
                   : verificationState.isVerifying
                     ? "bg-[#2A3142] text-gray-300"
-                    : "bg-blue-500 hover:bg-blue-400 text-white"
+                    : "bg-blue-500 hover:bg-blue-400 text-white shadow-md"
               }
             `}
           >
