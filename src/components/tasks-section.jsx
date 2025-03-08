@@ -14,17 +14,10 @@ export function TasksSection({ user, tasks, onBalanceUpdate, onTaskComplete }) {
       return
     }
 
-    console.log("Все задания:", tasks)
-    console.log("Активная вкладка:", activeTab)
-
     const filtered = tasks.filter((task) => {
-      // Проверяем категорию задания
-      const taskCategory = task.category?.toLowerCase()
-      console.log(`Задание ${task.id} - категория: ${taskCategory}`)
-      return taskCategory === activeTab
+      return task.category === activeTab
     })
 
-    console.log("Отфильтрованные задания:", filtered)
     setFilteredTasks(filtered)
   }, [activeTab, tasks])
 

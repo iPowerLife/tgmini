@@ -1,202 +1,48 @@
 "use client"
 
-import { useState, useCallback, memo, useEffect } from "react"
-import { initTelegram } from "../utils/telegram"
+import { useState, memo } from "react"
 import { Check } from "lucide-react"
 
 export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) => {
-  const [verificationState, setVerificationState] = useState({
-    isVerifying: false,
-    timeLeft: 15000,
-  })
+  const [isVerifying, setIsVerifying] = useState(false)
 
-  const handleExecuteTask = useCallback(async () => {
-    try {
-      if (task.is_expired || task.is_completed) {
-        return
-      }
-
-      // Сохраняем время начала верификации
-      const verificationStartTime = Date.now()
-      localStorage.setItem(`task_verification_${task.id}`, verificationStartTime.toString())
-
-      setVerificationState({
-        isVerifying: true,
-        timeLeft: 15000,
-      })
-
-      if (task.link) {
-        const tg = initTelegram()
-        if (tg) {
-          tg.openLink(task.link)
-        } else {
-          window.open(task.link, "_blank")
-        }
-      }
-    } catch (error) {
-      console.error("Ошибка при выполнении:", error)
-    }
-  }, [user?.id, task.id, task.link, task.is_expired, task.is_completed])
-
-  const handleVerificationComplete = useCallback(async () => {
-    try {
-      // Очищаем сохраненное время верификации
-      localStorage.removeItem(`task_verification_${task.id}`)
-
-      setVerificationState({
-        isVerifying: false,
-        timeLeft: 0,
-      })
-
-      if (onTaskComplete) {
-        onTaskComplete(task.id)
-      }
-    } catch (error) {
-      console.error("Ошибка при завершении верификации:", error)
-    }
-  }, [user?.id, task.id, onTaskComplete])
-
-  const handleClaimReward = useCallback(async () => {
-    try {
-      if (onTaskComplete) {
-        onTaskComplete(task.id)
-      }
-    } catch (error) {
-      console.error("Ошибка при получении награды:", error)
-    }
-  }, [user?.id, task.id, onBalanceUpdate, onTaskComplete])
-
-  useEffect(() => {
-    // Проверяем сохраненное время начала верификации
-    const savedStartTime = localStorage.getItem(`task_verification_${task.id}`)
-
-    if (savedStartTime && task.user_status === "in_progress") {
-      const startTime = Number.parseInt(savedStartTime)
-      const now = Date.now()
-      const elapsed = now - startTime
-      const remainingTime = Math.max(15000 - elapsed, 0)
-
-      if (remainingTime > 0) {
-        setVerificationState({
-          isVerifying: true,
-          timeLeft: remainingTime,
-        })
-      } else {
-        // Если время вышло, автоматически завершаем верификацию
-        handleVerificationComplete()
-      }
-    }
-  }, [task.id, task.user_status, handleVerificationComplete])
-
-  // Определяем какую иконку показывать в зависимости от типа задания
+  // Получаем иконку задания
   const getTaskIcon = () => {
     const title = task.title?.toLowerCase() || ""
     const type = task.type?.toLowerCase() || ""
 
-    // Сначала проверяем тип задания
-    if (type === "video") {
-      return "/icons/youtube-icon.png"
-    } else if (type === "social") {
-      if (title.includes("telegram") || title.includes("чат") || title.includes("канал")) {
-        return "/icons/telegram-icon.png"
-      } else if (title.includes("twitter") || title.includes("x ")) {
-        return "/icons/x-icon.png"
-      } else {
-        return "/icons/share-icon.png"
-      }
-    } else if (type === "premium" || type === "vip") {
-      return "/icons/vip-icon.png"
-    } else if (type === "app") {
-      return "/icons/game-icon.png"
-    } else if (type === "quiz") {
-      return "/icons/task-icon.png"
-    }
-
-    // Если тип не определен, определяем по названию
-    if (title.includes("telegram") || title.includes("ton") || title.includes("чат") || title.includes("канал")) {
-      return "/icons/telegram-icon.png"
-    } else if (title.includes("twitter") || title.includes("x") || title.includes("лайк") || title.includes("пост")) {
-      return "/icons/x-icon.png"
-    } else if (title.includes("видео") || title.includes("watch") || title.includes("youtube")) {
-      return "/icons/youtube-icon.png"
-    } else if (
-      title.includes("игра") ||
-      title.includes("play") ||
-      title.includes("app") ||
-      title.includes("приложение")
-    ) {
-      return "/icons/game-icon.png"
-    } else if (title.includes("подпишись") || title.includes("follow") || title.includes("join")) {
-      return "/icons/follow-icon.png"
-    } else if (title.includes("поделись") || title.includes("share")) {
+    if (type === "video") return "/icons/youtube-icon.png"
+    if (type === "social") {
+      if (title.includes("telegram")) return "/icons/telegram-icon.png"
+      if (title.includes("twitter") || title.includes("x ")) return "/icons/x-icon.png"
       return "/icons/share-icon.png"
-    } else if (title.includes("vip") || title.includes("премиум") || title.includes("premium")) {
-      return "/icons/vip-icon.png"
-    } else if (title.includes("бонус") || title.includes("bonus") || title.includes("ежедневн")) {
-      return "/icons/coin.png"
-    } else {
-      // Дефолтная иконка
-      return "/icons/task-icon.png"
     }
+    if (type === "premium") return "/icons/vip-icon.png"
+    if (type === "app") return "/icons/game-icon.png"
+    if (type === "quiz") return "/icons/task-icon.png"
+
+    // Определяем по названию
+    if (title.includes("telegram")) return "/icons/telegram-icon.png"
+    if (title.includes("twitter") || title.includes("x")) return "/icons/x-icon.png"
+    if (title.includes("видео")) return "/icons/youtube-icon.png"
+    if (title.includes("игра") || title.includes("app")) return "/icons/game-icon.png"
+    if (title.includes("бонус")) return "/icons/coin.png"
+
+    return "/icons/task-icon.png"
   }
 
-  // Получаем текст кнопки
-  const getButtonText = () => {
-    if (task.is_completed) {
-      return "Completed"
-    }
+  const handleExecuteTask = () => {
+    if (task.is_completed) return
 
-    if (verificationState.isVerifying) {
-      return `Verifying... ${Math.ceil(verificationState.timeLeft / 1000)}s`
-    }
+    setIsVerifying(true)
 
-    if (task.user_status === "completed" && !task.reward_claimed) {
-      return "Claim"
-    }
-
-    const title = task.title?.toLowerCase() || ""
-    if (title.includes("watch") || title.includes("видео")) {
-      return "Watch"
-    }
-
-    return "Go"
-  }
-
-  // Определяем, должна ли кнопка быть активной
-  const isButtonActive = () => {
-    if (task.is_completed || task.is_expired) {
-      return false
-    }
-
-    if (verificationState.isVerifying) {
-      return false
-    }
-
-    return true
-  }
-
-  // Определяем действие для кнопки
-  const getButtonAction = () => {
-    if (task.user_status === "completed" && !task.reward_claimed) {
-      return handleClaimReward
-    }
-
-    return handleExecuteTask
-  }
-
-  // Форматируем сумму награды
-  const formatReward = (reward) => {
-    const num = Number.parseInt(reward, 10)
-    if (num >= 1000) {
-      return `${Math.floor(num / 1000)} ${num % 1000 === 0 ? "" : "."} ${
-        num % 1000 !== 0
-          ? String(num % 1000)
-              .padStart(3, "0")
-              .substring(0, 1)
-          : ""
-      } ${"000".substring(0, String(num % 1000).padStart(3, "0").length - 1)}`
-    }
-    return reward
+    // Имитация выполнения задания
+    setTimeout(() => {
+      setIsVerifying(false)
+      if (onTaskComplete) {
+        onTaskComplete(task.id)
+      }
+    }, 2000)
   }
 
   return (
@@ -220,7 +66,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         <div className="text-white text-sm font-medium">{task.title}</div>
         <div className="flex items-center mt-1">
           <img src="/icons/coin.png" alt="Coin" className="w-4 h-4 mr-1" />
-          <span className="text-blue-400 font-bold text-sm">+{formatReward(task.reward)}</span>
+          <span className="text-blue-400 font-bold text-sm">+{task.reward}</span>
         </div>
       </div>
 
@@ -232,20 +78,20 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
           </div>
         ) : (
           <button
-            onClick={isButtonActive() ? getButtonAction() : undefined}
-            disabled={!isButtonActive()}
+            onClick={handleExecuteTask}
+            disabled={isVerifying || task.is_completed}
             className={`
               px-5 py-2 rounded-full font-medium transition-all
               ${
                 task.is_completed
                   ? "bg-[#2A3142] text-gray-400"
-                  : verificationState.isVerifying
+                  : isVerifying
                     ? "bg-[#2A3142] text-gray-300"
                     : "bg-blue-500 hover:bg-blue-400 text-white shadow-md"
               }
             `}
           >
-            {getButtonText()}
+            {task.is_completed ? "Done" : isVerifying ? "Verifying..." : "Go"}
           </button>
         )}
       </div>
