@@ -7,47 +7,8 @@ import { BottomMenu } from "../components/bottom-menu"
 
 export default function TasksPage() {
   const [user, setUser] = useState(null)
+  const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
-
-  // Фиктивные задания, которые гарантированно будут отображаться
-  const mockTasks = [
-    {
-      id: 1,
-      title: "Ежедневный бонус",
-      description: "Получите ежедневный бонус",
-      reward: 50,
-      category: "daily",
-      is_active: true,
-      type: "simple",
-    },
-    {
-      id: 2,
-      title: "Посмотреть видео",
-      description: "Посмотрите короткое видео",
-      reward: 30,
-      category: "daily",
-      is_active: true,
-      type: "video",
-    },
-    {
-      id: 3,
-      title: "Подпишись на канал",
-      description: "Подпишитесь на наш Telegram канал",
-      reward: 50,
-      category: "partners",
-      is_active: true,
-      type: "social",
-    },
-    {
-      id: 4,
-      title: "Поделись постом",
-      description: "Поделитесь нашим постом",
-      reward: 40,
-      category: "social",
-      is_active: true,
-      type: "social",
-    },
-  ]
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,6 +22,35 @@ export default function TasksPage() {
           console.error("Ошибка при получении данных пользователя:", userError)
         } else {
           setUser(userData)
+        }
+
+        // Получаем задания
+        const { data: tasksData, error: tasksError } = await supabase.from("tasks").select("*").eq("is_active", true)
+
+        if (tasksError) {
+          console.error("Ошибка при получении заданий:", tasksError)
+        } else {
+          console.log("Полученные задания:", tasksData)
+
+          // Обрабатываем задания в том формате, в котором они приходят с сервера
+          const processedTasks = tasksData.map((task) => ({
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            reward: task.reward,
+            link: task.link,
+            type: task.type,
+            category:
+              task.type === "simple" || task.type === "video" || task.type === "quiz"
+                ? "daily"
+                : task.type === "app" || task.type === "premium"
+                  ? "partners"
+                  : "social",
+            is_active: task.is_active,
+          }))
+
+          console.log("Обработанные задания:", processedTasks)
+          setTasks(processedTasks)
         }
       } catch (error) {
         console.error("Ошибка при загрузке данных:", error)
@@ -82,7 +72,7 @@ export default function TasksPage() {
   }
 
   const handleTaskComplete = (taskId) => {
-    // Ничего не делаем, так как используем фиктивные данные
+    setTasks((prevTasks) => prevTasks.map((task) => (task.id === taskId ? { ...task, is_completed: true } : task)))
   }
 
   if (loading) {
@@ -103,7 +93,7 @@ export default function TasksPage() {
 
       <TasksSection
         user={user}
-        tasks={mockTasks}
+        tasks={tasks}
         onBalanceUpdate={handleBalanceUpdate}
         onTaskComplete={handleTaskComplete}
       />

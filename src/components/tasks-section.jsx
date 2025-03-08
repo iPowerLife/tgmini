@@ -7,7 +7,6 @@ export function TasksSection({ user, tasks, onBalanceUpdate, onTaskComplete }) {
   const [activeTab, setActiveTab] = useState("daily")
   const [filteredTasks, setFilteredTasks] = useState([])
 
-  // Фильтруем задания при изменении активной вкладки или списка заданий
   useEffect(() => {
     if (!tasks || tasks.length === 0) {
       setFilteredTasks([])
@@ -18,6 +17,7 @@ export function TasksSection({ user, tasks, onBalanceUpdate, onTaskComplete }) {
     console.log("Активная вкладка:", activeTab)
 
     const filtered = tasks.filter((task) => {
+      console.log(`Задание ${task.id}:`, task)
       return task.category === activeTab
     })
 
