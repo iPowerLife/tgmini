@@ -6,25 +6,35 @@ import { Check } from "lucide-react"
 export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) => {
   const [isVerifying, setIsVerifying] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
-  const [imageError, setImageError] = useState(false)
 
-  // Базовый URL для иконок
-  const BASE_ICON_URL = "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/"
-
-  // Получаем запасную иконку на основе типа задания
-  const getFallbackIcon = () => {
-    const type = task.type?.toLowerCase() || ""
-
-    const iconMap = {
-      video: "youtube.png",
-      quiz: "quiz.png",
-      premium: "vip.png",
-      app: "app.png",
-      social: "share.png",
-      simple: "coin.png",
+  // Функция для получения URL изображения задания
+  const getTaskImageUrl = (task) => {
+    if (task.icon_url) {
+      return task.icon_url
     }
 
-    return `${BASE_ICON_URL}${iconMap[type] || "task.png"}`
+    // Базовый URL для иконок
+    const baseUrl = "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/"
+
+    // Определяем иконку по типу задания
+    const type = task.type?.toLowerCase() || ""
+
+    switch (type) {
+      case "video":
+        return `${baseUrl}youtube.png`
+      case "quiz":
+        return `${baseUrl}quiz.png`
+      case "premium":
+        return `${baseUrl}vip.png`
+      case "app":
+        return `${baseUrl}app.png`
+      case "social":
+        return `${baseUrl}share.png`
+      case "simple":
+        return `${baseUrl}coin.png`
+      default:
+        return `${baseUrl}task.png`
+    }
   }
 
   const handleExecuteTask = () => {
@@ -46,25 +56,11 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       {/* Иконка задания */}
       <div className="w-16 h-16 flex-shrink-0 p-2 flex items-center justify-center">
         <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-[#2A3142]">
-          {!imageError ? (
-            <img
-              src={task.icon_url || getFallbackIcon()}
-              alt={task.title}
-              className="w-10 h-10 object-contain"
-              onError={() => {
-                console.log(`Ошибка загрузки иконки для задания ${task.id}, используем запасную`)
-                // Устанавливаем флаг ошибки, чтобы избежать зацикливания
-                setImageError(true)
-              }}
-            />
-          ) : (
-            // Если была ошибка загрузки, показываем запасную иконку без возможности повторной ошибки
-            <img
-              src={getFallbackIcon() || "/placeholder.svg"}
-              alt={task.title}
-              className="w-10 h-10 object-contain opacity-70"
-            />
-          )}
+          <img
+            src={getTaskImageUrl(task) || "/placeholder.svg"}
+            alt={task.title}
+            className="w-10 h-10 object-contain"
+          />
         </div>
       </div>
 
