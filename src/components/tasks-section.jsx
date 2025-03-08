@@ -3,48 +3,29 @@
 import { useState, useEffect } from "react"
 import { TaskCard } from "./task-card"
 
-export function TasksSection({ user, tasks, categories, onBalanceUpdate, onTaskComplete }) {
+export function TasksSection({ user, tasks, onBalanceUpdate, onTaskComplete }) {
   const [activeTab, setActiveTab] = useState("daily")
   const [filteredTasks, setFilteredTasks] = useState([])
-  const [categoryIds, setCategoryIds] = useState({})
 
-  // Инициализируем соответствие между именами категорий и их ID
   useEffect(() => {
-    if (!categories) return
-
-    // Создаем обратное соответствие: имя категории -> id
-    const nameToId = {}
-    Object.entries(categories).forEach(([id, name]) => {
-      nameToId[name] = Number.parseInt(id)
-    })
-
-    setCategoryIds(nameToId)
-    console.log("Соответствие имен категорий и ID:", nameToId)
-  }, [categories])
-
-  // Фильтруем задания при изменении активной вкладки или списка заданий
-  useEffect(() => {
-    if (!tasks || tasks.length === 0 || !categoryIds || Object.keys(categoryIds).length === 0) {
+    if (!tasks || tasks.length === 0) {
       setFilteredTasks([])
       return
     }
 
+    console.log("Все задания:", tasks)
     console.log("Активная вкладка:", activeTab)
-    console.log("ID категории для вкладки:", categoryIds[activeTab])
 
-    // Фильтруем задания по ID категории
+    // Фильтруем задания по категории
     const filtered = tasks.filter((task) => {
-      const taskCategoryId = task.category_id
-      const tabCategoryId = categoryIds[activeTab]
-
-      console.log(`Задание ${task.id} (${task.title}) - category_id: ${taskCategoryId}, требуемый ID: ${tabCategoryId}`)
-
-      return taskCategoryId === tabCategoryId
+      const categoryName = task.task_categories?.name || "daily"
+      console.log(`Задание ${task.id} - категория:`, categoryName)
+      return categoryName === activeTab
     })
 
     console.log("Отфильтрованные задания:", filtered)
     setFilteredTasks(filtered)
-  }, [activeTab, tasks, categoryIds])
+  }, [activeTab, tasks])
 
   return (
     <div className="min-h-[100vh] pb-[70px]">
