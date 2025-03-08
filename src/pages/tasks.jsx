@@ -61,15 +61,15 @@ export default function TasksPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-b from-[#1A1F2E] to-[#151A28]">
+      <div className="flex items-center justify-center h-screen">
         <div className="w-10 h-10 border-4 border-gray-400 border-t-blue-400 rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#1A1F2E] to-[#151A28] text-white">
-      <header className="px-4 py-3 flex items-center justify-between bg-[#1A1F2E] border-b border-[#2A3142]/30">
+    <div className="min-h-screen text-white">
+      <header className="px-4 py-3 flex items-center justify-between border-b border-[#2A3142]/30">
         <div className="flex items-center">
           <button className="text-gray-400 hover:text-white transition-colors">Закрыть</button>
         </div>

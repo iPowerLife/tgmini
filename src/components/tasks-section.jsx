@@ -37,7 +37,7 @@ export function TasksSection({ user, tasks, onBalanceUpdate, onTaskComplete }) {
   }, [activeTab, tasks])
 
   return (
-    <div className="min-h-[100vh] pb-[70px] bg-gradient-to-b from-[#1A1F2E] to-[#151A28]">
+    <div className="min-h-[100vh] pb-[70px]">
       {/* Заголовок */}
       <div className="px-4 pt-4 pb-6">
         <h1 className="text-2xl font-bold text-center mb-1 text-white">All Tasks</h1>
