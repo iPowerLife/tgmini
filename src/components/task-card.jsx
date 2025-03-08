@@ -6,47 +6,25 @@ import { Check } from "lucide-react"
 export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) => {
   const [isVerifying, setIsVerifying] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
-  // Получаем иконку на основе типа задания и ссылки
-  const getTaskIcon = () => {
+  // Базовый URL для иконок
+  const BASE_ICON_URL = "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/"
+
+  // Получаем запасную иконку на основе типа задания
+  const getFallbackIcon = () => {
     const type = task.type?.toLowerCase() || ""
-    const link = task.link?.toLowerCase() || ""
 
-    // YouTube видео
-    if (type === "video" || link.includes("youtube.com")) {
-      return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/youtube.png"
+    const iconMap = {
+      video: "youtube.png",
+      quiz: "quiz.png",
+      premium: "vip.png",
+      app: "app.png",
+      social: "share.png",
+      simple: "coin.png",
     }
 
-    // Telegram задания
-    if (link.includes("t.me")) {
-      return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/telegram.png"
-    }
-
-    // Twitter/X задания
-    if (link.includes("twitter.com")) {
-      return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/twitter.png"
-    }
-
-    // Google Play
-    if (link.includes("play.google.com")) {
-      return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/android.png"
-    }
-
-    // Определяем по типу, если нет ссылки
-    switch (type) {
-      case "quiz":
-        return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/quiz.png"
-      case "premium":
-        return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/vip.png"
-      case "simple":
-        return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/coin.png"
-      case "social":
-        return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/share.png"
-      case "app":
-        return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/app.png"
-      default:
-        return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/task.png"
-    }
+    return `${BASE_ICON_URL}${iconMap[type] || "task.png"}`
   }
 
   const handleExecuteTask = () => {
@@ -68,15 +46,25 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       {/* Иконка задания */}
       <div className="w-16 h-16 flex-shrink-0 p-2 flex items-center justify-center">
         <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-[#2A3142]">
-          <img
-            src={task.icon_url || getTaskIcon()}
-            alt={task.title}
-            className="w-10 h-10 object-contain"
-            onError={(e) => {
-              console.log(`Ошибка загрузки иконки для задания ${task.id}, пробуем запасную иконку`)
-              e.currentTarget.src = getTaskIcon()
-            }}
-          />
+          {!imageError ? (
+            <img
+              src={task.icon_url || getFallbackIcon()}
+              alt={task.title}
+              className="w-10 h-10 object-contain"
+              onError={() => {
+                console.log(`Ошибка загрузки иконки для задания ${task.id}, используем запасную`)
+                // Устанавливаем флаг ошибки, чтобы избежать зацикливания
+                setImageError(true)
+              }}
+            />
+          ) : (
+            // Если была ошибка загрузки, показываем запасную иконку без возможности повторной ошибки
+            <img
+              src={getFallbackIcon() || "/placeholder.svg"}
+              alt={task.title}
+              className="w-10 h-10 object-contain opacity-70"
+            />
+          )}
         </div>
       </div>
 
