@@ -1,97 +1,108 @@
 "use client"
 
-import { useEffect } from "react"
-import { Loader, CheckCircle, XCircle } from "lucide-react"
+import { useState, useEffect } from "react"
 
-export const LoadingScreen = ({ isLoading, loadingSteps, progress, onAnimationComplete }) => {
-  // Преобразуем объект loadingSteps в массив для отображения
-  const stepsArray = Object.entries(loadingSteps).map(([key, value]) => ({
-    id: key,
-    status: value,
-    name: getStepName(key),
-  }))
+export default function LoadingScreen({ isLoading, loadingSteps, progress, onAnimationComplete }) {
+  const [fadeOut, setFadeOut] = useState(false)
 
-  // Функция для получения понятного названия шага
-  function getStepName(stepId) {
-    const names = {
-      database: "Подключение к базе данных",
-      user: "Загрузка профиля",
-      miners: "Загрузка майнеров",
-      mining: "Загрузка данных майнинга",
-    }
-    return names[stepId] || stepId
-  }
-
-  // Эффект для завершения анимации загрузки
   useEffect(() => {
-    if (progress >= 100 && !isLoading) {
-      // Небольшая задержка перед скрытием загрузочного экрана
+    // Когда прогресс достигает 100%, начинаем анимацию исчезновения
+    if (progress >= 100) {
+      const timer = setTimeout(() => {
+        setFadeOut(true)
+      }, 500)
+
+      return () => clearTimeout(timer)
+    }
+  }, [progress])
+
+  useEffect(() => {
+    // Когда анимация исчезновения завершена, вызываем колбэк
+    if (fadeOut) {
       const timer = setTimeout(() => {
         if (onAnimationComplete) {
           onAnimationComplete()
         }
-      }, 1000)
+      }, 500) // Время анимации fadeOut
 
       return () => clearTimeout(timer)
     }
-  }, [progress, isLoading, onAnimationComplete])
+  }, [fadeOut, onAnimationComplete])
+
+  // Функция для получения статуса шага загрузки
+  const getStepStatus = (step) => {
+    const status = loadingSteps[step]
+    if (status === "complete") return "✓"
+    if (status === "loading") return "⟳"
+    if (status === "error") return "✗"
+    return "•"
+  }
+
+  // Функция для получения класса статуса шага загрузки
+  const getStepStatusClass = (step) => {
+    const status = loadingSteps[step]
+    if (status === "complete") return "text-green-500"
+    if (status === "loading") return "text-blue-500 animate-spin"
+    if (status === "error") return "text-red-500"
+    return "text-gray-400"
+  }
 
   return (
-    <div className="fixed inset-0 bg-[#0B1622] flex flex-col items-center justify-center z-50">
-      <div className="w-full max-w-md px-6">
+    <div
+      className={`fixed inset-0 bg-[#1A1F2E] flex flex-col items-center justify-center z-50 transition-opacity duration-500 ${
+        fadeOut ? "opacity-0" : "opacity-100"
+      }`}
+    >
+      <div className="w-full max-w-md px-4">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold mb-2">Загрузка приложения</h1>
-          <p className="text-gray-400">Пожалуйста, подождите, пока мы подготовим все необходимое</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Загрузка</h1>
+          <p className="text-gray-400">Подготавливаем приложение...</p>
         </div>
 
-        {/* Прогресс-бар */}
-        <div className="w-full bg-gray-800 rounded-full h-2.5 mb-6 overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          ></div>
+        <div className="mb-6">
+          <div className="h-2 w-full bg-gray-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-500 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+          <div className="text-right mt-1 text-gray-400 text-sm">{Math.round(progress)}%</div>
         </div>
 
-        {/* Список шагов загрузки */}
-        <div className="space-y-3 mb-8">
-          {stepsArray.map((step) => (
-            <div key={step.id} className="flex items-center">
-              <div className="w-8 h-8 flex-shrink-0 mr-3">
-                {step.status === "loading" ? (
-                  <Loader size={20} className="text-blue-500 animate-spin" />
-                ) : step.status === "complete" ? (
-                  <CheckCircle size={20} className="text-green-500" />
-                ) : step.status === "error" ? (
-                  <XCircle size={20} className="text-red-500" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full border-2 border-gray-600"></div>
-                )}
-              </div>
-              <div
-                className={`flex-1 ${
-                  step.status === "loading"
-                    ? "text-white"
-                    : step.status === "complete"
-                      ? "text-gray-400"
-                      : step.status === "error"
-                        ? "text-red-400"
-                        : "text-gray-600"
-                }`}
-              >
-                {step.name}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Текущий статус */}
-        <div className="text-center text-sm text-gray-400">
-          {progress < 100 ? <span>Загружено {progress}%</span> : <span>Загрузка завершена! Запуск приложения...</span>}
+        <div className="space-y-3">
+          <div className="flex items-center">
+            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("database")}`}>
+              {getStepStatus("database")}
+            </span>
+            <span className="ml-2 text-white">Подключение к базе данных</span>
+          </div>
+          <div className="flex items-center">
+            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("user")}`}>
+              {getStepStatus("user")}
+            </span>
+            <span className="ml-2 text-white">Загрузка данных пользователя</span>
+          </div>
+          <div className="flex items-center">
+            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("miners")}`}>
+              {getStepStatus("miners")}
+            </span>
+            <span className="ml-2 text-white">Загрузка майнеров</span>
+          </div>
+          <div className="flex items-center">
+            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("tasks")}`}>
+              {getStepStatus("tasks")}
+            </span>
+            <span className="ml-2 text-white">Загрузка заданий</span>
+          </div>
+          <div className="flex items-center">
+            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("mining")}`}>
+              {getStepStatus("mining")}
+            </span>
+            <span className="ml-2 text-white">Загрузка данных майнинга</span>
+          </div>
         </div>
       </div>
     </div>
   )
 }
-
-export default LoadingScreen
 

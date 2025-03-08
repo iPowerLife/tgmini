@@ -15,6 +15,7 @@ import LoadingScreen from "./components/loading-screen"
 import TasksPage from "./pages/tasks"
 import { RatingSection } from "./components/rating-section"
 import { UserProfile } from "./components/user-profile"
+import { createMockTasks } from "./utils/mock-data" // Импортируем функцию для создания тестовых заданий
 
 // Простой компонент для уведомлений
 const Toast = ({ message, type, onClose }) => {
@@ -72,14 +73,14 @@ function ScrollToTop() {
   return null
 }
 
-// В функции AppContent добавим ranksData в параметры
+// В функции AppContent добавим tasksData в параметры
 function AppContent({
   user,
   balance,
   handleBalanceUpdate,
   shopData,
   minersData,
-  tasksData,
+  tasksData, // Добавляем tasksData
   handleTaskComplete,
   ratingData,
   transactionsData,
@@ -161,7 +162,13 @@ function AppContent({
               path="/tasks"
               element={
                 <div className="page-content" key="tasks-page">
-                  <TasksPage user={user} onBalanceUpdate={handleBalanceUpdate} onTaskComplete={handleTaskComplete} />
+                  <TasksPage
+                    user={user}
+                    onBalanceUpdate={handleBalanceUpdate}
+                    onTaskComplete={handleTaskComplete}
+                    tasks={tasksData.tasks} // Передаем предзагруженные задания
+                    isLoading={tasksData.loading} // Передаем статус загрузки
+                  />
                 </div>
               }
             />
@@ -207,13 +214,14 @@ function App() {
     user: "pending",
     miners: "pending",
     mining: "pending",
+    tasks: "pending", // Добавляем шаг загрузки заданий
   })
   const [loadingProgress, setLoadingProgress] = useState(0)
 
   // Состояния для данных
   const [shopData, setShopData] = useState({ categories: [], models: [] })
   const [minersData, setMinersData] = useState({ miners: [], totalPower: 0 })
-  const [tasksData, setTasksData] = useState({ tasks: [] })
+  const [tasksData, setTasksData] = useState({ tasks: [], loading: true }) // Добавляем статус загрузки
   const [ratingData, setRatingData] = useState({ users: [] })
   const [transactionsData, setTransactionsData] = useState({ transactions: [] })
   // Добавим новое состояние для рангов и функцию их загрузки
@@ -254,7 +262,7 @@ function App() {
         models: modelsResponse.data || [],
       })
       console.log("Shop data loaded successfully")
-      updateLoadingProgress("miners", "complete", 20)
+      updateLoadingProgress("miners", "complete", 15)
     } catch (error) {
       console.error("Error loading shop data:", error)
       updateLoadingProgress("miners", "error")
@@ -293,25 +301,45 @@ function App() {
     }
   }, [user?.id])
 
-  // Загрузка данных заданий
+  // Загрузка данных заданий - обновляем для предзагрузки
   const loadTasksData = useCallback(async () => {
     if (!user?.id) return
 
     try {
       console.log("Loading tasks data...")
+      updateLoadingProgress("tasks", "loading")
+      setTasksData((prev) => ({ ...prev, loading: true }))
 
-      const { data, error } = await supabase.rpc("get_available_tasks", {
-        user_id_param: user.id,
-      })
+      // Получаем задания
+      const { data: tasksData, error: tasksError } = await supabase
+        .from("tasks")
+        .select(`
+          *,
+          category:task_categories(name, display_name)
+        `)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
 
-      if (error) throw error
+      if (tasksError) throw tasksError
 
-      setTasksData({ tasks: data?.tasks || [] })
+      let tasks = []
+      if (tasksData && tasksData.length > 0) {
+        tasks = tasksData
+      } else {
+        // Если заданий нет, создаем тестовые
+        tasks = createMockTasks()
+      }
+
+      setTasksData({ tasks, loading: false })
       console.log("Tasks data loaded successfully")
+      updateLoadingProgress("tasks", "complete", 15)
     } catch (error) {
       console.error("Error loading tasks data:", error)
+      // Создаем тестовые данные при ошибке
+      setTasksData({ tasks: createMockTasks(), loading: false })
+      updateLoadingProgress("tasks", "error")
     }
-  }, [user?.id])
+  }, [user?.id, updateLoadingProgress])
 
   // Загрузка данных рейтинга
   const loadRatingData = useCallback(async () => {
@@ -400,7 +428,7 @@ function App() {
       // Проверяем, есть ли уже кэшированные данные
       if (cachedMiningInfo) {
         console.log("Using existing cached mining data")
-        updateLoadingProgress("mining", "complete", 20)
+        updateLoadingProgress("mining", "complete", 15)
         return
       }
 
@@ -423,7 +451,7 @@ function App() {
 
       setCachedMiningInfo(combinedData)
       console.log("Mining data preloaded successfully with pools:", combinedData)
-      updateLoadingProgress("mining", "complete", 20)
+      updateLoadingProgress("mining", "complete", 15)
     } catch (error) {
       console.error("Error preloading mining data:", error)
       updateLoadingProgress("mining", "error")
@@ -462,8 +490,8 @@ function App() {
           console.warn("Health check failed, but continuing:", error)
         }
 
-        updateLoadingProgress("database", "complete", 15)
-        setLoadingProgress(20) // Прогресс после подключения к БД
+        updateLoadingProgress("database", "complete", 10)
+        setLoadingProgress(15) // Прогресс после подключения к БД
 
         updateLoadingProgress("user", "loading")
         const userData = getTelegramUser()
@@ -596,7 +624,7 @@ function App() {
         const dbUser = await createOrUpdateUser(userData)
         console.log("Database user:", dbUser)
         updateLoadingProgress("user", "complete", 15)
-        setLoadingProgress(35) // Прогресс после загрузки пользователя
+        setLoadingProgress(30) // Прогресс после загрузки пользователя
 
         if (!dbUser) {
           throw new Error("Не удалось создать/обновить пользователя в базе")
@@ -616,15 +644,15 @@ function App() {
           setBalance(dbUser.balance)
           console.log("User initialized:", userWithDisplay)
 
-          // Загружаем все данные сразу после инициализации пользователя
+          // Загружаем все данные параллельно
           await Promise.all([
             loadShopData(),
             loadMinersData(),
-            loadTasksData(),
+            loadTasksData(), // Загружаем задания сразу
             loadRatingData(),
             loadTransactionsData(),
             loadRanksData(),
-            preloadMiningData(), // Добавляем предварительную загрузку данных майнинга
+            preloadMiningData(),
           ])
           console.log("All data loaded successfully")
           setLoadingProgress(95) // Почти завершено
@@ -749,13 +777,14 @@ function App() {
   )
 
   // Обработчик завершения задания
-  const handleTaskComplete = useCallback(
-    (taskId) => {
-      console.log("Task completed:", taskId)
-      loadTasksData()
-    },
-    [loadTasksData],
-  )
+  const handleTaskComplete = useCallback((taskId) => {
+    console.log("Task completed:", taskId)
+    // Обновляем локальное состояние заданий
+    setTasksData((prev) => ({
+      ...prev,
+      tasks: prev.tasks.map((task) => (task.id === taskId ? { ...task, is_completed: true } : task)),
+    }))
+  }, [])
 
   // Обработчик завершения анимации загрузочного экрана
   const handleSplashAnimationComplete = useCallback(() => {

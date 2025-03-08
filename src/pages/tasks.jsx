@@ -6,51 +6,65 @@ import { BottomMenu } from "../components/bottom-menu"
 import { TasksContainer } from "../components/tasks/tasks-container"
 import { createMockTasks } from "../utils/mock-data"
 
-export default function TasksPage({ user: initialUser, onBalanceUpdate, onTaskComplete }) {
-  const [loading, setLoading] = useState(true)
-  const [tasks, setTasks] = useState([])
+export default function TasksPage({
+  user: initialUser,
+  onBalanceUpdate,
+  onTaskComplete,
+  tasks: initialTasks,
+  isLoading,
+}) {
+  const [loading, setLoading] = useState(isLoading !== undefined ? isLoading : true)
+  const [tasks, setTasks] = useState(initialTasks || [])
   const [user, setUser] = useState(initialUser || null)
 
+  // Если задания уже переданы через пропсы, используем их
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true)
-      try {
-        // Получаем задания
-        const { data: tasksData, error: tasksError } = await supabase
-          .from("tasks")
-          .select(`
-            *,
-            category:task_categories(name, display_name)
-          `)
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
-
-        if (tasksError) throw tasksError
-
-        if (tasksData && tasksData.length > 0) {
-          setTasks(tasksData)
-        } else {
-          // Если заданий нет, создаем тестовые
-          setTasks(createMockTasks())
-        }
-
-        // Получаем данные пользователя, если они не были переданы
-        if (!user) {
-          const { data: userData } = await supabase.from("users").select("*").single()
-
-          if (userData) setUser(userData)
-        }
-      } catch (error) {
-        console.error("Ошибка при загрузке данных:", error)
-        // Создаем тестовые данные при ошибке
-        setTasks(createMockTasks())
-      } finally {
-        setLoading(false)
-      }
+    if (initialTasks && initialTasks.length > 0) {
+      setTasks(initialTasks)
+      setLoading(false)
+    } else if (!isLoading && !initialTasks) {
+      // Если задания не переданы и не загружаются, загружаем их сами
+      fetchTasks()
     }
+  }, [initialTasks, isLoading])
 
-    fetchData()
-  }, [user])
+  // Функция для загрузки заданий, если они не были переданы через пропсы
+  const fetchTasks = async () => {
+    setLoading(true)
+    try {
+      // Получаем задания
+      const { data: tasksData, error: tasksError } = await supabase
+        .from("tasks")
+        .select(`
+          *,
+          category:task_categories(name, display_name)
+        `)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+
+      if (tasksError) throw tasksError
+
+      if (tasksData && tasksData.length > 0) {
+        setTasks(tasksData)
+      } else {
+        // Если заданий нет, создаем тестовые
+        setTasks(createMockTasks())
+      }
+
+      // Получаем данные пользователя, если они не были переданы
+      if (!user) {
+        const { data: userData } = await supabase.from("users").select("*").single()
+
+        if (userData) setUser(userData)
+      }
+    } catch (error) {
+      console.error("Ошибка при загрузке данных:", error)
+      // Создаем тестовые данные при ошибке
+      setTasks(createMockTasks())
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleTaskComplete = (taskId) => {
     // Обновляем локальное состояние
