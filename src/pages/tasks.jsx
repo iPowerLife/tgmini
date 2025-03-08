@@ -30,11 +30,21 @@ export default function TasksPage() {
         if (tasksError) {
           console.error("Ошибка при получении заданий:", tasksError)
         } else {
-          console.log("Полученные задания:", tasksData)
+          console.log("Полученные задания (всего):", tasksData.length)
 
-          // Проверяем наличие icon_url в каждом задании
+          // Проверяем наличие и формат icon_url в каждом задании
           tasksData.forEach((task) => {
-            console.log(`Задание ${task.id} icon_url:`, task.icon_url)
+            console.log(`Задание ${task.id} (${task.title}) - тип: ${task.type}, icon_url: ${task.icon_url}`)
+
+            // Проверяем формат URL
+            if (task.icon_url) {
+              try {
+                new URL(task.icon_url)
+                console.log(`Задание ${task.id} - URL иконки валидный`)
+              } catch (error) {
+                console.error(`Задание ${task.id} - некорректный URL иконки:`, error.message)
+              }
+            }
           })
 
           setTasks(tasksData)

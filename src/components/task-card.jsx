@@ -15,23 +15,34 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
   // При загрузке компонента устанавливаем иконку из базы данных
   useEffect(() => {
+    console.log(`Задание ${task.id} - полные данные:`, task)
+
     if (task.icon_url) {
-      console.log(`Задание ${task.id} использует внешнюю иконку:`, task.icon_url)
-      setIconSrc(task.icon_url)
+      // Проверяем, что URL корректный
+      try {
+        // Проверяем, что URL валидный
+        const url = new URL(task.icon_url)
+        console.log(`Задание ${task.id} - URL иконки валидный:`, url.href)
+        setIconSrc(task.icon_url)
+      } catch (error) {
+        console.error(`Задание ${task.id} - некорректный URL иконки:`, task.icon_url, error)
+        // Если URL некорректный, используем запасную иконку
+        setIconSrc(DEFAULT_ICON)
+      }
     } else {
-      // Если нет icon_url, используем запасную иконку
+      console.log(`Задание ${task.id} - icon_url отсутствует, используем запасную иконку`)
       setIconSrc(DEFAULT_ICON)
     }
   }, [task])
 
-  // Обновляем handleImageError
+  // Обновляем handleImageError для более подробного логирования
   const handleImageError = (e) => {
-    console.error(`Ошибка загрузки иконки для задания ${task.id}:`, e)
-    console.log(`Не удалось загрузить иконку:`, iconSrc)
+    console.error(`Задание ${task.id} - ошибка загрузки иконки:`, iconSrc)
+    console.log(`Задание ${task.id} - детали ошибки:`, e.type)
 
     // При ошибке загрузки устанавливаем запасную иконку
     if (iconSrc !== DEFAULT_ICON) {
-      console.log(`Заменяем на запасную иконку`)
+      console.log(`Задание ${task.id} - заменяем на запасную иконку`)
       setIconSrc(DEFAULT_ICON)
     }
   }
