@@ -14,7 +14,6 @@ export default function TasksPage() {
     const fetchData = async () => {
       setLoading(true)
 
-      // Получаем данные пользователя
       const { data: userData, error: userError } = await supabase.from("users").select("*").single()
 
       if (userError) {
@@ -23,38 +22,31 @@ export default function TasksPage() {
         setUser(userData)
       }
 
-      // Получаем категории заданий
-      const { data: categoriesData } = await supabase.from("task_categories").select("*")
-
-      // Создаем объект для быстрого доступа к категориям по ID
-      const categoriesMap = {}
-      if (categoriesData) {
-        categoriesData.forEach((category) => {
-          categoriesMap[category.id] = category
-        })
-      }
-
-      // Получаем все задания
-      const { data: tasksData, error: tasksError } = await supabase.from("tasks").select("*")
+      // Получаем задания вместе с категориями - используем оригинальный запрос
+      const { data: tasksData, error: tasksError } = await supabase
+        .from("tasks")
+        .select(`
+          *,
+          user_tasks(*),
+          task_categories(*)
+        `)
+        .eq("is_active", true)
 
       if (tasksError) {
         console.error("Ошибка при получении заданий:", tasksError)
-      } else if (tasksData) {
-        // Добавляем информацию о категории к каждому заданию
-        const processedTasks = tasksData.map((task) => {
-          const category = categoriesMap[task.category_id]
-          return {
-            ...task,
-            task_categories: category,
-            category: category?.name || "daily",
-            is_completed: false,
-            user_status: "new",
-            reward_claimed: false,
-            is_expired: false,
-          }
-        })
+      } else {
+        console.log("Полученные задания:", tasksData) // Для отладки
 
-        console.log("Обработанные задания:", processedTasks)
+        const processedTasks = tasksData.map((task) => ({
+          ...task,
+          category: task.task_categories?.name || "daily",
+          is_completed: task.user_tasks?.[0]?.status === "completed",
+          user_status: task.user_tasks?.[0]?.status,
+          reward_claimed: task.user_tasks?.[0]?.reward_claimed,
+          is_expired: task.end_date ? new Date(task.end_date) < new Date() : false,
+        }))
+
+        console.log("Обработанные задания:", processedTasks) // Для отладки
         setTasks(processedTasks)
       }
 
