@@ -18,37 +18,24 @@ export default function TasksPage() {
         // Получаем данные пользователя
         const { data: userData, error: userError } = await supabase.from("users").select("*").single()
 
-        if (userError) {
-          console.error("Ошибка при получении данных пользователя:", userError)
-        } else {
-          setUser(userData)
-        }
+        if (userError) throw userError
+        setUser(userData)
 
-        // Получаем задания с категориями и статусами
-        const { data: tasksData, error: tasksError } = await supabase
-          .from("tasks")
-          .select(`
-            *,
-            user_tasks(*),
-            task_categories(*)
-          `)
-          .eq("is_active", true)
+        // Получаем все задания без inner join
+        const { data: tasksData, error: tasksError } = await supabase.from("tasks").select("*, task_categories(*)")
 
-        if (tasksError) {
-          console.error("Ошибка при получении заданий:", tasksError)
-        } else {
-          console.log("Полученные задания:", tasksData) // Для отладки
+        if (tasksError) throw tasksError
 
+        // Логируем полученные данные
+        console.log("Данные из БД:", tasksData)
+
+        if (tasksData) {
           const processedTasks = tasksData.map((task) => ({
             ...task,
-            category: task.task_categories?.name || "daily",
-            is_completed: task.user_tasks?.[0]?.status === "completed",
-            user_status: task.user_tasks?.[0]?.status,
-            reward_claimed: task.user_tasks?.[0]?.reward_claimed,
-            is_expired: task.end_date ? new Date(task.end_date) < new Date() : false,
+            category: task.task_categories?.name?.toLowerCase() || "daily",
           }))
 
-          console.log("Обработанные задания:", processedTasks) // Для отладки
+          console.log("Обработанные задания:", processedTasks)
           setTasks(processedTasks)
         }
       } catch (error) {
@@ -71,24 +58,22 @@ export default function TasksPage() {
   }
 
   const handleTaskComplete = (taskId) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => (task.id === taskId ? { ...task, is_completed: true, user_status: "completed" } : task)),
-    )
+    setTasks((prevTasks) => prevTasks.map((task) => (task.id === taskId ? { ...task, is_completed: true } : task)))
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#151A28]">
-        <div className="w-10 h-10 border-4 border-gray-400 border-t-blue-400 rounded-full animate-spin" />
+      <div className="flex items-center justify-center h-screen bg-white">
+        <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#151A28] text-white">
-      <header className="px-4 py-3 flex items-center justify-between bg-[#151A28] border-b border-[#2A3142]/30">
+    <div className="min-h-screen bg-white">
+      <header className="px-4 py-3 flex items-center justify-between bg-white border-b border-gray-200">
         <div className="flex items-center">
-          <button className="text-gray-400 hover:text-white transition-colors">Закрыть</button>
+          <button className="text-gray-600 hover:text-gray-900 transition-colors">Закрыть</button>
         </div>
       </header>
 
