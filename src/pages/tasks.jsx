@@ -31,26 +31,7 @@ export default function TasksPage() {
           console.error("Ошибка при получении заданий:", tasksError)
         } else {
           console.log("Полученные задания:", tasksData)
-
-          // Обрабатываем задания в том формате, в котором они приходят с сервера
-          const processedTasks = tasksData.map((task) => ({
-            id: task.id,
-            title: task.title,
-            description: task.description,
-            reward: task.reward,
-            link: task.link,
-            type: task.type,
-            category:
-              task.type === "simple" || task.type === "video" || task.type === "quiz"
-                ? "daily"
-                : task.type === "app" || task.type === "premium"
-                  ? "partners"
-                  : "social",
-            is_active: task.is_active,
-          }))
-
-          console.log("Обработанные задания:", processedTasks)
-          setTasks(processedTasks)
+          setTasks(tasksData)
         }
       } catch (error) {
         console.error("Ошибка при загрузке данных:", error)
