@@ -4,6 +4,7 @@ import { useState, useCallback, memo, useEffect } from "react"
 import { motion } from "framer-motion"
 import { supabase } from "../supabase"
 import { initTelegram } from "../utils/telegram"
+import { Check } from "lucide-react"
 
 const VerificationTimer = memo(({ timeLeft, onComplete }) => {
   const [remainingTime, setRemainingTime] = useState(timeLeft)
@@ -108,6 +109,53 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     isVerifying: false,
     timeLeft: 15000,
   })
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [isCompleted, setIsCompleted] = useState(false)
+  const [imageError, setImageError] = useState(false)
+
+  const handleExecuteTask = () => {
+    if (isCompleted) return
+
+    setIsVerifying(true)
+
+    setTimeout(() => {
+      setIsVerifying(false)
+      setIsCompleted(true)
+      if (onTaskComplete) {
+        onTaskComplete(task.id)
+      }
+    }, 2000)
+  }
+
+  // Функция для получения запасного изоб��ажения по категории
+  const getFallbackImage = () => {
+    const category = task.category || getCategoryById(task.category_id)
+
+    switch (category) {
+      case "daily":
+        return "https://cdn-icons-png.flaticon.com/512/2991/2991195.png"
+      case "partners":
+        return "https://cdn-icons-png.flaticon.com/512/2991/2991112.png"
+      case "social":
+        return "https://cdn-icons-png.flaticon.com/512/2504/2504941.png"
+      default:
+        return "https://cdn-icons-png.flaticon.com/512/2991/2991195.png"
+    }
+  }
+
+  // Функция для определения категории по ID
+  const getCategoryById = (categoryId) => {
+    if (!categoryId) return "daily"
+
+    const categoryMap = {
+      1: "daily",
+      2: "partners",
+      3: "social",
+    }
+
+    return categoryMap[categoryId] || "daily"
+  }
+
   // Пропускаем рендеринг реферальных заданий
   if (task.type === "referral") {
     return null
@@ -123,7 +171,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     })
   }, [task, user])
 
-  const handleExecuteTask = useCallback(async () => {
+  const handleExecuteTaskOld = useCallback(async () => {
     try {
       if (task.is_expired) {
         return
@@ -387,7 +435,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
     return (
       <button
-        onClick={handleExecuteTask}
+        onClick={handleExecuteTaskOld}
         style={buttonStyle}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = "translateY(-1px)"
@@ -459,79 +507,76 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     )
   }
 
+  const [isExecuting, setIsExecuting] = useState(false)
+
+  const handleExecuteTaskNew = async () => {
+    if (isCompleted || isExecuting) return
+
+    setIsExecuting(true)
+
+    try {
+      // Simulate task execution
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+
+      setIsCompleted(true)
+      if (onTaskComplete) {
+        onTaskComplete(task.id)
+      }
+    } finally {
+      setIsExecuting(false)
+    }
+  }
+
   return (
-    <div
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        borderRadius: "12px",
-        marginBottom: "8px",
-        padding: "8px",
-        background:
-          task.type === "referral"
-            ? "linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(37, 99, 235, 0.08) 100%)"
-            : task.type === "limited"
-              ? "linear-gradient(135deg, rgba(147, 51, 234, 0.08) 0%, rgba(126, 34, 206, 0.08) 100%)"
-              : "linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(29, 78, 216, 0.08) 100%)",
-        border:
-          task.type === "referral"
-            ? "1px solid rgba(59, 130, 246, 0.1)"
-            : task.type === "limited"
-              ? "1px solid rgba(147, 51, 234, 0.1)"
-              : "1px solid rgba(37, 99, 235, 0.1)",
-        opacity: task.is_completed || task.is_expired ? 0.6 : 1,
-        transition: "all 0.3s ease",
-        backdropFilter: "blur(8px)",
-      }}
-    >
-      {task.type === "limited" && !task.is_completed && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(90deg, rgba(147, 51, 234, 0.03) 0%, transparent 50%, rgba(147, 51, 234, 0.03) 100%)",
-            animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-          }}
-        />
-      )}
-      <div style={{ padding: "4px" }}>
-        <div style={{ marginBottom: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3
-            style={{
-              fontSize: "0.875rem",
-              fontWeight: 500,
-              margin: 0,
-              color:
-                task.type === "limited" && !task.is_completed && !task.is_expired
-                  ? "#f3e8ff"
-                  : "rgba(255, 255, 255, 0.9)",
-            }}
-          >
-            {task.title}
-          </h3>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-              fontSize: "0.875rem",
-              color: task.type === "limited" ? "#f3e8ff" : "#dbeafe",
-            }}
-          >
-            <span>{task.reward}</span>
-            <span>💎</span>
-          </div>
+    <div className="flex items-center bg-[#242838] rounded-xl overflow-hidden border border-[#2A3142]/70 shadow-lg">
+      {/* Изображение задания */}
+      <div className="w-16 h-16 flex-shrink-0 p-2 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-[#2A3142]">
+          <img
+            src={imageError ? getFallbackImage() : task.icon_url || getFallbackImage()}
+            alt={task.title}
+            className="w-10 h-10 object-contain"
+            onError={() => setImageError(true)}
+          />
         </div>
-
-        {task.type === "limited" && !task.is_completed && <TimeRemaining endDate={task.end_date} />}
-
-        {renderButton()}
       </div>
 
-      {/* Добавляем прогресс бар для реферальных заданий */}
-      {renderReferralProgress()}
+      {/* Содержимое задания */}
+      <div className="flex-1 py-3 pr-2">
+        <div className="text-white text-sm font-medium">{task.title}</div>
+        <div className="flex items-center mt-1">
+          <span className="text-blue-400 font-bold text-sm">+{task.reward}</span>
+        </div>
+      </div>
+
+      {/* Кнопка */}
+      <div className="pr-3">
+        {isCompleted ? (
+          <div className="w-8 h-8 rounded-lg bg-[#2A3142] flex items-center justify-center">
+            <Check className="w-4 h-4 text-gray-400" />
+          </div>
+        ) : (
+          <button
+            onClick={handleExecuteTaskNew}
+            disabled={isExecuting}
+            className={`
+              px-5 py-2 rounded-full font-medium transition-all
+              ${
+                isCompleted
+                  ? "bg-[#2A3142] text-gray-400"
+                  : isExecuting
+                    ? "bg-[#2A3142] text-gray-300"
+                    : "bg-blue-500 hover:bg-blue-400 text-white shadow-md"
+              }
+            `}
+          >
+            {isCompleted ? "Done" : isExecuting ? "Executing..." : "Go"}
+          </button>
+        )}
+      </div>
     </div>
   )
 })
+
+TaskCard.displayName = "TaskCard"
 
