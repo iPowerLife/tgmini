@@ -16,19 +16,12 @@ export function TasksSection({ user, tasks, onBalanceUpdate, onTaskComplete }) {
     console.log("Все задания:", tasks)
     console.log("Активная вкладка:", activeTab)
 
-    // Определяем категорию задания на основе его типа
+    // Фильтруем задания по категории
     const filtered = tasks.filter((task) => {
-      const taskType = task.type?.toLowerCase()
-      let category = "daily" // По умолчанию daily
+      // Получаем категорию из связанной таблицы
+      const category = task.category_name || "daily" // По умолчанию daily
 
-      // Определяем категорию на основе типа
-      if (taskType === "app" || taskType === "premium") {
-        category = "partners"
-      } else if (taskType === "social") {
-        category = "social"
-      }
-
-      console.log(`Задание ${task.id} - тип: ${taskType}, определенная категория: ${category}`)
+      console.log(`Задание ${task.id} - категория: ${category}`)
       return category === activeTab
     })
 
