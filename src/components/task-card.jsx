@@ -6,44 +6,18 @@ import { Check } from "lucide-react"
 export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) => {
   const [isVerifying, setIsVerifying] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
-  const [iconUrl, setIconUrl] = useState(null)
+  const [iconSrc, setIconSrc] = useState("/icons/task-icon.png")
 
+  // При загрузке компонента устанавливаем иконку из базы данных
   useEffect(() => {
-    // Логируем данные задания для отладки
-    console.log(`Задание ${task.id} данные:`, task)
-    console.log(`Задание ${task.id} icon_url:`, task.icon_url)
-
     if (task.icon_url) {
-      setIconUrl(task.icon_url)
+      console.log(`Задание ${task.id} использует внешнюю иконку:`, task.icon_url)
+      setIconSrc(task.icon_url)
     } else {
-      setIconUrl(getDefaultIcon())
+      // Если нет icon_url, используем дефолтную иконку
+      setIconSrc("/icons/task-icon.png")
     }
   }, [task])
-
-  // Получаем дефолтную иконку задания на основе типа и названия
-  const getDefaultIcon = () => {
-    const title = task.title?.toLowerCase() || ""
-    const type = task.type?.toLowerCase() || ""
-
-    if (type === "video") return "/icons/youtube-icon.png"
-    if (type === "social") {
-      if (title.includes("telegram")) return "/icons/telegram-icon.png"
-      if (title.includes("twitter") || title.includes("x ")) return "/icons/x-icon.png"
-      return "/icons/share-icon.png"
-    }
-    if (type === "premium") return "/icons/vip-icon.png"
-    if (type === "app") return "/icons/game-icon.png"
-    if (type === "quiz") return "/icons/task-icon.png"
-
-    // Определяем по названию
-    if (title.includes("telegram")) return "/icons/telegram-icon.png"
-    if (title.includes("twitter") || title.includes("x")) return "/icons/x-icon.png"
-    if (title.includes("видео")) return "/icons/youtube-icon.png"
-    if (title.includes("игра") || title.includes("app")) return "/icons/game-icon.png"
-    if (title.includes("бонус")) return "/icons/coin.png"
-
-    return "/icons/task-icon.png"
-  }
 
   const handleExecuteTask = () => {
     if (isCompleted) return
@@ -62,8 +36,13 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
   const handleImageError = (e) => {
     console.error(`Ошибка загрузки иконки для задания ${task.id}:`, e)
-    console.log(`Задание ${task.id} icon_url при ошибке:`, task.icon_url)
-    e.target.src = "/icons/task-icon.png"
+    console.log(`Не удалось загрузить иконку:`, iconSrc)
+
+    // При ошибке загрузки устанавливаем дефолтную иконку
+    if (iconSrc !== "/icons/task-icon.png") {
+      console.log(`Заменяем на дефолтную иконку`)
+      setIconSrc("/icons/task-icon.png")
+    }
   }
 
   return (
@@ -72,7 +51,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       <div className="w-16 h-16 flex-shrink-0 p-2 flex items-center justify-center">
         <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-[#2A3142]">
           <img
-            src={iconUrl || "/icons/task-icon.png"}
+            src={iconSrc || "/placeholder.svg"}
             alt={task.title}
             className="w-10 h-10 object-contain"
             onError={handleImageError}
