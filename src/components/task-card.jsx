@@ -5,6 +5,7 @@ import { Check } from "lucide-react"
 
 export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) => {
   const [isVerifying, setIsVerifying] = useState(false)
+  const [isCompleted, setIsCompleted] = useState(false)
 
   // Получаем иконку задания
   const getTaskIcon = () => {
@@ -32,13 +33,14 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   }
 
   const handleExecuteTask = () => {
-    if (task.is_completed) return
+    if (isCompleted) return
 
     setIsVerifying(true)
 
     // Имитация выполнения задания
     setTimeout(() => {
       setIsVerifying(false)
+      setIsCompleted(true)
       if (onTaskComplete) {
         onTaskComplete(task.id)
       }
@@ -72,18 +74,18 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
 
       {/* Кнопка */}
       <div className="pr-3">
-        {task.is_completed ? (
+        {isCompleted ? (
           <div className="w-8 h-8 rounded-lg bg-[#2A3142] flex items-center justify-center">
             <Check className="w-4 h-4 text-gray-400" />
           </div>
         ) : (
           <button
             onClick={handleExecuteTask}
-            disabled={isVerifying || task.is_completed}
+            disabled={isVerifying || isCompleted}
             className={`
               px-5 py-2 rounded-full font-medium transition-all
               ${
-                task.is_completed
+                isCompleted
                   ? "bg-[#2A3142] text-gray-400"
                   : isVerifying
                     ? "bg-[#2A3142] text-gray-300"
@@ -91,7 +93,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
               }
             `}
           >
-            {task.is_completed ? "Done" : isVerifying ? "Verifying..." : "Go"}
+            {isCompleted ? "Done" : isVerifying ? "Verifying..." : "Go"}
           </button>
         )}
       </div>
