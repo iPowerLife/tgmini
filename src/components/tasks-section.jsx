@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { TaskCard } from "./task-card"
-import { TaskStats } from "./task-stats"
 
 export function TasksSection({ user, tasks, onBalanceUpdate, onTaskComplete }) {
   const [activeTab, setActiveTab] = useState("daily")
@@ -44,13 +43,6 @@ export function TasksSection({ user, tasks, onBalanceUpdate, onTaskComplete }) {
         <h1 className="text-2xl font-bold text-center mb-1 text-white">All Tasks</h1>
         <p className="text-gray-400 text-center text-sm">Small tasks, big rewards! Earn AP and level up your game.</p>
       </div>
-
-      {/* Статистика заданий */}
-      {tasks.length > 0 && (
-        <div className="px-4 mb-4">
-          <TaskStats tasks={tasks} />
-        </div>
-      )}
 
       {/* Табы */}
       <div className="px-4 mb-6">
