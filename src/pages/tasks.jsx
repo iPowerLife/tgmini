@@ -12,42 +12,50 @@ export default function TasksPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true)
+      try {
+        setLoading(true)
 
-      const { data: userData, error: userError } = await supabase.from("users").select("*").single()
+        // Получаем данные пользователя
+        const { data: userData, error: userError } = await supabase.from("users").select("*").single()
 
-      if (userError) {
-        console.error("Ошибка при получении данных пользователя:", userError)
-      } else {
-        setUser(userData)
+        if (userError) {
+          console.error("Ошибка при получении данных пользователя:", userError)
+        } else {
+          setUser(userData)
+        }
+
+        // Получаем задания с категориями и статусами
+        const { data: tasksData, error: tasksError } = await supabase
+          .from("tasks")
+          .select(`
+            *,
+            user_tasks(*),
+            task_categories(*)
+          `)
+          .eq("is_active", true)
+
+        if (tasksError) {
+          console.error("Ошибка при получении заданий:", tasksError)
+        } else {
+          console.log("Полученные задания:", tasksData) // Для отладки
+
+          const processedTasks = tasksData.map((task) => ({
+            ...task,
+            category: task.task_categories?.name || "daily",
+            is_completed: task.user_tasks?.[0]?.status === "completed",
+            user_status: task.user_tasks?.[0]?.status,
+            reward_claimed: task.user_tasks?.[0]?.reward_claimed,
+            is_expired: task.end_date ? new Date(task.end_date) < new Date() : false,
+          }))
+
+          console.log("Обработанные задания:", processedTasks) // Для отладки
+          setTasks(processedTasks)
+        }
+      } catch (error) {
+        console.error("Ошибка при загрузке данных:", error)
+      } finally {
+        setLoading(false)
       }
-
-      // Получаем задания вместе с категориями
-      const { data: tasksData, error: tasksError } = await supabase
-        .from("tasks")
-        .select(`
-          *,
-          user_tasks(*),
-          task_categories(*)
-        `)
-        .eq("is_active", true)
-
-      if (tasksError) {
-        console.error("Ошибка при получении заданий:", tasksError)
-      } else {
-        const processedTasks = tasksData.map((task) => ({
-          ...task,
-          category: task.task_categories?.name || "daily",
-          is_completed: task.user_tasks?.[0]?.status === "completed",
-          user_status: task.user_tasks?.[0]?.status,
-          reward_claimed: task.user_tasks?.[0]?.reward_claimed,
-          is_expired: task.end_date ? new Date(task.end_date) < new Date() : false,
-        }))
-
-        setTasks(processedTasks)
-      }
-
-      setLoading(false)
     }
 
     fetchData()
@@ -70,15 +78,15 @@ export default function TasksPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-b from-[#1A1F2E] to-[#151A28]">
+      <div className="flex items-center justify-center h-screen bg-[#151A28]">
         <div className="w-10 h-10 border-4 border-gray-400 border-t-blue-400 rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#1A1F2E] to-[#151A28] text-white">
-      <header className="px-4 py-3 flex items-center justify-between bg-[#1A1F2E] border-b border-[#2A3142]/30">
+    <div className="min-h-screen bg-[#151A28] text-white">
+      <header className="px-4 py-3 flex items-center justify-between bg-[#151A28] border-b border-[#2A3142]/30">
         <div className="flex items-center">
           <button className="text-gray-400 hover:text-white transition-colors">Закрыть</button>
         </div>
