@@ -16,6 +16,8 @@ import TasksPage from "./pages/tasks"
 import { RatingSection } from "./components/rating-section"
 import { UserProfile } from "./components/user-profile"
 import { createMockTasks } from "./utils/mock-data" // Импортируем функцию для создания тестовых заданий
+// Добавьте импорт функции предзагрузки изображений в начало файла
+import { preloadImages } from "./utils/image-preloader"
 
 // Простой компонент для уведомлений
 const Toast = ({ message, type, onClose }) => {
@@ -209,12 +211,14 @@ function App() {
 
   // Новое состояние для загрузочного экрана
   const [showSplash, setShowSplash] = useState(true)
+  // Добавьте новый шаг загрузки в состояние loadingSteps
   const [loadingSteps, setLoadingSteps] = useState({
     database: "pending",
     user: "pending",
     miners: "pending",
     mining: "pending",
-    tasks: "pending", // Добавляем шаг загрузки заданий
+    tasks: "pending",
+    images: "pending", // Добавляем шаг загрузки изображений
   })
   const [loadingProgress, setLoadingProgress] = useState(0)
 
@@ -458,6 +462,34 @@ function App() {
     }
   }, [user?.id, cachedMiningInfo, updateLoadingProgress])
 
+  // Добавьте новую функцию для предзагрузки изображений после функции preloadMiningData
+  const preloadShopImages = useCallback(async () => {
+    if (!shopData.models || shopData.models.length === 0) return
+
+    try {
+      console.log("Preloading shop images...")
+      updateLoadingProgress("images", "loading")
+
+      // Собираем все URL изображений из моделей магазина
+      const imageUrls = shopData.models.map((model) => model.image_url).filter((url) => url && url.trim() !== "")
+
+      // Предзагружаем изображения
+      await preloadImages(imageUrls, (progress) => {
+        // Обновляем прогресс загрузки (максимум 10%)
+        const progressIncrement = Math.floor(progress * 10)
+        if (progressIncrement > 0) {
+          updateLoadingProgress("images", "loading", progressIncrement)
+        }
+      })
+
+      console.log("Shop images preloaded successfully")
+      updateLoadingProgress("images", "complete", 5)
+    } catch (error) {
+      console.error("Error preloading shop images:", error)
+      updateLoadingProgress("images", "error")
+    }
+  }, [shopData.models, updateLoadingProgress])
+
   // Добавьте функцию для обновления кэша
   const updateMiningInfoCache = useCallback((data) => {
     console.log("Updating mining info cache:", data)
@@ -653,6 +685,7 @@ function App() {
             loadTransactionsData(),
             loadRanksData(),
             preloadMiningData(),
+            preloadShopImages(), // Добавляем предзагрузку изображений
           ])
           console.log("All data loaded successfully")
           setLoadingProgress(95) // Почти завершено
@@ -692,6 +725,7 @@ function App() {
     updateMiningInfoCache,
     preloadMiningData,
     updateLoadingProgress,
+    preloadShopImages,
   ])
 
   // Добавляем эффект для перенаправления на главную страницу при обновлении

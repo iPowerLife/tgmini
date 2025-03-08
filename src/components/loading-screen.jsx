@@ -100,6 +100,12 @@ export default function LoadingScreen({ isLoading, loadingSteps, progress, onAni
             </span>
             <span className="ml-2 text-white">Загрузка данных майнинга</span>
           </div>
+          <div className="flex items-center">
+            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("images")}`}>
+              {getStepStatus("images")}
+            </span>
+            <span className="ml-2 text-white">Загрузка изображений</span>
+          </div>
         </div>
       </div>
     </div>

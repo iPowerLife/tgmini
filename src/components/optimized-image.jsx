@@ -1,86 +1,81 @@
 "use client"
 
-import { useState, useEffect, memo } from "react"
+import { useState, useEffect } from "react"
+import { fixImageUrl } from "../utils/image-helpers"
 
-export const OptimizedImage = memo(function OptimizedImage({
+export function OptimizedImage({
   src,
   alt,
+  className = "",
+  fallbackSrc,
   width,
   height,
-  className,
-  placeholderColor = "#1a1b1e",
-  ...props
+  priority = false,
+  onLoad,
+  style = {},
 }) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
+  const [imageSrc, setImageSrc] = useState("")
 
   useEffect(() => {
     // Сбрасываем состояние при изменении src
     setLoaded(false)
     setError(false)
 
-    // Предзагружаем изображение
-    const img = new Image()
-    img.src = src
+    // Исправляем URL изображения
+    const fixedSrc = fixImageUrl(src)
+    setImageSrc(fixedSrc || fallbackSrc)
 
-    img.onload = () => setLoaded(true)
-    img.onerror = () => setError(true)
-
-    return () => {
-      img.onload = null
-      img.onerror = null
+    // Если установлен приоритет, предзагружаем изображение
+    if (priority && fixedSrc) {
+      const img = new Image()
+      img.src = fixedSrc
+      img.onload = () => {
+        setLoaded(true)
+        if (onLoad) onLoad()
+      }
+      img.onerror = () => {
+        setError(true)
+        setImageSrc(fallbackSrc)
+      }
     }
-  }, [src])
+  }, [src, fallbackSrc, priority, onLoad])
 
-  // Если ошибка загрузки, показываем плейсхолдер
-  if (error) {
-    return (
-      <div
-        className={className}
-        style={{
-          width: width || "100%",
-          height: height || "100%",
-          backgroundColor: placeholderColor,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#94a3b8",
-          fontSize: "0.75rem",
-        }}
-        {...props}
-      >
-        {alt?.charAt(0) || "?"}
-      </div>
-    )
+  const handleLoad = () => {
+    setLoaded(true)
+    if (onLoad) onLoad()
+  }
+
+  const handleError = () => {
+    setError(true)
+    if (fallbackSrc && imageSrc !== fallbackSrc) {
+      setImageSrc(fallbackSrc)
+    }
   }
 
   return (
-    <div style={{ position: "relative", width: width || "100%", height: height || "100%" }}>
-      {!loaded && (
-        <div
-          className={className}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: placeholderColor,
-          }}
-        />
-      )}
+    <div
+      className={`relative overflow-hidden ${className}`}
+      style={{
+        width: width || "100%",
+        height: height || "auto",
+        ...style,
+      }}
+    >
+      {/* Плейсхолдер */}
+      {!loaded && <div className="absolute inset-0 bg-gray-800 animate-pulse" style={{ borderRadius: "inherit" }} />}
+
+      {/* Изображение */}
       <img
-        src={src || "/placeholder.svg"}
-        alt={alt}
-        width={width}
-        height={height}
-        className={`${className} ${loaded ? "opacity-100" : "opacity-0"}`}
-        style={{ transition: "opacity 0.3s ease" }}
-        onLoad={() => setLoaded(true)}
-        onError={() => setError(true)}
-        {...props}
+        src={imageSrc || "/placeholder.svg"}
+        alt={alt || "Image"}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        onLoad={handleLoad}
+        onError={handleError}
+        style={{ borderRadius: "inherit" }}
       />
     </div>
   )
-})
+}
 

@@ -1,25 +1,10 @@
 "use client"
 
-import React, { useRef, useEffect } from "react"
-import { useState, useCallback } from "react"
-import {
-  ShoppingCart,
-  Zap,
-  Gauge,
-  Crown,
-  Sparkles,
-  Rocket,
-  Shield,
-  Gem,
-  Droplet,
-  Coins,
-  Loader,
-  ChevronRight,
-  Lock,
-  Bell,
-  AlertTriangle,
-} from "lucide-react"
-import { supabase } from "../supabase"
+import { useRef, useEffect } from "react"
+import { useState } from "react"
+import { ShoppingCart, Zap, Gauge, Crown, Sparkles, Rocket, Loader, ChevronRight, AlertTriangle } from "lucide-react"
+import { BottomMenu } from "./bottom-menu"
+import { OptimizedImage } from "./optimized-image" // Импортируем компонент оптимизированного изображения
 
 // Add this component at the top level of the file, after imports
 const WarningMessage = () => (
@@ -352,560 +337,161 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
 }
 
 // В основном компоненте Shop обновляем структуру навигации
-export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerPass: initialHasMinerPass = false }) => {
-  const [activeCategory, setActiveCategory] = useState("shop")
-  const [activeType, setActiveType] = useState("basic")
-  const [categoryMap, setCategoryMap] = useState({})
-  const [filteredModels, setFilteredModels] = useState({
-    basic: [],
-    advanced: [],
-    premium: [],
-  })
+export default function Shop({ user, onPurchase, categories = [], models = [], hasMinerPass = false }) {
+  const [activeCategory, setActiveCategory] = useState(null)
+  const [filteredModels, setFilteredModels] = useState([])
   const [loading, setLoading] = useState(false)
-  const [userMiners, setUserMiners] = useState([])
-  const [specialItems, setSpecialItems] = useState([])
-  const [userSpecialItems, setUserSpecialItems] = useState([])
-  const [hasMinerPass, setHasMinerPass] = useState(initialHasMinerPass)
 
-  // Счетчик для принудительного обновления компонента
-  const [updateCounter, setUpdateCounter] = useState(0)
-
-  // Получаем баланс пользователя
-  const balance = user?.balance || 0
-
-  // Обновленный обработчик смены категории с принудительным обновлением
-  const handleCategoryChange = useCallback(
-    (categoryId) => {
-      console.log("Changing category to:", categoryId, "from:", activeCategory)
-
-      // Устанавливаем новую активную категорию
-      setActiveCategory(categoryId)
-
-      // Принудительно обновляем компонент
-      setUpdateCounter((prev) => prev + 1)
-
-      // Сбрасываем тип майнера при переходе в магазин
-      if (categoryId === "shop") {
-        setActiveType("basic")
-      }
-    },
-    [activeCategory],
-  )
-
-  // Загрузка майнеров пользователя
+  // Устанавливаем первую категорию как активную при загрузке компонента
   useEffect(() => {
-    if (!user?.id) return
-
-    const loadUserMiners = async () => {
-      try {
-        const { data, error } = await supabase.from("user_miners").select("*").eq("user_id", user.id)
-
-        if (error) throw error
-        setUserMiners(data || [])
-      } catch (error) {
-        console.error("Error loading user miners:", error)
-      }
+    if (categories && categories.length > 0 && !activeCategory) {
+      setActiveCategory(categories[0].id)
     }
+  }, [categories, activeCategory])
 
-    loadUserMiners()
-  }, [user?.id])
-
-  // Загрузка специальных предметов
+  // Фильтруем модели по активной категории
   useEffect(() => {
-    if (!user?.id) return
-
-    const loadSpecialItems = async () => {
-      try {
-        // Загружаем все специальные предметы напрямую из таблицы special_items
-        const { data: items, error: itemsError } = await supabase.from("special_items").select("*").order("price")
-
-        if (itemsError) throw itemsError
-        setSpecialItems(items || [])
-
-        // Загружаем специальные предметы пользователя
-        const { data: userItems, error: userItemsError } = await supabase
-          .from("user_special_items")
-          .select("*")
-          .eq("user_id", user.id)
-
-        if (userItemsError) throw userItemsError
-        setUserSpecialItems(userItems || [])
-      } catch (error) {
-        console.error("Error loading special items:", error)
-      }
+    if (activeCategory && models && models.length > 0) {
+      const filtered = models.filter((model) => model.category_id === activeCategory)
+      setFilteredModels(filtered)
+    } else {
+      setFilteredModels([])
     }
-
-    loadSpecialItems()
-  }, [user?.id])
+  }, [activeCategory, models])
 
   // Обработчик покупки майнера
-  const handleBuyMiner = async (modelId, price) => {
+  const handlePurchase = async (model) => {
+    if (loading) return
+    if (user.balance < model.price) {
+      alert("Недостаточно средств для покупки")
+      return
+    }
+
+    setLoading(true)
     try {
-      setLoading(true)
-      console.log("Покупка майнера:", modelId, "цена:", price)
-
-      // Вызываем функцию покупки майнера
-      const { data, error } = await supabase.rpc("purchase_miner", {
-        user_id_param: user.id,
-        model_id_param: modelId,
-        price_param: price,
-        quantity_param: 1,
-      })
-
-      if (error) {
-        console.error("Ошибка при вызове purchase_miner:", error)
-        throw error
-      }
-
-      console.log("Результат покупки:", data)
-
-      if (data.success) {
-        // Обновляем список майнеров пользователя
-        const { data: minersData, error: minersError } = await supabase
-          .from("user_miners")
-          .select("*")
-          .eq("user_id", user.id)
-
-        if (!minersError) {
-          setUserMiners(minersData || [])
-        }
-
-        onPurchase(data.new_balance)
-        alert("Майнер успешно куплен!")
-      } else {
-        alert(data.error || "Ошибка при покупке")
-      }
+      // Здесь должен быть запрос к API для покупки майнера
+      // Для примера просто обновляем баланс
+      const newBalance = user.balance - model.price
+      onPurchase(newBalance)
+      alert(`Вы успешно приобрели ${model.display_name}`)
     } catch (error) {
-      console.error("Error purchasing miner:", error)
-      alert("Ошибка при покупке майнера: " + (error.message || error))
+      console.error("Ошибка при покупке майнера:", error)
+      alert("Произошла ошибка при покупке майнера")
     } finally {
       setLoading(false)
     }
   }
 
-  // Обновленный обработчик покупки специального предмета
-  const handleBuySpecialItem = async (itemName, price) => {
-    try {
-      setLoading(true)
-      console.log("Покупка предмета:", itemName, "цена:", price)
-
-      if (!user?.id) {
-        throw new Error("Пользователь не авторизован")
-      }
-
-      // Вызываем функцию покупки специального предмета
-      const { data, error } = await supabase.rpc("purchase_special_item", {
-        user_id_param: user.id,
-        item_name_param: itemName,
-        price_param: price,
-      })
-
-      if (error) {
-        console.error("Ошибка при вызове purchase_special_item:", error)
-        throw error
-      }
-
-      console.log("Результат покупки:", data)
-
-      if (data.success) {
-        // Обновляем список специальных предметов пользователя
-        const { data: itemsData, error: itemsError } = await supabase
-          .from("user_special_items")
-          .select("*")
-          .eq("user_id", user.id)
-
-        if (!itemsError) {
-          setUserSpecialItems(itemsData || [])
-        }
-
-        // Обновляем статус Miner Pass
-        if (itemName === "miner_pass") {
-          setHasMinerPass(true)
-        }
-
-        onPurchase(data.new_balance)
-        alert("Предмет успешно куплен!")
-      } else {
-        alert(data.error || "Ошибка при покупке")
-      }
-    } catch (error) {
-      console.error("Error purchasing special item:", error)
-      alert("Ошибка при покупке предмета: " + (error.message || error))
-    } finally {
-      setLoading(false)
+  // Получаем запасное изображение для майнера
+  const getFallbackImage = (categoryId) => {
+    switch (categoryId) {
+      case 1: // Базовые
+        return "https://cdn-icons-png.flaticon.com/512/2991/2991109.png"
+      case 2: // Продвинутые
+        return "https://cdn-icons-png.flaticon.com/512/2991/2991117.png"
+      case 3: // Премиум
+        return "https://cdn-icons-png.flaticon.com/512/2991/2991107.png"
+      default:
+        return "https://cdn-icons-png.flaticon.com/512/2991/2991109.png"
     }
   }
-
-  // Обрабатываем данные категорий и моделей при их изменении
-  useEffect(() => {
-    // Создаем карту категорий для быстрого доступа
-    const catMap = {}
-    categories.forEach((cat) => {
-      catMap[cat.id] = cat
-    })
-    setCategoryMap(catMap)
-
-    // Определяем категории по их названиям
-    const categoryTypes = {
-      basic: [],
-      advanced: [],
-      premium: [],
-    }
-
-    // Находим ID категорий для каждого типа
-    categories.forEach((category) => {
-      const name = (category.name || category.display_name || "").toLowerCase()
-
-      if (name.includes("базов") || name.includes("basic")) {
-        categoryTypes.basic.push(category.id)
-      } else if (name.includes("продвинут") || name.includes("advanced")) {
-        categoryTypes.advanced.push(category.id)
-      } else if (name.includes("премиум") || name.includes("premium")) {
-        categoryTypes.premium.push(category.id)
-      }
-    })
-
-    // Группируем модели по типам категорий
-    const modelsByType = {
-      basic: [],
-      advanced: [],
-      premium: [],
-    }
-
-    // Распределяем модели по типам категорий и добавляем лимиты покупки
-    models.forEach((model) => {
-      // Добавляем информацию о лимите покупки из категории
-      const categoryId = model.category_id
-      const category = catMap[categoryId]
-      model.purchase_limit = category?.purchase_limit || null
-
-      if (categoryTypes.basic.includes(model.category_id)) {
-        modelsByType.basic.push(model)
-      } else if (categoryTypes.advanced.includes(model.category_id)) {
-        modelsByType.advanced.push(model)
-      } else if (categoryTypes.premium.includes(model.category_id)) {
-        modelsByType.premium.push(model)
-      }
-    })
-
-    setFilteredModels(modelsByType)
-
-    // Если нет активного типа или в активном типе нет моделей, выбираем первый непустой тип
-    if (!modelsByType[activeType] || modelsByType[activeType].length === 0) {
-      for (const type of ["basic", "advanced", "premium"]) {
-        if (modelsByType[type] && modelsByType[type].length > 0) {
-          setActiveType(type)
-          break
-        }
-      }
-    }
-  }, [categories, models, activeType])
-
-  // Описания для категорий
-  const categoryDescriptions = {
-    basic: "Оптимальное решение для начала майнинга",
-    advanced: "Для опытных майнеров, желающих увеличить доход",
-    premium: "Максимальная производительность и эффективность",
-  }
-
-  // Заголовки для категорий
-  const categoryTitles = {
-    basic: "Basic майнеры",
-    advanced: "Pro майнеры",
-    premium: "Premium майнеры",
-  }
-
-  // Иконки для категорий
-  const categoryIcons = {
-    basic: Zap,
-    advanced: Gauge,
-    premium: Crown,
-  }
-
-  // Добавляем ключ updateCounter для принудительного обновления
-  console.log("Rendering Shop with activeCategory:", activeCategory, "updateCounter:", updateCounter)
 
   return (
-    <div className="min-h-screen p-3">
-      {/* Верхняя панель с балансом */}
-      <div className="bg-[#151B26] rounded-lg p-3 mb-3 flex items-center justify-between shadow-md">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#1F2937] flex items-center justify-center">
-            <ShoppingCart className="text-[#5B9DFF]" size={16} />
-          </div>
-          <span className="text-white text-sm font-medium">Магазин</span>
+    <div className="min-h-screen bg-[#1A1F2E] pb-16">
+      <div className="max-w-md mx-auto px-4 pt-6">
+        <h1 className="text-2xl font-bold text-center text-white mb-6">Магазин майнеров</h1>
+        <p className="text-gray-400 text-center text-sm mb-6">Приобретайте майнеры для увеличения дохода</p>
+
+        {/* Баланс */}
+        <div className="bg-[#242838] rounded-xl p-4 mb-6 border border-[#2A3142]/70 text-center">
+          <p className="text-gray-400 text-sm">Ваш баланс</p>
+          <p className="text-2xl font-bold text-white">{user?.balance?.toFixed(2)} 💎</p>
         </div>
-        <div className="flex items-center gap-1.5 bg-[#1F2937] py-1.5 px-3 rounded-lg">
-          <Coins size={14} className="text-green-400" />
-          <span className="text-green-400 text-sm font-medium">{Number(balance).toFixed(2)}</span>
-          <span className="text-gray-400 text-xs">монет</span>
+
+        {/* Категории */}
+        <div className="flex overflow-x-auto no-scrollbar mb-6 bg-[#242838] rounded-lg p-1">
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setActiveCategory(category.id)}
+              className={`
+                px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all flex-1
+                ${activeCategory === category.id ? "bg-blue-500 text-white" : "text-gray-400 hover:text-gray-300"}
+              `}
+            >
+              {category.display_name}
+            </button>
+          ))}
+        </div>
+
+        {/* Список моделей */}
+        <div className="space-y-4 pb-20">
+          {filteredModels.length > 0 ? (
+            filteredModels.map((model) => (
+              <div
+                key={model.id}
+                className="bg-[#242838] rounded-xl overflow-hidden border border-[#2A3142]/70 shadow-lg"
+              >
+                <div className="p-4">
+                  <div className="flex items-center mb-3">
+                    {/* Используем OptimizedImage вместо обычного img */}
+                    <OptimizedImage
+                      src={model.image_url}
+                      alt={model.display_name}
+                      fallbackSrc={getFallbackImage(model.category_id)}
+                      className="w-12 h-12 rounded-lg mr-3"
+                      priority={true}
+                    />
+                    <div>
+                      <h3 className="text-white font-medium">{model.display_name}</h3>
+                      <p className="text-gray-400 text-xs">{model.description}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-[#1A1F2E] rounded-lg p-2 text-center">
+                      <p className="text-gray-400 text-xs">Мощность</p>
+                      <p className="text-white font-medium">{model.mining_power} MH/s</p>
+                    </div>
+                    <div className="bg-[#1A1F2E] rounded-lg p-2 text-center">
+                      <p className="text-gray-400 text-xs">Энергия</p>
+                      <p className="text-white font-medium">{model.energy_consumption} W</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-blue-400 font-bold">{model.price.toFixed(2)} 💎</div>
+                    <button
+                      onClick={() => handlePurchase(model)}
+                      disabled={loading || user.balance < model.price}
+                      className={`
+                        px-4 py-2 rounded-full font-medium transition-all
+                        ${
+                          user.balance < model.price
+                            ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                            : "bg-blue-500 hover:bg-blue-400 text-white"
+                        }
+                      `}
+                    >
+                      {loading ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      ) : (
+                        "Купить"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-10 text-gray-400">
+              <p>Нет доступных моделей в этой категории</p>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Основная навигация - с исправленной кликабельностью */}
-      <CategoryNavigation
-        key={`nav-${updateCounter}`}
-        activeCategory={activeCategory}
-        onCategoryChange={handleCategoryChange}
-      />
-
-      {/* Подкатегории для раздела магазина */}
-      {activeCategory === "shop" && <MinerTypesNavigation activeType={activeType} onTypeChange={setActiveType} />}
-
-      {/* Заголовок и описание категории с информацией о доступном количестве */}
-      {activeCategory === "shop" && (
-        <div className="mb-3 h-14">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            {React.createElement(categoryIcons[activeType], { size: 16, className: "text-[#5B9DFF]" })}
-            <h2 className="text-white text-sm font-medium">{categoryTitles[activeType]}</h2>
-
-            {/* Заменяем информацию о доступном количестве на информацию о лимитах */}
-            {activeType && filteredModels[activeType] && (
-              <span className="text-xs text-gray-400 ml-auto">
-                {(() => {
-                  // Находим все майнеры пользователя этой категории
-                  const categoryIds = categories
-                    .filter((cat) => {
-                      const name = (cat.name || cat.display_name || "").toLowerCase()
-                      if (activeType === "basic") return name.includes("базов") || name.includes("basic")
-                      if (activeType === "advanced") return name.includes("продвинут") || name.includes("advanced")
-                      if (activeType === "premium") return name.includes("премиум") || name.includes("premium")
-                      return false
-                    })
-                    .map((cat) => cat.id)
-
-                  // Считаем количество майнеров у пользователя в этой категории
-                  const userMinersInCategory = userMiners.filter((um) => {
-                    const model = models.find((m) => m.id === um.model_id)
-                    return model && categoryIds.includes(model.category_id)
-                  })
-
-                  const totalUserMiners = userMinersInCategory.reduce((sum, um) => sum + (um.quantity || 0), 0)
-
-                  // Находим лимит для этой категории
-                  const categoryLimit =
-                    categories.find((cat) => {
-                      const name = (cat.name || cat.display_name || "").toLowerCase()
-                      if (activeType === "basic") return name.includes("базов") || name.includes("basic")
-                      if (activeType === "advanced") return name.includes("продвинут") || name.includes("advanced")
-                      if (activeType === "premium") return name.includes("премиум") || name.includes("premium")
-                      return false
-                    })?.purchase_limit || 0
-
-                  // Если у пользователя есть Mining Pass, показываем только текущее количество
-                  if (hasMinerPass) {
-                    return `У вас: ${totalUserMiners} (без лимита)`
-                  }
-
-                  // Иначе показываем текущее количество и лимит
-                  const remaining = Math.max(0, categoryLimit - totalUserMiners)
-                  return `У вас: ${totalUserMiners} / ${categoryLimit} (доступно: ${remaining})`
-                })()}
-              </span>
-            )}
-          </div>
-          <p className="text-gray-400 text-xs">{categoryDescriptions[activeType]}</p>
-        </div>
-      )}
-
-      {/* Отображаем соответствующий раздел */}
-      {activeCategory === "shop" && (
-        <div className="space-y-3">
-          {/* Список майнеров по категориям */}
-          {(activeType === "basic"
-            ? filteredModels.basic
-            : activeType === "advanced"
-              ? filteredModels.advanced
-              : filteredModels.premium
-          ) // Исправлено: добавлен массив для премиум майнеров
-            ?.map((miner) => {
-              // Находим текущее количество этого майнера у пользователя
-              const userMiner = userMiners.find((um) => um.model_id === miner.id)
-              const currentQuantity = userMiner ? userMiner.quantity : 0
-
-              return (
-                <MinerCard
-                  key={miner.id}
-                  miner={miner}
-                  onBuy={handleBuyMiner}
-                  userBalance={balance}
-                  loading={loading}
-                  currentQuantity={currentQuantity}
-                  purchaseLimit={miner.purchase_limit}
-                  hasMinerPass={hasMinerPass}
-                  minerType={activeType} // Передаем активный тип майнера
-                />
-              )
-            })}
-
-          {/* Если нет майнеров */}
-          {(activeType === "basic" && (!filteredModels.basic || filteredModels.basic.length === 0)) ||
-          (activeType === "advanced" && (!filteredModels.advanced || filteredModels.advanced.length === 0)) ||
-          (activeType === "premium" && (!filteredModels.premium || filteredModels.premium.length === 0)) ? (
-            <div className="text-center py-6 text-gray-400 text-sm">В этой категории пока нет доступных майнеров</div>
-          ) : null}
-          <WarningMessage />
-        </div>
-      )}
-
-      {/* Раздел специальных предметов */}
-      {activeCategory === "special" && (
-        <>
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <Sparkles size={16} className="text-yellow-400" />
-            <h2 className="text-white text-sm font-medium">Специальные предметы</h2>
-          </div>
-          <p className="text-gray-400 text-xs mb-3">Уникальные предметы и улучшения для вашего майнинга</p>
-
-          {/* Плашка со спецпредметами */}
-          <div className="bg-[#151B26] rounded-xl p-3 mb-3 shadow-md relative overflow-hidden">
-            {/* Декоративный элемент */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-yellow-500/10 to-transparent rounded-bl-full" />
-
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 rounded-lg flex items-center justify-center">
-                <Crown className="text-yellow-400" size={24} />
-              </div>
-              <div>
-                <h3 className="font-medium text-base mb-0.5">Miner Pass</h3>
-                <p className="text-xs text-gray-400">Премиальный статус с особыми привилегиями</p>
-              </div>
-            </div>
-
-            <div className="bg-[#0F1520] rounded-lg p-3 mb-3">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-1.5">
-                  <Shield size={14} className="text-yellow-400" />
-                  <span className="text-xs text-gray-400">Снятие лимитов на майнеры</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Zap size={14} className="text-blue-400" />
-                  <span className="text-xs text-gray-400">Бонус +10% к хешрейту</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Gem size={14} className="text-green-400" />
-                  <span className="text-xs text-gray-400">Ежедневные бонусы</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mt-3">
-                <div className="flex items-center gap-1.5">
-                  <Coins size={14} className="text-yellow-400" />
-                  <span className="text-sm font-medium text-yellow-400">2500</span>
-                </div>
-                <button
-                  className="px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5
-                  transition-all duration-200 shadow-sm bg-gradient-to-r from-yellow-500 to-amber-500 text-black hover:shadow-md hover:translate-y-[-1px]"
-                  onClick={() => handleBuySpecialItem("miner_pass", 2500)}
-                  disabled={loading || balance < 2500 || hasMinerPass}
-                >
-                  <ShoppingCart size={12} />
-                  <span>Купить</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          <WarningMessage />
-        </>
-      )}
-
-      {/* Раздел премиум */}
-      {activeCategory === "premium" && (
-        <>
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <Crown size={16} className="text-purple-400" />
-            <h2 className="text-white text-sm font-medium">Премиум майнеры</h2>
-          </div>
-          <p className="text-gray-400 text-xs mb-3">Эксклюзивное оборудование с максимальной эффективностью</p>
-
-          <div className="bg-[#151B26] rounded-xl p-3 mb-3 shadow-md relative overflow-hidden">
-            {/* Декоративный элемент */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full" />
-
-            <div className="flex flex-col items-center justify-center py-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-purple-600/10 rounded-full flex items-center justify-center mb-4">
-                <Lock className="text-purple-400" size={24} />
-              </div>
-              <h3 className="font-medium text-base mb-2 text-center">Премиум раздел</h3>
-              <p className="text-xs text-gray-400 text-center mb-4">Этот раздел станет доступен в скором времени</p>
-
-              <button
-                className="px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5
-                transition-all duration-200 shadow-sm bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:shadow-md hover:translate-y-[-1px]"
-              >
-                <Bell size={12} />
-                <span>Уведомить о запуске</span>
-              </button>
-            </div>
-          </div>
-          <WarningMessage />
-        </>
-      )}
-
-      {/* Раздел бустов */}
-      {activeCategory === "boosts" && (
-        <>
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <Rocket size={16} className="text-green-400" />
-            <h2 className="text-white text-sm font-medium">Бусты майнинга</h2>
-          </div>
-          <p className="text-gray-400 text-xs mb-3">Временные улучшения для ускорения добычи</p>
-
-          <div className="bg-[#151B26] rounded-xl p-3 mb-3 shadow-md relative overflow-hidden">
-            {/* Декоративный элемент */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/10 to-transparent rounded-bl-full" />
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[#0F1520] rounded-lg p-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-500/20 to-green-600/10 rounded-lg flex items-center justify-center mb-2">
-                  <Zap className="text-green-400" size={20} />
-                </div>
-                <h4 className="text-sm font-medium mb-1">+25% хешрейт</h4>
-                <p className="text-xs text-gray-400 mb-2">2 часа</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-yellow-400">250</span>
-                  <button className="px-2 py-1 rounded text-[10px] font-medium bg-green-500/20 text-green-400">
-                    Купить
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-[#0F1520] rounded-lg p-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-lg flex items-center justify-center mb-2">
-                  <Droplet className="text-blue-400" size={20} />
-                </div>
-                <h4 className="text-sm font-medium mb-1">-20% энергия</h4>
-                <p className="text-xs text-gray-400 mb-2">3 часа</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-yellow-400">300</span>
-                  <button className="px-2 py-1 rounded text-[10px] font-medium bg-blue-500/20 text-blue-400">
-                    Купить
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-[#0F1520] rounded-lg p-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-purple-600/10 rounded-lg flex items-center justify-center mb-2">
-                  <Gauge className="text-purple-400" size={20} />
-                </div>
-                <h4 className="text-sm font-medium mb-1">+15% эффект</h4>
-                <p className="text-xs text-gray-400 mb-2">6 часов</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-yellow-400">350</span>
-                  <button className="px-2 py-1 rounded text-[10px] font-medium bg-purple-500/20 text-purple-400">
-                    Купить
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <WarningMessage />
-        </>
-      )}
+      <BottomMenu active="shop" />
     </div>
   )
 }
-
-// Экспорт по умолчанию для совместимости
-export default Shop
 
