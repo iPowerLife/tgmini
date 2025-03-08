@@ -7,21 +7,46 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
   const [isVerifying, setIsVerifying] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
 
-  // Получаем иконку по умолчанию на основе типа задания
-  const getDefaultIcon = () => {
+  // Получаем иконку на основе типа задания и ссылки
+  const getTaskIcon = () => {
     const type = task.type?.toLowerCase() || ""
-    const title = task.title?.toLowerCase() || ""
+    const link = task.link?.toLowerCase() || ""
 
-    if (type === "video" || title.includes("видео")) {
+    // YouTube видео
+    if (type === "video" || link.includes("youtube.com")) {
       return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/youtube.png"
     }
-    if (type === "quiz" || title.includes("опрос")) {
-      return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/quiz.png"
+
+    // Telegram задания
+    if (link.includes("t.me")) {
+      return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/telegram.png"
     }
-    if (title.includes("бонус")) {
-      return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/coin.png"
+
+    // Twitter/X задания
+    if (link.includes("twitter.com")) {
+      return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/twitter.png"
     }
-    return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/task.png"
+
+    // Google Play
+    if (link.includes("play.google.com")) {
+      return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/android.png"
+    }
+
+    // Определяем по типу, если нет ссылки
+    switch (type) {
+      case "quiz":
+        return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/quiz.png"
+      case "premium":
+        return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/vip.png"
+      case "simple":
+        return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/coin.png"
+      case "social":
+        return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/share.png"
+      case "app":
+        return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/app.png"
+      default:
+        return "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/task.png"
+    }
   }
 
   const handleExecuteTask = () => {
@@ -44,11 +69,12 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       <div className="w-16 h-16 flex-shrink-0 p-2 flex items-center justify-center">
         <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-[#2A3142]">
           <img
-            src={task.icon_url || getDefaultIcon()}
+            src={task.icon_url || getTaskIcon()}
             alt={task.title}
             className="w-10 h-10 object-contain"
             onError={(e) => {
-              e.currentTarget.src = getDefaultIcon()
+              console.log(`Ошибка загрузки иконки для задания ${task.id}, пробуем запасную иконку`)
+              e.currentTarget.src = getTaskIcon()
             }}
           />
         </div>
