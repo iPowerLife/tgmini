@@ -3,27 +3,17 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { BottomMenu } from "../components/bottom-menu"
-import { TasksContainer } from "../components/tasks-container"
+import { TasksSection } from "../components/tasks-section"
 
-export default function TasksPage() {
+export default function TasksPage({ user: initialUser }) {
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState([])
-  const [categories, setCategories] = useState([])
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(initialUser || null)
 
   useEffect(() => {
     async function fetchData() {
       setLoading(true)
       try {
-        // Получаем категории
-        const { data: categoriesData, error: categoriesError } = await supabase
-          .from("task_categories")
-          .select("*")
-          .order("id")
-
-        if (categoriesError) throw categoriesError
-        setCategories(categoriesData || [])
-
         // Получаем задания
         const { data: tasksData, error: tasksError } = await supabase
           .from("tasks")
@@ -35,68 +25,84 @@ export default function TasksPage() {
           .order("created_at", { ascending: false })
 
         if (tasksError) throw tasksError
-        setTasks(tasksData || [])
 
-        // Получаем данные пользователя
-        const { data: userData, error: userError } = await supabase.auth.getUser()
-        if (!userError && userData) {
-          const { data: profile } = await supabase.from("users").select("*").eq("id", userData.user.id).single()
+        if (tasksData && tasksData.length > 0) {
+          setTasks(tasksData)
+        } else {
+          // Если заданий нет, создаем тестовые
+          setTasks(createMockTasks())
+        }
 
-          setUser(profile || userData.user)
+        // Получаем данные пользователя, если они не были переданы
+        if (!user) {
+          const { data: userData } = await supabase.from("users").select("*").single()
+
+          if (userData) setUser(userData)
         }
       } catch (error) {
         console.error("Ошибка при загрузке данных:", error)
-        // Создаем тестовые данные, если не удалось загрузить из базы
-        setCategories([
-          { id: 1, name: "daily", display_name: "Ежедневные", icon_url: "/icons/daily.svg" },
-          { id: 2, name: "partners", display_name: "Партнеры", icon_url: "/icons/partners.svg" },
-          { id: 3, name: "social", display_name: "Социальные", icon_url: "/icons/social.svg" },
-        ])
-
-        setTasks([
-          {
-            id: 1,
-            title: "Ежедневный бонус",
-            description: "Получите ежедневный бонус просто так",
-            reward: 50,
-            verification_time: 5,
-            icon_url: "/icons/bonus.svg",
-            category: { name: "daily", display_name: "Ежедневные" },
-          },
-          {
-            id: 2,
-            title: "Установить приложение",
-            description: "Установите приложение нашего партнера",
-            reward: 100,
-            verification_time: 60,
-            icon_url: "/icons/app.svg",
-            link: "https://play.google.com/store/apps/details?id=example",
-            category: { name: "partners", display_name: "Партнеры" },
-          },
-          {
-            id: 3,
-            title: "Подписаться на Telegram",
-            description: "Подпишитесь на наш Telegram канал",
-            reward: 50,
-            verification_time: 30,
-            icon_url: "/icons/telegram.svg",
-            link: "https://t.me/example",
-            category: { name: "social", display_name: "Социальные" },
-          },
-        ])
+        // Создаем тестовые данные при ошибке
+        setTasks(createMockTasks())
       } finally {
         setLoading(false)
       }
     }
 
     fetchData()
-  }, [])
+  }, [user])
 
-  const handleTaskComplete = async (taskId) => {
+  // Функция для создания тестовых заданий
+  const createMockTasks = () => {
+    return [
+      // Daily tasks
+      {
+        id: 1,
+        title: "Ежедневный бонус",
+        description: "Получите ежедневный бонус",
+        reward: 50,
+        is_active: true,
+        category_id: 1,
+        category: { name: "daily", display_name: "Ежедневные" },
+        icon_url: "https://cdn-icons-png.flaticon.com/512/2991/2991195.png",
+      },
+      {
+        id: 2,
+        title: "Посмотреть видео",
+        description: "Посмотрите короткое видео",
+        reward: 30,
+        is_active: true,
+        category_id: 1,
+        category: { name: "daily", display_name: "Ежедневные" },
+        icon_url: "https://cdn-icons-png.flaticon.com/512/1384/1384060.png",
+      },
+      // Partners tasks
+      {
+        id: 3,
+        title: "Установить приложение",
+        description: "Установите партнерское приложение",
+        reward: 100,
+        is_active: true,
+        category_id: 2,
+        category: { name: "partners", display_name: "Партнеры" },
+        icon_url: "https://cdn-icons-png.flaticon.com/512/2991/2991112.png",
+      },
+      // Social tasks
+      {
+        id: 4,
+        title: "Подписаться на Telegram",
+        description: "Подпишитесь на наш Telegram канал",
+        reward: 60,
+        is_active: true,
+        category_id: 3,
+        category: { name: "social", display_name: "Социальные" },
+        icon_url: "https://cdn-icons-png.flaticon.com/512/2504/2504941.png",
+      },
+    ]
+  }
+
+  const handleTaskComplete = (taskId) => {
     // Обновляем локальное состояние
     setTasks((prevTasks) => prevTasks.map((task) => (task.id === taskId ? { ...task, is_completed: true } : task)))
-
-    // Здесь можно добавить логику для обновления в базе данных
   }
 
   const handleBalanceUpdate = (newBalance) => {
@@ -117,19 +123,13 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1A1F2E] pb-16">
-      <div className="max-w-md mx-auto px-4 pt-6">
-        <h1 className="text-2xl font-bold text-center text-white mb-1">Задания</h1>
-        <p className="text-gray-400 text-center text-sm mb-6">Выполняйте задания и получайте награды</p>
-
-        <TasksContainer
-          tasks={tasks}
-          categories={categories}
-          user={user}
-          onTaskComplete={handleTaskComplete}
-          onBalanceUpdate={handleBalanceUpdate}
-        />
-      </div>
+    <div className="min-h-screen bg-[#1A1F2E]">
+      <TasksSection
+        tasks={tasks}
+        user={user}
+        onTaskComplete={handleTaskComplete}
+        onBalanceUpdate={handleBalanceUpdate}
+      />
       <BottomMenu active="earn" />
     </div>
   )
