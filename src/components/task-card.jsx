@@ -6,6 +6,7 @@ import { Check } from "lucide-react"
 export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) => {
   const [isVerifying, setIsVerifying] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
   const handleExecuteTask = () => {
     if (isCompleted) return
@@ -21,12 +22,46 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     }, 2000)
   }
 
+  // Функция для получения запасного изображения по категории
+  const getFallbackImage = () => {
+    const category = task.category || getCategoryById(task.category_id)
+
+    switch (category) {
+      case "daily":
+        return "https://cdn-icons-png.flaticon.com/512/2991/2991195.png"
+      case "partners":
+        return "https://cdn-icons-png.flaticon.com/512/2991/2991112.png"
+      case "social":
+        return "https://cdn-icons-png.flaticon.com/512/2504/2504941.png"
+      default:
+        return "https://cdn-icons-png.flaticon.com/512/2991/2991195.png"
+    }
+  }
+
+  // Функция для определения категории по ID
+  const getCategoryById = (categoryId) => {
+    if (!categoryId) return "daily"
+
+    const categoryMap = {
+      1: "daily",
+      2: "partners",
+      3: "social",
+    }
+
+    return categoryMap[categoryId] || "daily"
+  }
+
   return (
     <div className="flex items-center bg-[#242838] rounded-xl overflow-hidden border border-[#2A3142]/70 shadow-lg">
-      {/* Иконка задания */}
+      {/* Изображение задания */}
       <div className="w-16 h-16 flex-shrink-0 p-2 flex items-center justify-center">
         <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-[#2A3142]">
-          <img src={task.icon_url || "/placeholder.svg"} alt={task.title} className="w-10 h-10 object-contain" />
+          <img
+            src={imageError ? getFallbackImage() : task.icon_url || getFallbackImage()}
+            alt={task.title}
+            className="w-10 h-10 object-contain"
+            onError={() => setImageError(true)}
+          />
         </div>
       </div>
 
@@ -35,10 +70,6 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         <div className="text-white text-sm font-medium">{task.title}</div>
         <div className="flex items-center mt-1">
           <span className="text-blue-400 font-bold text-sm">+{task.reward}</span>
-        </div>
-        {/* Отладочная информация */}
-        <div className="text-[8px] text-gray-500 mt-1">
-          ID: {task.id}, Category: {task.category_id}
         </div>
       </div>
 

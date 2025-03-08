@@ -18,14 +18,28 @@ export function TasksSection({ user, tasks, onBalanceUpdate, onTaskComplete }) {
 
     // Фильтруем задания по категории
     const filtered = tasks.filter((task) => {
-      const categoryName = task.task_categories?.name || "daily"
-      console.log(`Задание ${task.id} - категория:`, categoryName)
-      return categoryName === activeTab
+      // Используем поле category, если оно есть, иначе проверяем category_id
+      const taskCategory = task.category || getCategoryById(task.category_id)
+      console.log(`Задание ${task.id} - категория:`, taskCategory)
+      return taskCategory === activeTab
     })
 
     console.log("Отфильтрованные задания:", filtered)
     setFilteredTasks(filtered)
   }, [activeTab, tasks])
+
+  // Функция для определения категории по ID
+  const getCategoryById = (categoryId) => {
+    if (!categoryId) return "daily"
+
+    const categoryMap = {
+      1: "daily",
+      2: "partners",
+      3: "social",
+    }
+
+    return categoryMap[categoryId] || "daily"
+  }
 
   return (
     <div className="min-h-[100vh] pb-[70px]">
