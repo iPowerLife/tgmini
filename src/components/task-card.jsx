@@ -4,9 +4,14 @@ import { useState, memo, useEffect } from "react"
 import { Check } from "lucide-react"
 
 export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) => {
+  // Обновляем константу для запасной иконки
+  const DEFAULT_ICON = "https://tphsnmoitxericjvgwwn.supabase.co/storage/v1/object/public/miners/images/done.png"
+
+  // Обновляем useState для iconSrc
+  const [iconSrc, setIconSrc] = useState(DEFAULT_ICON)
   const [isVerifying, setIsVerifying] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
-  const [iconSrc, setIconSrc] = useState("/icons/task-icon.png")
+  // const [iconSrc, setIconSrc] = useState("/icons/task-icon.png")
 
   // При загрузке компонента устанавливаем иконку из базы данных
   useEffect(() => {
@@ -14,10 +19,22 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       console.log(`Задание ${task.id} использует внешнюю иконку:`, task.icon_url)
       setIconSrc(task.icon_url)
     } else {
-      // Если нет icon_url, используем дефолтную иконку
-      setIconSrc("/icons/task-icon.png")
+      // Если нет icon_url, используем запасную иконку
+      setIconSrc(DEFAULT_ICON)
     }
   }, [task])
+
+  // Обновляем handleImageError
+  const handleImageError = (e) => {
+    console.error(`Ошибка загрузки иконки для задания ${task.id}:`, e)
+    console.log(`Не удалось загрузить иконку:`, iconSrc)
+
+    // При ошибке загрузки устанавливаем запасную иконку
+    if (iconSrc !== DEFAULT_ICON) {
+      console.log(`Заменяем на запасную иконку`)
+      setIconSrc(DEFAULT_ICON)
+    }
+  }
 
   const handleExecuteTask = () => {
     if (isCompleted) return
@@ -32,17 +49,6 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
         onTaskComplete(task.id)
       }
     }, 2000)
-  }
-
-  const handleImageError = (e) => {
-    console.error(`Ошибка загрузки иконки для задания ${task.id}:`, e)
-    console.log(`Не удалось загрузить иконку:`, iconSrc)
-
-    // При ошибке загрузки устанавливаем дефолтную иконку
-    if (iconSrc !== "/icons/task-icon.png") {
-      console.log(`Заменяем на дефолтную иконку`)
-      setIconSrc("/icons/task-icon.png")
-    }
   }
 
   return (
