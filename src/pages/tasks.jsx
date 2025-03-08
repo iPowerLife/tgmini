@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { TasksSection } from "../components/tasks-section"
 import { BottomMenu } from "../components/bottom-menu"
+import { fixImageUrl } from "../utils/image-helpers"
 
 export default function TasksPage() {
   const [user, setUser] = useState(null)
@@ -32,39 +33,15 @@ export default function TasksPage() {
         } else {
           console.log("Задания получены:", tasksData)
 
-          // Если нет заданий, создаем тестовые
-          if (!tasksData || tasksData.length === 0) {
-            console.log("Создаем тестовые задания")
-            const mockTasks = [
-              {
-                id: 1,
-                title: "Посмотреть видео",
-                description: "Посмотрите короткое видео",
-                reward: 30,
-                type: "video",
-                is_active: true,
-              },
-              {
-                id: 2,
-                title: "Пройти опрос",
-                description: "Пройдите короткий опрос",
-                reward: 40,
-                type: "quiz",
-                is_active: true,
-              },
-              {
-                id: 3,
-                title: "Ежедневный бонус",
-                description: "Получите ежедневный бонус",
-                reward: 50,
-                type: "simple",
-                is_active: true,
-              },
-            ]
-            setTasks(mockTasks)
-          } else {
-            setTasks(tasksData)
-          }
+          // Исправляем URL иконок
+          const tasksWithFixedIcons = tasksData.map((task) => ({
+            ...task,
+            icon_url: fixImageUrl(task.icon_url),
+          }))
+
+          console.log("Задания с исправленными URL:", tasksWithFixedIcons)
+
+          setTasks(tasksWithFixedIcons)
         }
       } catch (error) {
         console.error("Ошибка при загрузке данных:", error)
