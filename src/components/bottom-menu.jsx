@@ -1,69 +1,97 @@
 "use client"
 
-import { Home, ShoppingCart, Award, BarChart2, User } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { Home, ShoppingBag, Target, Trophy, User } from "lucide-react"
+import { Link, useLocation } from "react-router-dom"
 
-export function BottomMenu({ active }) {
-  const navigate = useNavigate()
+export function BottomMenu() {
+  const location = useLocation()
 
-  const handleNavigate = (path) => {
-    navigate(path)
+  const isActive = (path) => location.pathname === path
+
+  // Функция для сброса прокрутки при клике на пункт меню
+  const handleNavClick = () => {
+    console.log("Клик по меню, сбрасываем прокрутку")
+
+    // Находим контейнер с прокруткой
+    const container = document.querySelector(".page-container")
+    if (container) {
+      // Сбрасываем прокрутку
+      container.scrollTop = 0
+    }
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[#1A1F2E] border-t border-[#2A3142]/50 shadow-lg backdrop-blur-md z-50">
-      <div className="flex justify-around items-center py-2 px-1">
-        <button
-          onClick={() => handleNavigate("/")}
-          className={`flex flex-col items-center justify-center p-2 ${
-            active === "home" ? "text-blue-500" : "text-gray-400"
-          }`}
-        >
-          <Home className="w-5 h-5" />
-          <span className="text-xs mt-1">Главная</span>
-        </button>
+    <nav className="flex items-center justify-around h-14 max-w-md mx-auto px-4">
+      <Link
+        to="/"
+        className={`flex flex-col items-center justify-center space-y-1 relative group ${
+          isActive("/") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
+        }`}
+        onClick={handleNavClick}
+      >
+        {isActive("/") && <div className="absolute inset-0 bg-blue-400/5 rounded-xl blur-md" />}
+        <div className="relative flex flex-col items-center">
+          <Home className="w-6 h-6 transition-colors duration-200" />
+          <span className="text-[12px] font-medium transition-colors duration-200">Главная</span>
+        </div>
+      </Link>
 
-        <button
-          onClick={() => handleNavigate("/shop")}
-          className={`flex flex-col items-center justify-center p-2 ${
-            active === "shop" ? "text-blue-500" : "text-gray-400"
-          }`}
-        >
-          <ShoppingCart className="w-5 h-5" />
-          <span className="text-xs mt-1">Магазин</span>
-        </button>
+      <Link
+        to="/shop"
+        className={`flex flex-col items-center justify-center space-y-1 relative group ${
+          isActive("/shop") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
+        }`}
+        onClick={handleNavClick}
+      >
+        {isActive("/shop") && <div className="absolute inset-0 bg-blue-400/5 rounded-xl blur-md" />}
+        <div className="relative flex flex-col items-center">
+          <ShoppingBag className="w-6 h-6 transition-colors duration-200" />
+          <span className="text-[12px] font-medium transition-colors duration-200">Магазин</span>
+        </div>
+      </Link>
 
-        <button
-          onClick={() => handleNavigate("/tasks")}
-          className={`flex flex-col items-center justify-center p-2 ${
-            active === "earn" ? "text-blue-500" : "text-gray-400"
-          }`}
-        >
-          <Award className="w-5 h-5" />
-          <span className="text-xs mt-1">Задания</span>
-        </button>
+      <Link
+        to="/tasks"
+        className={`flex flex-col items-center justify-center space-y-1 relative group ${
+          isActive("/tasks") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
+        }`}
+        onClick={handleNavClick}
+      >
+        {isActive("/tasks") && <div className="absolute inset-0 bg-blue-400/5 rounded-xl blur-md" />}
+        <div className="relative flex flex-col items-center">
+          <Target className="w-6 h-6 transition-colors duration-200" />
+          <span className="text-[12px] font-medium transition-colors duration-200">Задания</span>
+        </div>
+      </Link>
 
-        <button
-          onClick={() => handleNavigate("/rating")}
-          className={`flex flex-col items-center justify-center p-2 ${
-            active === "rating" ? "text-blue-500" : "text-gray-400"
-          }`}
-        >
-          <BarChart2 className="w-5 h-5" />
-          <span className="text-xs mt-1">Рейтинг</span>
-        </button>
+      <Link
+        to="/rating"
+        className={`flex flex-col items-center justify-center space-y-1 relative group ${
+          isActive("/rating") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
+        }`}
+        onClick={handleNavClick}
+      >
+        {isActive("/rating") && <div className="absolute inset-0 bg-blue-400/5 rounded-xl blur-md" />}
+        <div className="relative flex flex-col items-center">
+          <Trophy className="w-6 h-6 transition-colors duration-200" />
+          <span className="text-[12px] font-medium transition-colors duration-200">Рейтинг</span>
+        </div>
+      </Link>
 
-        <button
-          onClick={() => handleNavigate("/profile")}
-          className={`flex flex-col items-center justify-center p-2 ${
-            active === "profile" ? "text-blue-500" : "text-gray-400"
-          }`}
-        >
-          <User className="w-5 h-5" />
-          <span className="text-xs mt-1">Профиль</span>
-        </button>
-      </div>
-    </div>
+      <Link
+        to="/profile"
+        className={`flex flex-col items-center justify-center space-y-1 relative group ${
+          isActive("/profile") ? "text-blue-400" : "text-gray-500 hover:text-gray-400"
+        }`}
+        onClick={handleNavClick}
+      >
+        {isActive("/profile") && <div className="absolute inset-0 bg-blue-400/5 rounded-xl blur-md" />}
+        <div className="relative flex flex-col items-center">
+          <User className="w-6 h-6 transition-colors duration-200" />
+          <span className="text-[12px] font-medium transition-colors duration-200">Профиль</span>
+        </div>
+      </Link>
+    </nav>
   )
 }
 
