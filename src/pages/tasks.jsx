@@ -31,7 +31,40 @@ export default function TasksPage() {
           console.error("Ошибка при получении заданий:", tasksError)
         } else {
           console.log("Задания получены:", tasksData)
-          setTasks(tasksData)
+
+          // Если нет заданий, создаем тестовые
+          if (!tasksData || tasksData.length === 0) {
+            console.log("Создаем тестовые задания")
+            const mockTasks = [
+              {
+                id: 1,
+                title: "Посмотреть видео",
+                description: "Посмотрите короткое видео",
+                reward: 30,
+                type: "video",
+                is_active: true,
+              },
+              {
+                id: 2,
+                title: "Пройти опрос",
+                description: "Пройдите короткий опрос",
+                reward: 40,
+                type: "quiz",
+                is_active: true,
+              },
+              {
+                id: 3,
+                title: "Ежедневный бонус",
+                description: "Получите ежедневный бонус",
+                reward: 50,
+                type: "simple",
+                is_active: true,
+              },
+            ]
+            setTasks(mockTasks)
+          } else {
+            setTasks(tasksData)
+          }
         }
       } catch (error) {
         console.error("Ошибка при загрузке данных:", error)

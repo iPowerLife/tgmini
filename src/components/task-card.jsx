@@ -1,11 +1,35 @@
 "use client"
 
 import { useState, memo } from "react"
-import { Check } from "lucide-react"
+import { Check, Award, Video, FileQuestion, ExternalLink, Smartphone } from "lucide-react"
 
 export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) => {
   const [isVerifying, setIsVerifying] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
+
+  // Функция для определения иконки на основе типа и названия задания
+  const getTaskIcon = () => {
+    const title = task.title?.toLowerCase() || ""
+    const type = task.type?.toLowerCase() || ""
+
+    // Хардкодированные иконки для разных типов заданий
+    if (type === "video" || title.includes("видео")) {
+      return <Video className="w-8 h-8 text-pink-500" />
+    } else if (type === "quiz" || title.includes("опрос")) {
+      return <FileQuestion className="w-8 h-8 text-purple-500" />
+    } else if (type === "premium" || title.includes("премиум")) {
+      return <Award className="w-8 h-8 text-amber-500" />
+    } else if (type === "app" || title.includes("приложение")) {
+      return <Smartphone className="w-8 h-8 text-green-500" />
+    } else if (type === "social" || title.includes("поделись") || title.includes("подпишись")) {
+      return <ExternalLink className="w-8 h-8 text-blue-500" />
+    } else if (title.includes("бонус")) {
+      return <Award className="w-8 h-8 text-amber-500" />
+    } else {
+      // Дефолтная иконка
+      return <Award className="w-8 h-8 text-gray-400" />
+    }
+  }
 
   const handleExecuteTask = () => {
     if (isCompleted) return
@@ -26,7 +50,7 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
       {/* Иконка задания */}
       <div className="w-16 h-16 flex-shrink-0 p-2 flex items-center justify-center">
         <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-[#2A3142]">
-          <img src={task.icon_url || "/placeholder.svg"} alt={task.title} className="w-10 h-10 object-contain" />
+          {getTaskIcon()}
         </div>
       </div>
 
