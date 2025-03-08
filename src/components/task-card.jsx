@@ -1,20 +1,27 @@
 "use client"
 
-import { useState, memo } from "react"
+import { useState, memo, useEffect } from "react"
 import { Check } from "lucide-react"
 
 export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) => {
   const [isVerifying, setIsVerifying] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
+  const [iconUrl, setIconUrl] = useState(null)
 
-  // Получаем иконку задания
-  const getTaskIcon = () => {
-    // Если есть icon_url в задании, используем его
+  useEffect(() => {
+    // Логируем данные задания для отладки
+    console.log(`Задание ${task.id} данные:`, task)
+    console.log(`Задание ${task.id} icon_url:`, task.icon_url)
+
     if (task.icon_url) {
-      return task.icon_url
+      setIconUrl(task.icon_url)
+    } else {
+      setIconUrl(getDefaultIcon())
     }
+  }, [task])
 
-    // Иначе определяем иконку на основе типа и названия
+  // Получаем дефолтную иконку задания на основе типа и названия
+  const getDefaultIcon = () => {
     const title = task.title?.toLowerCase() || ""
     const type = task.type?.toLowerCase() || ""
 
@@ -53,19 +60,22 @@ export const TaskCard = memo(({ task, user, onBalanceUpdate, onTaskComplete }) =
     }, 2000)
   }
 
+  const handleImageError = (e) => {
+    console.error(`Ошибка загрузки иконки для задания ${task.id}:`, e)
+    console.log(`Задание ${task.id} icon_url при ошибке:`, task.icon_url)
+    e.target.src = "/icons/task-icon.png"
+  }
+
   return (
     <div className="flex items-center bg-[#242838] rounded-xl overflow-hidden border border-[#2A3142]/70 shadow-lg">
       {/* Иконка задания */}
       <div className="w-16 h-16 flex-shrink-0 p-2 flex items-center justify-center">
         <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-[#2A3142]">
           <img
-            src={getTaskIcon() || "/placeholder.svg"}
+            src={iconUrl || "/icons/task-icon.png"}
             alt={task.title}
             className="w-10 h-10 object-contain"
-            onError={(e) => {
-              console.log(`Ошибка загрузки иконки для задания ${task.id}:`, e)
-              e.target.src = "/icons/task-icon.png"
-            }}
+            onError={handleImageError}
           />
         </div>
       </div>

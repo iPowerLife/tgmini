@@ -24,16 +24,23 @@ export default function TasksPage() {
           setUser(userData)
         }
 
+        // Проверяем структуру таблицы tasks
+        const { data: tableInfo } = await supabase.rpc("get_table_info", { table_name: "tasks" })
+        console.log("Структура таблицы tasks:", tableInfo)
+
         // Получаем задания, включая icon_url
-        const { data: tasksData, error: tasksError } = await supabase
-          .from("tasks")
-          .select("*, icon_url")
-          .eq("is_active", true)
+        const { data: tasksData, error: tasksError } = await supabase.from("tasks").select("*").eq("is_active", true)
 
         if (tasksError) {
           console.error("Ошибка при получении заданий:", tasksError)
         } else {
-          console.log("Полученные задания с иконками:", tasksData)
+          console.log("Полученные задания:", tasksData)
+
+          // Проверяем наличие поля icon_url в каждом задании
+          tasksData.forEach((task) => {
+            console.log(`Задание ${task.id} icon_url:`, task.icon_url)
+          })
+
           setTasks(tasksData)
         }
       } catch (error) {
