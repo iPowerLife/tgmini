@@ -12,58 +12,59 @@ export default function TasksPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true)
+      try {
+        setLoading(true)
 
-      const { data: userData, error: userError } = await supabase.from("users").select("*").single()
+        // Получаем данные пользователя
+        const { data: userData, error: userError } = await supabase.from("users").select("*").single()
 
-      if (userError) {
-        console.error("Ошибка при получении данных пользователя:", userError)
-      } else {
-        setUser(userData)
+        if (userError) {
+          console.error("Ошибка при получении данных пользователя:", userError)
+        } else {
+          setUser(userData)
+        }
+
+        // Получаем задания с правильным join для категорий
+        const { data: tasksData, error: tasksError } = await supabase
+          .from("tasks")
+          .select(`
+            id,
+            title,
+            description,
+            reward,
+            link,
+            is_active,
+            type,
+            category_id,
+            task_categories (
+              id,
+              name
+            )
+          `)
+          .eq("is_active", true)
+
+        if (tasksError) {
+          console.error("Ошибка при получении заданий:", tasksError)
+        } else {
+          console.log("Задания из БД:", tasksData)
+
+          const processedTasks = tasksData.map((task) => ({
+            ...task,
+            category: task.task_categories?.name,
+            is_completed: false,
+            user_status: "new",
+            reward_claimed: false,
+            is_expired: false,
+          }))
+
+          console.log("Обработанные задания:", processedTasks)
+          setTasks(processedTasks)
+        }
+      } catch (error) {
+        console.error("Ошибка при загрузке данных:", error)
+      } finally {
+        setLoading(false)
       }
-
-      // Создаем фиктивные задания для отображения
-      const mockTasks = [
-        {
-          id: 1,
-          title: "Ежедневный бонус",
-          description: "Получите ежедневный бонус",
-          reward: 50,
-          category: "daily",
-          is_active: true,
-          type: "simple",
-        },
-        {
-          id: 2,
-          title: "Посмотреть видео",
-          description: "Посмотрите короткое видео",
-          reward: 30,
-          category: "daily",
-          is_active: true,
-          type: "video",
-        },
-        {
-          id: 3,
-          title: "Подпишись на канал",
-          description: "Подпишитесь на наш Telegram канал",
-          reward: 50,
-          category: "partners",
-          is_active: true,
-          type: "social",
-        },
-        {
-          id: 4,
-          title: "Поделись постом",
-          description: "Поделитесь нашим постом",
-          reward: 40,
-          category: "social",
-          is_active: true,
-          type: "social",
-        },
-      ]
-
-      setTasks(mockTasks)
-      setLoading(false)
     }
 
     fetchData()
