@@ -1755,3 +1755,33 @@ button:active::after {
   color: #94a3b8;
 }
 
+/* Стили для страницы заданий */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Стили для темно-синей темы */
+.bg-dark-blue {
+  background-color: #1a1f2e;
+}
+
+.bg-dark-blue-lighter {
+  background-color: #242838;
+}
+
+.bg-dark-blue-light {
+  background-color: #2a3142;
+}
+
+.border-dark-blue {
+  border-color: #2a3142;
+}
+
+.text-blue-highlight {
+  color: #3b82f6;
+}
+
