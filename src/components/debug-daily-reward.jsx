@@ -19,6 +19,7 @@ export function DebugDailyReward({ userId }) {
       // Прямой вызов RPC функции
       const { data, error } = await supabase.rpc("claim_daily_reward", {
         user_id_param: userId,
+        is_test_mode: true, // Добавляем параметр тестового режима
       })
 
       console.log("Raw response:", { data, error })
