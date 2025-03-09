@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { createMockTasks } from "../utils/mock-data"
 import { TaskCard } from "../components/tasks/task-card"
-// Импортируем компонент ежедневной награды
+// Оставляем только импорт DailyRewardTask
 import { DailyRewardTask } from "../components/daily-reward-task"
 
 export default function TasksPage({
