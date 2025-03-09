@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { BottomMenu } from "../components/bottom-menu"
-import { TasksContainer } from "../components/tasks/tasks-container"
 import { createMockTasks } from "../utils/mock-data"
+import { TaskCard } from "../components/tasks/task-card" // Исправлен импорт на правильный путь
 
 export default function TasksPage({
   user: initialUser,
@@ -16,9 +16,8 @@ export default function TasksPage({
   const [loading, setLoading] = useState(isLoading !== undefined ? isLoading : true)
   const [tasks, setTasks] = useState(initialTasks || [])
   const [user, setUser] = useState(initialUser || null)
-
-  // Добавляем состояние для активной вкладки
   const [activeTab, setActiveTab] = useState("daily")
+  const [filteredTasks, setFilteredTasks] = useState([])
 
   // Если задания уже переданы через пропсы, используем их
   useEffect(() => {
@@ -30,6 +29,23 @@ export default function TasksPage({
       fetchTasks()
     }
   }, [initialTasks, isLoading])
+
+  // Фильтруем задания при изменении активной вкладки или списка заданий
+  useEffect(() => {
+    if (!tasks || tasks.length === 0) {
+      setFilteredTasks([])
+      return
+    }
+
+    // Фильтруем задания по категории
+    const filtered = tasks.filter((task) => {
+      // Используем поле category, если оно есть, иначе проверяем category_id
+      const taskCategory = task.category?.name || getCategoryById(task.category_id)
+      return taskCategory === activeTab
+    })
+
+    setFilteredTasks(filtered)
+  }, [activeTab, tasks])
 
   // Функция для загрузки заданий, если они не были переданы через пропсы
   const fetchTasks = async () => {
@@ -93,16 +109,6 @@ export default function TasksPage({
     }
   }
 
-  // Добавляем функцию для фильтрации заданий по категории
-  const getFilteredTasks = () => {
-    if (!tasks || tasks.length === 0) return []
-
-    return tasks.filter((task) => {
-      const taskCategory = task.category?.name || getCategoryById(task.category_id)
-      return taskCategory === activeTab
-    })
-  }
-
   // Функция для определения категории по ID
   const getCategoryById = (categoryId) => {
     if (!categoryId) return "daily"
@@ -116,25 +122,24 @@ export default function TasksPage({
     return categoryMap[categoryId] || "daily"
   }
 
-  // Обновляем возвращаемый JSX
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       {/* Заголовок */}
       <div className="px-4 pt-4 pb-6">
-        <h1 className="text-2xl font-bold text-center mb-1 text-gray-900">Задания</h1>
-        <p className="text-gray-500 text-center text-sm">Выполняйте задания и получайте награды</p>
+        <h1 className="text-2xl font-bold text-center mb-1 text-white">Задания</h1>
+        <p className="text-gray-400 text-center text-sm">Выполняйте задания и получайте награды</p>
       </div>
 
       {/* Табы */}
       <div className="px-4 mb-6">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar bg-gray-100 rounded-lg p-1">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar bg-[#242838] rounded-lg p-1">
           {["daily", "partners", "social"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`
                 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all flex-1
-                ${activeTab === tab ? "bg-blue-500 text-white" : "text-gray-600 hover:text-gray-800"}
+                ${activeTab === tab ? "bg-blue-500 text-white" : "text-gray-400 hover:text-gray-300"}
               `}
             >
               {tab === "daily" ? "Ежедневные" : tab === "partners" ? "Партнеры" : "Социальные"}
@@ -143,17 +148,29 @@ export default function TasksPage({
         </div>
       </div>
 
+      {/* Список заданий */}
       {loading ? (
-        <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="flex items-center justify-center py-10">
           <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
         </div>
       ) : (
-        <TasksContainer
-          tasks={getFilteredTasks()}
-          user={user}
-          onTaskComplete={handleTaskComplete}
-          onBalanceUpdate={handleBalanceUpdate}
-        />
+        <div className="px-4 space-y-3 pb-24">
+          {filteredTasks.length > 0 ? (
+            filteredTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                user={user}
+                onBalanceUpdate={handleBalanceUpdate}
+                onTaskComplete={handleTaskComplete}
+              />
+            ))
+          ) : (
+            <div className="text-center py-10 text-gray-400">
+              <p>Нет доступных заданий в этой категории</p>
+            </div>
+          )}
+        </div>
       )}
       <BottomMenu active="earn" />
     </div>
