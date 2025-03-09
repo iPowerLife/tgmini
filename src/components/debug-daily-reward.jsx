@@ -106,6 +106,40 @@ ${error.hint || ""}`)
     }
   }
 
+  // Добавляем новую функцию для сбора награды после функции checkUserProgress
+
+  const collectReward = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      setResult(null)
+
+      console.log("Collecting reward for user:", userId)
+
+      // Вызов функции сбора награды
+      const { data, error } = await supabase.rpc("collect_daily_reward", {
+        user_id_param: userId,
+      })
+
+      console.log("Collect reward response:", { data, error })
+
+      if (error) {
+        console.error("Error:", error)
+        setError(`${error.message || "Unknown error"}
+${error.details || ""}
+${error.hint || ""}`)
+        return
+      }
+
+      setResult(data)
+    } catch (err) {
+      console.error("Exception:", err)
+      setError(err.message || "Unknown error")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Новая функция для симуляции пропущенного дня
   const simulateMissedDay = async () => {
     try {
@@ -189,6 +223,14 @@ ${error.hint || ""}`)
           className="px-4 py-2 bg-green-500 text-white rounded-lg disabled:bg-gray-600 disabled:text-gray-400"
         >
           {loading ? "Загрузка..." : "Проверить прогресс"}
+        </button>
+
+        <button
+          onClick={collectReward}
+          disabled={loading || !userId}
+          className="px-4 py-2 bg-purple-500 text-white rounded-lg disabled:bg-gray-600 disabled:text-gray-400"
+        >
+          {loading ? "Загрузка..." : "Собрать награду"}
         </button>
 
         {/* Новая кнопка для симуляции пропущенного дня */}
