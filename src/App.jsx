@@ -573,5 +573,198 @@ function App() {
         const handleReferral = async (telegramUser) => {
           try {
             // Получаем параметр startapp
-            const startParam = window.Telegram?.
+            const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param
+            if (startParam && startParam.startsWith("ref")) {
+              const referrerId = startParam.substring(3) // Извлекаем ID реферера
+              console.log("Referral detected, referrer ID:", referrerId)
+
+              // Отправляем запрос на сервер для связывания пользователя с реферером
+              const { data, error } = await supabase
+                .from("users")
+                .update({ referrer_id: referrerId })
+                .eq("id", telegramUser.id)
+                .select()
+
+              if (error) {
+                console.error("Error updating referrer ID:", error)
+              } else {
+                console.log("Referrer ID updated successfully:", data)
+              }
+            }
+          } catch (error) {
+            console.error("Error handling referral:", error)
+          }
+        }
+
+        // Создаем или обновляем пользователя в базе данных
+        const newUser = await createOrUpdateUser(userData)
+
+        if (mounted && newUser) {
+          setUser(newUser)
+          updateLoadingProgress("user", "complete", 15)
+          setLoadingProgress(30) // Прогресс после загрузки пользователя
+
+          // Обрабатываем реферальную ссылку только при создании нового пользователя
+          if (newUser.created_at === newUser.updated_at) {
+            await handleReferral(newUser)
+          }
+
+          // Загружаем баланс пользователя
+          const { data: balanceData, error: balanceError } = await supabase
+            .from("users")
+            .select("balance")
+            .eq("id", newUser.id)
+            .single()
+
+          if (balanceError) throw balanceError
+
+          if (mounted) {
+            setBalance(balanceData?.balance || 0)
+            setLoadingProgress(40) // Прогресс после загрузки баланса
+          }
+        } else {
+          console.warn("User data is null or component unmounted")
+          updateLoadingProgress("user", "error")
+        }
+      } catch (err) {
+        console.error("Error initializing app:", err)
+        setError(err.message || "Failed to initialize app")
+        updateLoadingProgress("database", "error")
+        updateLoadingProgress("user", "error")
+      } finally {
+        if (mounted) {
+          setLoading(false)
+          setLoadingProgress(50) // Прогресс перед загрузкой данных
+        }
+      }
+    }
+
+    initApp()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  // Загрузка данных после загрузки пользователя
+  useEffect(() => {
+    if (user) {
+      // Запускаем загрузку данных параллельно
+      Promise.all([
+        loadShopData(),
+        loadMinersData(),
+        loadTasksData(), // Загружаем данные заданий
+        loadRatingData(),
+        loadTransactionsData(),
+        loadRanksData(),
+        preloadMiningData(),
+      ])
+        .then(() => {
+          console.log("All data loaded successfully")
+          setLoadingProgress(90) // Прогресс после загрузки всех данных
+          return preloadShopImages() // Предзагружаем изображения магазина после загрузки данных
+        })
+        .then(() => {
+          console.log("Shop images preloaded successfully")
+          return preloadTaskImages() // Предзагружаем изображения заданий после загрузки изображений магазина
+        })
+        .then(() => {
+          console.log("Task images preloaded successfully")
+          setLoadingProgress(100) // Полный прогресс после предзагрузки изображений
+          setTimeout(() => setShowSplash(false), 1500) // Скрываем загрузочный экран через 1.5 секунды
+        })
+        .catch((err) => {
+          console.error("Error loading data:", err)
+          setError(err.message || "Failed to load data")
+        })
+    }
+  }, [
+    user,
+    loadShopData,
+    loadMinersData,
+    loadTasksData,
+    loadRatingData,
+    loadTransactionsData,
+    loadRanksData,
+    preloadMiningData,
+    preloadShopImages,
+    preloadTaskImages,
+  ])
+
+  // Обновление баланса
+  const handleBalanceUpdate = useCallback(
+    async (newBalance) => {
+      setBalance(newBalance)
+    },
+    [setBalance],
+  )
+
+  // Обработчик завершения задачи
+  const handleTaskComplete = useCallback(
+    async (taskId, reward) => {
+      try {
+        // Отправляем запрос на сервер для завершения задачи
+        const { data, error } = await supabase.rpc("complete_task", {
+          task_id_param: taskId,
+          user_id_param: user.id,
+          reward_param: reward,
+        })
+
+        if (error) {
+          console.error("Error completing task:", error)
+          return false // Возвращаем false в случае ошибки
+        }
+
+        // Обновляем баланс пользователя
+        setBalance((prevBalance) => prevBalance + reward)
+
+        // Обновляем состояние задач, чтобы убрать выполненную задачу из списка
+        setTasksData((prevTasksData) => ({
+          ...prevTasksData,
+          tasks: prevTasksData.tasks.filter((task) => task.id !== taskId),
+        }))
+
+        return true // Возвращаем true, если задача успешно завершена
+      } catch (error) {
+        console.error("Error completing task:", error)
+        return false // Возвращаем false в случае ошибки
+      }
+    },
+    [user?.id, setBalance],
+  )
+
+  // Memoize tasksData
+  const memoizedTasksData = useMemo(() => tasksData, [tasksData])
+
+  // Отображение загрузочного экрана или контента приложения
+  return (
+    <Router>
+      {showSplash ? (
+        <LoadingScreen loadingProgress={loadingProgress} loadingSteps={loadingSteps} />
+      ) : loading ? (
+        <LoadingFallback />
+      ) : error ? (
+        <div className="error-container">Error: {error}</div>
+      ) : (
+        <AppContent
+          user={user}
+          balance={balance}
+          handleBalanceUpdate={handleBalanceUpdate}
+          shopData={shopData}
+          minersData={minersData}
+          tasksData={memoizedTasksData} // Передаем memoizedTasksData
+          handleTaskComplete={handleTaskComplete}
+          ratingData={ratingData}
+          transactionsData={transactionsData}
+          ranksData={ranksData}
+          hasMinerPass={hasMinerPass}
+          cachedMiningInfo={cachedMiningInfo}
+          onCacheUpdate={updateMiningInfoCache}
+        />
+      )}
+    </Router>
+  )
+}
+
+export default App
 
