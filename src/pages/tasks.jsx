@@ -17,6 +17,9 @@ export default function TasksPage({
   const [tasks, setTasks] = useState(initialTasks || [])
   const [user, setUser] = useState(initialUser || null)
 
+  // Добавляем состояние для активной вкладки
+  const [activeTab, setActiveTab] = useState("daily")
+
   // Если задания уже переданы через пропсы, используем их
   useEffect(() => {
     if (initialTasks && initialTasks.length > 0) {
@@ -90,22 +93,68 @@ export default function TasksPage({
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#1A1F2E]">
-        <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
-      </div>
-    )
+  // Добавляем функцию для фильтрации заданий по категории
+  const getFilteredTasks = () => {
+    if (!tasks || tasks.length === 0) return []
+
+    return tasks.filter((task) => {
+      const taskCategory = task.category?.name || getCategoryById(task.category_id)
+      return taskCategory === activeTab
+    })
   }
 
+  // Функция для определения категории по ID
+  const getCategoryById = (categoryId) => {
+    if (!categoryId) return "daily"
+
+    const categoryMap = {
+      1: "daily",
+      2: "partners",
+      3: "social",
+    }
+
+    return categoryMap[categoryId] || "daily"
+  }
+
+  // Обновляем возвращаемый JSX
   return (
-    <div className="min-h-screen bg-[#1A1F2E]">
-      <TasksContainer
-        tasks={tasks}
-        user={user}
-        onTaskComplete={handleTaskComplete}
-        onBalanceUpdate={handleBalanceUpdate}
-      />
+    <div className="min-h-screen bg-white">
+      {/* Заголовок */}
+      <div className="px-4 pt-4 pb-6">
+        <h1 className="text-2xl font-bold text-center mb-1 text-gray-900">Задания</h1>
+        <p className="text-gray-500 text-center text-sm">Выполняйте задания и получайте награды</p>
+      </div>
+
+      {/* Табы */}
+      <div className="px-4 mb-6">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar bg-gray-100 rounded-lg p-1">
+          {["daily", "partners", "social"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`
+                px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all flex-1
+                ${activeTab === tab ? "bg-blue-500 text-white" : "text-gray-600 hover:text-gray-800"}
+              `}
+            >
+              {tab === "daily" ? "Ежедневные" : tab === "partners" ? "Партнеры" : "Социальные"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+        </div>
+      ) : (
+        <TasksContainer
+          tasks={getFilteredTasks()}
+          user={user}
+          onTaskComplete={handleTaskComplete}
+          onBalanceUpdate={handleBalanceUpdate}
+        />
+      )}
       <BottomMenu active="earn" />
     </div>
   )

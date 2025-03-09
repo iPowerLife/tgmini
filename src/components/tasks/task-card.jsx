@@ -62,10 +62,10 @@ export function TaskCard({ task, user, onBalanceUpdate, onTaskComplete }) {
   }
 
   return (
-    <div className="flex items-center bg-[#242838] rounded-xl overflow-hidden border border-[#2A3142]/70 shadow-lg">
+    <div className="flex items-center bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm">
       {/* Изображение задания */}
       <div className="w-16 h-16 flex-shrink-0 p-2 flex items-center justify-center">
-        <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-[#2A3142]">
+        <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100">
           <img
             src={imageError ? getFallbackImage(task) : task.icon_url || getFallbackImage(task)}
             alt={task.title}
@@ -77,17 +77,17 @@ export function TaskCard({ task, user, onBalanceUpdate, onTaskComplete }) {
 
       {/* Содержимое задания */}
       <div className="flex-1 py-3 pr-2">
-        <div className="text-white text-sm font-medium">{task.title}</div>
-        {task.description && <div className="text-gray-400 text-xs mt-1">{task.description}</div>}
+        <div className="text-gray-900 text-sm font-medium">{task.title}</div>
+        {task.description && <div className="text-gray-500 text-xs mt-1">{task.description}</div>}
         <div className="flex items-center mt-1">
-          <span className="text-blue-400 font-bold text-sm">+{task.reward}</span>
+          <span className="text-blue-500 font-bold text-sm">+{task.reward}</span>
         </div>
       </div>
 
       {/* Кнопка */}
       <div className="pr-3">
         {isCompleted ? (
-          <div className="w-8 h-8 rounded-lg bg-[#2A3142] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="w-4 h-4 text-gray-400"
@@ -103,7 +103,7 @@ export function TaskCard({ task, user, onBalanceUpdate, onTaskComplete }) {
           </div>
         ) : isVerifying ? (
           <div className="text-center">
-            <div className="w-8 h-8 rounded-lg bg-[#2A3142] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
               <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
             </div>
             <span className="text-xs text-gray-400">{verificationTime}с</span>
@@ -111,7 +111,7 @@ export function TaskCard({ task, user, onBalanceUpdate, onTaskComplete }) {
         ) : (
           <button
             onClick={handleExecuteTask}
-            className="px-5 py-2 rounded-full font-medium transition-all bg-blue-500 hover:bg-blue-400 text-white shadow-md"
+            className="px-5 py-2 rounded-full font-medium transition-all bg-blue-500 hover:bg-blue-400 text-white shadow-sm"
           >
             Выполнить
           </button>
