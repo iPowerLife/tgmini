@@ -125,10 +125,14 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
 
       if (error) {
         console.error("Error claiming reward:", error)
-        setError(`Ошибка при получении награды: ${error.message}`)
+        // Показываем полное сообщение об ошибке для отладки
+        setError(`Ошибка при получении награды: ${error.message || "Неизвестная ошибка"}`)
+        if (error.details) console.error("Error details:", error.details)
+        if (error.hint) console.error("Error hint:", error.hint)
         return
       }
 
+      // Остальной код остается без изменений
       if (data && data.success) {
         console.log("Reward claimed successfully:", data)
 
@@ -157,7 +161,7 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
       }
     } catch (error) {
       console.error("Exception claiming reward:", error)
-      setError("Произошла ошибка при получении награды")
+      setError(`Произошла ошибка при получении награды: ${error.message || "Неизвестная ошибка"}`)
     } finally {
       setLoading(false)
     }
@@ -190,7 +194,14 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
           e.stopPropagation()
         }}
       >
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-white">
+        <button
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onClose()
+          }}
+          className="absolute top-3 right-3 text-gray-400 hover:text-white"
+        >
           <X size={20} />
         </button>
 
@@ -220,7 +231,11 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
             <h3 className="text-xl font-bold mb-2">Награда получена!</h3>
             <p className="text-gray-400 mb-4">Вы получили {formatNumber(claimedAmount)} монет</p>
             <button
-              onClick={onClose}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onClose()
+              }}
               className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
               Закрыть
@@ -296,7 +311,11 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
 
                   {isCurrentDay && timeLeft === "Доступно!" && (
                     <button
-                      onClick={handleClaim}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleClaim()
+                      }}
                       disabled={loading}
                       className="mt-2 w-full py-1 px-3 text-xs font-medium text-white 
                         bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors 
