@@ -12,6 +12,7 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
   const [timeLeft, setTimeLeft] = useState("")
   const [claimSuccess, setClaimSuccess] = useState(false)
   const [claimedAmount, setClaimedAmount] = useState(0)
+  const [error, setError] = useState(null)
 
   // Загрузка наград и прогресса пользователя
   useEffect(() => {
@@ -19,19 +20,58 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
 
     const loadData = async () => {
       try {
+        console.log("Loading daily rewards data for user:", user.id)
+
         // Загружаем награды
-        const { data: rewardsData } = await supabase.from("daily_rewards").select("*").order("day_number")
-        if (rewardsData) setRewards(rewardsData)
+        const { data: rewardsData, error: rewardsError } = await supabase
+          .from("daily_rewards")
+          .select("*")
+          .order("day_number")
+
+        if (rewardsError) {
+          console.error("Error loading rewards:", rewardsError)
+          throw rewardsError
+        }
+
+        if (rewardsData && rewardsData.length > 0) {
+          console.log("Loaded rewards:", rewardsData.length)
+          setRewards(rewardsData)
+        } else {
+          console.warn("No rewards found in database")
+          // Создаем тестовые награды, если их нет в базе
+          const mockRewards = Array.from({ length: 30 }, (_, i) => ({
+            day_number: i + 1,
+            reward_amount: (i + 1) * 1000,
+            icon_url: null,
+          }))
+          setRewards(mockRewards)
+        }
 
         // Загружаем прогресс пользователя
-        const { data: progressData } = await supabase
+        const { data: progressData, error: progressError } = await supabase
           .from("user_daily_rewards")
           .select("*")
           .eq("user_id", user.id)
           .single()
-        if (progressData) setUserProgress(progressData)
+
+        if (progressError && progressError.code !== "PGRST116") {
+          // PGRST116 - это код ошибки "не найдено", который мы ожидаем для новых пользователей
+          console.error("Error loading user progress:", progressError)
+        }
+
+        if (progressData) {
+          console.log("Loaded user progress:", progressData)
+          setUserProgress(progressData)
+        } else {
+          console.log("No user progress found, user will start from day 1")
+        }
+
+        // Сбрасываем состояние успеха при каждом открытии
+        setClaimSuccess(false)
+        setError(null)
       } catch (error) {
-        console.error("Error loading daily rewards:", error)
+        console.error("Error in loadData:", error)
+        setError("Не удалось загрузить данные о наградах")
       }
     }
 
@@ -70,19 +110,26 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
 
     try {
       setLoading(true)
+      setError(null)
       console.log("Claiming reward for user:", user.id)
 
+      // Вызываем RPC функцию для получения награды
       const { data, error } = await supabase.rpc("claim_daily_reward", {
         user_id_param: user.id,
       })
 
+      console.log("Claim response:", data, error)
+
       if (error) {
         console.error("Error claiming reward:", error)
-        alert("Ошибка при получении награды: " + error.message)
+        setError(`Ошибка при получении награды: ${error.message}`)
         return
       }
 
-      if (data.success) {
+      if (data && data.success) {
+        console.log("Reward claimed successfully:", data)
+
+        // Обновляем прогресс пользователя
         setUserProgress((prev) => ({
           ...prev,
           current_streak: data.new_streak,
@@ -90,15 +137,24 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
           total_claims: (prev?.total_claims || 0) + 1,
         }))
 
+        // Показываем сообщение об успехе
         setClaimSuccess(true)
         setClaimedAmount(data.reward_amount)
-        onRewardClaim(data.reward_amount)
+
+        // Обновляем баланс пользователя через колбэк
+        if (onRewardClaim && data.new_balance) {
+          onRewardClaim(data.new_balance)
+        } else if (onRewardClaim) {
+          // Если новый баланс не вернулся, просто добавляем сумму награды
+          onRewardClaim(user.balance + data.reward_amount)
+        }
       } else {
-        alert(data.error || "Ошибка при получении награды")
+        console.error("Claim failed:", data)
+        setError(data?.error || "Ошибка при получении награды")
       }
     } catch (error) {
-      console.error("Error claiming reward:", error)
-      alert("Ошибка при получении награды")
+      console.error("Exception claiming reward:", error)
+      setError("Произошла ошибка при получении награды")
     } finally {
       setLoading(false)
     }
@@ -128,9 +184,12 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
         </button>
 
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold mb-2">Daily Prize</h2>
-          <p className="text-gray-400">Log in every day and collect your rewards.</p>
-          {timeLeft && <p className="text-sm text-blue-400 mt-2">Next reward: {timeLeft}</p>}
+          <h2 className="text-2xl font-bold mb-2">Ежедневная награда</h2>
+          <p className="text-gray-400">Заходите каждый день и получайте награды</p>
+          {timeLeft && <p className="text-sm text-blue-400 mt-2">Следующая награда: {timeLeft}</p>}
+
+          {/* Показываем ошибку, если она есть */}
+          {error && <div className="mt-2 p-2 bg-red-500/20 text-red-400 rounded-lg text-sm">{error}</div>}
         </div>
 
         {claimSuccess ? (
@@ -150,9 +209,12 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
         ) : (
           <div className="grid grid-cols-4 gap-3">
             {rewards.map((reward) => {
-              const isCurrentDay = userProgress?.current_streak === reward.day_number
+              const isCurrentDay =
+                userProgress?.current_streak === reward.day_number || (!userProgress && reward.day_number === 1)
               const isPast = userProgress?.current_streak ? reward.day_number < userProgress.current_streak : false
-              const isFuture = userProgress?.current_streak ? reward.day_number > userProgress.current_streak : false
+              const isFuture = userProgress?.current_streak
+                ? reward.day_number > userProgress.current_streak
+                : reward.day_number > 1
 
               return (
                 <div
@@ -168,7 +230,7 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
                     }
                   `}
                 >
-                  <div className="text-sm text-gray-400 mb-1">Day {reward.day_number}</div>
+                  <div className="text-sm text-gray-400 mb-1">День {reward.day_number}</div>
                   <div className="w-12 h-12 mx-auto mb-2 bg-gray-700 rounded-lg flex items-center justify-center">
                     {reward.icon_url ? (
                       <img src={reward.icon_url || "/placeholder.svg"} alt="" className="w-8 h-8" />
@@ -178,11 +240,11 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
                   </div>
                   <div className="text-sm font-medium text-yellow-500">{formatReward(reward.reward_amount)}</div>
 
-                  {isCurrentDay && !timeLeft.includes(":") && (
+                  {isCurrentDay && timeLeft === "Доступно!" && (
                     <button
                       onClick={handleClaim}
                       disabled={loading}
-                      className="mt-2 w-full py-1 px-3 text-xs font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
+                      className="mt-2 w-full py-1 px-3 text-xs font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-600 disabled:text-gray-400"
                     >
                       {loading ? "..." : "Собрать"}
                     </button>

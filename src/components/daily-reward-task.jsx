@@ -10,47 +10,93 @@ export function DailyRewardTask({ user, onRewardClaim }) {
   const [currentReward, setCurrentReward] = useState(null)
   const [timeLeft, setTimeLeft] = useState("")
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   // Загрузка прогресса пользователя и текущей награды
   useEffect(() => {
     const loadData = async () => {
       try {
+        setLoading(true)
+        console.log("Loading daily reward data for user:", user.id)
+
         // Загружаем прогресс пользователя
-        const { data: progressData } = await supabase
+        const { data: progressData, error: progressError } = await supabase
           .from("user_daily_rewards")
           .select("*")
           .eq("user_id", user.id)
           .single()
 
+        if (progressError && progressError.code !== "PGRST116") {
+          // PGRST116 - это код ошибки "не найдено", который мы ожидаем для новых пользователей
+          console.error("Error loading user progress:", progressError)
+        }
+
         if (progressData) {
+          console.log("Loaded user progress:", progressData)
           setUserProgress(progressData)
 
           // Загружаем текущую награду
           const currentDay = progressData.current_streak || 1
-          const { data: rewardData } = await supabase
+          const { data: rewardData, error: rewardError } = await supabase
             .from("daily_rewards")
             .select("*")
             .eq("day_number", currentDay)
             .single()
 
-          if (rewardData) {
-            setCurrentReward(rewardData)
+          if (rewardError) {
+            console.error("Error loading reward for day", currentDay, ":", rewardError)
           }
-        } else {
-          // Если прогресса нет, загружаем награду за первый день
-          const { data: rewardData } = await supabase.from("daily_rewards").select("*").eq("day_number", 1).single()
 
           if (rewardData) {
+            console.log("Loaded current reward:", rewardData)
             setCurrentReward(rewardData)
+          } else {
+            // Если награда не найдена, создаем тестовую
+            console.log("Creating mock reward for day", currentDay)
+            setCurrentReward({
+              day_number: currentDay,
+              reward_amount: currentDay * 1000,
+              icon_url: null,
+            })
+          }
+        } else {
+          console.log("No user progress found, user will start from day 1")
+
+          // Если прогресса нет, загружаем награду за первый день
+          const { data: rewardData, error: rewardError } = await supabase
+            .from("daily_rewards")
+            .select("*")
+            .eq("day_number", 1)
+            .single()
+
+          if (rewardError) {
+            console.error("Error loading reward for day 1:", rewardError)
+          }
+
+          if (rewardData) {
+            console.log("Loaded day 1 reward:", rewardData)
+            setCurrentReward(rewardData)
+          } else {
+            // Если награда не найдена, создаем тестовую
+            console.log("Creating mock reward for day 1")
+            setCurrentReward({
+              day_number: 1,
+              reward_amount: 1000,
+              icon_url: null,
+            })
           }
         }
       } catch (error) {
-        console.error("Error loading daily reward data:", error)
+        console.error("Error in loadData:", error)
+      } finally {
+        setLoading(false)
       }
     }
 
-    loadData()
-  }, [user.id])
+    if (user?.id) {
+      loadData()
+    }
+  }, [user?.id])
 
   // Обновление таймера
   useEffect(() => {
@@ -88,19 +134,69 @@ export function DailyRewardTask({ user, onRewardClaim }) {
 
   const handleCloseModal = () => {
     setIsModalOpen(false)
-  }
-
-  const handleRewardClaim = (amount) => {
-    if (onRewardClaim) {
-      onRewardClaim(amount)
+    // Перезагружаем данные после закрытия модального окна
+    if (user?.id) {
+      refreshData()
     }
   }
 
+  const refreshData = async () => {
+    try {
+      console.log("Refreshing daily reward data")
+
+      // Загружаем обновленный прогресс пользователя
+      const { data: progressData } = await supabase
+        .from("user_daily_rewards")
+        .select("*")
+        .eq("user_id", user.id)
+        .single()
+
+      if (progressData) {
+        setUserProgress(progressData)
+
+        // Загружаем текущую награду
+        const currentDay = progressData.current_streak || 1
+        const { data: rewardData } = await supabase
+          .from("daily_rewards")
+          .select("*")
+          .eq("day_number", currentDay)
+          .single()
+
+        if (rewardData) {
+          setCurrentReward(rewardData)
+        }
+      }
+    } catch (error) {
+      console.error("Error refreshing data:", error)
+    }
+  }
+
+  const handleRewardClaim = (newBalance) => {
+    console.log("Reward claimed, new balance:", newBalance)
+
+    // Обновляем баланс через колбэк
+    if (onRewardClaim) {
+      onRewardClaim(newBalance)
+    }
+
+    // Перезагружаем данные
+    refreshData()
+  }
+
   // Если данные еще не загружены
-  if (!currentReward) {
+  if (loading) {
     return (
       <div className="flex items-center rounded-xl overflow-hidden border border-[#2A3142]/70 shadow-lg bg-[#242838] p-4">
         <div className="w-full text-center text-gray-400">Загрузка ежедневной награды...</div>
+      </div>
+    )
+  }
+
+  // Если награда не найдена
+  if (!currentReward) {
+    return (
+      <div className="flex items-center rounded-xl overflow-hidden border border-[#2A3142]/70 shadow-lg bg-[#242838] p-4">
+        <div className="w-full text-center text-gray-400">Ежедневная награда недоступна</div>
       </div>
     )
   }
