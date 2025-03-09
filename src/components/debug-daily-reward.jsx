@@ -25,7 +25,9 @@ export function DebugDailyReward({ userId }) {
 
       if (error) {
         console.error("Error:", error)
-        setError(`${error.message || "Unknown error"}\n${error.details || ""}\n${error.hint || ""}`)
+        setError(`${error.message || "Unknown error"}
+${error.details || ""}
+${error.hint || ""}`)
         return
       }
 
@@ -55,7 +57,9 @@ export function DebugDailyReward({ userId }) {
 
       if (error) {
         console.error("Error:", error)
-        setError(`${error.message || "Unknown error"}\n${error.details || ""}\n${error.hint || ""}`)
+        setError(`${error.message || "Unknown error"}
+${error.details || ""}
+${error.hint || ""}`)
         return
       }
 
@@ -83,7 +87,9 @@ export function DebugDailyReward({ userId }) {
 
       if (error && error.code !== "PGRST116") {
         console.error("Error:", error)
-        setError(`${error.message || "Unknown error"}\n${error.details || ""}\n${error.hint || ""}`)
+        setError(`${error.message || "Unknown error"}
+${error.details || ""}
+${error.hint || ""}`)
         return
       }
 
@@ -92,6 +98,61 @@ export function DebugDailyReward({ userId }) {
       } else {
         setResult({ progress: null, message: "No progress found for this user" })
       }
+    } catch (err) {
+      console.error("Exception:", err)
+      setError(err.message || "Unknown error")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Новая функция для симуляции пропущенного дня
+  const simulateMissedDay = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      setResult(null)
+
+      console.log("Simulating missed day for user:", userId)
+
+      // Сначала получаем текущий прогресс
+      const { data: progressData, error: progressError } = await supabase
+        .from("user_daily_rewards")
+        .select("*")
+        .eq("user_id", userId)
+        .single()
+
+      if (progressError) {
+        console.error("Error getting progress:", progressError)
+        setError(`Ошибка получения прогресса: ${progressError.message}`)
+        return
+      }
+
+      if (!progressData) {
+        setError("Прогресс не найден. Сначала получите награду хотя бы один раз.")
+        return
+      }
+
+      // Обновляем last_claim_at на 3 дня назад
+      const { data, error } = await supabase
+        .from("user_daily_rewards")
+        .update({ last_claim_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() })
+        .eq("user_id", userId)
+        .select()
+
+      console.log("Update response:", { data, error })
+
+      if (error) {
+        console.error("Error updating last_claim_at:", error)
+        setError(`Ошибка обновления даты: ${error.message}`)
+        return
+      }
+
+      setResult({
+        simulatedMissedDay: true,
+        message: "Дата последнего получения награды изменена на 3 дня назад",
+        updatedProgress: data[0],
+      })
     } catch (err) {
       console.error("Exception:", err)
       setError(err.message || "Unknown error")
@@ -128,6 +189,15 @@ export function DebugDailyReward({ userId }) {
           className="px-4 py-2 bg-green-500 text-white rounded-lg disabled:bg-gray-600 disabled:text-gray-400"
         >
           {loading ? "Загрузка..." : "Проверить прогресс"}
+        </button>
+
+        {/* Новая кнопка для симуляции пропущенного дня */}
+        <button
+          onClick={simulateMissedDay}
+          disabled={loading || !userId}
+          className="px-4 py-2 bg-yellow-500 text-white rounded-lg disabled:bg-gray-600 disabled:text-gray-400"
+        >
+          {loading ? "Загрузка..." : "Симулировать пропуск дня"}
         </button>
       </div>
 
