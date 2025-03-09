@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
-import { BottomMenu } from "../components/bottom-menu"
 import { createMockTasks } from "../utils/mock-data"
-import { TaskCard } from "../components/tasks/task-card" // Исправлен импорт на правильный путь
+import { TaskCard } from "../components/tasks/task-card"
+
+// Удалили импорт BottomMenu, так как он уже есть в App.jsx
 
 export default function TasksPage({
   user: initialUser,
@@ -172,7 +173,7 @@ export default function TasksPage({
           )}
         </div>
       )}
-      <BottomMenu active="earn" />
+      {/* Удалили BottomMenu отсюда */}
     </div>
   )
 }
