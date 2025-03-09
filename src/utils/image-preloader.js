@@ -1,3 +1,5 @@
+;```typescriptreact file="src/utils/image-preloader.js"
+[v0-no-op-code-block-prefix]// Исправляем путь импорта - файл называется image-helpers.js
 import { fixImageUrl } from "./image-helpers"
 
 // Кэш для хранения предзагруженных изображений
@@ -32,14 +34,22 @@ export function preloadImage(src) {
     }
 
     img.onerror = () => {
-      reject(new Error(`Failed to load image: ${fixedSrc}`))
+      reject(new Error(`
+Failed
+to
+load
+image: $
+{
+  fixedSrc
+}
+`))
     }
   })
 }
 
 /**
  * Предзагружает массив изображений
- * @param {Array<string>} sources - Массив URL изображений
+ * @param {Array<string>} sources - Массив URL изображений\
  * @param {Function} onProgress - Колбэк для отслеживания прогресса (получает число от 0 до 1)
  * @returns {Promise} - Promise, который разрешается, когда все изображения загружены
  */

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { getFallbackImage } from "../../utils/task-helpers"
+import { isImageCached } from "../../utils/image-preloader"
+import { fixImageUrl } from "../../utils/image-helpers"
 
 export function TaskCard({ task, user, onBalanceUpdate, onTaskComplete }) {
   const [isVerifying, setIsVerifying] = useState(false)
@@ -9,13 +11,21 @@ export function TaskCard({ task, user, onBalanceUpdate, onTaskComplete }) {
   const [verificationTime, setVerificationTime] = useState(task.verification_time || 15)
   const [imageError, setImageError] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageSrc, setImageSrc] = useState("")
 
-  // Добавляем эффект для анимации при наведении
+  // Инициализация изображения
   useEffect(() => {
-    return () => {
-      // Очистка при размонтировании
+    const iconUrl = task.icon_url || getFallbackImage(task)
+    const fixedUrl = fixImageUrl(iconUrl)
+    setImageSrc(fixedUrl)
+
+    // Проверяем, кэшировано ли изображение
+    const isCached = isImageCached(fixedUrl)
+    if (isCached) {
+      setImageLoaded(true)
     }
-  }, [])
+  }, [task])
 
   const handleExecuteTask = async () => {
     if (isCompleted || isVerifying) return
@@ -73,8 +83,6 @@ export function TaskCard({ task, user, onBalanceUpdate, onTaskComplete }) {
   const getGradientStyle = () => {
     // Используем ID задания для создания уникального градиента
     const taskId = task.id || Math.floor(Math.random() * 1000)
-    const hue1 = (taskId * 37) % 360 // Первый цвет
-    const hue2 = (taskId * 73) % 360 // Второй цвет
 
     return {
       background: `linear-gradient(135deg, 
@@ -84,7 +92,6 @@ export function TaskCard({ task, user, onBalanceUpdate, onTaskComplete }) {
         ? "0 4px 8px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(99, 102, 241, 0.15)"
         : "0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(99, 102, 241, 0.1)",
       transition: "all 0.3s ease",
-      // Убираем transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
     }
   }
 
@@ -114,19 +121,30 @@ export function TaskCard({ task, user, onBalanceUpdate, onTaskComplete }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Изображение задания - уменьшаем размер */}
+      {/* Изображение задания */}
       <div className="w-14 h-14 flex-shrink-0 p-2 flex items-center justify-center">
         <div style={imageContainerStyle}>
+          {!imageLoaded && !imageError && (
+            <div className="w-9 h-9 flex items-center justify-center bg-[#1A1F2E] rounded-lg">
+              <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+            </div>
+          )}
           <img
-            src={imageError ? getFallbackImage(task) : task.icon_url || getFallbackImage(task)}
+            src={imageSrc || "/placeholder.svg"}
             alt={task.title}
-            className="w-9 h-9 object-contain rounded-lg"
-            onError={() => setImageError(true)}
+            className={`w-9 h-9 object-contain rounded-lg ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+            style={{ transition: "opacity 0.3s ease" }}
+            onLoad={() => setImageLoaded(true)}
+            onError={() => {
+              setImageError(true)
+              setImageSrc(getFallbackImage(task))
+              setImageLoaded(true)
+            }}
           />
         </div>
       </div>
 
-      {/* Содержимое задания - уменьшаем отступы */}
+      {/* Содержимое задания */}
       <div className="flex-1 py-2 pr-2">
         <div className="text-white text-sm font-medium">{task.title}</div>
         {task.description && <div className="text-gray-400 text-xs mt-0.5 line-clamp-1">{task.description}</div>}
