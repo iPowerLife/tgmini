@@ -1,5 +1,4 @@
-;```typescriptreact file="src/utils/image-preloader.js"
-[v0-no-op-code-block-prefix]// Исправляем путь импорта - файл называется image-helpers.js
+// Исправляем путь импорта - файл называется image-helpers.js
 import { fixImageUrl } from "./image-helpers"
 
 // Кэш для хранения предзагруженных изображений
@@ -34,15 +33,7 @@ export function preloadImage(src) {
     }
 
     img.onerror = () => {
-      reject(new Error(`
-Failed
-to
-load
-image: $
-{
-  fixedSrc
-}
-`))
+      reject(new Error(`Failed to load image: ${fixedSrc}`))
     }
   })
 }
