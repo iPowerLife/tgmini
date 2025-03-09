@@ -188,7 +188,6 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
           <p className="text-gray-400">Заходите каждый день и получайте награды</p>
           {timeLeft && <p className="text-sm text-blue-400 mt-2">Следующая награда: {timeLeft}</p>}
 
-          {/* Показываем ошибку, если она есть */}
           {error && <div className="mt-2 p-2 bg-red-500/20 text-red-400 rounded-lg text-sm">{error}</div>}
         </div>
 
@@ -220,31 +219,67 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
                 <div
                   key={reward.day_number}
                   className={`
-                    relative p-3 rounded-xl text-center
+                    relative p-3 rounded-xl text-center transition-all
                     ${
                       isCurrentDay
-                        ? "bg-blue-500/20 border-2 border-blue-500"
+                        ? "bg-blue-500/20 border-2 border-blue-500 scale-105 shadow-lg shadow-blue-500/20"
                         : isPast
-                          ? "bg-gray-800/50 opacity-50"
-                          : "bg-gray-800/30"
+                          ? "bg-green-900/20 border border-green-500/30"
+                          : "bg-gray-800/30 border border-gray-700/30"
                     }
+                    ${isPast ? "hover:bg-green-900/30" : isFuture ? "hover:bg-gray-800/50" : ""}
                   `}
                 >
-                  <div className="text-sm text-gray-400 mb-1">День {reward.day_number}</div>
-                  <div className="w-12 h-12 mx-auto mb-2 bg-gray-700 rounded-lg flex items-center justify-center">
+                  {/* Индикатор статуса */}
+                  {isPast && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+
+                  <div
+                    className={`text-sm mb-1 ${
+                      isPast ? "text-green-400" : isCurrentDay ? "text-blue-400" : "text-gray-400"
+                    }`}
+                  >
+                    День {reward.day_number}
+                  </div>
+
+                  <div
+                    className={`w-12 h-12 mx-auto mb-2 rounded-lg flex items-center justify-center
+                    ${
+                      isPast
+                        ? "bg-green-900/30 border border-green-500/30"
+                        : isCurrentDay
+                          ? "bg-blue-900/30 border border-blue-500/30"
+                          : "bg-gray-700/30 border border-gray-600/30"
+                    }
+                  `}
+                  >
                     {reward.icon_url ? (
                       <img src={reward.icon_url || "/placeholder.svg"} alt="" className="w-8 h-8" />
                     ) : (
                       <span className="text-2xl">💎</span>
                     )}
                   </div>
-                  <div className="text-sm font-medium text-yellow-500">{formatReward(reward.reward_amount)}</div>
+
+                  <div
+                    className={`text-sm font-medium ${
+                      isPast ? "text-green-400" : isCurrentDay ? "text-yellow-500" : "text-gray-400"
+                    }`}
+                  >
+                    {formatReward(reward.reward_amount)}
+                  </div>
 
                   {isCurrentDay && timeLeft === "Доступно!" && (
                     <button
                       onClick={handleClaim}
                       disabled={loading}
-                      className="mt-2 w-full py-1 px-3 text-xs font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-600 disabled:text-gray-400"
+                      className="mt-2 w-full py-1 px-3 text-xs font-medium text-white 
+                        bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors 
+                        disabled:bg-gray-600 disabled:text-gray-400"
                     >
                       {loading ? "..." : "Собрать"}
                     </button>
