@@ -10,7 +10,7 @@ import { useUserData } from "./hooks/use-user-data"
 import { clearQueryCache } from "./hooks/use-supabase-query"
 
 // Импортируем страницы
-import HomePage from "./pages/home-page-optimized"
+import HomePage from "./pages/home-page"
 import Shop from "./components/shop"
 import TasksPage from "./pages/tasks"
 import { RatingSection } from "./components/rating-section"
