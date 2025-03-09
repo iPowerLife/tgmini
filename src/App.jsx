@@ -10,13 +10,12 @@ import HomePage from "./pages/home-page"
 import Shop from "./components/shop"
 import { useMinerPass } from "./hooks/useMinerPass"
 import React from "react"
-import LoadingScreen from "./components/loading-screen"
-// Импортируем только TasksPage
+// Временно закомментируем импорт LoadingScreen
+// import LoadingScreen from "./components/loading-screen"
 import TasksPage from "./pages/tasks"
 import { RatingSection } from "./components/rating-section"
 import { UserProfile } from "./components/user-profile"
-import { createMockTasks } from "./utils/mock-data" // Импортируем функцию для создания тестовых заданий
-// Добавьте импорт функции предзагрузки изображений в начало файла
+import { createMockTasks } from "./utils/mock-data"
 import { preloadImages } from "./utils/image-preloader"
 
 // Простой компонент для уведомлений
@@ -221,18 +220,17 @@ function App() {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Новое состояние для загрузочного экрана
-  const [showSplash, setShowSplash] = useState(true)
-  // Добавьте новый шаг загрузки в состояние loadingSteps
-  const [loadingSteps, setLoadingSteps] = useState({
-    database: "pending",
-    user: "pending",
-    miners: "pending",
-    mining: "pending",
-    tasks: "pending",
-    images: "pending", // Добавляем шаг загрузки изображений
-  })
-  const [loadingProgress, setLoadingProgress] = useState(0)
+  // Временно отключаем состояния для загрузочного экрана
+  // const [showSplash, setShowSplash] = useState(true)
+  // const [loadingSteps, setLoadingSteps] = useState({
+  //   database: "pending",
+  //   user: "pending",
+  //   miners: "pending",
+  //   mining: "pending",
+  //   tasks: "pending",
+  //   images: "pending",
+  // })
+  // const [loadingProgress, setLoadingProgress] = useState(0)
 
   // Состояния для данных
   const [shopData, setShopData] = useState({ categories: [], models: [] })
@@ -249,12 +247,14 @@ function App() {
   // Добавьте хук для проверки Miner Pass
   const { hasMinerPass } = useMinerPass(user?.id)
 
-  // Функция для обновления прогресса загрузки
+  // Функция для обновления прогресса загрузки - временно упрощаем
   const updateLoadingProgress = useCallback((step, status, progressIncrement = 0) => {
-    setLoadingSteps((prev) => ({ ...prev, [step]: status }))
-    if (progressIncrement > 0) {
-      setLoadingProgress((prev) => Math.min(100, prev + progressIncrement))
-    }
+    console.log(`Loading progress update: ${step} - ${status} (${progressIncrement}%)`)
+    // Временно отключаем обновление состояний
+    // setLoadingSteps((prev) => ({ ...prev, [step]: status }))
+    // if (progressIncrement > 0) {
+    //   setLoadingProgress((prev) => Math.min(100, prev + progressIncrement))
+    // }
   }, [])
 
   // Загрузка данных магазина
@@ -544,7 +544,7 @@ function App() {
       try {
         setLoading(true)
         setError(null)
-        setLoadingProgress(5) // Начальный прогресс
+        // setLoadingProgress(5) // Начальный прогресс
 
         console.log("Initializing app...")
         updateLoadingProgress("database", "loading")
@@ -563,41 +563,11 @@ function App() {
         }
 
         updateLoadingProgress("database", "complete", 10)
-        setLoadingProgress(15) // Прогресс после подключения к БД
+        // setLoadingProgress(15) // Прогресс после подключения к БД
 
         updateLoadingProgress("user", "loading")
         const userData = getTelegramUser()
         console.log("User data:", userData)
-
-        if (!userData) {
-          throw new Error("Не удалось получить данные пользователя из Telegram")
-        }
-
-        try {
-          const dbUser = await createOrUpdateUser(userData)
-          console.log("Database user:", dbUser)
-          updateLoadingProgress("user", "complete", 15)
-          setLoadingProgress(30) // Прогресс после загрузки пользователя
-
-          if (mounted) {
-            const userWithDisplay = {
-              ...dbUser,
-              photo_url: userData.photo_url,
-              display_name: userData.username
-                ? `@${userData.username}`
-                : userData.first_name || "Неизвестный пользователь",
-              has_miner_pass: hasMinerPass,
-            }
-
-            setUser(userWithDisplay)
-            setBalance(dbUser.balance)
-            console.log("User initialized:", userWithDisplay)
-          }
-        } catch (error) {
-          console.error("Error creating/updating user:", error)
-          updateLoadingProgress("user", "error")
-          throw error
-        }
 
         // Обработка реферальной ссылки
         const handleReferral = async (telegramUser) => {
@@ -726,7 +696,7 @@ function App() {
         const dbUser = await createOrUpdateUser(userData)
         console.log("Database user:", dbUser)
         updateLoadingProgress("user", "complete", 15)
-        setLoadingProgress(30) // Прогресс после загрузки пользователя
+        // setLoadingProgress(30) // Прогресс после загрузки пользователя
 
         if (mounted) {
           const userWithDisplay = {
@@ -759,20 +729,24 @@ function App() {
             preloadTaskImages(), // Предзагрузка изображений заданий
           ])
           console.log("All data loaded successfully")
-          setLoadingProgress(95) // Почти завершено
+          // setLoadingProgress(95) // Почти завершено
 
           // Небольшая задержка перед скрытием загрузочного экрана
           setTimeout(() => {
-            console.log("Setting loading progress to 100%")
-            setLoadingProgress(100) // Загрузка завершена
+            console.log("Loading complete")
+            // setLoadingProgress(100) // Загрузка завершена
             // Не скрываем загрузочный экран здесь, это будет сделано через анимацию
+            // setShowSplash(false) // Временно сразу скрываем экран загрузки
+
+            // Диспатчим событие о завершении загрузки
+            window.dispatchEvent(new Event("app-data-loaded"))
           }, 500)
         }
       } catch (err) {
         console.error("Error initializing app:", err)
         if (mounted) {
           setError(err.message)
-          setLoadingProgress(100) // Завершаем прогресс даже при ошибке
+          // setLoadingProgress(100) // Завершаем прогресс даже при ошибке
         }
       } finally {
         if (mounted) {
@@ -893,15 +867,7 @@ function App() {
     }))
   }, [])
 
-  // Обработчик завершения анимации загрузочного экрана
-  const handleSplashAnimationComplete = useCallback(() => {
-    console.log("Animation complete callback received, hiding splash screen")
-    setShowSplash(false)
-    // Добавляем событие о завершении загрузки
-    window.dispatchEvent(new Event("app-data-loaded"))
-  }, [])
-
-  // Мемоизируем AppContent для пр��дотвращения лишних рендеров
+  // Мемоизируем AppContent для предотвращения лишних рендеров
   const MemoizedAppContent = useMemo(() => {
     return (
       <AppContent
@@ -936,16 +902,29 @@ function App() {
     updateMiningInfoCache,
   ])
 
-  // Показываем загрузочный экран, если он активен
-  if (showSplash || loading) {
-    console.log("Rendering loading screen:", { showSplash, loading, progress: loadingProgress })
+  // Временно отключаем экран загрузки
+  // if (showSplash) {
+  //   console.log("Rendering loading screen, progress:", loadingProgress);
+  //   return (
+  //     <LoadingScreen
+  //       isLoading={loading}
+  //       loadingSteps={loadingSteps}
+  //       progress={loadingProgress}
+  //       onAnimationComplete={handleSplashAnimationComplete}
+  //     />
+  //   );
+  // }
+
+  // Показываем индикатор загрузки, пока данные не загружены
+  if (loading) {
     return (
-      <LoadingScreen
-        isLoading={loading}
-        loadingSteps={loadingSteps}
-        progress={loadingProgress}
-        onAnimationComplete={handleSplashAnimationComplete}
-      />
+      <div className="fixed inset-0 bg-[#1A1D2D] flex items-center justify-center z-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-white mb-2">Загрузка...</h2>
+          <p className="text-gray-400">Пожалуйста, подождите</p>
+        </div>
+      </div>
     )
   }
 
