@@ -1,11 +1,8 @@
 import { useMemo } from "react"
 import { useEffect } from "react"
 import { useCallback } from "react"
-;```typescriptreact file="src/App.jsx"
-[v0-no-op-code-block-prefix]"use client"
-
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState } from "react"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
@@ -297,17 +294,7 @@ function App() {
 
       const { data, error } = await supabase
         .from("user_miners")
-        .select(`
-      *,
-      model
-:miner_models (
-        id,
-        name,
-        display_name,
-        mining_power,
-        energy_consumption
-      )
-    `)
+        .select(`*, model:miner_models (id, name, display_name, mining_power, energy_consumption)`)
         .eq("user_id", user.id)
         .order("purchased_at")
 
@@ -703,10 +690,6 @@ useEffect(() => {
       updateLoadingProgress("user", "complete", 15)
       setLoadingProgress(30) // Прогресс после загрузки пользователя
 
-      if (!dbUser) {
-        throw new Error("Не удалось создать/обновить пользователя в базе")
-      }
-
       if (mounted) {
         const userWithDisplay = {
           ...dbUser,
@@ -941,4 +924,3 @@ return <Router>{MemoizedAppContent}</Router>
 }
 
 export default App
-
