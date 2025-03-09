@@ -5,34 +5,6 @@ import { useState, useEffect } from "react"
 export default function LoadingScreen({ isLoading, loadingSteps, progress, onAnimationComplete }) {
   const [fadeOut, setFadeOut] = useState(false)
 
-  useEffect(() => {
-    // Когда прогресс достигает 100%, начинаем анимацию исчезновения
-    if (progress >= 100) {
-      console.log("Progress reached 100%, starting fade out animation")
-      const timer = setTimeout(() => {
-        setFadeOut(true)
-        console.log("Fade out animation started")
-      }, 500)
-
-      return () => clearTimeout(timer)
-    }
-  }, [progress])
-
-  useEffect(() => {
-    // Когда анимация исчезновения завершена, вызываем колбэк
-    if (fadeOut) {
-      console.log("Fade out is true, preparing to call animation complete")
-      const timer = setTimeout(() => {
-        console.log("Animation complete callback triggered")
-        if (onAnimationComplete) {
-          onAnimationComplete()
-        }
-      }, 500) // Время анимации fadeOut
-
-      return () => clearTimeout(timer)
-    }
-  }, [fadeOut, onAnimationComplete])
-
   // Функция для получения статуса шага загрузки
   const getStepStatus = (step) => {
     const status = loadingSteps[step]
@@ -51,6 +23,49 @@ export default function LoadingScreen({ isLoading, loadingSteps, progress, onAni
     return "text-gray-400"
   }
 
+  // Эффект для обработки завершения загрузки
+  useEffect(() => {
+    let timeoutId
+
+    if (progress >= 100 && !fadeOut) {
+      console.log("Progress is 100%, starting fade out sequence")
+      timeoutId = setTimeout(() => {
+        console.log("Starting fade out animation")
+        setFadeOut(true)
+      }, 1000)
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [progress, fadeOut])
+
+  // Эффект для вызова onAnimationComplete
+  useEffect(() => {
+    let timeoutId
+
+    if (fadeOut) {
+      console.log("Fade out active, preparing to complete")
+      timeoutId = setTimeout(() => {
+        console.log("Calling onAnimationComplete")
+        onAnimationComplete?.()
+      }, 500)
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [fadeOut, onAnimationComplete])
+
+  // Если загрузка завершена и анимация исчезновения закончилась, не рендерим ничего
+  if (!isLoading && fadeOut) {
+    return null
+  }
+
   return (
     <div
       className={`fixed inset-0 bg-[#1A1F2E] flex flex-col items-center justify-center z-50 transition-opacity duration-500 ${
@@ -67,49 +82,28 @@ export default function LoadingScreen({ isLoading, loadingSteps, progress, onAni
           <div className="h-2 w-full bg-gray-700 rounded-full overflow-hidden">
             <div
               className="h-full bg-blue-500 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${Math.min(progress, 100)}%` }}
             ></div>
           </div>
           <div className="text-right mt-1 text-gray-400 text-sm">{Math.round(progress)}%</div>
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("database")}`}>
-              {getStepStatus("database")}
-            </span>
-            <span className="ml-2 text-white">Подключение к базе данных</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("user")}`}>
-              {getStepStatus("user")}
-            </span>
-            <span className="ml-2 text-white">Загрузка данных пользователя</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("miners")}`}>
-              {getStepStatus("miners")}
-            </span>
-            <span className="ml-2 text-white">Загрузка майнеров</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("tasks")}`}>
-              {getStepStatus("tasks")}
-            </span>
-            <span className="ml-2 text-white">Загрузка заданий</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("mining")}`}>
-              {getStepStatus("mining")}
-            </span>
-            <span className="ml-2 text-white">Загрузка данных майнинга</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("images")}`}>
-              {getStepStatus("images")}
-            </span>
-            <span className="ml-2 text-white">Загрузка изображений</span>
-          </div>
+          {Object.entries(loadingSteps).map(([step, status]) => (
+            <div key={step} className="flex items-center">
+              <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass(step)}`}>
+                {getStepStatus(step)}
+              </span>
+              <span className="ml-2 text-white">
+                {step === "database" && "Подключение к базе данных"}
+                {step === "user" && "Загрузка данных пользователя"}
+                {step === "miners" && "Загрузка майнеров"}
+                {step === "tasks" && "Загрузка заданий"}
+                {step === "mining" && "Загрузка данных майнинга"}
+                {step === "images" && "Загрузка изображений"}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

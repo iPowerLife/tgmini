@@ -569,6 +569,36 @@ function App() {
         const userData = getTelegramUser()
         console.log("User data:", userData)
 
+        if (!userData) {
+          throw new Error("Не удалось получить данные пользователя из Telegram")
+        }
+
+        try {
+          const dbUser = await createOrUpdateUser(userData)
+          console.log("Database user:", dbUser)
+          updateLoadingProgress("user", "complete", 15)
+          setLoadingProgress(30) // Прогресс после загрузки пользователя
+
+          if (mounted) {
+            const userWithDisplay = {
+              ...dbUser,
+              photo_url: userData.photo_url,
+              display_name: userData.username
+                ? `@${userData.username}`
+                : userData.first_name || "Неизвестный пользователь",
+              has_miner_pass: hasMinerPass,
+            }
+
+            setUser(userWithDisplay)
+            setBalance(dbUser.balance)
+            console.log("User initialized:", userWithDisplay)
+          }
+        } catch (error) {
+          console.error("Error creating/updating user:", error)
+          updateLoadingProgress("user", "error")
+          throw error
+        }
+
         // Обработка реферальной ссылки
         const handleReferral = async (telegramUser) => {
           try {
@@ -865,8 +895,10 @@ function App() {
 
   // Обработчик завершения анимации загрузочного экрана
   const handleSplashAnimationComplete = useCallback(() => {
-    console.log("Splash animation complete, hiding splash screen")
+    console.log("Animation complete callback received, hiding splash screen")
     setShowSplash(false)
+    // Добавляем событие о завершении загрузки
+    window.dispatchEvent(new Event("app-data-loaded"))
   }, [])
 
   // Мемоизируем AppContent для пр��дотвращения лишних рендеров
@@ -905,8 +937,8 @@ function App() {
   ])
 
   // Показываем загрузочный экран, если он активен
-  if (showSplash) {
-    console.log("Rendering loading screen, progress:", loadingProgress)
+  if (showSplash || loading) {
+    console.log("Rendering loading screen:", { showSplash, loading, progress: loadingProgress })
     return (
       <LoadingScreen
         isLoading={loading}
