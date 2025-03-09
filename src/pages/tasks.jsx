@@ -4,10 +4,8 @@ import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { createMockTasks } from "../utils/mock-data"
 import { TaskCard } from "../components/tasks/task-card"
-// Обновляем импорт DailyPrize, чтобы он соответствовал новому пути файла
-import { DailyPrize } from "../components/daily-prize"
-
-// Удалили импорт BottomMenu, так как он уже есть в App.jsx
+// Импортируем компонент ежедневной награды
+import { DailyRewardTask } from "../components/daily-reward-task"
 
 export default function TasksPage({
   user: initialUser,
@@ -151,11 +149,6 @@ export default function TasksPage({
         </div>
       </div>
 
-      {/* Ежедневные награды */}
-      <div className="mb-6">
-        <DailyPrize user={user} onRewardClaim={handleBalanceUpdate} />
-      </div>
-
       {/* Список заданий */}
       {loading ? (
         <div className="flex items-center justify-center py-10">
@@ -163,6 +156,9 @@ export default function TasksPage({
         </div>
       ) : (
         <div className="px-4 space-y-3 pb-24">
+          {/* Добавляем ежедневную награду в начало списка ежедневных заданий */}
+          {activeTab === "daily" && user && <DailyRewardTask user={user} onRewardClaim={handleBalanceUpdate} />}
+
           {filteredTasks.length > 0 ? (
             filteredTasks.map((task) => (
               <TaskCard
@@ -180,7 +176,6 @@ export default function TasksPage({
           )}
         </div>
       )}
-      {/* Удалили BottomMenu отсюда */}
     </div>
   )
 }
