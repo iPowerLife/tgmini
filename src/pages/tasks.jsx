@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { createMockTasks } from "../utils/mock-data"
 import { TaskCard } from "../components/tasks/task-card"
+// Обновляем импорт DailyPrize, чтобы он соответствовал новому пути файла
+import { DailyPrize } from "../components/daily-prize"
 
 // Удалили импорт BottomMenu, так как он уже есть в App.jsx
 
@@ -147,6 +149,11 @@ export default function TasksPage({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Ежедневные награды */}
+      <div className="mb-6">
+        <DailyPrize user={user} onRewardClaim={handleBalanceUpdate} />
       </div>
 
       {/* Список заданий */}
