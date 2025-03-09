@@ -15,7 +15,7 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
 
   // Загрузка наград и прогресса пользователя
   useEffect(() => {
-    if (!isOpen) return
+    if (!user?.id || !isOpen) return
 
     const loadData = async () => {
       try {
@@ -67,17 +67,22 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
 
   const handleClaim = async () => {
     if (loading) return
-    setLoading(true)
 
     try {
+      setLoading(true)
+      console.log("Claiming reward for user:", user.id)
+
       const { data, error } = await supabase.rpc("claim_daily_reward", {
         user_id_param: user.id,
       })
 
-      if (error) throw error
+      if (error) {
+        console.error("Error claiming reward:", error)
+        alert("Ошибка при получении награды: " + error.message)
+        return
+      }
 
       if (data.success) {
-        // Обновляем прогресс пользователя
         setUserProgress((prev) => ({
           ...prev,
           current_streak: data.new_streak,
@@ -85,14 +90,11 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
           total_claims: (prev?.total_claims || 0) + 1,
         }))
 
-        // Показываем сообщение об успехе
         setClaimSuccess(true)
         setClaimedAmount(data.reward_amount)
-
-        // Вызываем колбэк с суммой награды
         onRewardClaim(data.reward_amount)
       } else {
-        alert(data.error)
+        alert(data.error || "Ошибка при получении награды")
       }
     } catch (error) {
       console.error("Error claiming reward:", error)
@@ -113,7 +115,13 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+      }}
+    >
       <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-[#1A1F2E] rounded-xl p-4 m-4">
         <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-white">
           <X size={20} />

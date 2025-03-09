@@ -54,7 +54,10 @@ export function DailyRewardTask({ user, onRewardClaim }) {
 
   // Обновление таймера
   useEffect(() => {
-    if (!userProgress?.next_claim_at) return
+    if (!userProgress?.next_claim_at) {
+      setTimeLeft("Доступно!")
+      return
+    }
 
     const updateTimer = () => {
       const now = new Date().getTime()
@@ -104,7 +107,10 @@ export function DailyRewardTask({ user, onRewardClaim }) {
 
   return (
     <>
-      <div className="flex items-center rounded-xl overflow-hidden border border-[#2A3142]/70 shadow-lg bg-gradient-to-br from-[#242838] to-[#1A1F2E]">
+      <div
+        className="flex items-center rounded-xl overflow-hidden border border-[#2A3142]/70 shadow-lg bg-gradient-to-br from-[#242838] to-[#1A1F2E] cursor-pointer hover:border-blue-500/30 transition-colors"
+        onClick={handleOpenModal}
+      >
         {/* Иконка задания */}
         <div className="w-14 h-14 flex-shrink-0 p-2 flex items-center justify-center">
           <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-blue-500/20 border border-blue-500/30">
@@ -142,7 +148,11 @@ export function DailyRewardTask({ user, onRewardClaim }) {
         <div className="pr-3">
           {timeLeft === "Доступно!" ? (
             <button
-              onClick={handleOpenModal}
+              onClick={(e) => {
+                e.preventDefault() // Предотвращаем всплытие события
+                e.stopPropagation() // Предотвращаем всплытие события
+                handleOpenModal() // Открываем модальное окно
+              }}
               className="px-4 py-1.5 rounded-full font-medium transition-all text-white shadow-md text-xs bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
             >
               Собрать
