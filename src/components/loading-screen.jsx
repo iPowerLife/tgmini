@@ -8,8 +8,10 @@ export default function LoadingScreen({ isLoading, loadingSteps, progress, onAni
   useEffect(() => {
     // Когда прогресс достигает 100%, начинаем анимацию исчезновения
     if (progress >= 100) {
+      console.log("Progress reached 100%, starting fade out animation")
       const timer = setTimeout(() => {
         setFadeOut(true)
+        console.log("Fade out animation started")
       }, 500)
 
       return () => clearTimeout(timer)
@@ -19,7 +21,9 @@ export default function LoadingScreen({ isLoading, loadingSteps, progress, onAni
   useEffect(() => {
     // Когда анимация исчезновения завершена, вызываем колбэк
     if (fadeOut) {
+      console.log("Fade out is true, preparing to call animation complete")
       const timer = setTimeout(() => {
+        console.log("Animation complete callback triggered")
         if (onAnimationComplete) {
           onAnimationComplete()
         }

@@ -733,6 +733,7 @@ function App() {
 
           // Небольшая задержка перед скрытием загрузочного экрана
           setTimeout(() => {
+            console.log("Setting loading progress to 100%")
             setLoadingProgress(100) // Загрузка завершена
             // Не скрываем загрузочный экран здесь, это будет сделано через анимацию
           }, 500)
@@ -864,6 +865,7 @@ function App() {
 
   // Обработчик завершения анимации загрузочного экрана
   const handleSplashAnimationComplete = useCallback(() => {
+    console.log("Splash animation complete, hiding splash screen")
     setShowSplash(false)
   }, [])
 
@@ -904,6 +906,7 @@ function App() {
 
   // Показываем загрузочный экран, если он активен
   if (showSplash) {
+    console.log("Rendering loading screen, progress:", loadingProgress)
     return (
       <LoadingScreen
         isLoading={loading}
