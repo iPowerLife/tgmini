@@ -108,6 +108,9 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
   const handleClaim = async () => {
     if (loading) return
 
+    console.log("Starting reward claim process for user:", user.id)
+    console.log("Current user progress:", userProgress)
+
     try {
       setLoading(true)
       setError(null)
@@ -174,14 +177,32 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
       onClick={(e) => {
+        // Предотвращаем закрытие модального окна при клике на фон
         e.preventDefault()
         e.stopPropagation()
       }}
     >
-      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-[#1A1F2E] rounded-xl p-4 m-4">
+      <div
+        className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-[#1A1F2E] rounded-xl p-4 m-4"
+        onClick={(e) => {
+          // Останавливаем распространение событий внутри модального окна
+          e.preventDefault()
+          e.stopPropagation()
+        }}
+      >
         <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-white">
           <X size={20} />
         </button>
+
+        {userProgress && (
+          <div className="mb-4 text-left bg-black/30 p-2 rounded-lg text-xs text-gray-400">
+            <p>ID: {user.id}</p>
+            <p>Текущий день: {userProgress.current_streak || "Не установлен"}</p>
+            <p>Последнее получение: {userProgress.last_claim_at || "Никогда"}</p>
+            <p>Следующее доступно: {userProgress.next_claim_at || "Сейчас"}</p>
+            <p>Всего получено: {userProgress.total_claims || 0}</p>
+          </div>
+        )}
 
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold mb-2">Ежедневная награда</h2>
@@ -210,7 +231,7 @@ export function DailyRewardModal({ user, onRewardClaim, onClose, isOpen }) {
             {rewards.map((reward) => {
               const isCurrentDay =
                 userProgress?.current_streak === reward.day_number || (!userProgress && reward.day_number === 1)
-              const isPast = userProgress?.current_streak ? reward.day_number < userProgress.current_streak : false
+              const isPast = userProgress?.last_claim_at && reward.day_number < userProgress.current_streak
               const isFuture = userProgress?.current_streak
                 ? reward.day_number > userProgress.current_streak
                 : reward.day_number > 1

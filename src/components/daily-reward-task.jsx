@@ -128,7 +128,11 @@ export function DailyRewardTask({ user, onRewardClaim }) {
     return () => clearInterval(timer)
   }, [userProgress?.next_claim_at])
 
-  const handleOpenModal = () => {
+  const handleOpenModal = (e) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
     setIsModalOpen(true)
   }
 
@@ -205,7 +209,11 @@ export function DailyRewardTask({ user, onRewardClaim }) {
     <>
       <div
         className="flex items-center rounded-xl overflow-hidden border border-[#2A3142]/70 shadow-lg bg-gradient-to-br from-[#242838] to-[#1A1F2E] cursor-pointer hover:border-blue-500/30 transition-colors"
-        onClick={handleOpenModal}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          handleOpenModal()
+        }}
       >
         {/* Иконка задания */}
         <div className="w-14 h-14 flex-shrink-0 p-2 flex items-center justify-center">
