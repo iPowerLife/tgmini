@@ -40,7 +40,7 @@ export function preloadImage(src) {
 
 /**
  * Предзагружает массив изображений
- * @param {Array<string>} sources - Массив URL изображений\
+ * @param {Array<string>} sources - Массив URL изображений
  * @param {Function} onProgress - Колбэк для отслеживания прогресса (получает число от 0 до 1)
  * @returns {Promise} - Promise, который разрешается, когда все изображения загружены
  */
@@ -49,24 +49,29 @@ export function preloadImages(sources, onProgress) {
     return Promise.resolve([])
   }
 
+  console.log(`Starting preload of ${sources.length} images`)
+
   let loaded = 0
   const total = sources.length
+
+  // Функция для обновления прогресса
+  const updateProgress = () => {
+    loaded++
+    if (onProgress) {
+      onProgress(loaded / total)
+    }
+    console.log(`Preloaded ${loaded}/${total} images`)
+  }
 
   return Promise.allSettled(
     sources.map((src) =>
       preloadImage(src)
         .then((result) => {
-          loaded++
-          if (onProgress) {
-            onProgress(loaded / total)
-          }
+          updateProgress()
           return result
         })
         .catch((error) => {
-          loaded++
-          if (onProgress) {
-            onProgress(loaded / total)
-          }
+          updateProgress()
           console.warn("Failed to preload image:", error)
           return null
         }),

@@ -116,10 +116,12 @@ function App() {
           // Загружаем все данные только один раз
           await Promise.all([
             loadInitialData(userWithDisplay.id),
-            preloadImages([], (progress) => {
-              updateLoadingProgress("images", "loading", progress * 10)
-            }),
+            // Удаляем пустой массив и добавляем логику после загрузки данных
           ])
+
+          // После загрузки всех данных, запускаем предзагрузку изображений
+          await loadInitialData(userWithDisplay.id)
+          await preloadMinerImages()
 
           setLoadingProgress(100)
         }
@@ -142,6 +144,36 @@ function App() {
       isMounted.current = false
     }
   }, [])
+
+  // Также добавим функцию для предзагрузки изображений майнеров после функции loadInitialData
+  const preloadMinerImages = async () => {
+    if (!dataCache.current.shopData?.models) return
+
+    updateLoadingProgress("images", "loading")
+    console.log("Preloading miner images...")
+
+    // Собираем все URL изображений майнеров
+    const imageUrls = dataCache.current.shopData.models.map((model) => model.image_url).filter((url) => url) // Фильтруем пустые URL
+
+    if (imageUrls.length === 0) {
+      updateLoadingProgress("images", "complete", 10)
+      return
+    }
+
+    try {
+      await preloadImages(imageUrls, (progress) => {
+        // Обновляем прогресс загрузки изображений (10% от общего прогресса)
+        const progressIncrement = progress * 10
+        setLoadingProgress((prev) => Math.min(95, prev + progressIncrement))
+      })
+      console.log("Miner images preloaded successfully")
+    } catch (error) {
+      console.error("Error preloading miner images:", error)
+    } finally {
+      updateLoadingProgress("images", "complete", 5)
+      setLoadingProgress(100)
+    }
+  }
 
   // Функция для загрузки начальных данных
   const loadInitialData = async (userId) => {

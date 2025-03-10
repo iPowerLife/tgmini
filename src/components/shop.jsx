@@ -37,6 +37,8 @@ const WarningMessage = () => (
 // Обновляем компонент карточки майнера с новым дизайном
 const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purchaseLimit, hasMinerPass, minerType }) => {
   // ... остальные функции и проверки остаются без изменений ...
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
   // Проверяем, может ли пользователь купить майнер
   const canBuy = userBalance >= miner.price
@@ -102,12 +104,20 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
             boxShadow: colorScheme.borderGlow,
           }}
         >
+          {!imageLoaded && !imageError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-[#0B1622] rounded-lg">
+              <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+            </div>
+          )}
           <img
             src={getMinerImageUrl(miner) || "/placeholder.svg"}
             alt={miner.display_name}
-            className="w-full h-full object-contain rounded-lg"
+            className={`w-full h-full object-contain rounded-lg transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
             style={{ background: "#0B1622" }}
+            onLoad={() => setImageLoaded(true)}
             onError={(e) => {
+              setImageError(true)
+              setImageLoaded(true)
               e.target.src = "/images/miners/default.png"
               e.target.onerror = null
             }}
