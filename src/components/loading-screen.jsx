@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 
-export function LoadingScreen({ onLoadComplete }) {
+// Изменяем на дефолтный экспорт
+export default function LoadingScreen({ onLoadComplete }) {
   const [progress, setProgress] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
 
