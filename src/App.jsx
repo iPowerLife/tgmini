@@ -1,7 +1,7 @@
 ;("use client")
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
@@ -88,7 +88,7 @@ function ScrollToTop() {
 }
 
 // В функции AppContent добавим tasksData в параметры
-function AppContent({
+const AppContent = React.memo(function AppContent({
   user,
   balance,
   handleBalanceUpdate,
@@ -212,7 +212,7 @@ function AppContent({
       </div>
     </ToastContext.Provider>
   )
-}
+})
 
 function App() {
   // Существующие состояния и хуки остаются без изменений
@@ -537,6 +537,7 @@ function App() {
   }, [])
 
   // Инициализация приложения
+  const dataFetchedRef = useRef(false)
   useEffect(() => {
     let mounted = true
 
@@ -648,12 +649,14 @@ function App() {
 
   // Загрузка данных после загрузки пользователя
   useEffect(() => {
-    if (user) {
+    if (user && !dataFetchedRef.current) {
+      dataFetchedRef.current = true
+
       // Запускаем загрузку данных параллельно
       Promise.all([
         loadShopData(),
         loadMinersData(),
-        loadTasksData(), // Загружаем данные заданий
+        loadTasksData(),
         loadRatingData(),
         loadTransactionsData(),
         loadRanksData(),
@@ -661,35 +664,22 @@ function App() {
       ])
         .then(() => {
           console.log("All data loaded successfully")
-          setLoadingProgress(90) // Прогресс после загрузки всех данных
-          return preloadShopImages() // Предзагружаем изображения магазина после загрузки данных
+          setLoadingProgress(90)
+          return preloadShopImages()
         })
         .then(() => {
-          console.log("Shop images preloaded successfully")
-          return preloadTaskImages() // Предзагружаем изображения заданий после загрузки изображений магазина
+          return preloadTaskImages()
         })
         .then(() => {
-          console.log("Task images preloaded successfully")
-          setLoadingProgress(100) // Полный прогресс после предзагрузки изображений
-          setTimeout(() => setShowSplash(false), 1500) // Скрываем загрузочный экран через 1.5 секунды
+          setLoadingProgress(100)
+          setTimeout(() => setShowSplash(false), 1500)
         })
         .catch((err) => {
           console.error("Error loading data:", err)
           setError(err.message || "Failed to load data")
         })
     }
-  }, [
-    user,
-    loadShopData,
-    loadMinersData,
-    loadTasksData,
-    loadRatingData,
-    loadTransactionsData,
-    loadRanksData,
-    preloadMiningData,
-    preloadShopImages,
-    preloadTaskImages,
-  ])
+  }, [user]) // Зависимость только от user
 
   // Обновление баланса
   const handleBalanceUpdate = useCallback(
