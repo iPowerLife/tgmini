@@ -471,6 +471,11 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
           setUserMiners(minersData || [])
         }
 
+        // Обновляем локальное состояние пользователя
+        if (user) {
+          user.balance = data.new_balance
+        }
+
         onPurchase(data.new_balance)
         alert("Майнер успешно куплен!")
       } else {
@@ -522,6 +527,11 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
         // Обновляем статус Miner Pass
         if (itemName === "miner_pass") {
           setHasMinerPass(true)
+        }
+
+        // Обновляем локальное состояние пользователя
+        if (user) {
+          user.balance = data.new_balance
         }
 
         onPurchase(data.new_balance)
@@ -638,7 +648,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
         </div>
         <div className="flex items-center gap-1.5 bg-[#1F2937] py-1.5 px-3 rounded-lg">
           <Coins size={14} className="text-green-400" />
-          <span className="text-green-400 text-sm font-medium">{Number(balance).toFixed(2)}</span>
+          <span className="text-green-400 text-sm font-medium">{Number(user?.balance || balance).toFixed(2)}</span>
           <span className="text-gray-400 text-xs">монет</span>
         </div>
       </div>

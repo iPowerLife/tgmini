@@ -240,7 +240,8 @@ function App() {
   const [minersData, setMinersData] = useState({ miners: [], totalPower: 0 })
   const [tasksData, setTasksData] = useState({ tasks: [], loading: true }) // Добавляем статус загрузки
   const [ratingData, setRatingData] = useState({ users: [] })
-  const [transactionsData, setTransactionsData = useState({ transactions: [] })
+  // Исправляем синтаксис useState
+  const [transactionsData, setTransactionsData] = useState({ transactions: [] })
   // Добавим новое состояние для рангов и функцию их загрузки
   const [ranksData, setRanksData] = useState({ ranks: [] })
 
@@ -261,7 +262,6 @@ function App() {
   // Загрузка данных магазина
   // Обновим функцию loadShopData для начала предзагрузки изображений сразу после получения данных
   const loadShopData = useCallback(async () => {
-    \
     if (!user?.id) return
 
     try {
@@ -724,8 +724,15 @@ function App() {
   const handleBalanceUpdate = useCallback(
     async (newBalance) => {
       setBalance(newBalance)
+      // Обновляем баланс в объекте пользователя
+      if (user) {
+        setUser((prevUser) => ({
+          ...prevUser,
+          balance: newBalance,
+        }))
+      }
     },
-    [setBalance],
+    [user, setBalance, setUser],
   )
 
   // Обработчик завершения задачи
