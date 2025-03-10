@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { RatingList } from "../components/rating-list"
 
-const RatingPage = ({ user }) => {
+const RatingPage = ({ user, initialData }) => {
   const [activeTab, setActiveTab] = useState("balance")
 
   // Обработчик смены вкладки
@@ -11,9 +11,16 @@ const RatingPage = ({ user }) => {
     setActiveTab(tab)
   }
 
+  // Выводим данные для отладки
+  console.log("RatingPage render with:", {
+    user,
+    initialData,
+    activeTab,
+  })
+
   return (
     <div className="min-h-screen">
-      <OptimizedRatingList currentUserId={user?.id} activeTab={activeTab} onTabChange={handleTabChange} />
+      <RatingList currentUserId={user?.id} activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   )
 }
