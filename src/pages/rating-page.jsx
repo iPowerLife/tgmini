@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { RatingSection } from "../components/rating-section"
 import { supabase } from "../supabase"
+import { RatingList } from "../components/rating-list" // Новый компонент, который мы создадим
 
 const RatingPage = ({ user, initialData }) => {
-  const [loading, setLoading] = useState(!initialData)
-  const [ratingData, setRatingData] = useState(initialData || null)
+  const [loading, setLoading] = useState(!initialData?.users)
+  const [ratingData, setRatingData] = useState(initialData?.users || [])
+  const [activeTab, setActiveTab] = useState("balance")
   const isComponentMounted = useRef(true)
 
   // Загрузка данных рейтинга, если они не были переданы
@@ -14,7 +15,7 @@ const RatingPage = ({ user, initialData }) => {
     isComponentMounted.current = true
 
     // Если данные уже переданы через props, не загружаем их снова
-    if (initialData) {
+    if (initialData?.users && initialData.users.length > 0) {
       return
     }
 
@@ -28,7 +29,7 @@ const RatingPage = ({ user, initialData }) => {
         if (!isComponentMounted.current) return
         if (error) throw error
 
-        setRatingData({ users: data || [] })
+        setRatingData(data || [])
       } catch (error) {
         console.error("Error loading rating data:", error)
       } finally {
@@ -45,6 +46,11 @@ const RatingPage = ({ user, initialData }) => {
     }
   }, [initialData])
 
+  // Обработчик смены вкладки
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+  }
+
   // Если данные загружаются, показываем индикатор загрузки
   if (loading) {
     return (
@@ -56,7 +62,7 @@ const RatingPage = ({ user, initialData }) => {
 
   return (
     <div className="min-h-screen">
-      <RatingSection currentUserId={user?.id} initialData={ratingData?.users} />
+      <RatingList users={ratingData} currentUserId={user?.id} activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   )
 }
