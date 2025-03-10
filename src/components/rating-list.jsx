@@ -2,29 +2,71 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Trophy, Users, Award, Crown, Star, Search, ChevronUp, ChevronDown, User } from "lucide-react"
+import { supabase } from "../supabase"
 
 export function RatingList({ users = [], currentUserId, activeTab = "balance", onTabChange }) {
   const [searchQuery, setSearchQuery] = useState("")
-  const [filteredUsers, setFilteredUsers] = useState(users)
+  const [filteredUsers, setFilteredUsers] = useState([])
   const [expandedUser, setExpandedUser] = useState(null)
   const containerRef = useRef(null)
   const currentUserRef = useRef(null)
+  const [loading, setLoading] = useState(!users || users.length === 0)
+  const [error, setError] = useState(null)
 
-  // Фильтрация пользователей при изменении поискового запроса или списка пользователей
+  // Загрузка данных пользователей, если они не были переданы
   useEffect(() => {
-    if (!users || users.length === 0) {
-      setFilteredUsers([])
+    // Если у нас есть данные, используем их
+    if (users && users.length > 0) {
+      console.log("Using provided users data:", users.length, "users")
+      setFilteredUsers(users)
+      setLoading(false)
       return
     }
 
+    // Иначе загружаем данные из базы
+    const fetchUsers = async () => {
+      try {
+        setLoading(true)
+        console.log("Fetching users data from database...")
+
+        // Делаем запрос к базе данных
+        const { data, error: supabaseError } = await supabase.rpc("get_users_rating")
+
+        if (supabaseError) {
+          throw supabaseError
+        }
+
+        if (!data) {
+          throw new Error("Нет данных")
+        }
+
+        console.log("Fetched", data.length, "users from database")
+        setFilteredUsers(data)
+        setLoading(false)
+      } catch (err) {
+        console.error("Ошибка при загрузке данных:", err)
+        setError(err.message || "Не удалось загрузить данные рейтинга")
+        setLoading(false)
+      }
+    }
+
+    fetchUsers()
+  }, [users])
+
+  // Фильтрация пользователей при изменении поискового запроса
+  useEffect(() => {
+    if (!filteredUsers || filteredUsers.length === 0) return
+
     // Если поисковый запрос пустой, показываем всех пользователей
     if (!searchQuery.trim()) {
-      setFilteredUsers(users)
+      setFilteredUsers(users || [])
       return
     }
 
     // Фильтруем пользователей по имени
-    const filtered = users.filter((user) => user.display_name.toLowerCase().includes(searchQuery.toLowerCase()))
+    const filtered = (users || []).filter((user) =>
+      (user.display_name || "").toLowerCase().includes(searchQuery.toLowerCase()),
+    )
     setFilteredUsers(filtered)
   }, [searchQuery, users])
 
@@ -291,6 +333,20 @@ export function RatingList({ users = [], currentUserId, activeTab = "balance", o
       fontSize: "0.875rem",
       color: "#94a3b8",
     },
+    loadingContainer: {
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: "32px 16px",
+    },
+    loadingSpinner: {
+      width: "40px",
+      height: "40px",
+      border: "4px solid rgba(59, 130, 246, 0.1)",
+      borderTopColor: "#3B82F6",
+      borderRadius: "50%",
+      animation: "spin 1s linear infinite",
+    },
   }
 
   // Получаем стиль для позиции пользователя
@@ -311,6 +367,36 @@ export function RatingList({ users = [], currentUserId, activeTab = "balance", o
 
   // Находим позицию текущего пользователя
   const currentUserPosition = findUserPosition()
+
+  // Если данные загружаются, показываем индикатор загрузки
+  if (loading) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <h1 style={styles.title}>Рейтинг игроков</h1>
+          <p style={styles.subtitle}>Загрузка данных...</p>
+        </div>
+        <div style={styles.loadingContainer}>
+          <div style={styles.loadingSpinner}></div>
+        </div>
+      </div>
+    )
+  }
+
+  // Если произошла ошибка, показываем сообщение об ошибке
+  if (error) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <h1 style={styles.title}>Рейтинг игроков</h1>
+          <p style={styles.subtitle}>Произошла ошибка</p>
+        </div>
+        <div style={styles.emptyState}>
+          <p style={styles.emptyStateText}>{error}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={styles.container}>

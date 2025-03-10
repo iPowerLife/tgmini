@@ -1969,3 +1969,14 @@ button:active::after {
   font-size: 0.875rem;
 }
 
+/* Добавляем в конец файла */
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
