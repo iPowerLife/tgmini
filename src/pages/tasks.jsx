@@ -154,29 +154,7 @@ export default function TasksPage({
           <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
         </div>
       ) : (
-        <div className="px-4 space-y-3 pb-24">
-          {/* Добавляем компонент отладки */}
-          {user && <DebugDailyReward userId={user.id} />}
-
-          {/* Добавляем ежедневную награду в начало списка ежедневных заданий */}
-          {activeTab === "daily" && user && <DailyRewardTask user={user} onRewardClaim={handleBalanceUpdate} />}
-
-          {filteredTasks.length > 0 ? (
-            filteredTasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                user={user}
-                onBalanceUpdate={handleBalanceUpdate}
-                onTaskComplete={handleTaskComplete}
-              />
-            ))
-          ) : (
-            <div className="text-center py-10 text-gray-400">
-              <p>Нет доступных заданий в этой категории</p>
-            </div>
-          )}
-        </div>
+        
       )}
     </div>
   )
