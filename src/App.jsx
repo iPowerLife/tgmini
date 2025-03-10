@@ -88,47 +88,17 @@ function ScrollToTop() {
   return null
 }
 
-// Добавьте этот компонент перед определением AppContent
-function RedirectOnRefresh() {
-  const navigate = useNavigate()
+// Компонент для сохранения текущего пути
+function RouteStateManager() {
   const location = useLocation()
-  const initialRenderRef = useRef(true)
 
+  // Сохраняем текущий путь при каждом изменении маршрута
   useEffect(() => {
-    // Пропускаем первый рендер, чтобы не мешать обычной навигации
-    if (initialRenderRef.current) {
-      initialRenderRef.current = false
-      // Сбрасываем флаг при первой загрузке страницы
-      sessionStorage.setItem("pageAccessedByReload", "false")
-      return
+    // Не сохраняем путь, если это начальная загрузка
+    if (location.pathname !== "/") {
+      localStorage.setItem("lastRoute", location.pathname)
     }
-
-    // Проверяем, была ли страница обновлена
-    const isPageRefreshed =
-      performance.navigation &&
-      (performance.navigation.type === 1 || window.performance.getEntriesByType("navigation")[0]?.type === "reload")
-
-    // Проверяем флаг из sessionStorage
-    const pageAccessedByReload = sessionStorage.getItem("pageAccessedByReload") === "true"
-
-    // Если страница была обновлена и мы не на главной странице
-    if ((isPageRefreshed || pageAccessedByReload) && location.pathname !== "/") {
-      console.log("Страница была обновлена, перенаправляем на главную")
-      navigate("/", { replace: true })
-    }
-
-    // Устанавливаем обработчик события beforeunload
-    const handleBeforeUnload = () => {
-      sessionStorage.setItem("pageAccessedByReload", "true")
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload)
-
-    // Очищаем обработчик при размонтировании
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload)
-    }
-  }, [navigate, location])
+  }, [location])
 
   return null
 }
@@ -140,7 +110,7 @@ const AppContent = React.memo(function AppContent({
   handleBalanceUpdate,
   shopData,
   minersData,
-  tasksData,
+  tasksData, // Добавляем tasksData
   handleTaskComplete,
   ratingData,
   transactionsData,
@@ -150,16 +120,20 @@ const AppContent = React.memo(function AppContent({
   onCacheUpdate,
 }) {
   console.log("AppContent rendered with:", { user, balance, minersData, ratingData, ranksData, hasMinerPass })
+  const navigate = useNavigate()
+
+  // Восстанавливаем последний путь при монтировании компонента
+  useEffect(() => {
+    const lastRoute = localStorage.getItem("lastRoute")
+    if (lastRoute) {
+      navigate(lastRoute, { replace: true })
+      // Очищаем сохраненный путь после восстановления
+      localStorage.removeItem("lastRoute")
+    }
+  }, [navigate])
 
   // В начале функции AppContent добавьте:
   const [toast, setToast] = useState(null)
-  const location = useLocation()
-
-  // Добавляем эффект для сброса флага при навигации
-  useEffect(() => {
-    // Сбрасываем флаг при навигации между страницами
-    sessionStorage.setItem("pageAccessedByReload", "false")
-  }, [location.pathname])
 
   // Функция для показа уведомлений
   const showToast = (message, type = "success") => {
@@ -170,7 +144,7 @@ const AppContent = React.memo(function AppContent({
     <ToastContext.Provider value={{ showToast }}>
       <div className="root-container">
         <ScrollToTop />
-        <RedirectOnRefresh />
+        <RouteStateManager />
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
         {/* Единственный скроллируемый контейнер */}
@@ -821,6 +795,8 @@ function App() {
 
         // Обновляем баланс пользователя
         setBalance((prevBalance) => prevBalance + reward)
+
+        // Обновляем состояние задач, чтобы убрать  => prevBalance + reward)
 
         // Обновляем состояние задач, чтобы убрать выполненную задачу из списка
         setTasksData((prevTasksData) => ({
