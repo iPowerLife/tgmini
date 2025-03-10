@@ -1,10 +1,10 @@
 ;("use client")
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
-import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
-// Убедитесь, что импорт указывает на правильный файл
 import { supabase } from "./supabase"
 import HomePage from "./pages/home-page"
 import Shop from "./components/shop"
@@ -16,10 +16,8 @@ import TasksPage from "./pages/tasks"
 import { RatingSection } from "./components/rating-section"
 import { UserProfile } from "./components/user-profile"
 import { createMockTasks } from "./utils/mock-data" // Импортируем функцию для создания тестовых заданий
-// Заменим импорт функции предзагрузки изображений
-import { preloadImages } from "./utils/image-utils"
-// Обновляем импорты
-import { getTelegramUser, createOrUpdateUser } from "./utils/telegram"
+// Добавьте импорт функции предзагрузки изображений в начало файла
+import { preloadImages } from "./utils/image-preloader"
 
 // Простой компонент для уведомлений
 const Toast = ({ message, type, onClose }) => {
@@ -90,7 +88,7 @@ function ScrollToTop() {
 }
 
 // В функции AppContent добавим tasksData в параметры
-const AppContent = React.memo(function AppContent({
+function AppContent({
   user,
   balance,
   handleBalanceUpdate,
@@ -119,7 +117,6 @@ const AppContent = React.memo(function AppContent({
     <ToastContext.Provider value={{ showToast }}>
       <div className="root-container">
         <ScrollToTop />
-
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
         {/* Единственный скроллируемый контейнер */}
@@ -215,7 +212,7 @@ const AppContent = React.memo(function AppContent({
       </div>
     </ToastContext.Provider>
   )
-})
+}
 
 function App() {
   // Существующие состояния и хуки остаются без изменений
@@ -242,7 +239,6 @@ function App() {
   const [minersData, setMinersData] = useState({ miners: [], totalPower: 0 })
   const [tasksData, setTasksData] = useState({ tasks: [], loading: true }) // Добавляем статус загрузки
   const [ratingData, setRatingData] = useState({ users: [] })
-  // Исправляем синтаксис useState
   const [transactionsData, setTransactionsData] = useState({ transactions: [] })
   // Добавим новое состояние для рангов и функцию их загрузки
   const [ranksData, setRanksData] = useState({ ranks: [] })
@@ -253,21 +249,15 @@ function App() {
   // Добавьте хук для проверки Miner Pass
   const { hasMinerPass } = useMinerPass(user?.id)
 
-  // В начале файла App.jsx, обновим функцию updateLoadingProgress
+  // Функция для обновления прогресса загрузки
   const updateLoadingProgress = useCallback((step, status, progressIncrement = 0) => {
-    console.log(`Updating loading step: ${step} to ${status} with increment ${progressIncrement}`)
     setLoadingSteps((prev) => ({ ...prev, [step]: status }))
     if (progressIncrement > 0) {
-      setLoadingProgress((prev) => {
-        const newProgress = Math.min(100, prev + progressIncrement)
-        console.log(`Updated loading progress: ${prev} -> ${newProgress}`)
-        return newProgress
-      })
+      setLoadingProgress((prev) => Math.min(100, prev + progressIncrement))
     }
   }, [])
 
   // Загрузка данных магазина
-  // Обновим функцию loadShopData для начала предзагрузки изображений сразу после получения данных
   const loadShopData = useCallback(async () => {
     if (!user?.id) return
 
@@ -283,32 +273,12 @@ function App() {
       if (categoriesResponse.error) throw categoriesResponse.error
       if (modelsResponse.error) throw modelsResponse.error
 
-      const categories = categoriesResponse.data || []
-      const models = modelsResponse.data || []
-
       setShopData({
-        categories,
-        models,
+        categories: categoriesResponse.data || [],
+        models: modelsResponse.data || [],
       })
-
       console.log("Shop data loaded successfully")
       updateLoadingProgress("miners", "complete", 15)
-
-      // Начинаем предзагрузку изображений сразу после получения данных
-      if (models.length > 0) {
-        // Предзагружаем первые 5 изображений немедленно
-        const priorityImages = models
-          .slice(0, 5)
-          .filter((model) => model.image_url && model.image_url.trim() !== "")
-          .map((model) => ({
-            src: model.image_url,
-            fallbackSrc: `/images/miners/default-${model.category_id || "basic"}.png`,
-          }))
-
-        if (priorityImages.length > 0) {
-          preloadImages(priorityImages)
-        }
-      }
     } catch (error) {
       console.error("Error loading shop data:", error)
       updateLoadingProgress("miners", "error")
@@ -504,7 +474,7 @@ function App() {
     }
   }, [user?.id, cachedMiningInfo, updateLoadingProgress])
 
-  // Добавляем новую функцию для предзагрузки изображений после функции preloadMiningData
+  // Добавьте новую функцию для предзагрузки изображений после функции preloadMiningData
   const preloadShopImages = useCallback(async () => {
     if (!shopData.models || shopData.models.length === 0) return
 
@@ -512,17 +482,20 @@ function App() {
       console.log("Preloading shop images...")
       updateLoadingProgress("images", "loading")
 
-      // Import the forceCacheShopImages function
-      const { forceCacheShopImages } = await import("./utils/image-utils")
+      // Собираем все URL изображений из моделей магазина
+      const imageUrls = shopData.models.map((model) => model.image_url).filter((url) => url && url.trim() !== "")
 
-      // Force cache all shop images with high priority
-      await forceCacheShopImages(shopData.models)
+      // Предзагружаем изображения
+      await preloadImages(imageUrls, (progress) => {
+        // Обновляем прогресс загрузки (максимум 10%)
+        const progressIncrement = Math.floor(progress * 10)
+        if (progressIncrement > 0) {
+          updateLoadingProgress("images", "loading", progressIncrement)
+        }
+      })
 
       console.log("Shop images preloaded successfully")
-      updateLoadingProgress("images", "complete", 15)
-
-      // Add a small delay to ensure images are fully processed
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      updateLoadingProgress("images", "complete", 5)
     } catch (error) {
       console.error("Error preloading shop images:", error)
       updateLoadingProgress("images", "error")
@@ -564,9 +537,6 @@ function App() {
   }, [])
 
   // Инициализация приложения
-  const dataFetchedRef = useRef(false)
-  // Update the useEffect that loads data to ensure images are fully loaded
-  // В useEffect для инициализации приложения
   useEffect(() => {
     let mounted = true
 
@@ -574,84 +544,205 @@ function App() {
       try {
         setLoading(true)
         setError(null)
+        setLoadingProgress(5) // Начальный прогресс
 
-        // Начальный прогресс
-        console.log("Starting app initialization...")
-        setLoadingProgress(5)
+        console.log("Initializing app...")
         updateLoadingProgress("database", "loading")
+
+        const telegram = initTelegram()
+        console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
 
         // Проверяем подключение к базе данных
         try {
-          // Используем более простой запрос для проверки соединения
-          const { data, error } = await supabase.from("users").select("count").limit(1)
-
-          if (error) throw error
-
-          updateLoadingProgress("database", "complete", 10)
-          console.log("Database connection successful")
-        } catch (dbError) {
-          console.error("Database connection failed:", dbError)
-          updateLoadingProgress("database", "error")
-          throw new Error("Failed to connect to database")
+          const { data: healthCheck, error: healthError } = await supabase.from("health_check").select("*").limit(1)
+          if (healthError) {
+            console.warn("Health check table not found, but connection is working")
+          }
+        } catch (error) {
+          console.warn("Health check failed, but continuing:", error)
         }
 
-        // Загрузка данных пользователя
+        updateLoadingProgress("database", "complete", 10)
+        setLoadingProgress(15) // Прогресс после подключения к БД
+
         updateLoadingProgress("user", "loading")
         const userData = getTelegramUser()
+        console.log("User data:", userData)
 
-        if (!userData || !userData.id) {
-          throw new Error("Invalid Telegram user data")
+        // Обработка реферальной ссылки
+        const handleReferral = async (telegramUser) => {
+          try {
+            // Получаем параметр startapp
+            const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param
+
+            if (startParam) {
+              console.log("DEBUG: Referral parameter detected:", startParam)
+
+              // Проверяем, что пользователь не регистрирует сам себя
+              if (startParam === telegramUser.id.toString()) {
+                console.log("User tried to refer themselves")
+                return
+              }
+
+              // Получаем ID пользователя-реферера из базы данных
+              const { data: referrerData, error: referrerError } = await supabase
+                .from("users")
+                .select("id")
+                .eq("telegram_id", startParam)
+                .single()
+
+              if (referrerError || !referrerData) {
+                console.error("Referrer not found:", referrerError)
+                return
+              }
+
+              // Получаем ID текущего пользователя из базы данных
+              const { data: userData, error: userError } = await supabase
+                .from("users")
+                .select("id")
+                .eq("telegram_id", telegramUser.id)
+                .single()
+
+              if (userError || !userData) {
+                console.error("User not found:", userError)
+                return
+              }
+
+              // Проверяем, не зарегистрирован ли уже этот реферал
+              const { data: existingReferral, error: existingError } = await supabase
+                .from("referral_users")
+                .select("id")
+                .eq("referrer_id", referrerData.id)
+                .eq("referred_id", userData.id)
+                .single()
+
+              if (!existingError && existingReferral) {
+                console.log("Referral already exists")
+                return
+              }
+
+              // Регистрируем нового реферала
+              const { error: insertError } = await supabase.from("referral_users").insert({
+                referrer_id: referrerData.id,
+                referred_id: userData.id,
+                status: "active",
+              })
+
+              if (insertError) {
+                console.error("Error registering referral:", insertError)
+              } else {
+                console.log("Referral successfully registered")
+
+                // Добавьте здесь код для начисления наград:
+
+                // Константы с размерами наград (можете изменить на нужные значения)
+                const REFERRER_REWARD = 50 // Награда пригласившему
+                const REFERRED_REWARD = 25 // Награда приглашенному
+
+                // Начисляем награду рефоводу (пригласившему)
+                const { error: referrerUpdateError } = await supabase.rpc("increment_user_balance", {
+                  user_id_param: referrerData.id,
+                  amount_param: REFERRER_REWARD,
+                })
+
+                if (referrerUpdateError) {
+                  console.error("Error rewarding referrer:", referrerUpdateError)
+                } else {
+                  console.log(`Referrer rewarded with ${REFERRER_REWARD} diamonds`)
+
+                  // Записываем награду в историю транзакций (если есть такая таблица)
+                  await supabase.from("transactions").insert({
+                    user_id: referrerData.id,
+                    amount: REFERRER_REWARD,
+                    type: "referral_reward",
+                    description: `Reward for inviting user ${userData.id}`,
+                    created_at: new Date().toISOString(),
+                  })
+                }
+
+                // Начисляем награду приглашенному пользователю
+                const { error: referredUpdateError } = await supabase.rpc("increment_user_balance", {
+                  user_id_param: userData.id,
+                  amount_param: REFERRED_REWARD,
+                })
+
+                if (referredUpdateError) {
+                  console.error("Error rewarding referred user:", referredUpdateError)
+                } else {
+                  console.log(`Referred user rewarded with ${REFERRED_REWARD} diamonds`)
+
+                  // Записываем награду в историю транзакций
+                  await supabase.from("transactions").insert({
+                    user_id: userData.id,
+                    amount: REFERRED_REWARD,
+                    type: "referral_bonus",
+                    description: `Bonus for joining via referral link`,
+                    created_at: new Date().toISOString(),
+                  })
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Error processing referral:", error)
+          }
         }
 
-        console.log("User data received:", userData)
+        await handleReferral(userData)
 
-        try {
-          // Создаем или обновляем пользователя с правильным форматом ID
-          const newUser = await createOrUpdateUser({
-            id: String(userData.id), // Преобразуем ID в строку
-            username: userData.username || "",
-            first_name: userData.first_name || "",
-            last_name: userData.last_name || "",
-          })
+        if (!userData) {
+          throw new Error("Не удалось получить данные пользователя из Telegram")
+        }
 
-          if (mounted) {
-            setUser(newUser)
-            updateLoadingProgress("user", "complete", 15)
-            console.log("User data processed successfully")
+        const dbUser = await createOrUpdateUser(userData)
+        console.log("Database user:", dbUser)
+        updateLoadingProgress("user", "complete", 15)
+        setLoadingProgress(30) // Прогресс после загрузки пользователя
 
-            // Загружаем баланс с правильным форматом ID
-            const { data: balanceData, error: balanceError } = await supabase
-              .from("users")
-              .select("balance")
-              .eq("id", String(newUser.id))
-              .single()
-
-            if (balanceError) throw balanceError
-
-            if (mounted) {
-              setBalance(balanceData?.balance || 0)
-              setLoadingProgress(40)
-
-              // Начинаем загрузку остальных данных
-              await Promise.all([
-                loadShopData(),
-                loadMinersData(),
-                loadTasksData(),
-                loadRatingData(),
-                loadTransactionsData(),
-                loadRanksData(),
-                preloadMiningData(),
-              ])
-            }
+        if (mounted) {
+          const userWithDisplay = {
+            ...dbUser,
+            photo_url: userData.photo_url,
+            display_name: userData.username
+              ? `@${userData.username}`
+              : userData.first_name || "Неизвестный пользователь",
+            has_miner_pass: hasMinerPass, // Добавьте это свойство
           }
-        } catch (userError) {
-          console.error("Error processing user:", userError)
-          updateLoadingProgress("user", "error")
-          throw userError
+
+          setUser(userWithDisplay)
+          setBalance(dbUser.balance)
+          console.log("User initialized:", userWithDisplay)
+
+          // Загружаем все данные параллельно
+          await Promise.all([
+            loadShopData(),
+            loadMinersData(),
+            loadTasksData(), // Загружаем задания сразу
+            loadRatingData(),
+            loadTransactionsData(),
+            loadRanksData(),
+            preloadMiningData(),
+          ])
+
+          // После загрузки всех данных, предзагружаем изображения
+          await Promise.all([
+            preloadShopImages(), // Предзагрузка изображений магазина
+            preloadTaskImages(), // Предзагрузка изображений заданий
+          ])
+          console.log("All data loaded successfully")
+          setLoadingProgress(95) // Почти завершено
+
+          // Небольшая задержка перед скрытием загрузочного экрана
+          setTimeout(() => {
+            setLoadingProgress(100) // Загрузка завершена
+            // Не скрываем загрузочный экран здесь, это будет сделано через анимацию
+          }, 500)
         }
       } catch (err) {
         console.error("Error initializing app:", err)
-        setError(err.message || "Failed to initialize app")
+        if (mounted) {
+          setError(err.message)
+          setLoadingProgress(100) // Завершаем прогресс даже при ошибке
+        }
       } finally {
         if (mounted) {
           setLoading(false)
@@ -664,88 +755,182 @@ function App() {
     return () => {
       mounted = false
     }
+  }, [
+    loadShopData,
+    loadMinersData,
+    loadTasksData,
+    loadRatingData,
+    loadTransactionsData,
+    loadRanksData,
+    hasMinerPass,
+    updateMiningInfoCache,
+    preloadMiningData,
+    updateLoadingProgress,
+    preloadShopImages,
+    preloadTaskImages,
+  ])
+
+  // Добавляем эффект для перенаправления на главную страницу при обновлении
+  useEffect(() => {
+    // Проверяем, была ли страница перезагружена
+    const handlePageLoad = () => {
+      // Перенаправляем на главную страницу
+      window.history.pushState(null, "", "/")
+    }
+
+    // Вызываем обработчик при монтировании компонента
+    if (window.performance) {
+      // Используем performance API для определения типа навигации
+      const navEntries = performance.getEntriesByType("navigation")
+      if (navEntries.length > 0 && navEntries[0].type === "reload") {
+        handlePageLoad()
+      } else if (window.performance.navigation && window.performance.navigation.type === 1) {
+        // Запасной вариант для старых браузеров
+        handlePageLoad()
+      }
+    }
+
+    // Добавляем обработчик события загрузки страницы
+    window.addEventListener("load", handlePageLoad)
+
+    return () => {
+      window.removeEventListener("load", handlePageLoad)
+    }
   }, [])
 
-  // Обновление баланса
+  // Также обновите useEffect, который следит за изменением hasMinerPass
+  useEffect(() => {
+    if (user?.id && hasMinerPass !== undefined) {
+      setUser((prev) => ({
+        ...prev,
+        has_miner_pass: hasMinerPass,
+      }))
+    }
+  }, [hasMinerPass, user?.id])
+
+  // Обновляем обработчик смены маршрута, чтобы предварительно загружать данные для главной страницы
+  useEffect(() => {
+    // Функция для предварительной загрузки данных при переходе на главную страницу
+    const handleRouteChange = () => {
+      const currentPath = window.location.pathname
+      // Если пользователь находится не на главной странице, предварительно загружаем данные
+      if (currentPath !== "/" && user?.id) {
+        preloadMiningData()
+      }
+    }
+
+    // Добавляем обработчик события popstate (когда пользователь нажимает кнопку "назад" в браузере)
+    window.addEventListener("popstate", handleRouteChange)
+
+    // Добавляем обработчик для кликов по ссылкам
+    const handleLinkClick = (e) => {
+      // Проверяем, что клик был по ссылке
+      const link = e.target.closest("a")
+      if (link && link.getAttribute("href") === "/") {
+        // Если переход на главную страницу, предварительно загружаем данные
+        preloadMiningData()
+      }
+    }
+
+    document.body.addEventListener("click", handleLinkClick)
+
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange)
+      document.body.removeEventListener("click", handleLinkClick)
+    }
+  }, [preloadMiningData, user?.id])
+
+  // Обработчик обновления баланса
   const handleBalanceUpdate = useCallback(
-    async (newBalance) => {
+    (newBalance) => {
+      console.log("Updating balance:", newBalance)
       setBalance(newBalance)
-      // Обновляем баланс в объекте пользователя
-      if (user) {
-        setUser((prevUser) => ({
-          ...prevUser,
-          balance: newBalance,
-        }))
-      }
+      setUser((prev) => ({ ...prev, balance: newBalance }))
+      // Перезагружаем данные майнеров после обновления баланса
+      loadMinersData()
     },
-    [user, setBalance, setUser],
+    [loadMinersData],
   )
 
-  // Обработчик завершения задачи
-  const handleTaskComplete = useCallback(
-    async (taskId, reward) => {
-      try {
-        // Отправляем запрос на сервер для завершения задачи
-        const { data, error } = await supabase.rpc("complete_task", {
-          task_id_param: taskId,
-          user_id_param: user.id,
-          reward_param: reward,
-        })
+  // Обработчик завершения задания
+  const handleTaskComplete = useCallback((taskId) => {
+    console.log("Task completed:", taskId)
+    // Обновляем локальное состояние заданий
+    setTasksData((prev) => ({
+      ...prev,
+      tasks: prev.tasks.map((task) => (task.id === taskId ? { ...task, is_completed: true } : task)),
+    }))
+  }, [])
 
-        if (error) {
-          console.error("Error completing task:", error)
-          return false // Возвращаем false в случае ошибки
-        }
+  // Обработчик завершения анимации загрузочного экрана
+  const handleSplashAnimationComplete = useCallback(() => {
+    setShowSplash(false)
+  }, [])
 
-        // Обновляем баланс пользователя
-        setBalance((prevBalance) => prevBalance + reward)
+  // Мемоизируем AppContent для пр��дотвращения лишних рендеров
+  const MemoizedAppContent = useMemo(() => {
+    return (
+      <AppContent
+        user={user}
+        balance={balance}
+        handleBalanceUpdate={handleBalanceUpdate}
+        shopData={shopData}
+        minersData={minersData}
+        tasksData={tasksData}
+        handleTaskComplete={handleTaskComplete}
+        ratingData={ratingData}
+        transactionsData={transactionsData}
+        ranksData={ranksData}
+        hasMinerPass={hasMinerPass}
+        cachedMiningInfo={cachedMiningInfo}
+        onCacheUpdate={updateMiningInfoCache}
+      />
+    )
+  }, [
+    user,
+    balance,
+    handleBalanceUpdate,
+    shopData,
+    minersData,
+    tasksData,
+    handleTaskComplete,
+    ratingData,
+    transactionsData,
+    ranksData,
+    hasMinerPass,
+    cachedMiningInfo,
+    updateMiningInfoCache,
+  ])
 
-        // Обновляем состояние задач, чтобы убрать выполненную задачу из списка
-        setTasksData((prevTasksData) => ({
-          ...prevTasksData,
-          tasks: prevTasksData.tasks.filter((task) => task.id !== taskId),
-        }))
+  // Показываем загрузочный экран, если он активен
+  if (showSplash) {
+    return (
+      <LoadingScreen
+        isLoading={loading}
+        loadingSteps={loadingSteps}
+        progress={loadingProgress}
+        onAnimationComplete={handleSplashAnimationComplete}
+      />
+    )
+  }
 
-        return true // Возвращаем true, если задача успешно завершена
-      } catch (error) {
-        console.error("Error completing task:", error)
-        return false // Возвращаем false в случае ошибки
-      }
-    },
-    [user?.id, setBalance],
-  )
+  if (error) {
+    return (
+      <div className="root-container">
+        <div className="page-container">
+          <div className="section-container error">
+            <h2>Ошибка</h2>
+            <p>{error}</p>
+            <button onClick={() => window.location.reload()} className="shop-button mt-4">
+              Попробовать снова
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-  // Memoize tasksData
-  const memoizedTasksData = useMemo(() => tasksData, [tasksData])
-
-  // Отображение загрузочного экрана или контента приложения
-  return (
-    <Router>
-      {showSplash ? (
-        <LoadingScreen loadingProgress={loadingProgress} loadingSteps={loadingSteps} />
-      ) : loading ? (
-        <LoadingFallback />
-      ) : error ? (
-        <div className="error-container">Error: {error}</div>
-      ) : (
-        <AppContent
-          user={user}
-          balance={balance}
-          handleBalanceUpdate={handleBalanceUpdate}
-          shopData={shopData}
-          minersData={minersData}
-          tasksData={memoizedTasksData} // Передаем memoizedTasksData
-          handleTaskComplete={handleTaskComplete}
-          ratingData={ratingData}
-          transactionsData={transactionsData}
-          ranksData={ranksData}
-          hasMinerPass={hasMinerPass}
-          cachedMiningInfo={cachedMiningInfo}
-          onCacheUpdate={updateMiningInfoCache}
-        />
-      )}
-    </Router>
-  )
+  return <Router>{MemoizedAppContent}</Router>
 }
 
 export default App

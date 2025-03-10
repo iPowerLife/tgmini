@@ -120,14 +120,3 @@ export async function cachedQuery(queryFn, cacheKey, ttl = 5 * 60 * 1000) {
   return { data, error, fromCache: false }
 }
 
-// Add this function to handle rating data type conversion
-export function sanitizeRatingData(data) {
-  if (!data) return null
-
-  return data.map((item) => ({
-    ...item,
-    balance: typeof item.balance === "string" ? Number.parseFloat(item.balance) : item.balance,
-    mining_power: typeof item.mining_power === "string" ? Number.parseFloat(item.mining_power) : item.mining_power,
-  }))
-}
-

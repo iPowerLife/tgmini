@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { getFallbackImage } from "../../utils/task-helpers"
-import { isImageCached } from "../../utils/image-utils"
+import { isImageCached } from "../../utils/image-preloader"
 import { fixImageUrl } from "../../utils/image-helpers"
 
 export function TaskCard({ task, user, onBalanceUpdate, onTaskComplete }) {

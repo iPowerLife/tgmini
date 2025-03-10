@@ -20,8 +20,6 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import { supabase } from "../supabase"
-// Добавим импорт OptimizedImage в начало файла
-import { OptimizedImage } from "./optimized-image"
 
 // Add this component at the top level of the file, after imports
 const WarningMessage = () => (
@@ -46,12 +44,12 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
   // Проверяем, не достигнут ли лимит
   const limitReached = purchaseLimit !== null && currentQuantity >= purchaseLimit && !hasMinerPass
 
-  // Function to get miner image URL with better fallback handling
+  // Функция для получения URL изображения майнера
   const getMinerImageUrl = (model) => {
     if (model.image_url) {
       return model.image_url
     }
-    return `/images/miners/default-${minerType}.png`
+    return "/images/miners/default.png"
   }
 
   // Цветовые схемы для разных типов майнеров
@@ -104,15 +102,15 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
             boxShadow: colorScheme.borderGlow,
           }}
         >
-          <OptimizedImage
-            src={getMinerImageUrl(miner)}
+          <img
+            src={getMinerImageUrl(miner) || "/placeholder.svg"}
             alt={miner.display_name}
-            className="w-full h-full rounded-lg"
-            fallbackSrc={`/images/miners/default-${minerType}.png`}
+            className="w-full h-full object-contain rounded-lg"
             style={{ background: "#0B1622" }}
-            objectFit="contain"
-            priority={true} // Always set priority to true for shop images
-            loading="eager" // Use eager loading for shop images
+            onError={(e) => {
+              e.target.src = "/images/miners/default.png"
+              e.target.onerror = null
+            }}
           />
         </div>
 
@@ -472,11 +470,6 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
           setUserMiners(minersData || [])
         }
 
-        // Обновляем локальное состояние пользователя
-        if (user) {
-          user.balance = data.new_balance
-        }
-
         onPurchase(data.new_balance)
         alert("Майнер успешно куплен!")
       } else {
@@ -528,11 +521,6 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
         // Обновляем статус Miner Pass
         if (itemName === "miner_pass") {
           setHasMinerPass(true)
-        }
-
-        // Обновляем локальное состояние пользователя
-        if (user) {
-          user.balance = data.new_balance
         }
 
         onPurchase(data.new_balance)
@@ -649,7 +637,7 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
         </div>
         <div className="flex items-center gap-1.5 bg-[#1F2937] py-1.5 px-3 rounded-lg">
           <Coins size={14} className="text-green-400" />
-          <span className="text-green-400 text-sm font-medium">{Number(user?.balance || balance).toFixed(2)}</span>
+          <span className="text-green-400 text-sm font-medium">{Number(balance).toFixed(2)}</span>
           <span className="text-gray-400 text-xs">монет</span>
         </div>
       </div>

@@ -1,68 +1,46 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { isImageCached, preloadImage } from "../utils/image-utils"
+import { useState, useEffect } from "react"
 import { fixImageUrl } from "../utils/image-helpers"
 
 export function OptimizedImage({
   src,
   alt,
   className = "",
-  fallbackSrc = "/placeholder.svg",
+  fallbackSrc,
   width,
   height,
   priority = false,
   onLoad,
   style = {},
-  objectFit = "cover",
-  loading = "lazy",
 }) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
   const [imageSrc, setImageSrc] = useState("")
-  const imgRef = useRef(null)
 
   useEffect(() => {
-    // Reset state when src changes
+    // Сбрасываем состояние при изменении src
     setLoaded(false)
     setError(false)
 
-    // If src is empty, use fallbackSrc
-    if (!src) {
-      setImageSrc(fallbackSrc)
-      return
-    }
-
-    // Fix image URL
+    // Исправляем URL изображения
     const fixedSrc = fixImageUrl(src)
+    setImageSrc(fixedSrc || fallbackSrc)
 
-    // Set initial src
-    setImageSrc(fixedSrc)
-
-    // If image is already in cache, mark it as loaded
-    if (isImageCached(fixedSrc)) {
-      console.log(`Image already cached (OptimizedImage): ${fixedSrc}`)
-      setLoaded(true)
-      if (onLoad) onLoad()
-      return
+    // Если установлен приоритет, предзагружаем изображение
+    if (priority && fixedSrc) {
+      const img = new Image()
+      img.src = fixedSrc
+      img.onload = () => {
+        setLoaded(true)
+        if (onLoad) onLoad()
+      }
+      img.onerror = () => {
+        setError(true)
+        setImageSrc(fallbackSrc)
+      }
     }
-
-    // Always preload the image, not just when priority is true
-    // This ensures consistent behavior for all images
-    preloadImage(fixedSrc, { fallbackSrc })
-      .then(() => {
-        if (imgRef.current) {
-          setLoaded(true)
-          if (onLoad) onLoad()
-        }
-      })
-      .catch(() => {
-        if (imgRef.current) {
-          setError(true)
-          setImageSrc(fallbackSrc)
-        }
-      })
-  }, [src, fallbackSrc, onLoad])
+  }, [src, fallbackSrc, priority, onLoad])
 
   const handleLoad = () => {
     setLoaded(true)
@@ -90,16 +68,12 @@ export function OptimizedImage({
 
       {/* Изображение */}
       <img
-        ref={imgRef}
         src={imageSrc || "/placeholder.svg"}
         alt={alt || "Image"}
-        className={`w-full h-full transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
-        style={{ objectFit, borderRadius: "inherit" }}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
         onLoad={handleLoad}
         onError={handleError}
-        loading={loading}
-        width={width}
-        height={height}
+        style={{ borderRadius: "inherit" }}
       />
     </div>
   )

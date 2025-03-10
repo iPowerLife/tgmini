@@ -11,8 +11,6 @@ import {
   getLastUpdateTime,
   clearRatingCache,
 } from "../utils/cache-manager"
-// Import the sanitizeRatingData function
-import { sanitizeRatingData } from "../utils/supabase-helpers"
 
 // Создаем глобальный кэш для данных рейтинга, чтобы сохранять их между переключениями вкладок
 const globalRatingCache = {
@@ -92,11 +90,8 @@ export function RatingSection() {
           throw new Error("Нет данных")
         }
 
-        // Sanitize the data before processing
-        const sanitizedData = sanitizeRatingData(data)
-
-        // Process the sanitized data
-        const processedData = sanitizedData.map((user) => {
+        // Преобразуем данные для отображения
+        const processedData = data.map((user) => {
           const displayName = getUserDisplayName(user)
 
           return {

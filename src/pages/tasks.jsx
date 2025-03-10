@@ -4,7 +4,10 @@ import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { createMockTasks } from "../utils/mock-data"
 import { TaskCard } from "../components/tasks/task-card"
-// Полностью удаляем импорты компонентов ежедневных наград
+// Оставляем только импорт DailyRewardTask
+import { DailyRewardTask } from "../components/daily-reward-task"
+// Добавьте импорт в начало файла
+import { DebugDailyReward } from "../components/debug-daily-reward"
 
 export default function TasksPage({
   user: initialUser,
@@ -155,7 +158,11 @@ export default function TasksPage({
         </div>
       ) : (
         <div className="px-4 space-y-3 pb-24">
-          {/* Удалены компоненты ежедневных наград */}
+          {/* Добавляем компонент отладки */}
+          {user && <DebugDailyReward userId={user.id} />}
+
+          {/* Добавляем ежедневную награду в начало списка ежедневных заданий */}
+          {activeTab === "daily" && user && <DailyRewardTask user={user} onRewardClaim={handleBalanceUpdate} />}
 
           {filteredTasks.length > 0 ? (
             filteredTasks.map((task) => (
