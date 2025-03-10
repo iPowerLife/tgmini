@@ -88,17 +88,38 @@ function ScrollToTop() {
   return null
 }
 
-// Компонент для сохранения текущего пути
-function RouteStateManager() {
+// Добавьте этот компонент перед определением AppContent
+function RedirectOnRefresh() {
+  const navigate = useNavigate()
   const location = useLocation()
 
-  // Сохраняем текущий путь при каждом изменении маршрута
   useEffect(() => {
-    // Не сохраняем путь, если это начальная загрузка
-    if (location.pathname !== "/") {
-      localStorage.setItem("lastRoute", location.pathname)
+    // Проверяем, была ли страница обновлена
+    const isPageRefreshed =
+      performance.navigation &&
+      (performance.navigation.type === 1 || window.performance.getEntriesByType("navigation")[0]?.type === "reload")
+
+    // Если страница была обновлена и мы не на главной странице
+    if (isPageRefreshed && location.pathname !== "/") {
+      console.log("Страница была обновлена, перенаправляем на главную")
+      navigate("/", { replace: true })
     }
-  }, [location])
+
+    // Альтернативный подход с использованием sessionStorage
+    const pageAccessedByReload = sessionStorage.getItem("pageAccessedByReload") === "true"
+    if (pageAccessedByReload && location.pathname !== "/") {
+      console.log("Страница была обновлена (sessionStorage), перенаправляем на главную")
+      navigate("/", { replace: true })
+    }
+
+    // Устанавливаем флаг для следующего обновления
+    window.addEventListener("beforeunload", () => {
+      sessionStorage.setItem("pageAccessedByReload", "true")
+    })
+
+    // Сбрасываем флаг, если страница была загружена не через обновление
+    sessionStorage.setItem("pageAccessedByReload", "false")
+  }, [navigate, location])
 
   return null
 }
@@ -120,17 +141,6 @@ const AppContent = React.memo(function AppContent({
   onCacheUpdate,
 }) {
   console.log("AppContent rendered with:", { user, balance, minersData, ratingData, ranksData, hasMinerPass })
-  const navigate = useNavigate()
-
-  // Восстанавливаем последний путь при монтировании компонента
-  useEffect(() => {
-    const lastRoute = localStorage.getItem("lastRoute")
-    if (lastRoute) {
-      navigate(lastRoute, { replace: true })
-      // Очищаем сохраненный путь после восстановления
-      localStorage.removeItem("lastRoute")
-    }
-  }, [navigate])
 
   // В начале функции AppContent добавьте:
   const [toast, setToast] = useState(null)
@@ -144,7 +154,7 @@ const AppContent = React.memo(function AppContent({
     <ToastContext.Provider value={{ showToast }}>
       <div className="root-container">
         <ScrollToTop />
-        <RouteStateManager />
+        <RedirectOnRefresh />
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
         {/* Единственный скроллируемый контейнер */}
@@ -795,8 +805,6 @@ function App() {
 
         // Обновляем баланс пользователя
         setBalance((prevBalance) => prevBalance + reward)
-
-        // Обновляем состояние задач, чтобы убрать  => prevBalance + reward)
 
         // Обновляем состояние задач, чтобы убрать выполненную задачу из списка
         setTasksData((prevTasksData) => ({
