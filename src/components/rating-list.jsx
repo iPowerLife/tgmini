@@ -110,36 +110,41 @@ export function RatingList({ currentUserId, activeTab = "balance", onTabChange }
             <div
               key={user.id}
               className={`flex items-center p-3 rounded-lg ${
-                isCurrentUser ? "bg-blue-500/10 border-l-2 border-blue-500" : "bg-[#242838]"
+                isCurrentUser
+                  ? "bg-blue-500/10 border-l-2 border-blue-500"
+                  : index === 0
+                    ? "bg-gradient-to-r from-yellow-600/20 to-amber-500/20 border border-yellow-500/30"
+                    : index === 1
+                      ? "bg-gradient-to-r from-purple-600/20 to-purple-500/20 border border-purple-500/30"
+                      : index === 2
+                        ? "bg-gradient-to-r from-cyan-600/20 to-blue-500/20 border border-blue-500/30"
+                        : "bg-[#242838]"
               }`}
             >
-              {/* Позиция */}
-              <div className="w-6 text-center mr-3">
+              {/* Position indicator with matching colors */}
+              <div
+                className={`w-8 h-8 flex items-center justify-center rounded-full mr-3 ${
+                  index === 0
+                    ? "bg-gradient-to-r from-yellow-600 to-amber-500 text-white"
+                    : index === 1
+                      ? "bg-gradient-to-r from-purple-600 to-purple-500 text-white"
+                      : index === 2
+                        ? "bg-gradient-to-r from-cyan-600 to-blue-500 text-white"
+                        : "bg-gray-800 text-gray-400"
+                }`}
+              >
                 {index === 0 ? (
-                  <span className="text-yellow-400">👑</span>
+                  <span>👑</span>
                 ) : index === 1 ? (
-                  <span className="text-gray-400">🥈</span>
+                  <span>2</span>
                 ) : index === 2 ? (
-                  <span className="text-amber-600">🥉</span>
+                  <span>3</span>
                 ) : (
-                  <span className="text-gray-400">{index + 1}</span>
+                  <span>{index + 1}</span>
                 )}
               </div>
 
-              {/* Аватар */}
-              <div className="w-10 h-10 rounded-full bg-gray-700 overflow-hidden mr-3">
-                {user.photo_url ? (
-                  <img
-                    src={user.photo_url || "/placeholder.svg"}
-                    alt={user.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">{user.name[0]}</div>
-                )}
-              </div>
-
-              {/* Информация */}
+              {/* Information - keep this part the same */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <div>
