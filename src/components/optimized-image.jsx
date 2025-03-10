@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { isImageCached, preloadImage } from "../utils/image-utils"
+import { fixImageUrl } from "../utils/image-helpers"
 
 export function OptimizedImage({
   src,
@@ -32,11 +33,15 @@ export function OptimizedImage({
       return
     }
 
+    // Фиксируем URL изображения
+    const fixedSrc = fixImageUrl(src)
+
     // Устанавливаем исходный src
-    setImageSrc(src)
+    setImageSrc(fixedSrc)
 
     // Если изображение уже в кэше, отмечаем его как загруженное
-    if (isImageCached(src)) {
+    if (isImageCached(fixedSrc)) {
+      console.log(`Image already cached (OptimizedImage): ${fixedSrc}`)
       setLoaded(true)
       if (onLoad) onLoad()
       return
@@ -44,7 +49,7 @@ export function OptimizedImage({
 
     // Если установлен приоритет, предзагружаем изображение
     if (priority) {
-      preloadImage(src, { fallbackSrc })
+      preloadImage(fixedSrc, { fallbackSrc })
         .then(() => {
           if (imgRef.current) {
             setLoaded(true)

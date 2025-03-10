@@ -1,6 +1,6 @@
 ;("use client")
 
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom"
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
@@ -88,6 +88,42 @@ function ScrollToTop() {
   return null
 }
 
+// Добавьте этот компонент перед определением AppContent
+function RedirectOnRefresh() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    // Проверяем, была ли страница обновлена
+    const isPageRefreshed =
+      performance.navigation &&
+      (performance.navigation.type === 1 || window.performance.getEntriesByType("navigation")[0]?.type === "reload")
+
+    // Если страница была обновлена и мы не на главной странице
+    if (isPageRefreshed && location.pathname !== "/") {
+      console.log("Страница была обновлена, перенаправляем на главную")
+      navigate("/", { replace: true })
+    }
+
+    // Альтернативный подход с использованием sessionStorage
+    const pageAccessedByReload = sessionStorage.getItem("pageAccessedByReload") === "true"
+    if (pageAccessedByReload && location.pathname !== "/") {
+      console.log("Страница была обновлена (sessionStorage), перенаправляем на главную")
+      navigate("/", { replace: true })
+    }
+
+    // Устанавливаем флаг для следующего обновления
+    window.addEventListener("beforeunload", () => {
+      sessionStorage.setItem("pageAccessedByReload", "true")
+    })
+
+    // Сбрасываем флаг, если страница была загружена не через обновление
+    sessionStorage.setItem("pageAccessedByReload", "false")
+  }, [navigate, location])
+
+  return null
+}
+
 // В функции AppContent добавим tasksData в параметры
 const AppContent = React.memo(function AppContent({
   user,
@@ -118,6 +154,7 @@ const AppContent = React.memo(function AppContent({
     <ToastContext.Provider value={{ showToast }}>
       <div className="root-container">
         <ScrollToTop />
+        <RedirectOnRefresh />
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
         {/* Единственный скроллируемый контейнер */}
@@ -513,14 +550,20 @@ function App() {
           fallbackSrc: `/images/miners/default-${model.category_id || "basic"}.png`,
         }))
 
-      // Предзагружаем изображения
-      await preloadImages(imageUrls, (progress) => {
-        // Обновляем прогресс загрузки (максимум 15%)
-        const progressIncrement = Math.floor(progress * 15)
-        if (progressIncrement > 0) {
-          updateLoadingProgress("images", "loading", progressIncrement)
-        }
-      })
+      console.log(`Starting to preload ${imageUrls.length} shop images`)
+
+      // Предзагружаем изображения с увеличенным concurrency
+      await preloadImages(
+        imageUrls,
+        (progress) => {
+          // Обновляем прогресс загрузки (максимум 15%)
+          const progressIncrement = Math.floor(progress * 15)
+          if (progressIncrement > 0) {
+            updateLoadingProgress("images", "loading", progressIncrement)
+          }
+        },
+        { concurrency: 10 },
+      )
 
       console.log("Shop images preloaded successfully")
       updateLoadingProgress("images", "complete", 5)
@@ -692,19 +735,28 @@ function App() {
       ])
         .then(() => {
           console.log("All data loaded successfully")
-          setLoadingProgress(90)
-          return preloadShopImages()
+          setLoadingProgress(80)
+
+          // Ждем завершения загрузки изображений
+          return Promise.all([preloadShopImages(), preloadTaskImages()])
         })
         .then(() => {
-          return preloadTaskImages()
-        })
-        .then(() => {
+          console.log("All images preloaded successfully")
           setLoadingProgress(100)
-          setTimeout(() => setShowSplash(false), 1500)
+
+          // Добавляем задержку для гарантии, что все изображения загружены
+          return new Promise((resolve) => setTimeout(resolve, 1000))
+        })
+        .then(() => {
+          // Закрываем загрузочный экран после небольшой задержки
+          setTimeout(() => setShowSplash(false), 500)
         })
         .catch((err) => {
           console.error("Error loading data:", err)
           setError(err.message || "Failed to load data")
+
+          // Даже в случае ошибки закрываем загрузочный экран через 3 секунды
+          setTimeout(() => setShowSplash(false), 3000)
         })
     }
   }, [

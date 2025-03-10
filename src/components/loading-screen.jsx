@@ -47,6 +47,22 @@ export default function LoadingScreen({ isLoading, loadingSteps, progress, onAni
     return "text-gray-400"
   }
 
+  // Функция для получения детализированного описания шага загрузки
+  const getStepDetail = (step) => {
+    const status = loadingSteps[step]
+    if (step === "images") {
+      if (status === "loading") return "Загрузка изображений майнеров и заданий..."
+      if (status === "complete") return "Изображения загружены!"
+      if (status === "error") return "Ошибка загрузки некоторых изображений"
+    }
+    if (step === "miners") {
+      if (status === "loading") return "Загрузка данных о майнерах..."
+      if (status === "complete") return "Данные майнеров загружены!"
+      if (status === "error") return "Ошибка загрузки данных майнеров"
+    }
+    return ""
+  }
+
   return (
     <div
       className={`fixed inset-0 bg-[#1A1F2E] flex flex-col items-center justify-center z-50 transition-opacity duration-500 ${
@@ -86,7 +102,12 @@ export default function LoadingScreen({ isLoading, loadingSteps, progress, onAni
             <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("miners")}`}>
               {getStepStatus("miners")}
             </span>
-            <span className="ml-2 text-white">Загрузка майнеров</span>
+            <div className="ml-2">
+              <span className="text-white">Загрузка майнеров</span>
+              {loadingSteps["miners"] === "loading" && (
+                <p className="text-xs text-gray-400">{getStepDetail("miners")}</p>
+              )}
+            </div>
           </div>
           <div className="flex items-center">
             <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("tasks")}`}>
@@ -104,7 +125,12 @@ export default function LoadingScreen({ isLoading, loadingSteps, progress, onAni
             <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("images")}`}>
               {getStepStatus("images")}
             </span>
-            <span className="ml-2 text-white">Загрузка изображений</span>
+            <div className="ml-2">
+              <span className="text-white">Загрузка изображений</span>
+              {loadingSteps["images"] === "loading" && (
+                <p className="text-xs text-gray-400">{getStepDetail("images")}</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
