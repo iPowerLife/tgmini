@@ -14,6 +14,7 @@ import TasksPage from "./pages/tasks"
 import { RatingSection } from "./components/rating-section"
 import { UserProfile } from "./components/user-profile"
 import { preloadImages } from "./utils/image-preloader"
+import { createMockTasks } from "./utils/mock-tasks"
 
 // Создаем контекст для кэширования данных
 const DataContext = React.createContext(null)
@@ -147,18 +148,62 @@ function App() {
     if (!userId || !isMounted.current) return
 
     try {
-      const [
-        shopResponse,
-        minersResponse,
-        tasksResponse,
-        ratingResponse,
-        transactionsResponse,
-        ranksResponse,
-        miningInfoResponse,
-      ] = await Promise.all([
+      updateLoadingProgress("miners", "loading")
+
+      // Загружаем категории и модели для магазина
+      const [categoriesResponse, modelsResponse] = await Promise.all([
         supabase.from("miner_categories").select("*").order("id"),
-        supabase.from("user_miners").select("*").eq("user_id", userId),
-        supabase.from("tasks").select("*").eq("is_active", true),
+        supabase.from("miner_models").select("*").order("category_id, price"),
+      ])
+
+      if (categoriesResponse.error) throw categoriesResponse.error
+      if (modelsResponse.error) throw modelsResponse.error
+
+      // Загружаем данные майнеров пользователя
+      const { data: minersData, error: minersError } = await supabase
+        .from("user_miners")
+        .select(`
+          *,
+          model:miner_models (
+            id,
+            name,
+            display_name,
+            mining_power,
+            energy_consumption
+          )
+        `)
+        .eq("user_id", userId)
+        .order("purchased_at")
+
+      if (minersError) throw minersError
+
+      const totalPower = (minersData || []).reduce((sum, miner) => sum + miner.model.mining_power * miner.quantity, 0)
+
+      updateLoadingProgress("miners", "complete", 15)
+      updateLoadingProgress("tasks", "loading")
+
+      // Загружаем задания
+      const { data: tasksData, error: tasksError } = await supabase
+        .from("tasks")
+        .select(`
+          *,
+          category:task_categories(name, display_name)
+        `)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+
+      let tasks = []
+      if (tasksError) {
+        console.error("Error loading tasks:", tasksError)
+        tasks = createMockTasks()
+      } else {
+        tasks = tasksData && tasksData.length > 0 ? tasksData : createMockTasks()
+      }
+
+      updateLoadingProgress("tasks", "complete", 15)
+
+      // Загружаем остальные данные
+      const [ratingResponse, transactionsResponse, ranksResponse, miningInfoResponse] = await Promise.all([
         supabase.rpc("get_users_rating"),
         supabase.from("transactions").select("*").eq("user_id", userId).limit(5),
         supabase.from("ranks").select("*").order("min_balance"),
@@ -168,17 +213,32 @@ function App() {
       if (isMounted.current) {
         // Сохраняем все данные в кэш
         dataCache.current = {
-          shopData: shopResponse.data || [],
-          minersData: minersResponse.data || [],
-          tasksData: tasksResponse.data || [],
-          ratingData: ratingResponse.data || [],
-          transactionsData: transactionsResponse.data || [],
-          ranksData: ranksResponse.data || [],
+          shopData: {
+            categories: categoriesResponse.data || [],
+            models: modelsResponse.data || [],
+          },
+          minersData: {
+            miners: minersData || [],
+            totalPower,
+          },
+          tasksData: {
+            tasks,
+            loading: false,
+          },
+          ratingData: {
+            users: ratingResponse.data || [],
+          },
+          transactionsData: {
+            transactions: transactionsResponse.data || [],
+          },
+          ranksData: {
+            ranks: ranksResponse.data || [],
+          },
           cachedMiningInfo: miningInfoResponse.data || null,
         }
       }
     } catch (error) {
-      console.error("Error loading initial data:", error)
+      console.error("Ошибка загрузки начальных данных:", error)
     }
   }
 
@@ -249,6 +309,7 @@ function App() {
                     onPurchase={handleBalanceUpdate}
                     categories={dataCache.current.shopData?.categories || []}
                     models={dataCache.current.shopData?.models || []}
+                    hasMinerPass={user?.has_miner_pass}
                   />
                 }
               />
