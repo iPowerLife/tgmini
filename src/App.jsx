@@ -92,33 +92,42 @@ function ScrollToTop() {
 function RedirectOnRefresh() {
   const navigate = useNavigate()
   const location = useLocation()
+  const initialRenderRef = useRef(true)
 
   useEffect(() => {
+    // Пропускаем первый рендер, чтобы не мешать обычной навигации
+    if (initialRenderRef.current) {
+      initialRenderRef.current = false
+      // Сбрасываем флаг при первой загрузке страницы
+      sessionStorage.setItem("pageAccessedByReload", "false")
+      return
+    }
+
     // Проверяем, была ли страница обновлена
     const isPageRefreshed =
       performance.navigation &&
       (performance.navigation.type === 1 || window.performance.getEntriesByType("navigation")[0]?.type === "reload")
 
+    // Проверяем флаг из sessionStorage
+    const pageAccessedByReload = sessionStorage.getItem("pageAccessedByReload") === "true"
+
     // Если страница была обновлена и мы не на главной странице
-    if (isPageRefreshed && location.pathname !== "/") {
+    if ((isPageRefreshed || pageAccessedByReload) && location.pathname !== "/") {
       console.log("Страница была обновлена, перенаправляем на главную")
       navigate("/", { replace: true })
     }
 
-    // Альтернативный подход с использованием sessionStorage
-    const pageAccessedByReload = sessionStorage.getItem("pageAccessedByReload") === "true"
-    if (pageAccessedByReload && location.pathname !== "/") {
-      console.log("Страница была обновлена (sessionStorage), перенаправляем на главную")
-      navigate("/", { replace: true })
+    // Устанавливаем обработчик события beforeunload
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem("pageAccessedByReload", "true")
     }
 
-    // Устанавливаем флаг для следующего обновления
-    window.addEventListener("beforeunload", () => {
-      sessionStorage.setItem("pageAccessedByReload", "true")
-    })
+    window.addEventListener("beforeunload", handleBeforeUnload)
 
-    // Сбрасываем флаг, если страница была загружена не через обновление
-    sessionStorage.setItem("pageAccessedByReload", "false")
+    // Очищаем обработчик при размонтировании
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload)
+    }
   }, [navigate, location])
 
   return null
@@ -131,7 +140,7 @@ const AppContent = React.memo(function AppContent({
   handleBalanceUpdate,
   shopData,
   minersData,
-  tasksData, // Добавляем tasksData
+  tasksData,
   handleTaskComplete,
   ratingData,
   transactionsData,
@@ -144,6 +153,13 @@ const AppContent = React.memo(function AppContent({
 
   // В начале функции AppContent добавьте:
   const [toast, setToast] = useState(null)
+  const location = useLocation()
+
+  // Добавляем эффект для сброса флага при навигации
+  useEffect(() => {
+    // Сбрасываем флаг при навигации между страницами
+    sessionStorage.setItem("pageAccessedByReload", "false")
+  }, [location.pathname])
 
   // Функция для показа уведомлений
   const showToast = (message, type = "success") => {
