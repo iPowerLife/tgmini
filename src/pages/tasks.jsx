@@ -14,6 +14,9 @@ export default function TasksPage({
   tasks: initialTasks,
   isLoading,
 }) {
+  // Добавим отладочный вывод
+  console.log("TasksPage render:", { initialTasks, isLoading })
+
   const [loading, setLoading] = useState(isLoading !== undefined ? isLoading : true)
   const [tasks, setTasks] = useState(initialTasks || [])
   const [user, setUser] = useState(initialUser || null)

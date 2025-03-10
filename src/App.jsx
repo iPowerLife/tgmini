@@ -319,7 +319,8 @@ function App() {
                   <TasksPage
                     user={user}
                     onBalanceUpdate={handleBalanceUpdate}
-                    tasks={dataCache.current.tasksData || []}
+                    tasks={dataCache.current.tasksData?.tasks || []}
+                    isLoading={dataCache.current.tasksData?.loading}
                   />
                 }
               />
