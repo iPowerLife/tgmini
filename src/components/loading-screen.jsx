@@ -2,32 +2,19 @@
 
 import { useState, useEffect } from "react"
 
-export default function LoadingScreen({ isLoading, loadingSteps, progress, onAnimationComplete }) {
+export default function LoadingScreen({ loadingProgress, loadingSteps }) {
   const [fadeOut, setFadeOut] = useState(false)
 
   useEffect(() => {
     // Когда прогресс достигает 100%, начинаем анимацию исчезновения
-    if (progress >= 100) {
+    if (loadingProgress >= 100) {
       const timer = setTimeout(() => {
         setFadeOut(true)
       }, 500)
 
       return () => clearTimeout(timer)
     }
-  }, [progress])
-
-  useEffect(() => {
-    // Когда анимация исчезновения завершена, вызываем колбэк
-    if (fadeOut) {
-      const timer = setTimeout(() => {
-        if (onAnimationComplete) {
-          onAnimationComplete()
-        }
-      }, 500) // Время анимации fadeOut
-
-      return () => clearTimeout(timer)
-    }
-  }, [fadeOut, onAnimationComplete])
+  }, [loadingProgress])
 
   // Функция для получения статуса шага загрузки
   const getStepStatus = (step) => {
@@ -63,10 +50,10 @@ export default function LoadingScreen({ isLoading, loadingSteps, progress, onAni
     return ""
   }
 
-  // Calculate how many steps are complete
+  // Подсчитываем завершенные шаги
   const completedSteps = Object.values(loadingSteps).filter((status) => status === "complete").length
   const totalSteps = Object.keys(loadingSteps).length
-  const stepProgress = Math.round((completedSteps / totalSteps) * 100)
+  const progress = Math.round((completedSteps / totalSteps) * 100)
 
   return (
     <div
@@ -84,14 +71,14 @@ export default function LoadingScreen({ isLoading, loadingSteps, progress, onAni
           <div className="h-2 w-full bg-gray-700 rounded-full overflow-hidden">
             <div
               className="h-full bg-blue-500 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${loadingProgress}%` }}
             ></div>
           </div>
           <div className="flex justify-between mt-1 text-sm">
             <span className="text-gray-400">
               Шаги: {completedSteps}/{totalSteps}
             </span>
-            <span className="text-gray-400">{Math.round(progress)}%</span>
+            <span className="text-gray-400">{Math.round(loadingProgress)}%</span>
           </div>
         </div>
 

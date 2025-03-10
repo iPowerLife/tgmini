@@ -251,11 +251,16 @@ function App() {
   // Добавьте хук для проверки Miner Pass
   const { hasMinerPass } = useMinerPass(user?.id)
 
-  // Функция для обновления прогресса загрузки
+  // В начале файла App.jsx, обновим функцию updateLoadingProgress
   const updateLoadingProgress = useCallback((step, status, progressIncrement = 0) => {
+    console.log(`Updating loading step: ${step} to ${status} with increment ${progressIncrement}`)
     setLoadingSteps((prev) => ({ ...prev, [step]: status }))
     if (progressIncrement > 0) {
-      setLoadingProgress((prev) => Math.min(100, prev + progressIncrement))
+      setLoadingProgress((prev) => {
+        const newProgress = Math.min(100, prev + progressIncrement)
+        console.log(`Updated loading progress: ${prev} -> ${newProgress}`)
+        return newProgress
+      })
     }
   }, [])
 
@@ -559,59 +564,108 @@ function App() {
   // Инициализация приложения
   const dataFetchedRef = useRef(false)
   // Update the useEffect that loads data to ensure images are fully loaded
+  // В useEffect для инициализации приложения
   useEffect(() => {
-    if (user && !dataFetchedRef.current) {
-      dataFetchedRef.current = true
+    let mounted = true
 
-      // First load all data
-      Promise.all([
-        loadShopData(),
-        loadMinersData(),
-        loadTasksData(),
-        loadRatingData(),
-        loadTransactionsData(),
-        loadRanksData(),
-        preloadMiningData(),
-      ])
-        .then(() => {
-          console.log("All data loaded successfully")
-          setLoadingProgress(70)
+    const initApp = async () => {
+      try {
+        setLoading(true)
+        setError(null)
 
-          // Then preload ALL images with higher priority
-          return Promise.all([preloadShopImages(), preloadTaskImages()])
-        })
-        .then(() => {
-          console.log("All images preloaded successfully")
-          setLoadingProgress(95)
+        // Начальный прогресс
+        console.log("Starting app initialization...")
+        setLoadingProgress(5)
+        updateLoadingProgress("database", "loading")
 
-          // Add a longer delay to ensure all images are fully processed and cached
-          return new Promise((resolve) => setTimeout(resolve, 2000))
-        })
-        .then(() => {
-          setLoadingProgress(100)
-          // Close loading screen after a small delay
-          setTimeout(() => setShowSplash(false), 500)
-        })
-        .catch((err) => {
-          console.error("Error loading data:", err)
-          setError(err.message || "Failed to load data")
+        // Mock implementations for Telegram functions
+        const initTelegram = () => {
+          // Replace with actual Telegram WebApp initialization logic if available
+          console.warn("Telegram WebApp initialization is mocked.")
+          return null // Or return a mock object if needed
+        }
 
-          // Even in case of error, close loading screen after 3 seconds
-          setTimeout(() => setShowSplash(false), 3000)
-        })
+        const getTelegramUser = () => {
+          // Replace with actual Telegram user retrieval logic
+          console.warn("Telegram user retrieval is mocked.")
+          return {
+            id: 123, // Replace with a mock user ID
+            username: "mockuser", // Replace with a mock username
+            first_name: "Mock", // Replace with a mock first name
+            last_name: "User", // Replace with a mock last name
+          }
+        }
+
+        const createOrUpdateUser = async (userData) => {
+          // Replace with actual user creation/update logic using Supabase
+          console.warn("User creation/update is mocked.")
+          return {
+            id: userData.id,
+            username: userData.username,
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+          }
+        }
+
+        const telegram = initTelegram()
+        console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
+
+        // Проверяем подключение к базе данных
+        try {
+          const { data: healthCheck, error: healthError } = await supabase.from("health_check").select("*").limit(1)
+
+          updateLoadingProgress("database", "complete", 10)
+          console.log("Database connection successful")
+        } catch (error) {
+          console.warn("Health check failed:", error)
+          updateLoadingProgress("database", "error")
+        }
+
+        // Загрузка данных пользователя
+        updateLoadingProgress("user", "loading")
+        const userData = getTelegramUser()
+        console.log("User data received:", userData)
+
+        if (!userData) {
+          throw new Error("No user data available")
+        }
+
+        // Создаем или обновляем пользователя
+        const newUser = await createOrUpdateUser(userData)
+
+        if (mounted && newUser) {
+          setUser(newUser)
+          updateLoadingProgress("user", "complete", 15)
+          console.log("User data processed successfully")
+
+          // Загружаем баланс
+          const { data: balanceData, error: balanceError } = await supabase
+            .from("users")
+            .select("balance")
+            .eq("id", newUser.id)
+            .single()
+
+          if (balanceError) throw balanceError
+
+          if (mounted) {
+            setBalance(balanceData?.balance || 0)
+            setLoadingProgress(40)
+          }
+        }
+      } catch (err) {
+        console.error("Error initializing app:", err)
+        setError(err.message || "Failed to initialize app")
+        updateLoadingProgress("database", "error")
+        updateLoadingProgress("user", "error")
+      }
     }
-  }, [
-    user,
-    loadShopData,
-    loadMinersData,
-    loadTasksData,
-    loadRatingData,
-    loadTransactionsData,
-    loadRanksData,
-    preloadMiningData,
-    preloadShopImages,
-    preloadTaskImages,
-  ])
+
+    initApp()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   // Обновление баланса
   const handleBalanceUpdate = useCallback(
