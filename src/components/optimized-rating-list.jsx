@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { Trophy, Users, Clock } from "lucide-react"
-import { getCachedRatings, updateCachedRatings, shouldUpdateRatings } from "../utils/rating-updater"
+import { getCachedRatings } from "../utils/rating-updater"
 
 export function OptimizedRatingList({ currentUserId, activeTab = "balance", onTabChange }) {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdate, setLastUpdate] = useState(null)
-  const [updating, setUpdating] = useState(false)
 
   // Загрузка кэшированных данных рейтинга
   useEffect(() => {
@@ -18,17 +17,7 @@ export function OptimizedRatingList({ currentUserId, activeTab = "balance", onTa
         setLoading(true)
         console.log(`Загрузка кэшированного рейтинга (${activeTab})...`)
 
-        // Проверяем, нужно ли обновить данные
-        const needsUpdate = await shouldUpdateRatings()
-
-        // Если данные устарели, обновляем их
-        if (needsUpdate && !updating) {
-          setUpdating(true)
-          console.log("Данные устарели, обновляем рейтинг...")
-          await updateCachedRatings()
-          setUpdating(false)
-        }
-
+        // Получаем кэшированные данные без автоматического обновления
         const { ratings, lastUpdate, error } = await getCachedRatings(activeTab === "balance" ? "balance" : "referrals")
 
         if (error) throw new Error(error)
@@ -44,7 +33,7 @@ export function OptimizedRatingList({ currentUserId, activeTab = "balance", onTa
     }
 
     fetchCachedRatings()
-  }, [activeTab, updating])
+  }, [activeTab])
 
   // Форматирование даты последнего обновления
   const formatLastUpdate = (dateString) => {

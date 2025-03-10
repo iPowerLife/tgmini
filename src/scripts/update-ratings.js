@@ -4,6 +4,7 @@ async function main() {
   console.log("Запуск обновления рейтинга...")
 
   try {
+    // Принудительно обновляем рейтинг
     const result = await updateCachedRatings()
 
     if (result.success) {
