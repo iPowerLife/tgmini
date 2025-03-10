@@ -18,7 +18,7 @@ import { RatingSection } from "./components/rating-section"
 import { UserProfile } from "./components/user-profile"
 import { createMockTasks } from "./utils/mock-data" // Импортируем функцию для создания тестовых заданий
 // Заменим импорт функции предзагрузки изображений
-import { preloadImages } from "./utils/image-loader"
+import { preloadImages } from "./utils/image-utils"
 
 // Простой компонент для уведомлений
 const Toast = ({ message, type, onClose }) => {

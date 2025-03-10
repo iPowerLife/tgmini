@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { isImageCached, preloadImage } from "../utils/image-loader"
+import { isImageCached, preloadImage } from "../utils/image-utils"
 
 export function OptimizedImage({
   src,
