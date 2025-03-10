@@ -63,6 +63,11 @@ export default function LoadingScreen({ isLoading, loadingSteps, progress, onAni
     return ""
   }
 
+  // Calculate how many steps are complete
+  const completedSteps = Object.values(loadingSteps).filter((status) => status === "complete").length
+  const totalSteps = Object.keys(loadingSteps).length
+  const stepProgress = Math.round((completedSteps / totalSteps) * 100)
+
   return (
     <div
       className={`fixed inset-0 bg-[#1A1F2E] flex flex-col items-center justify-center z-50 transition-opacity duration-500 ${
@@ -82,7 +87,12 @@ export default function LoadingScreen({ isLoading, loadingSteps, progress, onAni
               style={{ width: `${progress}%` }}
             ></div>
           </div>
-          <div className="text-right mt-1 text-gray-400 text-sm">{Math.round(progress)}%</div>
+          <div className="flex justify-between mt-1 text-sm">
+            <span className="text-gray-400">
+              Шаги: {completedSteps}/{totalSteps}
+            </span>
+            <span className="text-gray-400">{Math.round(progress)}%</span>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -127,7 +137,7 @@ export default function LoadingScreen({ isLoading, loadingSteps, progress, onAni
             </span>
             <div className="ml-2">
               <span className="text-white">Загрузка изображений</span>
-              {loadingSteps["images"] === "loading" && (
+              {loadingSteps["images"] !== "pending" && (
                 <p className="text-xs text-gray-400">{getStepDetail("images")}</p>
               )}
             </div>

@@ -83,34 +83,29 @@ export function preloadImage(src, options = {}) {
   })
 }
 
-/**
- * Предзагружает массив изображений
- * @param {Array<string|Object>} sources - Массив URL изображений или объектов {src, fallbackSrc}
- * @param {Function} onProgress - Колбэк для отслеживания прогресса (получает число от 0 до 1)
- * @param {Object} options - Дополнительные опции
- * @param {number} options.concurrency - Количество одновременных загрузок (по умолчанию 5)
- * @returns {Promise<Array>} - Promise с массивом результатов
- */
+// Update the preloadImages function to be more aggressive with shop images
 export function preloadImages(sources, onProgress, options = {}) {
   if (!sources || sources.length === 0) {
     return Promise.resolve([])
   }
 
-  const concurrency = options.concurrency || 5
+  const concurrency = options.priority ? 15 : options.concurrency || 5 // Increase concurrency for priority loads
   let loaded = 0
   const total = sources.length
 
-  // Нормализуем источники
+  console.log(`Starting to preload ${total} images with concurrency ${concurrency}`)
+
+  // Normalize sources
   const normalizedSources = sources.map((source) => (typeof source === "string" ? { src: source } : source))
 
-  // Для отслеживания всех промисов
+  // For tracking all promises
   const allPromises = []
-  // Текущие активные промисы
+  // Current active promises
   const activePromises = []
-  // Оставшиеся источники
+  // Remaining sources
   const queue = [...normalizedSources]
 
-  // Функция для запуска следующей загрузки
+  // Function to start next load
   const startNext = () => {
     if (queue.length === 0) return
 
@@ -135,7 +130,7 @@ export function preloadImages(sources, onProgress, options = {}) {
         return null
       })
       .finally(() => {
-        // Удаляем промис из активных и запускаем следующий
+        // Remove promise from active and start next
         const index = activePromises.indexOf(promise)
         if (index !== -1) {
           activePromises.splice(index, 1)
@@ -147,7 +142,7 @@ export function preloadImages(sources, onProgress, options = {}) {
     allPromises.push(promise)
   }
 
-  // Запускаем начальные загрузки
+  // Start initial loads
   for (let i = 0; i < Math.min(concurrency, normalizedSources.length); i++) {
     startNext()
   }
@@ -199,5 +194,37 @@ export async function getImageSize(src) {
     console.warn(`Failed to get image size for ${src}:`, error)
     return 0
   }
+}
+
+// Add a new function to force cache all shop images
+export function forceCacheShopImages(models) {
+  if (!models || models.length === 0) return Promise.resolve([])
+
+  console.log("Force caching all shop images...")
+
+  // Get all image URLs from models with fallback URLs
+  const imageUrls = models
+    .filter((model) => model.image_url && model.image_url.trim() !== "")
+    .map((model) => ({
+      src: model.image_url,
+      fallbackSrc: `/images/miners/default-${model.category_id || "basic"}.png`,
+    }))
+
+  // Also add default images for each category
+  const defaultImages = [
+    { src: "/images/miners/default-basic.png" },
+    { src: "/images/miners/default-advanced.png" },
+    { src: "/images/miners/default-premium.png" },
+    { src: "/images/miners/default.png" },
+  ]
+
+  // Combine all images
+  const allImages = [...imageUrls, ...defaultImages]
+
+  // Preload with high concurrency and priority
+  return preloadImages(allImages, null, {
+    concurrency: 20,
+    priority: true,
+  })
 }
 

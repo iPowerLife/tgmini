@@ -1,8 +1,7 @@
 ;("use client")
 
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom"
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 // Убедитесь, что импорт указывает на правильный файл
@@ -88,8 +87,6 @@ function ScrollToTop() {
   return null
 }
 
-
-
 // В функции AppContent добавим tasksData в параметры
 const AppContent = React.memo(function AppContent({
   user,
@@ -120,7 +117,7 @@ const AppContent = React.memo(function AppContent({
     <ToastContext.Provider value={{ showToast }}>
       <div className="root-container">
         <ScrollToTop />
-        
+
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
         {/* Единственный скроллируемый контейнер */}
@@ -508,31 +505,17 @@ function App() {
       console.log("Preloading shop images...")
       updateLoadingProgress("images", "loading")
 
-      // Собираем все URL изображений из моделей магазина с запасными URL
-      const imageUrls = shopData.models
-        .filter((model) => model.image_url && model.image_url.trim() !== "")
-        .map((model) => ({
-          src: model.image_url,
-          fallbackSrc: `/images/miners/default-${model.category_id || "basic"}.png`,
-        }))
+      // Import the forceCacheShopImages function
+      const { forceCacheShopImages } = await import("./utils/image-utils")
 
-      console.log(`Starting to preload ${imageUrls.length} shop images`)
-
-      // Предзагружаем изображения с увеличенным concurrency
-      await preloadImages(
-        imageUrls,
-        (progress) => {
-          // Обновляем прогресс загрузки (максимум 15%)
-          const progressIncrement = Math.floor(progress * 15)
-          if (progressIncrement > 0) {
-            updateLoadingProgress("images", "loading", progressIncrement)
-          }
-        },
-        { concurrency: 10 },
-      )
+      // Force cache all shop images with high priority
+      await forceCacheShopImages(shopData.models)
 
       console.log("Shop images preloaded successfully")
-      updateLoadingProgress("images", "complete", 5)
+      updateLoadingProgress("images", "complete", 15)
+
+      // Add a small delay to ensure images are fully processed
+      await new Promise((resolve) => setTimeout(resolve, 500))
     } catch (error) {
       console.error("Error preloading shop images:", error)
       updateLoadingProgress("images", "error")
@@ -575,121 +558,12 @@ function App() {
 
   // Инициализация приложения
   const dataFetchedRef = useRef(false)
-  useEffect(() => {
-    let mounted = true
-
-    const initApp = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        setLoadingProgress(5) // Начальный прогресс
-
-        console.log("Initializing app...")
-        updateLoadingProgress("database", "loading")
-
-        const telegram = initTelegram()
-        console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
-
-        // Проверяем подключение к базе данных
-        try {
-          const { data: healthCheck, error: healthError } = await supabase.from("health_check").select("*").limit(1)
-          if (healthError) {
-            console.warn("Health check table not found, but connection is working")
-          }
-        } catch (error) {
-          console.warn("Health check failed, but continuing:", error)
-        }
-
-        updateLoadingProgress("database", "complete", 10)
-        setLoadingProgress(15) // Прогресс после подключения к БД
-
-        updateLoadingProgress("user", "loading")
-        const userData = getTelegramUser()
-        console.log("User data:", userData)
-
-        // Обработка реферальной ссылки
-        const handleReferral = async (telegramUser) => {
-          try {
-            // Получаем параметр startapp
-            const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param
-            if (startParam && startParam.startsWith("ref")) {
-              const referrerId = startParam.substring(3) // Извлекаем ID реферера
-              console.log("Referral detected, referrer ID:", referrerId)
-
-              // Отправляем запрос на сервер для связывания пользователя с реферером
-              const { data, error } = await supabase
-                .from("users")
-                .update({ referrer_id: referrerId })
-                .eq("id", telegramUser.id)
-                .select()
-
-              if (error) {
-                console.error("Error updating referrer ID:", error)
-              } else {
-                console.log("Referrer ID updated successfully:", data)
-              }
-            }
-          } catch (error) {
-            console.error("Error handling referral:", error)
-          }
-        }
-
-        // Создаем или обновляем пользователя в базе данных
-        const newUser = await createOrUpdateUser(userData)
-
-        if (mounted && newUser) {
-          setUser(newUser)
-          updateLoadingProgress("user", "complete", 15)
-          setLoadingProgress(30) // Прогресс после загрузки пользователя
-
-          // Обрабатываем реферальную ссылку только при создании нового пользователя
-          if (newUser.created_at === newUser.updated_at) {
-            await handleReferral(newUser)
-          }
-
-          // Загружаем баланс пользователя
-          const { data: balanceData, error: balanceError } = await supabase
-            .from("users")
-            .select("balance")
-            .eq("id", newUser.id)
-            .single()
-
-          if (balanceError) throw balanceError
-
-          if (mounted) {
-            setBalance(balanceData?.balance || 0)
-            setLoadingProgress(40) // Прогресс после загрузки баланса
-          }
-        } else {
-          console.warn("User data is null or component unmounted")
-          updateLoadingProgress("user", "error")
-        }
-      } catch (err) {
-        console.error("Error initializing app:", err)
-        setError(err.message || "Failed to initialize app")
-        updateLoadingProgress("database", "error")
-        updateLoadingProgress("user", "error")
-      } finally {
-        if (mounted) {
-          setLoading(false)
-          setLoadingProgress(50) // Прогресс перед загрузкой данных
-        }
-      }
-    }
-
-    initApp()
-
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  // Загрузка данных после загрузки пользователя
+  // Update the useEffect that loads data to ensure images are fully loaded
   useEffect(() => {
     if (user && !dataFetchedRef.current) {
       dataFetchedRef.current = true
 
-      // Запускаем загрузку данных параллельно
+      // First load all data
       Promise.all([
         loadShopData(),
         loadMinersData(),
@@ -701,27 +575,28 @@ function App() {
       ])
         .then(() => {
           console.log("All data loaded successfully")
-          setLoadingProgress(80)
+          setLoadingProgress(70)
 
-          // Ждем завершения загрузки изображений
+          // Then preload ALL images with higher priority
           return Promise.all([preloadShopImages(), preloadTaskImages()])
         })
         .then(() => {
           console.log("All images preloaded successfully")
-          setLoadingProgress(100)
+          setLoadingProgress(95)
 
-          // Добавляем задержку для гарантии, что все изображения загружены
-          return new Promise((resolve) => setTimeout(resolve, 1000))
+          // Add a longer delay to ensure all images are fully processed and cached
+          return new Promise((resolve) => setTimeout(resolve, 2000))
         })
         .then(() => {
-          // Закрываем загрузочный экран после небольшой задержки
+          setLoadingProgress(100)
+          // Close loading screen after a small delay
           setTimeout(() => setShowSplash(false), 500)
         })
         .catch((err) => {
           console.error("Error loading data:", err)
           setError(err.message || "Failed to load data")
 
-          // Даже в случае ошибки закрываем загрузочный экран через 3 секунды
+          // Even in case of error, close loading screen after 3 seconds
           setTimeout(() => setShowSplash(false), 3000)
         })
     }

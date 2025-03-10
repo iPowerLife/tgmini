@@ -46,12 +46,12 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
   // Проверяем, не достигнут ли лимит
   const limitReached = purchaseLimit !== null && currentQuantity >= purchaseLimit && !hasMinerPass
 
-  // Функция для получения URL изображения майнера
+  // Function to get miner image URL with better fallback handling
   const getMinerImageUrl = (model) => {
     if (model.image_url) {
       return model.image_url
     }
-    return "/images/miners/default.png"
+    return `/images/miners/default-${minerType}.png`
   }
 
   // Цветовые схемы для разных типов майнеров
@@ -111,7 +111,8 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
             fallbackSrc={`/images/miners/default-${minerType}.png`}
             style={{ background: "#0B1622" }}
             objectFit="contain"
-            priority={true}
+            priority={true} // Always set priority to true for shop images
+            loading="eager" // Use eager loading for shop images
           />
         </div>
 

@@ -23,23 +23,23 @@ export function OptimizedImage({
   const imgRef = useRef(null)
 
   useEffect(() => {
-    // Сбрасываем состояние при изменении src
+    // Reset state when src changes
     setLoaded(false)
     setError(false)
 
-    // Если src пустой, используем fallbackSrc
+    // If src is empty, use fallbackSrc
     if (!src) {
       setImageSrc(fallbackSrc)
       return
     }
 
-    // Фиксируем URL изображения
+    // Fix image URL
     const fixedSrc = fixImageUrl(src)
 
-    // Устанавливаем исходный src
+    // Set initial src
     setImageSrc(fixedSrc)
 
-    // Если изображение уже в кэше, отмечаем его как загруженное
+    // If image is already in cache, mark it as loaded
     if (isImageCached(fixedSrc)) {
       console.log(`Image already cached (OptimizedImage): ${fixedSrc}`)
       setLoaded(true)
@@ -47,23 +47,22 @@ export function OptimizedImage({
       return
     }
 
-    // Если установлен приоритет, предзагружаем изображение
-    if (priority) {
-      preloadImage(fixedSrc, { fallbackSrc })
-        .then(() => {
-          if (imgRef.current) {
-            setLoaded(true)
-            if (onLoad) onLoad()
-          }
-        })
-        .catch(() => {
-          if (imgRef.current) {
-            setError(true)
-            setImageSrc(fallbackSrc)
-          }
-        })
-    }
-  }, [src, fallbackSrc, priority, onLoad])
+    // Always preload the image, not just when priority is true
+    // This ensures consistent behavior for all images
+    preloadImage(fixedSrc, { fallbackSrc })
+      .then(() => {
+        if (imgRef.current) {
+          setLoaded(true)
+          if (onLoad) onLoad()
+        }
+      })
+      .catch(() => {
+        if (imgRef.current) {
+          setError(true)
+          setImageSrc(fallbackSrc)
+        }
+      })
+  }, [src, fallbackSrc, onLoad])
 
   const handleLoad = () => {
     setLoaded(true)
