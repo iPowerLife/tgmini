@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { RatingList } from "../components/rating-list"
+import { OptimizedRatingList } from "../components/optimized-rating-list"
 
-const RatingPage = ({ user, initialData }) => {
+const RatingPage = ({ user }) => {
   const [activeTab, setActiveTab] = useState("balance")
 
   // Обработчик смены вкладки
@@ -11,21 +11,9 @@ const RatingPage = ({ user, initialData }) => {
     setActiveTab(tab)
   }
 
-  // Выводим данные для отладки
-  console.log("RatingPage render with:", {
-    user,
-    initialData,
-    activeTab,
-  })
-
   return (
     <div className="min-h-screen">
-      <RatingList
-        users={[]} // Убираем initialData?.users, пусть компонент сам загружает данные
-        currentUserId={user?.id}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-      />
+      <OptimizedRatingList currentUserId={user?.id} activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   )
 }
