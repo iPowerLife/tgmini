@@ -1,44 +1,62 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { fixImageUrl } from "../utils/image-helpers"
+import { useState, useEffect, useRef } from "react"
+import { isImageCached, preloadImage } from "../utils/image-loader"
 
 export function OptimizedImage({
   src,
   alt,
   className = "",
-  fallbackSrc,
+  fallbackSrc = "/placeholder.svg",
   width,
   height,
   priority = false,
   onLoad,
   style = {},
+  objectFit = "cover",
+  loading = "lazy",
 }) {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
   const [imageSrc, setImageSrc] = useState("")
+  const imgRef = useRef(null)
 
   useEffect(() => {
     // Сбрасываем состояние при изменении src
     setLoaded(false)
     setError(false)
 
-    // Исправляем URL изображения
-    const fixedSrc = fixImageUrl(src)
-    setImageSrc(fixedSrc || fallbackSrc)
+    // Если src пустой, используем fallbackSrc
+    if (!src) {
+      setImageSrc(fallbackSrc)
+      return
+    }
+
+    // Устанавливаем исходный src
+    setImageSrc(src)
+
+    // Если изображение уже в кэше, отмечаем его как загруженное
+    if (isImageCached(src)) {
+      setLoaded(true)
+      if (onLoad) onLoad()
+      return
+    }
 
     // Если установлен приоритет, предзагружаем изображение
-    if (priority && fixedSrc) {
-      const img = new Image()
-      img.src = fixedSrc
-      img.onload = () => {
-        setLoaded(true)
-        if (onLoad) onLoad()
-      }
-      img.onerror = () => {
-        setError(true)
-        setImageSrc(fallbackSrc)
-      }
+    if (priority) {
+      preloadImage(src, { fallbackSrc })
+        .then(() => {
+          if (imgRef.current) {
+            setLoaded(true)
+            if (onLoad) onLoad()
+          }
+        })
+        .catch(() => {
+          if (imgRef.current) {
+            setError(true)
+            setImageSrc(fallbackSrc)
+          }
+        })
     }
   }, [src, fallbackSrc, priority, onLoad])
 
@@ -68,12 +86,16 @@ export function OptimizedImage({
 
       {/* Изображение */}
       <img
+        ref={imgRef}
         src={imageSrc || "/placeholder.svg"}
         alt={alt || "Image"}
-        className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        className={`w-full h-full transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        style={{ objectFit, borderRadius: "inherit" }}
         onLoad={handleLoad}
         onError={handleError}
-        style={{ borderRadius: "inherit" }}
+        loading={loading}
+        width={width}
+        height={height}
       />
     </div>
   )

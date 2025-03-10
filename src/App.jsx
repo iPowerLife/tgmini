@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
+// Убедитесь, что импорт указывает на правильный файл
 import { supabase } from "./supabase"
 import HomePage from "./pages/home-page"
 import Shop from "./components/shop"
@@ -16,8 +17,8 @@ import TasksPage from "./pages/tasks"
 import { RatingSection } from "./components/rating-section"
 import { UserProfile } from "./components/user-profile"
 import { createMockTasks } from "./utils/mock-data" // Импортируем функцию для создания тестовых заданий
-// Добавьте импорт функции предзагрузки изображений в начало файла
-import { preloadImages } from "./utils/image-preloader"
+// Заменим импорт функции предзагрузки изображений
+import { preloadImages } from "./utils/image-loader"
 
 // Простой компонент для уведомлений
 const Toast = ({ message, type, onClose }) => {
@@ -239,7 +240,7 @@ function App() {
   const [minersData, setMinersData] = useState({ miners: [], totalPower: 0 })
   const [tasksData, setTasksData] = useState({ tasks: [], loading: true }) // Добавляем статус загрузки
   const [ratingData, setRatingData] = useState({ users: [] })
-  const [transactionsData, setTransactionsData] = useState({ transactions: [] })
+  const [transactionsData, setTransactionsData = useState({ transactions: [] })
   // Добавим новое состояние для рангов и функцию их загрузки
   const [ranksData, setRanksData] = useState({ ranks: [] })
 
@@ -258,7 +259,9 @@ function App() {
   }, [])
 
   // Загрузка данных магазина
+  // Обновим функцию loadShopData для начала предзагрузки изображений сразу после получения данных
   const loadShopData = useCallback(async () => {
+    \
     if (!user?.id) return
 
     try {
@@ -273,12 +276,32 @@ function App() {
       if (categoriesResponse.error) throw categoriesResponse.error
       if (modelsResponse.error) throw modelsResponse.error
 
+      const categories = categoriesResponse.data || []
+      const models = modelsResponse.data || []
+
       setShopData({
-        categories: categoriesResponse.data || [],
-        models: modelsResponse.data || [],
+        categories,
+        models,
       })
+
       console.log("Shop data loaded successfully")
       updateLoadingProgress("miners", "complete", 15)
+
+      // Начинаем предзагрузку изображений сразу после получения данных
+      if (models.length > 0) {
+        // Предзагружаем первые 5 изображений немедленно
+        const priorityImages = models
+          .slice(0, 5)
+          .filter((model) => model.image_url && model.image_url.trim() !== "")
+          .map((model) => ({
+            src: model.image_url,
+            fallbackSrc: `/images/miners/default-${model.category_id || "basic"}.png`,
+          }))
+
+        if (priorityImages.length > 0) {
+          preloadImages(priorityImages)
+        }
+      }
     } catch (error) {
       console.error("Error loading shop data:", error)
       updateLoadingProgress("miners", "error")
@@ -474,7 +497,7 @@ function App() {
     }
   }, [user?.id, cachedMiningInfo, updateLoadingProgress])
 
-  // Добавьте новую функцию для предзагрузки изображений после функции preloadMiningData
+  // Добавляем новую функцию для предзагрузки изображений после функции preloadMiningData
   const preloadShopImages = useCallback(async () => {
     if (!shopData.models || shopData.models.length === 0) return
 
@@ -482,13 +505,18 @@ function App() {
       console.log("Preloading shop images...")
       updateLoadingProgress("images", "loading")
 
-      // Собираем все URL изображений из моделей магазина
-      const imageUrls = shopData.models.map((model) => model.image_url).filter((url) => url && url.trim() !== "")
+      // Собираем все URL изображений из моделей магазина с запасными URL
+      const imageUrls = shopData.models
+        .filter((model) => model.image_url && model.image_url.trim() !== "")
+        .map((model) => ({
+          src: model.image_url,
+          fallbackSrc: `/images/miners/default-${model.category_id || "basic"}.png`,
+        }))
 
       // Предзагружаем изображения
       await preloadImages(imageUrls, (progress) => {
-        // Обновляем прогресс загрузки (максимум 10%)
-        const progressIncrement = Math.floor(progress * 10)
+        // Обновляем прогресс загрузки (максимум 15%)
+        const progressIncrement = Math.floor(progress * 15)
         if (progressIncrement > 0) {
           updateLoadingProgress("images", "loading", progressIncrement)
         }
@@ -679,7 +707,18 @@ function App() {
           setError(err.message || "Failed to load data")
         })
     }
-  }, [user]) // Зависимость только от user
+  }, [
+    user,
+    loadShopData,
+    loadMinersData,
+    loadTasksData,
+    loadRatingData,
+    loadTransactionsData,
+    loadRanksData,
+    preloadMiningData,
+    preloadShopImages,
+    preloadTaskImages,
+  ])
 
   // Обновление баланса
   const handleBalanceUpdate = useCallback(

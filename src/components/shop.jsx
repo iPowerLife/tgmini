@@ -20,6 +20,8 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import { supabase } from "../supabase"
+// Добавим импорт OptimizedImage в начало файла
+import { OptimizedImage } from "./optimized-image"
 
 // Add this component at the top level of the file, after imports
 const WarningMessage = () => (
@@ -102,15 +104,14 @@ const MinerCard = ({ miner, onBuy, userBalance, loading, currentQuantity, purcha
             boxShadow: colorScheme.borderGlow,
           }}
         >
-          <img
-            src={getMinerImageUrl(miner) || "/placeholder.svg"}
+          <OptimizedImage
+            src={getMinerImageUrl(miner)}
             alt={miner.display_name}
-            className="w-full h-full object-contain rounded-lg"
+            className="w-full h-full rounded-lg"
+            fallbackSrc={`/images/miners/default-${minerType}.png`}
             style={{ background: "#0B1622" }}
-            onError={(e) => {
-              e.target.src = "/images/miners/default.png"
-              e.target.onerror = null
-            }}
+            objectFit="contain"
+            priority={true}
           />
         </div>
 
