@@ -7,12 +7,12 @@ import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { supabase } from "./supabase"
 import HomePage from "./pages/home-page"
-import ShopPage from "./pages/shop-page" // Импортируем новую страницу магазина
+import ShopPage from "./pages/shop-page"
+import RatingPage from "./pages/rating-page"
+import ProfilePage from "./pages/profile-page"
 import React from "react"
 import LoadingScreen from "./components/loading-screen"
 import TasksPage from "./pages/tasks"
-import { RatingSection } from "./components/rating-section"
-import { UserProfile } from "./components/user-profile"
 import { preloadImages } from "./utils/image-preloader"
 import { createMockTasks } from "./utils/mock-data"
 
@@ -280,96 +280,94 @@ function App() {
     setUser((prev) => ({ ...prev, balance: newBalance }))
   }, [])
 
-  if (showSplash) {
-    return (
-      <LoadingScreen
-        isLoading={loading}
-        loadingSteps={loadingSteps}
-        progress={loadingProgress}
-        onAnimationComplete={() => setShowSplash(false)}
-      />
-    )
-  }
+  const renderContent = () => {
+    if (showSplash) {
+      return (
+        <LoadingScreen
+          isLoading={loading}
+          loadingSteps={loadingSteps}
+          progress={loadingProgress}
+          onAnimationComplete={() => setShowSplash(false)}
+        />
+      )
+    }
 
-  if (error) {
-    return (
-      <div className="root-container">
-        <div className="page-container">
-          <div className="section-container error">
-            <h2>Ошибка</h2>
-            <p>{error}</p>
-            <button onClick={() => window.location.reload()} className="shop-button mt-4">
-              Попробовать снова
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <DataContext.Provider value={dataCache.current}>
-      <Router>
+    if (error) {
+      return (
         <div className="root-container">
           <div className="page-container">
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <HomePage
-                    user={user}
-                    balance={balance}
-                    onBalanceUpdate={handleBalanceUpdate}
-                    cachedMiningInfo={dataCache.current.cachedMiningInfo}
-                  />
-                }
-              />
-              <Route
-                path="/miners"
-                element={
-                  <MinersList
-                    miners={dataCache.current.minersData?.miners || []}
-                    totalPower={dataCache.current.minersData?.totalPower || 0}
-                  />
-                }
-              />
-              <Route
-                path="/shop"
-                element={
-                  <ShopPage user={user} onPurchase={handleBalanceUpdate} initialData={dataCache.current.shopData} />
-                }
-              />
-              <Route
-                path="/tasks"
-                element={
-                  <TasksPage
-                    user={user}
-                    onBalanceUpdate={handleBalanceUpdate}
-                    tasks={dataCache.current.tasksData?.tasks || []}
-                    isLoading={dataCache.current.tasksData?.loading}
-                  />
-                }
-              />
-              <Route path="/rating" element={<RatingSection currentUserId={user?.id} />} />
-              <Route
-                path="/profile"
-                element={
-                  <UserProfile
-                    user={user}
-                    miners={dataCache.current.minersData?.miners || []}
-                    totalPower={dataCache.current.minersData?.totalPower || 0}
-                  />
-                }
-              />
-            </Routes>
-          </div>
-          <div className="fixed-bottom-menu">
-            <BottomMenu />
+            <div className="section-container error">
+              <h2>Ошибка</h2>
+              <p>{error}</p>
+              <button onClick={() => window.location.reload()} className="shop-button mt-4">
+                Попробовать снова
+              </button>
+            </div>
           </div>
         </div>
-      </Router>
-    </DataContext.Provider>
-  )
+      )
+    }
+
+    return (
+      <DataContext.Provider value={dataCache.current}>
+        <Router>
+          <div className="root-container">
+            <div className="page-container">
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <HomePage
+                      user={user}
+                      balance={balance}
+                      onBalanceUpdate={handleBalanceUpdate}
+                      cachedMiningInfo={dataCache.current.cachedMiningInfo}
+                    />
+                  }
+                />
+                <Route
+                  path="/miners"
+                  element={
+                    <MinersList
+                      miners={dataCache.current.minersData?.miners || []}
+                      totalPower={dataCache.current.minersData?.totalPower || 0}
+                    />
+                  }
+                />
+                <Route
+                  path="/shop"
+                  element={
+                    <ShopPage user={user} onPurchase={handleBalanceUpdate} initialData={dataCache.current.shopData} />
+                  }
+                />
+                <Route
+                  path="/tasks"
+                  element={
+                    <TasksPage
+                      user={user}
+                      onBalanceUpdate={handleBalanceUpdate}
+                      tasks={dataCache.current.tasksData?.tasks || []}
+                      isLoading={dataCache.current.tasksData?.loading}
+                    />
+                  }
+                />
+                <Route path="/rating" element={<RatingPage user={user} initialData={dataCache.current.ratingData} />} />
+                <Route
+                  path="/profile"
+                  element={<ProfilePage user={user} initialData={dataCache.current.minersData} />}
+                />
+              </Routes>
+            </div>
+            <div className="fixed-bottom-menu">
+              <BottomMenu />
+            </div>
+          </div>
+        </Router>
+      </DataContext.Provider>
+    )
+  }
+
+  return renderContent()
 }
 
 export default App

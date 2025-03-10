@@ -18,18 +18,18 @@ const globalRatingCache = {
   referrals: null,
 }
 
-export function RatingSection() {
+export function RatingSection({ currentUserId, initialData }) {
   const [activeTab, setActiveTab] = useState("balance")
-  const [sortedUsers, setSortedUsers] = useState(() => globalRatingCache[activeTab] || [])
+  const [sortedUsers, setSortedUsers] = useState(() => initialData || globalRatingCache[activeTab] || [])
   const [error, setError] = useState(null)
   const [lastUpdateTime, setLastUpdateTime] = useState("Загрузка...")
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(!initialData)
   const maxUsers = 100
   const containerRef = useRef(null)
 
   // Получаем данные пользователя из Telegram
   const telegramUser = useTelegramUser()
-  const currentUserId = telegramUser?.id || null
+  const userId = currentUserId || telegramUser?.id || null
 
   // При первой загрузке компонента очищаем кэш, чтобы применить новую логику отображения имен
   useEffect(() => {
@@ -39,6 +39,14 @@ export function RatingSection() {
 
   // Загрузка данных пользователей
   useEffect(() => {
+    // Если у нас есть initialData, используем его и не загружаем данные
+    if (initialData) {
+      setSortedUsers(initialData)
+      setLastUpdateTime(new Date().toLocaleString("ru-RU"))
+      setIsInitialLoad(false)
+      return
+    }
+
     async function fetchUsers() {
       try {
         // Проверяем наличие данных в глобальном кэше
@@ -122,7 +130,7 @@ export function RatingSection() {
     }
 
     fetchUsers()
-  }, [activeTab])
+  }, [activeTab, initialData])
 
   // Функция для получения отображаемого имени пользователя
   function getUserDisplayName(user) {
@@ -141,11 +149,11 @@ export function RatingSection() {
 
   // Находим позицию текущего пользователя в списке
   const findUserRealPosition = useCallback(() => {
-    if (!currentUserId || sortedUsers.length === 0) return null
+    if (!userId || sortedUsers.length === 0) return null
 
-    const position = sortedUsers.findIndex((user) => String(user.id) === String(currentUserId)) + 1
+    const position = sortedUsers.findIndex((user) => String(user.id) === String(userId)) + 1
     return position > 0 ? position : null
-  }, [sortedUsers, currentUserId])
+  }, [sortedUsers, userId])
 
   // Находим позицию текущего пользователя
   const currentUserPosition = findUserRealPosition()
@@ -192,7 +200,7 @@ export function RatingSection() {
   }
 
   // Получаем текущего пользователя
-  const currentUser = currentUserId ? sortedUsers.find((user) => String(user.id) === String(currentUserId)) : null
+  const currentUser = userId ? sortedUsers.find((user) => String(user.id) === String(userId)) : null
 
   // Получаем пользователя на последнем месте в топ-100
   const lastTopUser = sortedUsers.length > 0 ? sortedUsers[sortedUsers.length - 1] : null
@@ -263,7 +271,7 @@ export function RatingSection() {
               <div className="divide-y divide-gray-700/30">
                 {sortedUsers.map((user, index) => {
                   const isTopThree = index < 3
-                  const isCurrentUser = currentUserId && String(user.id) === String(currentUserId)
+                  const isCurrentUser = userId && String(user.id) === String(userId)
 
                   return (
                     <div
