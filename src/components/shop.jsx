@@ -362,7 +362,14 @@ const CategoryNavigation = ({ activeCategory, onCategoryChange }) => {
 }
 
 // В основном компоненте Shop обновляем структуру навигации
-export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerPass: initialHasMinerPass = false }) => {
+export const Shop = ({
+  user,
+  onPurchase,
+  categories = [],
+  models = [],
+  hasMinerPass: initialHasMinerPass = false,
+  isLoading = false,
+}) => {
   const [activeCategory, setActiveCategory] = useState("shop")
   const [activeType, setActiveType] = useState("basic")
   const [categoryMap, setCategoryMap] = useState({})
@@ -634,6 +641,15 @@ export const Shop = ({ user, onPurchase, categories = [], models = [], hasMinerP
 
   // Добавляем ключ updateCounter для принудительного обновления
   console.log("Rendering Shop with activeCategory:", activeCategory, "updateCounter:", updateCounter)
+
+  // Если данные загружаются, показываем индикатор загрузки
+  if (isLoading) {
+    return (
+      <div className="min-h-screen p-3 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen p-3">

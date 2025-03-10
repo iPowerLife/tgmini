@@ -7,7 +7,7 @@ import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { supabase } from "./supabase"
 import HomePage from "./pages/home-page"
-import Shop from "./components/shop"
+import ShopPage from "./pages/shop-page" // Импортируем новую страницу магазина
 import React from "react"
 import LoadingScreen from "./components/loading-screen"
 import TasksPage from "./pages/tasks"
@@ -114,13 +114,9 @@ function App() {
           setBalance(dbUser.balance)
 
           // Загружаем все данные только один раз
-          await Promise.all([
-            loadInitialData(userWithDisplay.id),
-            // Удаляем пустой массив и добавляем логику после загрузки данных
-          ])
+          await loadInitialData(userWithDisplay.id)
 
           // После загрузки всех данных, запускаем предзагрузку изображений
-          await loadInitialData(userWithDisplay.id)
           await preloadMinerImages()
 
           setLoadingProgress(100)
@@ -145,7 +141,7 @@ function App() {
     }
   }, [])
 
-  // Также добавим функцию для предзагрузки изображений майнеров после функции loadInitialData
+  // Функция для предзагрузки изображений майнеров
   const preloadMinerImages = async () => {
     if (!dataCache.current.shopData?.models) return
 
@@ -235,12 +231,14 @@ function App() {
       updateLoadingProgress("tasks", "complete", 15)
 
       // Загружаем остальные данные
-      const [ratingResponse, transactionsResponse, ranksResponse, miningInfoResponse] = await Promise.all([
-        supabase.rpc("get_users_rating"),
-        supabase.from("transactions").select("*").eq("user_id", userId).limit(5),
-        supabase.from("ranks").select("*").order("min_balance"),
-        supabase.rpc("get_mining_info_with_rewards", { user_id_param: userId }),
-      ])
+      const [ratingResponse, transactionsResponse, ranksResponse, miningInfoResponse, hasMinerPassResponse] =
+        await Promise.all([
+          supabase.rpc("get_users_rating"),
+          supabase.from("transactions").select("*").eq("user_id", userId).limit(5),
+          supabase.from("ranks").select("*").order("min_balance"),
+          supabase.rpc("get_mining_info_with_rewards", { user_id_param: userId }),
+          supabase.rpc("has_miner_pass", { user_id_param: userId }),
+        ])
 
       if (isMounted.current) {
         // Сохраняем все данные в кэш
@@ -248,6 +246,8 @@ function App() {
           shopData: {
             categories: categoriesResponse.data || [],
             models: modelsResponse.data || [],
+            hasMinerPass: hasMinerPassResponse.data || false,
+            userMiners: minersData || [],
           },
           minersData: {
             miners: minersData || [],
@@ -336,13 +336,7 @@ function App() {
               <Route
                 path="/shop"
                 element={
-                  <Shop
-                    user={user}
-                    onPurchase={handleBalanceUpdate}
-                    categories={dataCache.current.shopData?.categories || []}
-                    models={dataCache.current.shopData?.models || []}
-                    hasMinerPass={user?.has_miner_pass}
-                  />
+                  <ShopPage user={user} onPurchase={handleBalanceUpdate} initialData={dataCache.current.shopData} />
                 }
               />
               <Route
