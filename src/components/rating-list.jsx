@@ -109,7 +109,7 @@ export function RatingList({ currentUserId, activeTab = "balance", onTabChange }
           return (
             <div
               key={user.id}
-              className={`flex items-center p-3 rounded-lg ${
+              className={`flex items-center p-2 rounded-lg ${
                 isCurrentUser
                   ? "bg-blue-500/10 border-l-2 border-blue-500"
                   : index === 0
@@ -123,7 +123,7 @@ export function RatingList({ currentUserId, activeTab = "balance", onTabChange }
             >
               {/* Position indicator with matching colors */}
               <div
-                className={`w-8 h-8 flex items-center justify-center rounded-full mr-3 ${
+                className={`w-6 h-6 flex items-center justify-center rounded-full mr-2 text-sm ${
                   index === 0
                     ? "bg-gradient-to-r from-yellow-600 to-amber-500 text-white"
                     : index === 1
@@ -148,10 +148,10 @@ export function RatingList({ currentUserId, activeTab = "balance", onTabChange }
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-white font-medium truncate">{user.name}</div>
-                    <div className="text-gray-400 text-sm">Уровень {user.level}</div>
+                    <div className="text-white text-sm font-medium truncate">{user.name}</div>
+                    <div className="text-gray-400 text-xs">Уровень {user.level}</div>
                   </div>
-                  <div className="flex items-center text-blue-400">
+                  <div className="flex items-center text-blue-400 text-sm">
                     <span className="font-medium">
                       {activeTab === "balance" ? user.balance.toFixed(2) : user.referral_count}
                     </span>
