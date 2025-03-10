@@ -14,7 +14,7 @@ import TasksPage from "./pages/tasks"
 import { RatingSection } from "./components/rating-section"
 import { UserProfile } from "./components/user-profile"
 import { preloadImages } from "./utils/image-preloader"
-import { createMockTasks } from "./utils/mock-tasks"
+import { createMockTasks } from "./utils/mock-data"
 
 // Создаем контекст для кэширования данных
 const DataContext = React.createContext(null)
