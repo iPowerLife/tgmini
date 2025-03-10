@@ -18,6 +18,8 @@ import { UserProfile } from "./components/user-profile"
 import { createMockTasks } from "./utils/mock-data" // Импортируем функцию для создания тестовых заданий
 // Заменим импорт функции предзагрузки изображений
 import { preloadImages } from "./utils/image-utils"
+// Обновляем импорты
+import { getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 
 // Простой компонент для уведомлений
 const Toast = ({ message, type, onClose }) => {
@@ -578,85 +580,82 @@ function App() {
         setLoadingProgress(5)
         updateLoadingProgress("database", "loading")
 
-        // Mock implementations for Telegram functions
-        const initTelegram = () => {
-          // Replace with actual Telegram WebApp initialization logic if available
-          console.warn("Telegram WebApp initialization is mocked.")
-          return null // Or return a mock object if needed
-        }
-
-        const getTelegramUser = () => {
-          // Replace with actual Telegram user retrieval logic
-          console.warn("Telegram user retrieval is mocked.")
-          return {
-            id: 123, // Replace with a mock user ID
-            username: "mockuser", // Replace with a mock username
-            first_name: "Mock", // Replace with a mock first name
-            last_name: "User", // Replace with a mock last name
-          }
-        }
-
-        const createOrUpdateUser = async (userData) => {
-          // Replace with actual user creation/update logic using Supabase
-          console.warn("User creation/update is mocked.")
-          return {
-            id: userData.id,
-            username: userData.username,
-            first_name: userData.first_name,
-            last_name: userData.last_name,
-          }
-        }
-
-        const telegram = initTelegram()
-        console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
-
         // Проверяем подключение к базе данных
         try {
-          const { data: healthCheck, error: healthError } = await supabase.from("health_check").select("*").limit(1)
+          // Используем более простой запрос для проверки соединения
+          const { data, error } = await supabase.from("users").select("count").limit(1)
+
+          if (error) throw error
 
           updateLoadingProgress("database", "complete", 10)
           console.log("Database connection successful")
-        } catch (error) {
-          console.warn("Health check failed:", error)
+        } catch (dbError) {
+          console.error("Database connection failed:", dbError)
           updateLoadingProgress("database", "error")
+          throw new Error("Failed to connect to database")
         }
 
         // Загрузка данных пользователя
         updateLoadingProgress("user", "loading")
         const userData = getTelegramUser()
-        console.log("User data received:", userData)
 
-        if (!userData) {
-          throw new Error("No user data available")
+        if (!userData || !userData.id) {
+          throw new Error("Invalid Telegram user data")
         }
 
-        // Создаем или обновляем пользователя
-        const newUser = await createOrUpdateUser(userData)
+        console.log("User data received:", userData)
 
-        if (mounted && newUser) {
-          setUser(newUser)
-          updateLoadingProgress("user", "complete", 15)
-          console.log("User data processed successfully")
-
-          // Загружаем баланс
-          const { data: balanceData, error: balanceError } = await supabase
-            .from("users")
-            .select("balance")
-            .eq("id", newUser.id)
-            .single()
-
-          if (balanceError) throw balanceError
+        try {
+          // Создаем или обновляем пользователя с правильным форматом ID
+          const newUser = await createOrUpdateUser({
+            id: String(userData.id), // Преобразуем ID в строку
+            username: userData.username || "",
+            first_name: userData.first_name || "",
+            last_name: userData.last_name || "",
+          })
 
           if (mounted) {
-            setBalance(balanceData?.balance || 0)
-            setLoadingProgress(40)
+            setUser(newUser)
+            updateLoadingProgress("user", "complete", 15)
+            console.log("User data processed successfully")
+
+            // Загружаем баланс с правильным форматом ID
+            const { data: balanceData, error: balanceError } = await supabase
+              .from("users")
+              .select("balance")
+              .eq("id", String(newUser.id))
+              .single()
+
+            if (balanceError) throw balanceError
+
+            if (mounted) {
+              setBalance(balanceData?.balance || 0)
+              setLoadingProgress(40)
+
+              // Начинаем загрузку остальных данных
+              await Promise.all([
+                loadShopData(),
+                loadMinersData(),
+                loadTasksData(),
+                loadRatingData(),
+                loadTransactionsData(),
+                loadRanksData(),
+                preloadMiningData(),
+              ])
+            }
           }
+        } catch (userError) {
+          console.error("Error processing user:", userError)
+          updateLoadingProgress("user", "error")
+          throw userError
         }
       } catch (err) {
         console.error("Error initializing app:", err)
         setError(err.message || "Failed to initialize app")
-        updateLoadingProgress("database", "error")
-        updateLoadingProgress("user", "error")
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
 
