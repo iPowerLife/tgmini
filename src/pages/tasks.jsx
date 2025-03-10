@@ -4,10 +4,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { createMockTasks } from "../utils/mock-data"
 import { TaskCard } from "../components/tasks/task-card"
-// Оставляем только импорт DailyRewardTask
-import { DailyRewardTask } from "../components/daily-reward-task"
-// Добавьте импорт в начало файла
-import { DebugDailyReward } from "../components/debug-daily-reward"
+
 
 export default function TasksPage({
   user: initialUser,
