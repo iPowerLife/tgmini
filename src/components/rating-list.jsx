@@ -1,424 +1,163 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { Trophy, Users, Award, Crown, Search, ChevronUp, ChevronDown, User } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Trophy, Users } from "lucide-react"
 import { supabase } from "../supabase"
 
-const styles = {
-  container: {
-    padding: "20px",
-    fontFamily: "Arial, sans-serif",
-    maxWidth: "600px",
-    margin: "0 auto",
-  },
-  header: {
-    textAlign: "center",
-    marginBottom: "20px",
-  },
-  title: {
-    fontSize: "24px",
-    fontWeight: "bold",
-    color: "#333",
-  },
-  subtitle: {
-    fontSize: "14px",
-    color: "#777",
-  },
-  tabs: {
-    display: "flex",
-    marginBottom: "20px",
-  },
-  tab: {
-    flex: 1,
-    padding: "10px",
-    textAlign: "center",
-    cursor: "pointer",
-    borderBottom: "2px solid #ddd",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "5px",
-  },
-  activeTab: {
-    borderBottomColor: "#4CAF50",
-    color: "#4CAF50",
-    fontWeight: "bold",
-  },
-  inactiveTab: {
-    color: "#777",
-  },
-  searchContainer: {
-    position: "relative",
-    marginBottom: "20px",
-  },
-  searchIcon: {
-    position: "absolute",
-    left: "10px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    color: "#777",
-  },
-  searchInput: {
-    width: "100%",
-    padding: "10px 30px",
-    border: "1px solid #ddd",
-    borderRadius: "5px",
-    fontSize: "14px",
-  },
-  userList: {
-    overflowY: "auto",
-    maxHeight: "400px",
-  },
-  userItem: {
-    display: "flex",
-    alignItems: "center",
-    padding: "10px",
-    borderBottom: "1px solid #eee",
-    transition: "background-color 0.2s",
-    position: "relative",
-  },
-  currentUserItem: {
-    backgroundColor: "#f0f0f0",
-  },
-  position: {
-    width: "30px",
-    textAlign: "center",
-    marginRight: "10px",
-    fontSize: "14px",
-    color: "#555",
-  },
-  avatar: {
-    width: "40px",
-    height: "40px",
-    borderRadius: "50%",
-    overflow: "hidden",
-    marginRight: "10px",
-    backgroundColor: "#ddd",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: "16px",
-    fontWeight: "bold",
-    color: "#333",
-  },
-  userLevel: {
-    fontSize: "12px",
-    color: "#777",
-  },
-  metric: {
-    display: "flex",
-    alignItems: "center",
-    fontSize: "14px",
-    color: "#555",
-  },
-  expandButton: {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    padding: "0",
-    marginLeft: "10px",
-    color: "#777",
-  },
-  userDetails: {
-    padding: "10px",
-    backgroundColor: "#f9f9f9",
-    borderBottom: "1px solid #eee",
-  },
-  detailItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    fontSize: "14px",
-    color: "#555",
-    padding: "5px 0",
-  },
-  detailLabel: {
-    fontWeight: "bold",
-  },
-  detailValue: {
-    textAlign: "right",
-  },
-  loadingContainer: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100px",
-  },
-  loadingSpinner: {
-    border: "5px solid #f3f3f3",
-    borderTop: "5px solid #3498db",
-    borderRadius: "50%",
-    width: "50px",
-    height: "50px",
-    animation: "spin 2s linear infinite",
-    "@keyframes spin": {
-      "0%": { transform: "rotate(0deg)" },
-      "100%": { transform: "rotate(360deg)" },
-    },
-  },
-  emptyState: {
-    textAlign: "center",
-    padding: "20px",
-    color: "#777",
-  },
-  emptyStateText: {
-    fontSize: "16px",
-  },
-}
-
-const getPositionStyle = (index) => {
-  if (index === 0) {
-    return { color: "#FFD700", fontWeight: "bold" }
-  } else if (index === 1) {
-    return { color: "#C0C0C0", fontWeight: "bold" }
-  } else if (index === 2) {
-    return { color: "#CD7F32", fontWeight: "bold" }
-  }
-  return {}
-}
-
-const getPositionIcon = (index) => {
-  if (index === 0) {
-    return <Crown size={16} color="#FFD700" />
-  } else if (index === 1) {
-    return <Award size={16} color="#C0C0C0" />
-  } else if (index === 2) {
-    return <Trophy size={16} color="#CD7F32" />
-  }
-  return null
-}
-
-const getMetricValue = (user) => {
-  return user.balance.toFixed(2)
-}
-
-const getMetricIcon = () => {
-  return "💎"
-}
-
-export function RatingList({ users = [], currentUserId, activeTab = "balance", onTabChange }) {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filteredUsers, setFilteredUsers] = useState([])
-  const [expandedUser, setExpandedUser] = useState(null)
-  const containerRef = useRef(null)
-  const currentUserRef = useRef(null)
-  const [loading, setLoading] = useState(!users || users.length === 0)
+export function RatingList({ currentUserId, activeTab = "balance", onTabChange }) {
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Загрузка данных пользователей, если они не были переданы
+  // Загрузка данных пользователей
   useEffect(() => {
-    // Если у нас есть данные, используем их
-    if (users && users.length > 0) {
-      console.log("Using provided users data:", users.length, "users")
-      setFilteredUsers(users)
-      setLoading(false)
-      return
-    }
-
-    // Иначе загружаем данные из базы
     const fetchUsers = async () => {
       try {
         setLoading(true)
-        console.log("Fetching users data from database...")
+        console.log("Fetching users data...")
 
-        // Делаем запрос к базе данных с правильным типом данных
         const { data, error: supabaseError } = await supabase
           .from("users")
           .select(`
             id,
             telegram_id,
-            username,
             first_name,
-            last_name,
             photo_url,
             balance,
             level,
-            referral_count,
-            mining_power
+            referral_count
           `)
-          .order("balance", { ascending: false })
+          .order(activeTab === "balance" ? "balance" : "referral_count", { ascending: false })
           .limit(100)
 
-        if (supabaseError) {
-          throw supabaseError
-        }
+        if (supabaseError) throw supabaseError
 
-        if (!data) {
-          throw new Error("Нет данных")
-        }
+        if (!data) throw new Error("Нет данных")
 
-        console.log("Fetched", data.length, "users from database")
-
-        // Преобразуем данные для отображения
         const processedData = data.map((user) => ({
           id: user.telegram_id || user.id,
-          display_name: user.username ? `@${user.username}` : user.first_name || `User ${user.id}`,
+          name: user.first_name || "Пользователь",
           photo_url: user.photo_url,
           balance: Number(user.balance || 0),
           referral_count: Number(user.referral_count || 0),
           level: Number(user.level || 1),
-          mining_power: Number(user.mining_power || 0),
         }))
 
-        setFilteredUsers(processedData)
+        setUsers(processedData)
         setLoading(false)
       } catch (err) {
         console.error("Ошибка при загрузке данных:", err)
-        setError(err.message || "Не удалось загрузить данные рейтинга")
+        setError("Не удалось загрузить данные рейтинга")
         setLoading(false)
       }
     }
 
     fetchUsers()
-  }, [users])
+  }, [activeTab])
 
-  // Остальной код компонента остается без изменений...
-  // (оставляем весь остальной код как есть)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#1A1F2E] p-4">
+        <div className="flex justify-center items-center h-[200px]">
+          <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#1A1F2E] p-4">
+        <div className="text-center text-gray-400 py-8">{error}</div>
+      </div>
+    )
+  }
 
   return (
-    <div style={styles.container}>
+    <div className="min-h-screen bg-[#1A1F2E] p-4">
       {/* Заголовок */}
-      <div style={styles.header}>
-        <h1 style={styles.title}>Рейтинг игроков</h1>
-        <p style={styles.subtitle}>Соревнуйтесь с другими игроками и поднимайтесь в рейтинге</p>
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold text-white mb-2">Рейтинг игроков</h1>
+        <p className="text-gray-400 text-sm">Соревнуйтесь с другими игроками и поднимайтесь в рейтинге</p>
       </div>
 
       {/* Вкладки */}
-      <div style={styles.tabs}>
-        <div
-          style={{
-            ...styles.tab,
-            ...(activeTab === "balance" ? styles.activeTab : styles.inactiveTab),
-          }}
+      <div className="flex mb-6 bg-[#242838] rounded-lg p-1">
+        <button
           onClick={() => onTabChange("balance")}
+          className={`flex items-center justify-center gap-2 flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all
+            ${activeTab === "balance" ? "bg-[#3B82F6] text-white" : "text-gray-400 hover:text-gray-300"}`}
         >
           <Trophy size={16} />
           <span>По балансу</span>
-        </div>
-        <div
-          style={{
-            ...styles.tab,
-            ...(activeTab === "referrals" ? styles.activeTab : styles.inactiveTab),
-          }}
+        </button>
+        <button
           onClick={() => onTabChange("referrals")}
+          className={`flex items-center justify-center gap-2 flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all
+            ${activeTab === "referrals" ? "bg-[#3B82F6] text-white" : "text-gray-400 hover:text-gray-300"}`}
         >
           <Users size={16} />
           <span>По рефералам</span>
-        </div>
-      </div>
-
-      {/* Поиск */}
-      <div style={styles.searchContainer}>
-        <Search size={16} style={styles.searchIcon} />
-        <input
-          type="text"
-          placeholder="Поиск по имени..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={styles.searchInput}
-        />
+        </button>
       </div>
 
       {/* Список пользователей */}
-      {loading ? (
-        <div style={styles.loadingContainer}>
-          <div style={styles.loadingSpinner}></div>
-        </div>
-      ) : error ? (
-        <div style={styles.emptyState}>
-          <p style={styles.emptyStateText}>{error}</p>
-        </div>
-      ) : filteredUsers.length > 0 ? (
-        <div style={styles.userList} ref={containerRef}>
-          {filteredUsers.map((user, index) => {
-            const isCurrentUser = currentUserId && String(user.id) === String(currentUserId)
-            const isExpanded = expandedUser === user.id
+      <div className="space-y-2">
+        {users.map((user, index) => {
+          const isCurrentUser = currentUserId && String(user.id) === String(currentUserId)
 
-            return (
-              <div key={user.id}>
-                <div
-                  style={{
-                    ...styles.userItem,
-                    ...(isCurrentUser ? styles.currentUserItem : {}),
-                    cursor: "pointer",
-                  }}
-                  onClick={() => setExpandedUser(isExpanded ? null : user.id)}
-                  ref={isCurrentUser ? currentUserRef : null}
-                >
-                  {/* Позиция */}
-                  <div style={{ ...styles.position, ...getPositionStyle(index) }}>
-                    {getPositionIcon(index) || index + 1}
-                  </div>
-
-                  {/* Аватар */}
-                  <div style={styles.avatar}>
-                    {user.photo_url ? (
-                      <img
-                        src={user.photo_url || "/placeholder.svg"}
-                        alt={user.display_name}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    ) : (
-                      user.display_name?.[0] || <User size={16} />
-                    )}
-                  </div>
-
-                  {/* Информация о пользователе */}
-                  <div style={styles.userInfo}>
-                    <div style={styles.userName}>{user.display_name}</div>
-                    <div style={styles.userLevel}>Уровень {user.level || 1}</div>
-                  </div>
-
-                  {/* Метрика */}
-                  <div style={styles.metric}>
-                    <span>{getMetricValue(user)}</span>
-                    <span style={{ marginLeft: "4px" }}>{getMetricIcon()}</span>
-                  </div>
-
-                  {/* Кнопка раскрытия */}
-                  <button style={styles.expandButton}>
-                    {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </button>
-                </div>
-
-                {/* Детали пользователя */}
-                {isExpanded && (
-                  <div style={styles.userDetails}>
-                    <div style={styles.detailItem}>
-                      <span style={styles.detailLabel}>ID:</span>
-                      <span style={styles.detailValue}>{user.id}</span>
-                    </div>
-                    <div style={styles.detailItem}>
-                      <span style={styles.detailLabel}>Баланс:</span>
-                      <span style={styles.detailValue}>{user.balance.toFixed(2)} 💎</span>
-                    </div>
-                    <div style={styles.detailItem}>
-                      <span style={styles.detailLabel}>Рефералы:</span>
-                      <span style={styles.detailValue}>{user.referral_count} 👥</span>
-                    </div>
-                    <div style={styles.detailItem}>
-                      <span style={styles.detailLabel}>Уровень:</span>
-                      <span style={styles.detailValue}>{user.level} ⭐</span>
-                    </div>
-                    <div style={styles.detailItem}>
-                      <span style={styles.detailLabel}>Мощность:</span>
-                      <span style={styles.detailValue}>{user.mining_power.toFixed(2)} ⚡</span>
-                    </div>
-                  </div>
+          return (
+            <div
+              key={user.id}
+              className={`flex items-center p-3 rounded-lg ${
+                isCurrentUser ? "bg-blue-500/10 border-l-2 border-blue-500" : "bg-[#242838]"
+              }`}
+            >
+              {/* Позиция */}
+              <div className="w-6 text-center mr-3">
+                {index === 0 ? (
+                  <span className="text-yellow-400">👑</span>
+                ) : index === 1 ? (
+                  <span className="text-gray-400">🥈</span>
+                ) : index === 2 ? (
+                  <span className="text-amber-600">🥉</span>
+                ) : (
+                  <span className="text-gray-400">{index + 1}</span>
                 )}
               </div>
-            )
-          })}
-        </div>
-      ) : (
-        <div style={styles.emptyState}>
-          <p style={styles.emptyStateText}>{searchQuery ? "Пользователи не найдены" : "Нет данных для отображения"}</p>
-        </div>
-      )}
+
+              {/* Аватар */}
+              <div className="w-10 h-10 rounded-full bg-gray-700 overflow-hidden mr-3">
+                {user.photo_url ? (
+                  <img
+                    src={user.photo_url || "/placeholder.svg"}
+                    alt={user.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">{user.name[0]}</div>
+                )}
+              </div>
+
+              {/* Информация */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-white font-medium truncate">{user.name}</div>
+                    <div className="text-gray-400 text-sm">Уровень {user.level}</div>
+                  </div>
+                  <div className="flex items-center text-blue-400">
+                    <span className="font-medium">
+                      {activeTab === "balance" ? user.balance.toFixed(2) : user.referral_count}
+                    </span>
+                    <span className="ml-1">{activeTab === "balance" ? "💎" : "👥"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
