@@ -1,9 +1,8 @@
 ;("use client")
 
-// Заменяем импорты на оптимизированные версии
-import { useState, useEffect, useCallback, useMemo } from "react"
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom"
-import { initTelegram } from "./utils/telegram"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import { initTelegram, getTelegramUser, createOrUpdateUser } from "./utils/telegram"
 import { BottomMenu } from "./components/bottom-menu"
 import { MinersList } from "./components/miners-list"
 import { supabase } from "./supabase"
@@ -12,14 +11,13 @@ import Shop from "./components/shop"
 import { useMinerPass } from "./hooks/useMinerPass"
 import React from "react"
 import LoadingScreen from "./components/loading-screen"
+// Импортируем только TasksPage
 import TasksPage from "./pages/tasks"
 import { RatingSection } from "./components/rating-section"
 import { UserProfile } from "./components/user-profile"
+import { createMockTasks } from "./utils/mock-data" // Импортируем функцию для создания тестовых заданий
+// Добавьте импорт функции предзагрузки изображений в начало файла
 import { preloadImages } from "./utils/image-preloader"
-// Импортируем новые компоненты и хуки
-import { DataPrefetcher } from "./utils/data-prefetcher"
-import { useUserData } from "./hooks/use-user-data"
-import { clearQueryCache } from "./hooks/use-supabase-query"
 
 // Простой компонент для уведомлений
 const Toast = ({ message, type, onClose }) => {
@@ -34,16 +32,20 @@ const Toast = ({ message, type, onClose }) => {
     <div
       className={`
 fixed
-top-4
-right-4
-p-4
-rounded-lg
-shadow-lg
-${type === "error" ? "bg-red-500" : "bg-green-500"}
-text-white
-max-w-xs
+top - 4
+right - 4
+p - 4
+rounded - lg
+shadow - lg
+$
+{
+  type === "error" ? "bg-red-500" : "bg-green-500"
+}
+text - white
+max - w - xs
 z-50`}
     >
+      \
       <div className="flex justify-between">
         <span>{message}</span>
         <button onClick={onClose} className="ml-2 font-bold">
@@ -86,254 +88,173 @@ function ScrollToTop() {
 }
 
 // В функции AppContent добавим tasksData в параметры
-const AppContent = React.memo(
-  function AppContent({
-    user,
-    balance,
-    handleBalanceUpdate,
-    shopData,
-    minersData,
-    tasksData, // Добавляем tasksData
-    handleTaskComplete,
-    ratingData,
-    transactionsData,
-    ranksData,
-    hasMinerPass,
-    cachedMiningInfo,
-    onCacheUpdate,
-  }) {
-    console.log("AppContent rendered with:", { user, balance, minersData, ratingData, ranksData, hasMinerPass })
+function AppContent({
+  user,
+  balance,
+  handleBalanceUpdate,
+  shopData,
+  minersData,
+  tasksData, // Добавляем tasksData
+  handleTaskComplete,
+  ratingData,
+  transactionsData,
+  ranksData,
+  hasMinerPass,
+  cachedMiningInfo,
+  onCacheUpdate,
+}) {
+  console.log("AppContent rendered with:", { user, balance, minersData, ratingData, ranksData, hasMinerPass })
 
-    // В начале функции AppContent добавьте:
-    const [toast, setToast] = useState(null)
+  // В начале функции AppContent добавьте:
+  const [toast, setToast] = useState(null)
 
-    // Функция для показа уведомлений
-    const showToast = (message, type = "success") => {
-      setToast({ message, type })
-    }
+  // Функция для показа уведомлений
+  const showToast = (message, type = "success") => {
+    setToast({ message, type })
+  }
 
-    return (
-      <ToastContext.Provider value={{ showToast }}>
-        <div className="root-container">
-          <ScrollToTop />
-          {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+  return (
+    <ToastContext.Provider value={{ showToast }}>
+      <div className="root-container">
+        <ScrollToTop />
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-          {/* Единственный скроллируемый контейнер */}
-          <div className="page-container">
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <div className="page-content" key="home-page">
-                    <HomePage
-                      user={{ ...user, has_miner_pass: hasMinerPass }}
-                      balance={balance}
-                      minersData={minersData}
-                      ratingData={ratingData}
-                      transactionsData={transactionsData}
-                      ranksData={ranksData}
-                      onPurchase={handleBalanceUpdate}
-                      cachedMiningInfo={cachedMiningInfo}
-                      onCacheUpdate={onCacheUpdate}
-                    />
-                  </div>
-                }
-              />
-              <Route
-                path="/miners"
-                element={
-                  <div className="page-content" key="miners-page">
-                    <div className="balance-card">
-                      <div className="balance-background" />
-                      <div className="balance-content">
-                        <div className="balance-label">Баланс</div>
-                        <div className="balance-amount">
-                          <span>{balance.toFixed(2)}</span>
-                          <span className="balance-currency">💎</span>
-                        </div>
+        {/* Единственный скроллируемый контейнер */}
+        <div className="page-container">
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <div className="page-content" key="home-page">
+                  <HomePage
+                    user={{ ...user, has_miner_pass: hasMinerPass }}
+                    balance={balance}
+                    minersData={minersData}
+                    ratingData={ratingData}
+                    transactionsData={transactionsData}
+                    ranksData={ranksData}
+                    onPurchase={handleBalanceUpdate}
+                    cachedMiningInfo={cachedMiningInfo}
+                    onCacheUpdate={onCacheUpdate}
+                  />
+                </div>
+              }
+            />
+            <Route
+              path="/miners"
+              element={
+                <div className="page-content" key="miners-page">
+                  <div className="balance-card">
+                    <div className="balance-background" />
+                    <div className="balance-content">
+                      <div className="balance-label">Баланс</div>
+                      <div className="balance-amount">
+                        <span>{balance.toFixed(2)}</span>
+                        <span className="balance-currency">💎</span>
                       </div>
                     </div>
-                    <MinersList miners={minersData.miners} totalPower={minersData.totalPower} />
                   </div>
-                }
-              />
-              <Route
-                path="/shop"
-                element={
-                  <div className="page-content" key="shop-page">
-                    <Shop
-                      user={user}
-                      onPurchase={handleBalanceUpdate}
-                      categories={shopData.categories}
-                      models={shopData.models}
-                      hasMinerPass={hasMinerPass}
-                    />
-                  </div>
-                }
-              />
-              <Route
-                path="/tasks"
-                element={
-                  <div className="page-content" key="tasks-page">
-                    <TasksPage
-                      user={user}
-                      onBalanceUpdate={handleBalanceUpdate}
-                      onTaskComplete={handleTaskComplete}
-                      tasks={tasksData.tasks} // Передаем предзагруженные задания
-                      isLoading={tasksData.loading} // Передаем статус загрузки
-                    />
-                  </div>
-                }
-              />
-              <Route
-                path="/rating"
-                element={
-                  <div className="page-content" key="rating-page">
-                    <RatingSection currentUserId={user?.id} users={ratingData.users} />
-                  </div>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <div className="page-content" key="profile-page">
-                    <UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />
-                  </div>
-                }
-              />
-            </Routes>
-          </div>
-
-          {/* Фиксированное нижнее меню */}
-          <div className="fixed-bottom-menu">
-            <BottomMenu />
-          </div>
+                  <MinersList miners={minersData.miners} totalPower={minersData.totalPower} />
+                </div>
+              }
+            />
+            <Route
+              path="/shop"
+              element={
+                <div className="page-content" key="shop-page">
+                  <Shop
+                    user={user}
+                    onPurchase={handleBalanceUpdate}
+                    categories={shopData.categories}
+                    models={shopData.models}
+                    hasMinerPass={hasMinerPass}
+                  />
+                </div>
+              }
+            />
+            <Route
+              path="/tasks"
+              element={
+                <div className="page-content" key="tasks-page">
+                  <TasksPage
+                    user={user}
+                    onBalanceUpdate={handleBalanceUpdate}
+                    onTaskComplete={handleTaskComplete}
+                    tasks={tasksData.tasks} // Передаем предзагруженные задания
+                    isLoading={tasksData.loading} // Передаем статус загрузки
+                  />
+                </div>
+              }
+            />
+            <Route
+              path="/rating"
+              element={
+                <div className="page-content" key="rating-page">
+                  <RatingSection currentUserId={user?.id} users={ratingData.users} />
+                </div>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <div className="page-content" key="profile-page">
+                  <UserProfile user={user} miners={minersData.miners} totalPower={minersData.totalPower} />
+                </div>
+              }
+            />
+          </Routes>
         </div>
-      </ToastContext.Provider>
-    )
-  },
-  (prevProps, nextProps) => {
-    // Only re-render if these props actually changed
-    return (
-      prevProps.user?.id === nextProps.user?.id &&
-      prevProps.balance === nextProps.balance &&
-      prevProps.minersData === nextProps.minersData &&
-      prevProps.tasksData === nextProps.tasksData &&
-      prevProps.ratingData === nextProps.ratingData
-    )
-  },
-)
 
-// Mock data for tasks
-const createMockTasks = () => {
-  return [
-    {
-      id: "mock-task-1",
-      title: "Follow us on Twitter",
-      description: "Follow our official Twitter account to earn rewards.",
-      reward: 10,
-      category: { name: "social", display_name: "Social" },
-      icon_url: "https://abs.twimg.com/favicons/favicon.ico",
-      is_active: true,
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: "mock-task-2",
-      title: "Join our Telegram channel",
-      description: "Join our Telegram channel to stay updated.",
-      reward: 15,
-      category: { name: "social", display_name: "Social" },
-      icon_url: "https://telegram.org/img/t_logo.png",
-      is_active: true,
-      created_at: new Date().toISOString(),
-    },
-  ]
+        {/* Фиксированное нижнее меню */}
+        <div className="fixed-bottom-menu">
+          <BottomMenu />
+        </div>
+      </div>
+    </ToastContext.Provider>
+  )
 }
 
 function App() {
-  // Используем оптимизированный хук для получения данных пользователя
-  const { user, telegramUser, isLoading: userLoading, updateBalance, error: userError } = useUserData()
-
-  // Состояния для данных
-  const [shopData, setShopData] = useState({ categories: [], models: [] })
-  const [minersData, setMinersData] = useState({ miners: [], totalPower: 0 })
-  const [tasksData, setTasksData] = useState({ tasks: [], loading: true })
-  const [ratingData, setRatingData] = useState({ users: [] })
-  const [transactionsData, setTransactionsData] = useState({ transactions: [] })
-  const [ranksData, setRanksData] = useState({ ranks: [] })
-  const [cachedMiningInfo, setCachedMiningInfo] = useState(null)
+  // Существующие состояния и хуки остаются без изменений
+  const [user, setUser] = useState(null)
+  const [balance, setBalance] = useState(0)
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   // Новое состояние для загрузочного экрана
   const [showSplash, setShowSplash] = useState(true)
+  // Добавьте новый шаг загрузки в состояние loadingSteps
   const [loadingSteps, setLoadingSteps] = useState({
     database: "pending",
     user: "pending",
     miners: "pending",
     mining: "pending",
     tasks: "pending",
-    images: "pending",
-    shop: "pending",
+    images: "pending", // Добавляем шаг загрузки изображений
   })
   const [loadingProgress, setLoadingProgress] = useState(0)
 
-  // Добавляем
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  // Состояния для данных
+  const [shopData, setShopData] = useState({ categories: [], models: [] })
+  const [minersData, setMinersData] = useState({ miners: [], totalPower: 0 })
+  const [tasksData, setTasksData] = useState({ tasks: [], loading: true }) // Добавляем статус загрузки
+  const [ratingData, setRatingData] = useState({ users: [] })
+  const [transactionsData, setTransactionsData] = useState({ transactions: [] })
+  // Добавим новое состояние для рангов и функцию их загрузки
+  const [ranksData, setRanksData] = useState({ ranks: [] })
+
+  // Добавьте новое состояние для кэширования данных о майнинге
+  const [cachedMiningInfo, setCachedMiningInfo] = useState(null)
 
   // Добавьте хук для проверки Miner Pass
   const { hasMinerPass } = useMinerPass(user?.id)
 
-  // Инициализация Telegram
-  useEffect(() => {
-    initTelegram()
-
-    // Clear any existing cache when component mounts
-    clearQueryCache()
-
-    // Очищаем кэш при размонтировании компонента
-    return () => {
-      // Cleanup on unmount
-      clearQueryCache()
-      setShowSplash(false)
-      setLoadingProgress(0)
-      setLoadingSteps({
-        database: "pending",
-        user: "pending",
-        miners: "pending",
-        mining: "pending",
-        tasks: "pending",
-        images: "pending",
-        shop: "pending",
-      })
+  // Функция для обновления прогресса загрузки
+  const updateLoadingProgress = useCallback((step, status, progressIncrement = 0) => {
+    setLoadingSteps((prev) => ({ ...prev, [step]: status }))
+    if (progressIncrement > 0) {
+      setLoadingProgress((prev) => Math.min(100, prev + progressIncrement))
     }
-  }, [])
-
-  // Обработчик прогресса загрузки данных
-  const handleLoadingProgress = useCallback(({ step, progress }) => {
-    setLoadingSteps((prev) => ({
-      ...prev,
-      [step]: step === "complete" ? "complete" : "loading",
-    }))
-
-    setLoadingProgress(progress * 100)
-
-    if (step === "complete") {
-      // Завершаем все шаги
-      setLoadingSteps((prev) => {
-        const newSteps = {}
-        Object.keys(prev).forEach((key) => {
-          newSteps[key] = "complete"
-        })
-        return newSteps
-      })
-
-      // Скрываем загрузочный экран через 1.5 секунды
-      setTimeout(() => setShowSplash(false), 1500)
-    }
-  }, [])
-
-  // Обработчик завершения загрузки данных
-  const handleLoadingComplete = useCallback(() => {
-    setLoadingProgress(100)
   }, [])
 
   // Загрузка данных магазина
@@ -342,7 +263,7 @@ function App() {
 
     try {
       console.log("Loading shop data...")
-      setLoadingSteps((prev) => ({ ...prev, shop: "loading" }))
+      updateLoadingProgress("miners", "loading")
 
       const [categoriesResponse, modelsResponse] = await Promise.all([
         supabase.from("miner_categories").select("*").order("id"),
@@ -357,12 +278,12 @@ function App() {
         models: modelsResponse.data || [],
       })
       console.log("Shop data loaded successfully")
-      setLoadingSteps((prev) => ({ ...prev, shop: "complete" }))
+      updateLoadingProgress("miners", "complete", 15)
     } catch (error) {
       console.error("Error loading shop data:", error)
-      setLoadingSteps((prev) => ({ ...prev, shop: "error" }))
+      updateLoadingProgress("miners", "error")
     }
-  }, [user?.id])
+  }, [user?.id, updateLoadingProgress])
 
   // Загрузка данных майнеров
   const loadMinersData = useCallback(async () => {
@@ -374,15 +295,15 @@ function App() {
       const { data, error } = await supabase
         .from("user_miners")
         .select(`
-          *,
-          model:miner_models (
-            id,
-            name,
-            display_name,
-            mining_power,
-            energy_consumption
-          )
-        `)
+    *,
+    model:miner_models (
+      id,
+      name,
+      display_name,
+      mining_power,
+      energy_consumption
+    )
+  `)
         .eq("user_id", user.id)
         .order("purchased_at")
 
@@ -396,13 +317,13 @@ function App() {
     }
   }, [user?.id])
 
-  // Загрузка данных заданий
+  // Загрузка данных заданий - обновляем для предзагрузки
   const loadTasksData = useCallback(async () => {
     if (!user?.id) return
 
     try {
       console.log("Loading tasks data...")
-      setLoadingSteps((prev) => ({ ...prev, tasks: "loading" }))
+      updateLoadingProgress("tasks", "loading")
       setTasksData((prev) => ({ ...prev, loading: true }))
 
       // Получаем задания
@@ -427,14 +348,14 @@ function App() {
 
       setTasksData({ tasks, loading: false })
       console.log("Tasks data loaded successfully")
-      setLoadingSteps((prev) => ({ ...prev, tasks: "complete" }))
+      updateLoadingProgress("tasks", "complete", 15)
     } catch (error) {
       console.error("Error loading tasks data:", error)
       // Создаем тестовые данные при ошибке
       setTasksData({ tasks: createMockTasks(), loading: false })
-      setLoadingSteps((prev) => ({ ...prev, tasks: "error" }))
+      updateLoadingProgress("tasks", "error")
     }
-  }, [user?.id])
+  }, [user?.id, updateLoadingProgress])
 
   // Загрузка данных рейтинга
   const loadRatingData = useCallback(async () => {
@@ -496,7 +417,7 @@ function App() {
     }
   }, [user?.id])
 
-  // Загрузка рангов
+  // Добавим функцию загрузки рангов
   const loadRanksData = useCallback(async () => {
     try {
       console.log("Loading ranks data...")
@@ -518,12 +439,12 @@ function App() {
 
     try {
       console.log("Preloading mining data...")
-      setLoadingSteps((prev) => ({ ...prev, mining: "loading" }))
+      updateLoadingProgress("mining", "loading")
 
       // Проверяем, есть ли уже кэшированные данные
       if (cachedMiningInfo) {
         console.log("Using existing cached mining data")
-        setLoadingSteps((prev) => ({ ...prev, mining: "complete" }))
+        updateLoadingProgress("mining", "complete", 15)
         return
       }
 
@@ -546,20 +467,20 @@ function App() {
 
       setCachedMiningInfo(combinedData)
       console.log("Mining data preloaded successfully with pools:", combinedData)
-      setLoadingSteps((prev) => ({ ...prev, mining: "complete" }))
+      updateLoadingProgress("mining", "complete", 15)
     } catch (error) {
       console.error("Error preloading mining data:", error)
-      setLoadingSteps((prev) => ({ ...prev, mining: "error" }))
+      updateLoadingProgress("mining", "error")
     }
-  }, [user?.id, cachedMiningInfo])
+  }, [user?.id, cachedMiningInfo, updateLoadingProgress])
 
-  // Предзагрузка изображений магазина
+  // Добавьте новую функцию для предзагрузки изображений после функции preloadMiningData
   const preloadShopImages = useCallback(async () => {
     if (!shopData.models || shopData.models.length === 0) return
 
     try {
       console.log("Preloading shop images...")
-      setLoadingSteps((prev) => ({ ...prev, images: "loading" }))
+      updateLoadingProgress("images", "loading")
 
       // Собираем все URL изображений из моделей магазина
       const imageUrls = shopData.models.map((model) => model.image_url).filter((url) => url && url.trim() !== "")
@@ -569,24 +490,25 @@ function App() {
         // Обновляем прогресс загрузки (максимум 10%)
         const progressIncrement = Math.floor(progress * 10)
         if (progressIncrement > 0) {
-          setLoadingProgress((prev) => Math.min(90, prev + progressIncrement))
+          updateLoadingProgress("images", "loading", progressIncrement)
         }
       })
 
       console.log("Shop images preloaded successfully")
-      setLoadingSteps((prev) => ({ ...prev, images: "complete" }))
+      updateLoadingProgress("images", "complete", 5)
     } catch (error) {
       console.error("Error preloading shop images:", error)
-      setLoadingSteps((prev) => ({ ...prev, images: "error" }))
+      updateLoadingProgress("images", "error")
     }
-  }, [shopData.models])
+  }, [shopData.models, updateLoadingProgress])
 
-  // Предзагрузка изображений заданий
+  // Добавляем новую функцию для предзагрузки изображений заданий
   const preloadTaskImages = useCallback(async () => {
     if (!tasksData.tasks || tasksData.tasks.length === 0) return
 
     try {
       console.log("Preloading task images...")
+      updateLoadingProgress("images", "loading")
 
       // Собираем все URL изображений из заданий
       const imageUrls = tasksData.tasks.map((task) => task.icon_url).filter((url) => url && url.trim() !== "")
@@ -596,68 +518,185 @@ function App() {
         // Обновляем прогресс загрузки (максимум 5%)
         const progressIncrement = Math.floor(progress * 5)
         if (progressIncrement > 0) {
-          setLoadingProgress((prev) => Math.min(95, prev + progressIncrement))
+          updateLoadingProgress("images", "loading", progressIncrement)
         }
       })
 
       console.log("Task images preloaded successfully")
+      updateLoadingProgress("images", "complete", 5)
     } catch (error) {
       console.error("Error preloading task images:", error)
+      updateLoadingProgress("images", "error")
     }
-  }, [tasksData.tasks])
+  }, [tasksData.tasks, updateLoadingProgress])
 
-  // Обновление кэша майнинга
+  // Добавьте функцию для обновления кэша
   const updateMiningInfoCache = useCallback((data) => {
     console.log("Updating mining info cache:", data)
     setCachedMiningInfo(data)
   }, [])
 
-  // Загрузка данных после загрузки пользователя
+  // Инициализация приложения
   useEffect(() => {
     let mounted = true
 
-    const loadAllData = async () => {
-      if (!user || !mounted) return
-
+    const initApp = async () => {
       try {
-        // Only load data if we don't have it already
-        if (!shopData.models.length) await loadShopData()
-        if (!minersData.miners.length) await loadMinersData()
-        if (!tasksData.tasks.length) await loadTasksData()
-        if (!ratingData.users.length) await loadRatingData()
-        if (!transactionsData.transactions.length) await loadTransactionsData()
-        if (!ranksData.ranks.length) await loadRanksData()
-        if (!cachedMiningInfo) await preloadMiningData()
+        setLoading(true)
+        setError(null)
+        setLoadingProgress(5) // Начальный прогресс
 
-        if (mounted) {
-          console.log("All data loaded successfully")
-          setLoadingProgress(90)
+        console.log("Initializing app...")
+        updateLoadingProgress("database", "loading")
 
-          // Only preload images if we haven't already
-          if (shopData.models.length && !loadingSteps.images) {
-            await preloadShopImages()
-            await preloadTaskImages()
-            setLoadingProgress(100)
+        const telegram = initTelegram()
+        console.log("Telegram WebApp status:", telegram ? "доступен" : "недоступен")
+
+        // Проверяем подключение к базе данных
+        try {
+          const { data: healthCheck, error: healthError } = await supabase.from("health_check").select("*").limit(1)
+          if (healthError) {
+            console.warn("Health check table not found, but connection is working")
+          }
+        } catch (error) {
+          console.warn("Health check failed, but continuing:", error)
+        }
+
+        updateLoadingProgress("database", "complete", 10)
+        setLoadingProgress(15) // Прогресс после подключения к БД
+
+        updateLoadingProgress("user", "loading")
+        const userData = getTelegramUser()
+        console.log("User data:", userData)
+
+        // Обработка реферальной ссылки
+        const handleReferral = async (telegramUser) => {
+          try {
+            // Получаем параметр startapp
+            const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param
+            if (startParam && startParam.startsWith("ref")) {
+              const referrerId = startParam.substring(3) // Извлекаем ID реферера
+              console.log("Referral detected, referrer ID:", referrerId)
+
+              // Отправляем запрос на сервер для связывания пользователя с реферером
+              const { data, error } = await supabase
+                .from("users")
+                .update({ referrer_id: referrerId })
+                .eq("id", telegramUser.id)
+                .select()
+
+              if (error) {
+                console.error("Error updating referrer ID:", error)
+              } else {
+                console.log("Referrer ID updated successfully:", data)
+              }
+            }
+          } catch (error) {
+            console.error("Error handling referral:", error)
           }
         }
+
+        // Создаем или обновляем пользователя в базе данных
+        const newUser = await createOrUpdateUser(userData)
+
+        if (mounted && newUser) {
+          setUser(newUser)
+          updateLoadingProgress("user", "complete", 15)
+          setLoadingProgress(30) // Прогресс после загрузки пользователя
+
+          // Обрабатываем реферальную ссылку только при создании нового пользователя
+          if (newUser.created_at === newUser.updated_at) {
+            await handleReferral(newUser)
+          }
+
+          // Загружаем баланс пользователя
+          const { data: balanceData, error: balanceError } = await supabase
+            .from("users")
+            .select("balance")
+            .eq("id", newUser.id)
+            .single()
+
+          if (balanceError) throw balanceError
+
+          if (mounted) {
+            setBalance(balanceData?.balance || 0)
+            setLoadingProgress(40) // Прогресс после загрузки баланса
+          }
+        } else {
+          console.warn("User data is null or component unmounted")
+          updateLoadingProgress("user", "error")
+        }
       } catch (err) {
-        console.error("Error loading data:", err)
+        console.error("Error initializing app:", err)
+        setError(err.message || "Failed to initialize app")
+        updateLoadingProgress("database", "error")
+        updateLoadingProgress("user", "error")
+      } finally {
+        if (mounted) {
+          setLoading(false)
+          setLoadingProgress(50) // Прогресс перед загрузкой данных
+        }
       }
     }
 
-    loadAllData()
+    initApp()
 
     return () => {
       mounted = false
     }
-  }, [user?.id])
+  }, [])
 
-  // Обработчик обновления баланса
+  // Загрузка данных после загрузки пользователя
+  useEffect(() => {
+    if (user) {
+      // Запускаем загрузку данных параллельно
+      Promise.all([
+        loadShopData(),
+        loadMinersData(),
+        loadTasksData(), // Загружаем данные заданий
+        loadRatingData(),
+        loadTransactionsData(),
+        loadRanksData(),
+        preloadMiningData(),
+      ])
+        .then(() => {
+          console.log("All data loaded successfully")
+          setLoadingProgress(90) // Прогресс после загрузки всех данных
+          return preloadShopImages() // Предзагружаем изображения магазина после загрузки данных
+        })
+        .then(() => {
+          console.log("Shop images preloaded successfully")
+          return preloadTaskImages() // Предзагружаем изображения заданий после загрузки изображений магазина
+        })
+        .then(() => {
+          console.log("Task images preloaded successfully")
+          setLoadingProgress(100) // Полный прогресс после предзагрузки изображений
+          setTimeout(() => setShowSplash(false), 1500) // Скрываем загрузочный экран через 1.5 секунды
+        })
+        .catch((err) => {
+          console.error("Error loading data:", err)
+          setError(err.message || "Failed to load data")
+        })
+    }
+  }, [
+    user,
+    loadShopData,
+    loadMinersData,
+    loadTasksData,
+    loadRatingData,
+    loadTransactionsData,
+    loadRanksData,
+    preloadMiningData,
+    preloadShopImages,
+    preloadTaskImages,
+  ])
+
+  // Обновление баланса
   const handleBalanceUpdate = useCallback(
     async (newBalance) => {
-      await updateBalance(newBalance)
+      setBalance(newBalance)
     },
-    [updateBalance],
+    [setBalance],
   )
 
   // Обработчик завершения задачи
@@ -673,11 +712,11 @@ function App() {
 
         if (error) {
           console.error("Error completing task:", error)
-          return false
+          return false // Возвращаем false в случае ошибки
         }
 
         // Обновляем баланс пользователя
-        await updateBalance(user.balance + reward)
+        setBalance((prevBalance) => prevBalance + reward)
 
         // Обновляем состояние задач, чтобы убрать выполненную задачу из списка
         setTasksData((prevTasksData) => ({
@@ -685,13 +724,13 @@ function App() {
           tasks: prevTasksData.tasks.filter((task) => task.id !== taskId),
         }))
 
-        return true
+        return true // Возвращаем true, если задача успешно завершена
       } catch (error) {
         console.error("Error completing task:", error)
-        return false
+        return false // Возвращаем false в случае ошибки
       }
     },
-    [user, updateBalance],
+    [user?.id, setBalance],
   )
 
   // Memoize tasksData
@@ -700,32 +739,20 @@ function App() {
   // Отображение загрузочного экрана или контента приложения
   return (
     <Router>
-      {isInitialLoad && showSplash ? (
-        <>
-          <LoadingScreen loadingProgress={loadingProgress} loadingSteps={loadingSteps} />
-          {user && (
-            <DataPrefetcher
-              userId={user.id}
-              onProgress={handleLoadingProgress}
-              onComplete={() => {
-                handleLoadingComplete()
-                setIsInitialLoad(false)
-              }}
-            />
-          )}
-        </>
-      ) : userLoading ? (
+      {showSplash ? (
+        <LoadingScreen loadingProgress={loadingProgress} loadingSteps={loadingSteps} />
+      ) : loading ? (
         <LoadingFallback />
-      ) : userError ? (
-        <div className="error-container">Error: {userError}</div>
+      ) : error ? (
+        <div className="error-container">Error: {error}</div>
       ) : (
         <AppContent
           user={user}
-          balance={user?.balance || 0}
+          balance={balance}
           handleBalanceUpdate={handleBalanceUpdate}
           shopData={shopData}
           minersData={minersData}
-          tasksData={memoizedTasksData}
+          tasksData={memoizedTasksData} // Передаем memoizedTasksData
           handleTaskComplete={handleTaskComplete}
           ratingData={ratingData}
           transactionsData={transactionsData}
