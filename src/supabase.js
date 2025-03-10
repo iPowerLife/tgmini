@@ -4,8 +4,20 @@ const supabaseUrl = "https://tphsnmoitxericjvgwwn.supabase.co"
 const supabaseKey =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwaHNubW9pdHhlcmljanZnd3duIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2MjI3NDEsImV4cCI6MjA1NjE5ODc0MX0.ZArqTk-yG6PFaVQmSaoymvyGXF3McWhmPC7MePYK_lQ"
 
-// Создаем клиент с минимальной конфигурацией
-export const supabase = createClient(supabaseUrl, supabaseKey)
+// Создаем клиент с конфигурацией для у��еньшения сообщений о переподключении
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  realtime: {
+    params: {
+      eventsPerSecond: 2, // Уменьшаем частоту переподключений
+    },
+    logger: (log) => {
+      // Отключаем логи reconnecting в консоли
+      if (!log.message.includes("reconnecting")) {
+        console.log(log)
+      }
+    },
+  },
+})
 
 // Функция для проверки подключения
 export async function checkSupabaseConnection() {
