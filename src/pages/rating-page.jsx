@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { OptimizedRatingList } from "../components/rating-list"
+import { RatingList } from "../components/rating-list"
 
 const RatingPage = ({ user }) => {
   const [activeTab, setActiveTab] = useState("balance")
