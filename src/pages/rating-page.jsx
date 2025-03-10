@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { RatingList } from "../components/rating-list"
 
-const RatingPage = ({ initialData, user }) => {
+const RatingPage = ({ user, initialData }) => {
   const [activeTab, setActiveTab] = useState("balance")
 
   // Обработчик смены вкладки
@@ -12,13 +12,16 @@ const RatingPage = ({ initialData, user }) => {
   }
 
   // Выводим данные для отладки
-  console.log("RatingPage initialData:", initialData)
-  console.log("RatingPage user:", user)
+  console.log("RatingPage render with:", {
+    user,
+    initialData,
+    activeTab,
+  })
 
   return (
     <div className="min-h-screen">
       <RatingList
-        users={initialData?.users || []}
+        users={[]} // Убираем initialData?.users, пусть компонент сам загружает данные
         currentUserId={user?.id}
         activeTab={activeTab}
         onTabChange={handleTabChange}
