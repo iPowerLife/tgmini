@@ -9,5 +9,20 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    sourcemap: true, // Генерировать полные sourcemap
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Разделение кода на чанки для оптимизации
+          vendor: ["react", "react-dom", "react-router-dom"],
+          ui: ["lucide-react"],
+        },
+      },
+    },
+  },
+  optimizeDeps: {
+    include: ["react", "react-dom", "react-router-dom"],
+  },
 })
 
