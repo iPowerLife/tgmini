@@ -2,110 +2,67 @@
 
 import { useState, useEffect } from "react"
 
-export default function LoadingScreen({ isLoading, loadingSteps, progress, onAnimationComplete }) {
-  const [fadeOut, setFadeOut] = useState(false)
+export function LoadingScreen({ onLoadComplete }) {
+  const [progress, setProgress] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Когда прогресс достигает 100%, начинаем анимацию исчезновения
-    if (progress >= 100) {
-      const timer = setTimeout(() => {
-        setFadeOut(true)
-      }, 500)
+    const minerImages = [
+      "/miners/miner1.png",
+      "/miners/miner2.png",
+      "/miners/miner3.png",
+      "/miners/miner4.png",
+      "/miners/miner5.png",
+      "/miners/miner6.png",
+      "/miners/miner7.png",
+      "/miners/miner8.png",
+      "/miners/miner9.png",
+      "/miners/miner10.png",
+      "/miners/miner11.png",
+      "/miners/miner12.png",
+    ]
 
-      return () => clearTimeout(timer)
+    const preloadImages = async () => {
+      const totalImages = minerImages.length
+      let loadedImages = 0
+
+      const loadImage = (src) =>
+        new Promise((resolve, reject) => {
+          const img = new Image()
+          img.src = src
+          img.onload = () => resolve()
+          img.onerror = () => resolve() // Продолжаем загрузку даже если картинка не загрузилась
+        })
+
+      for (const src of minerImages) {
+        await loadImage(src)
+        loadedImages++
+        setProgress((loadedImages / totalImages) * 100)
+      }
+
+      setIsLoading(false)
+      if (onLoadComplete) {
+        onLoadComplete()
+      }
     }
-  }, [progress])
 
-  useEffect(() => {
-    // Когда анимация исчезновения завершена, вызываем колбэк
-    if (fadeOut) {
-      const timer = setTimeout(() => {
-        if (onAnimationComplete) {
-          onAnimationComplete()
-        }
-      }, 500) // Время анимации fadeOut
-
-      return () => clearTimeout(timer)
-    }
-  }, [fadeOut, onAnimationComplete])
-
-  // Функция для получения статуса шага загрузки
-  const getStepStatus = (step) => {
-    const status = loadingSteps[step]
-    if (status === "complete") return "✓"
-    if (status === "loading") return "⟳"
-    if (status === "error") return "✗"
-    return "•"
-  }
-
-  // Функция для получения класса статуса шага загрузки
-  const getStepStatusClass = (step) => {
-    const status = loadingSteps[step]
-    if (status === "complete") return "text-green-500"
-    if (status === "loading") return "text-blue-500 animate-spin"
-    if (status === "error") return "text-red-500"
-    return "text-gray-400"
-  }
+    preloadImages()
+  }, [onLoadComplete])
 
   return (
-    <div
-      className={`fixed inset-0 bg-[#1A1F2E] flex flex-col items-center justify-center z-50 transition-opacity duration-500 ${
-        fadeOut ? "opacity-0" : "opacity-100"
-      }`}
-    >
-      <div className="w-full max-w-md px-4">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Загрузка</h1>
-          <p className="text-gray-400">Подготавливаем приложение...</p>
+    <div className="fixed inset-0 bg-[#1a1b23] flex items-center justify-center z-50">
+      <div className="w-full max-w-md p-4">
+        <div className="text-center mb-4">
+          <h2 className="text-xl font-bold text-white mb-2">Загрузка игры...</h2>
+          <p className="text-gray-400 text-sm">Подождите, идет загрузка ресурсов</p>
         </div>
 
-        <div className="mb-6">
-          <div className="h-2 w-full bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-500 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-          <div className="text-right mt-1 text-gray-400 text-sm">{Math.round(progress)}%</div>
+        <div className="bg-gray-700 rounded-full h-2 overflow-hidden">
+          <div className="bg-blue-500 h-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }} />
         </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("database")}`}>
-              {getStepStatus("database")}
-            </span>
-            <span className="ml-2 text-white">Подключение к базе данных</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("user")}`}>
-              {getStepStatus("user")}
-            </span>
-            <span className="ml-2 text-white">Загрузка данных пользователя</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("miners")}`}>
-              {getStepStatus("miners")}
-            </span>
-            <span className="ml-2 text-white">Загрузка майнеров</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("tasks")}`}>
-              {getStepStatus("tasks")}
-            </span>
-            <span className="ml-2 text-white">Загрузка заданий</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("mining")}`}>
-              {getStepStatus("mining")}
-            </span>
-            <span className="ml-2 text-white">Загрузка данных майнинга</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("images")}`}>
-              {getStepStatus("images")}
-            </span>
-            <span className="ml-2 text-white">Загрузка изображений</span>
-          </div>
+        <div className="text-center mt-2">
+          <span className="text-gray-400 text-sm">{Math.round(progress)}%</span>
         </div>
       </div>
     </div>
