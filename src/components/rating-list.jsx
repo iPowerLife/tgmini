@@ -57,7 +57,7 @@ export function RatingList({ currentUserId, activeTab = "balance", onTabChange }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1A1F2E] p-4">
+      <div className="min-h-screen p-4">
         <div className="flex justify-center items-center h-[200px]">
           <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
         </div>
@@ -67,14 +67,14 @@ export function RatingList({ currentUserId, activeTab = "balance", onTabChange }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#1A1F2E] p-4">
+      <div className="min-h-screen p-4">
         <div className="text-center text-gray-400 py-8">{error}</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#1A1F2E] p-4">
+    <div className="min-h-screen p-4">
       {/* Заголовок */}
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold text-white mb-2">Рейтинг игроков</h1>
