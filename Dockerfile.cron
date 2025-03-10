@@ -1,0 +1,14 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Копируем только необходимые файлы для установки зависимостей
+COPY package.json package-lock.json ./
+RUN npm ci --only=production
+
+# Копируем исходный код
+COPY . .
+
+# Запускаем скрипт обновления рейтинга
+CMD ["npm", "run", "update-ratings"]
+
