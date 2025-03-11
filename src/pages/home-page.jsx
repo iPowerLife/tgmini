@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 
 const HomePage = ({ user }) => {
@@ -15,6 +15,7 @@ const HomePage = ({ user }) => {
     totalMined: 0,
   })
   const navigate = useNavigate()
+  const containerRef = useRef(null)
 
   // Загрузка данных пользователя
   useEffect(() => {
@@ -23,6 +24,42 @@ const HomePage = ({ user }) => {
       // и обновить состояние minerInfo
     }
   }, [user])
+
+  // Предотвращение прокрутки, но разрешение жеста закрытия
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    // Функция для обработки события wheel (колесико мыши)
+    const preventWheel = (e) => {
+      e.preventDefault()
+    }
+
+    // Функция для обработки события touchmove
+    const handleTouchMove = (e) => {
+      // Получаем направление свайпа
+      const touchY = e.touches[0].clientY
+
+      // Если это не начальное касание и контейнер в верхней позиции,
+      // и свайп идет вниз - не блокируем (это жест закрытия в Телеграме)
+      if (container.scrollTop === 0 && touchY > 0) {
+        return
+      }
+
+      // В остальных случаях блокируем прокрутку
+      e.preventDefault()
+    }
+
+    // Добавляем обработчики событий
+    container.addEventListener("wheel", preventWheel, { passive: false })
+    container.addEventListener("touchmove", handleTouchMove, { passive: false })
+
+    // Удаляем обработчики при размонтировании
+    return () => {
+      container.removeEventListener("wheel", preventWheel)
+      container.removeEventListener("touchmove", handleTouchMove)
+    }
+  }, [])
 
   // Обработчик перехода в магазин
   const handleShopClick = () => {
@@ -45,7 +82,7 @@ const HomePage = ({ user }) => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div ref={containerRef} className="h-screen overflow-hidden touch-none" style={{ touchAction: "none" }}>
       {/* Фоновое изображение */}
       <div
         className="fixed inset-0 z-0"
@@ -62,7 +99,7 @@ const HomePage = ({ user }) => {
       </div>
 
       {/* Основной контент */}
-      <div className="relative z-10 min-h-screen flex flex-col">
+      <div className="relative z-10 h-full flex flex-col">
         {/* Верхний блок с балансом */}
         <div className="bg-[#242838]/80 backdrop-blur-sm p-3 rounded-lg mx-2 mt-2">
           <div className="text-center">
@@ -302,9 +339,6 @@ const HomePage = ({ user }) => {
             </div>
           </div>
         </div>
-
-        {/* Пустое пространство для заполнения экрана */}
-        <div className="flex-1"></div>
       </div>
 
       {/* Модальные окна */}
