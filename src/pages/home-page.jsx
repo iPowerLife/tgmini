@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import { MinersModal } from "../components/miners-modal"
+import { BoostsModal } from "../components/boosts-modal"
+import { PoolsModal } from "../components/pools-modal"
 
 const HomePage = ({ user }) => {
   const [showMinersModal, setShowMinersModal] = useState(false)
@@ -76,6 +79,14 @@ const HomePage = ({ user }) => {
     navigate("/shop")
   }
 
+  // Обработчик выбора пула
+  const handlePoolSelect = (pool) => {
+    setMinerInfo((prev) => ({
+      ...prev,
+      pool: pool.name,
+    }))
+  }
+
   // Стили для квадратных кнопок
   const squareButtonStyle = {
     width: "60px",
@@ -89,7 +100,7 @@ const HomePage = ({ user }) => {
     backdropFilter: "blur(4px)",
     color: "white",
     transition: "all 0.2s ease",
-    cursor: "pointer", // Добавляем курсор pointer для визуального указания кликабельности
+    cursor: "pointer",
   }
 
   return (
@@ -353,55 +364,17 @@ const HomePage = ({ user }) => {
       </div>
 
       {/* Модальные окна */}
-      {showMinersModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#242838] p-4 rounded-lg w-[90%] max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-blue-400">Список майнеров</h3>
-              <button className="text-gray-400 hover:text-white" onClick={() => setShowMinersModal(false)}>
-                ✕
-              </button>
-            </div>
-            <div className="py-4 text-gray-300">
-              {/* Здесь будет список майнеров */}
-              <p>Список майнеров будет здесь</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {showMinersModal && <MinersModal onClose={() => setShowMinersModal(false)} user={user} />}
 
-      {showBoostsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#242838] p-4 rounded-lg w-[90%] max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-blue-400">Бусты</h3>
-              <button className="text-gray-400 hover:text-white" onClick={() => setShowBoostsModal(false)}>
-                ✕
-              </button>
-            </div>
-            <div className="py-4 text-gray-300">
-              {/* Здесь будет список бустов */}
-              <p>Список бустов будет здесь</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {showBoostsModal && <BoostsModal onClose={() => setShowBoostsModal(false)} user={user} />}
 
       {showPoolsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#242838] p-4 rounded-lg w-[90%] max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-blue-400">Майнинг пулы</h3>
-              <button className="text-gray-400 hover:text-white" onClick={() => setShowPoolsModal(false)}>
-                ✕
-              </button>
-            </div>
-            <div className="py-4 text-gray-300">
-              {/* Здесь будет список пулов */}
-              <p>Список пулов будет здесь</p>
-            </div>
-          </div>
-        </div>
+        <PoolsModal
+          onClose={() => setShowPoolsModal(false)}
+          user={user}
+          currentPool={{ id: 1, name: minerInfo.pool }}
+          onPoolSelect={handlePoolSelect}
+        />
       )}
     </div>
   )
