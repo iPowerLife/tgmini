@@ -6,6 +6,7 @@ import { supabase } from "../supabase"
 export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
   const [pools, setPools] = useState([])
   const [loading, setLoading] = useState(true)
+  const [selectedPoolId, setSelectedPoolId] = useState(null)
 
   // Загрузка данных о пулах
   useEffect(() => {
@@ -14,11 +15,20 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
         setLoading(true)
 
         // Получаем доступные пулы
-        const { data, error } = await supabase.from("pools").select("*").order("difficulty", { ascending: true })
+        const { data, error } = await supabase.from("mining_pools").select("*").order("difficulty", { ascending: true })
 
         if (error) throw error
 
         setPools(data || [])
+
+        // Устанавливаем текущий выбранный пул
+        if (currentPool?.id) {
+          setSelectedPoolId(currentPool.id)
+        } else if (data && data.length > 0) {
+          // Если текущий пул не указан, выбираем первый из списка
+          setSelectedPoolId(data[0].id)
+        }
+
         setLoading(false)
       } catch (err) {
         console.error("Ошибка при загрузке пулов:", err)
@@ -27,14 +37,40 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
     }
 
     fetchPools()
-  }, [])
+  }, [currentPool])
 
   // Функция для выбора пула
-  const handleSelectPool = (pool) => {
-    if (onPoolSelect) {
-      onPoolSelect(pool)
+  const handleSelectPool = async (pool) => {
+    try {
+      // Обновляем выбранный пул в базе данных
+      if (user?.id) {
+        const { error } = await supabase.from("users").update({ active_pool_id: pool.id }).eq("id", user.id)
+
+        if (error) throw error
+      }
+
+      // Обновляем локальное состояние
+      setSelectedPoolId(pool.id)
+
+      // Вызываем колбэк для обновления родительского компонента
+      if (onPoolSelect) {
+        onPoolSelect(pool)
+      }
+
+      // Закрываем модальное окно
+      onClose()
+    } catch (error) {
+      console.error("Ошибка при выборе пула:", error)
+      alert("Не удалось выбрать пул")
     }
-    onClose()
+  }
+
+  // Функция для получения цвета в зависимости от сложности пула
+  const getDifficultyColor = (difficulty) => {
+    if (difficulty <= 1) return "green"
+    if (difficulty <= 2) return "blue"
+    if (difficulty <= 3) return "purple"
+    return "red"
   }
 
   return (
@@ -61,16 +97,24 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
               <div
                 key={pool.id}
                 className={`p-3 rounded-lg border transition-all cursor-pointer ${
-                  currentPool?.id === pool.id
+                  selectedPoolId === pool.id
                     ? "bg-blue-500/20 border-blue-500"
                     : "bg-[#1a1d2d] border-[#2a2f45] hover:border-blue-500/50"
                 }`}
                 onClick={() => handleSelectPool(pool)}
               >
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mr-3">
+                  <div
+                    className={`w-12 h-12 bg-${getDifficultyColor(pool.difficulty)}-500/20 rounded-lg flex items-center justify-center mr-3`}
+                  >
                     {/* Иконка пула */}
-                    <span className="text-2xl">🌊</span>
+                    {pool.icon ? (
+                      <img src={pool.icon || "/placeholder.svg"} alt={pool.name} className="w-8 h-8" />
+                    ) : (
+                      <span className="text-2xl">
+                        {pool.difficulty <= 1 ? "🌊" : pool.difficulty <= 2 ? "⛏️" : pool.difficulty <= 3 ? "🔥" : "💀"}
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1">
                     <h4 className="font-medium text-white">{pool.name}</h4>
@@ -80,7 +124,8 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
 
                 <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                   <div className="text-gray-400">
-                    Сложность: <span className="text-blue-400">{pool.difficulty}</span>
+                    Сложность:{" "}
+                    <span className={`text-${getDifficultyColor(pool.difficulty)}-400`}>{pool.difficulty}x</span>
                   </div>
                   <div className="text-gray-400">
                     Награда: <span className="text-blue-400">x{pool.reward_multiplier}</span>
@@ -93,7 +138,7 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
                   </div>
                 </div>
 
-                {currentPool?.id === pool.id && (
+                {selectedPoolId === pool.id && (
                   <div className="mt-2 text-center">
                     <span className="inline-block px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">
                       Текущий пул

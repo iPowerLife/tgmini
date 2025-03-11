@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom"
 import { MinersModal } from "../components/miners-modal"
 import { BoostsModal } from "../components/boosts-modal"
 import { PoolsModal } from "../components/pools-modal"
+import { supabase } from "../supabase"
 
 const HomePage = ({ user }) => {
   const [showMinersModal, setShowMinersModal] = useState(false)
@@ -17,7 +18,88 @@ const HomePage = ({ user }) => {
     hourlyIncome: 0,
     totalMined: 0,
   })
+  const [currentPool, setCurrentPool] = useState(null)
   const navigate = useNavigate()
+
+  // Загрузка информации о майнинге
+  useEffect(() => {
+    const fetchMiningInfo = async () => {
+      if (!user?.id) return
+
+      try {
+        // Получаем информацию о текущем пуле
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select(`
+            active_pool_id,
+            active_miner_id,
+            total_mined,
+            mining_pools (
+              id,
+              name,
+              difficulty,
+              reward_multiplier
+            ),
+            user_miners (
+              id,
+              level,
+              miners (
+                base_power,
+                base_energy
+              )
+            )
+          `)
+          .eq("id", user.id)
+          .single()
+
+        if (userError) throw userError
+
+        if (userData) {
+          // Получаем активный майнер
+          const activeMiner = userData.user_miners?.find((m) => m.id === userData.active_miner_id)
+
+          // Рассчитываем хешрейт и энергопотребление
+          let hashrate = 0
+          let energy = 0
+
+          if (activeMiner) {
+            const basePower = activeMiner.miners.base_power
+            const baseEnergy = activeMiner.miners.base_energy
+            const level = activeMiner.level
+
+            // Расчет с учетом уровня
+            hashrate = Math.round(basePower * (1 + (level - 1) * 0.15))
+            energy = Math.round(baseEnergy * (1 + (level - 1) * 0.1))
+          }
+
+          // Рассчитываем доход в час
+          const pool = userData.mining_pools
+          const hourlyIncome = pool ? (hashrate * 0.1 * pool.reward_multiplier) / pool.difficulty : 0
+
+          // Обновляем состояние
+          setMinerInfo({
+            pool: pool?.name || "Стандартный",
+            hashrate,
+            energy,
+            hourlyIncome,
+            totalMined: userData.total_mined || 0,
+          })
+
+          // Сохраняем информацию о текущем пуле
+          if (pool) {
+            setCurrentPool({
+              id: pool.id,
+              name: pool.name,
+            })
+          }
+        }
+      } catch (error) {
+        console.error("Ошибка при загрузке информации о майнинге:", error)
+      }
+    }
+
+    fetchMiningInfo()
+  }, [user])
 
   // Блокировка только событий прокрутки, но не кликов
   useEffect(() => {
@@ -81,10 +163,19 @@ const HomePage = ({ user }) => {
 
   // Обработчик выбора пула
   const handlePoolSelect = (pool) => {
+    setCurrentPool(pool)
     setMinerInfo((prev) => ({
       ...prev,
       pool: pool.name,
     }))
+
+    // Обновляем расчет дохода в час с учетом нового пула
+    if (pool.reward_multiplier && pool.difficulty) {
+      setMinerInfo((prev) => ({
+        ...prev,
+        hourlyIncome: (prev.hashrate * 0.1 * pool.reward_multiplier) / pool.difficulty,
+      }))
+    }
   }
 
   // Стили для квадратных кнопок
@@ -372,7 +463,7 @@ const HomePage = ({ user }) => {
         <PoolsModal
           onClose={() => setShowPoolsModal(false)}
           user={user}
-          currentPool={{ id: 1, name: minerInfo.pool }}
+          currentPool={currentPool}
           onPoolSelect={handlePoolSelect}
         />
       )}
