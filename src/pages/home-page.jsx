@@ -45,10 +45,10 @@ const HomePage = ({ user }) => {
   }
 
   return (
-    <div className="min-h-screen relative">
+    <div className="h-screen fixed inset-0 overflow-hidden">
       {/* Фоновое изображение */}
       <div
-        className="fixed inset-0 z-0"
+        className="absolute inset-0 z-0"
         style={{
           backgroundImage:
             'url("https://hebbkx1anhila5yf.public.blob.vercel-storage.com/kandinsky-download-1741700347819-wTpegQamRbD36vdjw4hDDi5V3igvXt.png")',
@@ -62,9 +62,9 @@ const HomePage = ({ user }) => {
       </div>
 
       {/* Основной контент */}
-      <div className="relative z-10 min-h-screen flex flex-col">
+      <div className="relative z-10 h-full flex flex-col">
         {/* Верхний блок с балансом */}
-        <div className="mb-4 bg-[#242838]/80 backdrop-blur-sm p-4 rounded-lg mx-4 mt-4">
+        <div className="bg-[#242838]/80 backdrop-blur-sm p-3 rounded-lg mx-2 mt-2">
           <div className="text-center">
             <h2 className="font-bold text-blue-400">Баланс: {user?.balance || 0} 💎</h2>
             <p className="text-gray-300">Miner Pass: {user?.hasMinerPass ? "Активен ✨" : "Не активен"}</p>
@@ -72,8 +72,8 @@ const HomePage = ({ user }) => {
         </div>
 
         {/* Блок с информацией о майнинге */}
-        <div className="mb-4 bg-[#242838]/80 backdrop-blur-sm p-4 rounded-lg mx-4">
-          <div className="space-y-2 text-gray-300">
+        <div className="bg-[#242838]/80 backdrop-blur-sm p-3 rounded-lg mx-2 mt-2">
+          <div className="space-y-1 text-gray-300">
             <p>
               Выбранный пул: <span className="text-blue-400">{minerInfo.pool}</span>
             </p>
@@ -95,10 +95,10 @@ const HomePage = ({ user }) => {
         </div>
 
         {/* Основная область с кнопками и майнером */}
-        <div className="grid grid-cols-[60px_1fr_60px] gap-4 px-2">
+        <div className="flex-1 grid grid-cols-[60px_1fr_60px] gap-2 px-2 mt-2">
           {/* Левая колонка с кнопками */}
-          <div className="flex flex-col items-center pt-8">
-            <div className="space-y-6">
+          <div className="flex flex-col items-center pt-4">
+            <div className="space-y-4">
               <button
                 style={squareButtonStyle}
                 onClick={() => setShowMinersModal(true)}
@@ -174,7 +174,7 @@ const HomePage = ({ user }) => {
           {/* Центральная область с анимированным майнером и кнопкой майнинга */}
           <div className="flex flex-col">
             {/* Майнер */}
-            <div className="aspect-square flex items-center justify-center bg-[#242838]/60 backdrop-blur-sm rounded-lg border border-blue-500/20 overflow-hidden mb-4">
+            <div className="aspect-square flex items-center justify-center bg-[#242838]/60 backdrop-blur-sm rounded-lg border border-blue-500/20 overflow-hidden mb-2">
               <div className="miner-animation">
                 <style jsx>{`
                   .miner-animation {
@@ -236,14 +236,14 @@ const HomePage = ({ user }) => {
             </div>
 
             {/* Кнопка майнинга */}
-            <button className="bg-[#3B82F6]/80 backdrop-blur-sm hover:bg-blue-600/80 text-white py-3 px-6 rounded-lg font-bold transition-colors">
+            <button className="bg-[#3B82F6]/80 backdrop-blur-sm hover:bg-blue-600/80 text-white py-2 px-4 rounded-lg font-bold transition-colors">
               Начать майнинг и таймер
             </button>
           </div>
 
           {/* Правая колонка с кнопками */}
-          <div className="flex flex-col items-center pt-8">
-            <div className="space-y-6">
+          <div className="flex flex-col items-center pt-4">
+            <div className="space-y-4">
               <button
                 style={squareButtonStyle}
                 onClick={() => setShowPoolsModal(true)}
@@ -302,9 +302,6 @@ const HomePage = ({ user }) => {
             </div>
           </div>
         </div>
-
-        {/* Пустое пространство для заполнения экрана */}
-        <div className="flex-1"></div>
       </div>
 
       {/* Модальные окна */}
