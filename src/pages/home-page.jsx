@@ -16,41 +16,44 @@ const HomePage = ({ user }) => {
   })
   const navigate = useNavigate()
 
-  // Блокировка всех возможных событий прокрутки
+  // Блокировка только событий прокрутки, но не кликов
   useEffect(() => {
-    // Функция для блокировки всех событий прокрутки
+    // Функция для блокировки только событий прокрутки
     const blockScroll = (e) => {
-      e.preventDefault()
-      e.stopPropagation()
-      return false
+      // Проверяем, является ли это событием прокрутки
+      if (
+        e.type === "wheel" ||
+        e.type === "mousewheel" ||
+        e.type === "DOMMouseScroll" ||
+        (e.type === "touchmove" && e.touches.length > 0)
+      ) {
+        e.preventDefault()
+        return false
+      }
+      // Для других событий не блокируем
+      return true
     }
 
-    // Список всех событий, которые могут вызвать прокрутку
-    const events = ["scroll", "mousewheel", "DOMMouseScroll", "wheel", "touchmove", "touchstart", "touchend"]
+    // Список только событий прокрутки
+    const scrollEvents = ["wheel", "mousewheel", "DOMMouseScroll", "touchmove"]
 
-    // Добавляем обработчики для всех событий
-    events.forEach((event) => {
+    // Добавляем обработчики только для событий прокрутки
+    scrollEvents.forEach((event) => {
       document.addEventListener(event, blockScroll, { passive: false })
       window.addEventListener(event, blockScroll, { passive: false })
     })
 
     // Блокируем стандартное поведение прокрутки
     document.body.style.overflow = "hidden"
-    document.body.style.position = "fixed"
-    document.body.style.width = "100%"
-    document.body.style.height = "100%"
-    document.body.style.top = "0"
-    document.body.style.left = "0"
+    document.documentElement.style.overflow = "hidden"
 
-    // Добавляем CSS для предотвращения прокрутки
+    // Добавляем CSS для предотвращения прокрутки, но разрешаем клики
     const style = document.createElement("style")
     style.innerHTML = `
       html, body {
         overflow: hidden !important;
-        position: fixed !important;
         height: 100% !important;
         width: 100% !important;
-        touch-action: none !important;
         overscroll-behavior: none !important;
       }
     `
@@ -58,16 +61,12 @@ const HomePage = ({ user }) => {
 
     // Удаляем все обработчики при размонтировании
     return () => {
-      events.forEach((event) => {
+      scrollEvents.forEach((event) => {
         document.removeEventListener(event, blockScroll)
         window.removeEventListener(event, blockScroll)
       })
       document.body.style.overflow = ""
-      document.body.style.position = ""
-      document.body.style.width = ""
-      document.body.style.height = ""
-      document.body.style.top = ""
-      document.body.style.left = ""
+      document.documentElement.style.overflow = ""
       document.head.removeChild(style)
     }
   }, [])
@@ -90,62 +89,28 @@ const HomePage = ({ user }) => {
     backdropFilter: "blur(4px)",
     color: "white",
     transition: "all 0.2s ease",
+    cursor: "pointer", // Добавляем курсор pointer для визуального указания кликабельности
   }
 
-  // Создаем контейнер с абсолютным позиционированием
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        overflow: "hidden",
-        touchAction: "none",
-        overscrollBehavior: "none",
-      }}
-    >
+    <div className="fixed inset-0 overflow-hidden">
       {/* Фоновое изображение */}
       <div
+        className="absolute inset-0 z-0"
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
           backgroundImage:
             'url("https://hebbkx1anhila5yf.public.blob.vercel-storage.com/kandinsky-download-1741700347819-wTpegQamRbD36vdjw4hDDi5V3igvXt.png")',
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          zIndex: 0,
         }}
       >
         {/* Оверлей для лучшей читаемости */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.4)",
-          }}
-        ></div>
+        <div className="absolute inset-0 bg-black/40"></div>
       </div>
 
       {/* Основной контент */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 10,
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
+      <div className="relative z-10 h-full flex flex-col">
         {/* Верхний блок с балансом */}
         <div className="bg-[#242838]/80 backdrop-blur-sm p-3 rounded-lg mx-2 mt-2">
           <div className="text-center">
@@ -319,7 +284,7 @@ const HomePage = ({ user }) => {
             </div>
 
             {/* Кнопка майнинга */}
-            <button className="bg-[#3B82F6]/80 backdrop-blur-sm hover:bg-blue-600/80 text-white py-2 px-4 rounded-lg font-bold transition-colors">
+            <button className="bg-[#3B82F6]/80 backdrop-blur-sm hover:bg-blue-600/80 text-white py-2 px-4 rounded-lg font-bold transition-colors cursor-pointer">
               Начать майнинг и таймер
             </button>
           </div>
