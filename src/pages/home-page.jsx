@@ -44,23 +44,26 @@ const HomePage = ({ user }) => {
   }
 
   return (
-    <div
-      className="fixed inset-0 overflow-hidden text-white"
-      style={{
-        backgroundImage:
-          'url("https://hebbkx1anhila5yf.public.blob.vercel-storage.com/kandinsky-download-1741699615862-NC0DVjQVFh0K3OkGKVcCcYbLsI5dfa.png")',
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
-      {/* Затемняющий оверлей для лучшей читаемости */}
-      <div className="absolute inset-0 bg-black/40" />
+    <div className="min-h-screen relative">
+      {/* Фоновое изображение */}
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage:
+            'url("https://hebbkx1anhila5yf.public.blob.vercel-storage.com/kandinsky-download-1741700347819-wTpegQamRbD36vdjw4hDDi5V3igvXt.png")',
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Оверлей для лучшей читаемости */}
+        <div className="absolute inset-0 bg-black/40"></div>
+      </div>
 
-      {/* Контент */}
-      <div className="relative h-full flex flex-col">
+      {/* Основной контент */}
+      <div className="relative z-10 min-h-screen flex flex-col">
         {/* Верхний блок с балансом */}
-        <div className="mb-2 bg-[#242838]/80 p-4 rounded-lg mx-4 mt-4 backdrop-blur-sm">
+        <div className="mb-4 bg-[#242838]/80 backdrop-blur-sm p-4 rounded-lg mx-4 mt-4">
           <div className="text-center">
             <h2 className="font-bold text-blue-400">Баланс: {user?.balance || 0} 💎</h2>
             <p className="text-gray-300">Miner Pass: {user?.hasMinerPass ? "Активен ✨" : "Не активен"}</p>
@@ -68,7 +71,7 @@ const HomePage = ({ user }) => {
         </div>
 
         {/* Блок с информацией о майнинге */}
-        <div className="mb-2 bg-[#242838]/80 p-4 rounded-lg mx-4 backdrop-blur-sm">
+        <div className="mb-4 bg-[#242838]/80 backdrop-blur-sm p-4 rounded-lg mx-4">
           <div className="space-y-2 text-gray-300">
             <p>
               Выбранный пул: <span className="text-blue-400">{minerInfo.pool}</span>
@@ -90,11 +93,27 @@ const HomePage = ({ user }) => {
           </div>
         </div>
 
-        {/* Основной контент */}
-        <div className="flex-1 grid grid-cols-[60px_1fr_60px] gap-4 px-2 min-h-0">
+        {/* Основная область с кнопками и майнером */}
+        <div className="flex-1 grid grid-cols-[60px_1fr_60px] gap-4 px-2">
           {/* Левая колонка с кнопками */}
-          <div className="space-y-4 flex flex-col items-start">
-            <button style={squareButtonStyle} onClick={() => setShowMinersModal(true)}>
+          <div className="flex flex-col justify-around h-full">
+            <button
+              style={{
+                width: "60px",
+                height: "60px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "0",
+                borderRadius: "12px",
+                backgroundColor: "rgba(59, 130, 246, 0.8)",
+                backdropFilter: "blur(4px)",
+                color: "white",
+                transition: "all 0.2s ease",
+              }}
+              onClick={() => setShowMinersModal(true)}
+              className="hover:bg-blue-600/80"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -119,7 +138,23 @@ const HomePage = ({ user }) => {
               </svg>
             </button>
 
-            <button style={squareButtonStyle} onClick={() => setShowBoostsModal(true)}>
+            <button
+              style={{
+                width: "60px",
+                height: "60px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "0",
+                borderRadius: "12px",
+                backgroundColor: "rgba(59, 130, 246, 0.8)",
+                backdropFilter: "blur(4px)",
+                color: "white",
+                transition: "all 0.2s ease",
+              }}
+              onClick={() => setShowBoostsModal(true)}
+              className="hover:bg-blue-600/80"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -135,7 +170,22 @@ const HomePage = ({ user }) => {
               </svg>
             </button>
 
-            <button style={squareButtonStyle}>
+            <button
+              style={{
+                width: "60px",
+                height: "60px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "0",
+                borderRadius: "12px",
+                backgroundColor: "rgba(59, 130, 246, 0.8)",
+                backdropFilter: "blur(4px)",
+                color: "white",
+                transition: "all 0.2s ease",
+              }}
+              className="hover:bg-blue-600/80"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -158,7 +208,7 @@ const HomePage = ({ user }) => {
           </div>
 
           {/* Центральная область с анимированным майнером */}
-          <div className="aspect-square flex items-center justify-center bg-[#242838]/50 rounded-lg border border-blue-500/20 overflow-hidden backdrop-blur-sm">
+          <div className="aspect-square flex items-center justify-center bg-[#242838]/60 backdrop-blur-sm rounded-lg border border-blue-500/20 overflow-hidden">
             <div className="miner-animation">
               <style jsx>{`
                 .miner-animation {
@@ -175,7 +225,7 @@ const HomePage = ({ user }) => {
                   position: absolute;
                   width: 80px;
                   height: 80px;
-                  background: #3B82F6;
+                  background: rgba(59, 130, 246, 0.8);
                   border-radius: 15px;
                   animation: pulse 2s infinite;
                 }
@@ -220,8 +270,24 @@ const HomePage = ({ user }) => {
           </div>
 
           {/* Правая колонка с кнопками */}
-          <div className="space-y-4 flex flex-col items-end">
-            <button style={squareButtonStyle} onClick={() => setShowPoolsModal(true)}>
+          <div className="flex flex-col justify-around h-full">
+            <button
+              style={{
+                width: "60px",
+                height: "60px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "0",
+                borderRadius: "12px",
+                backgroundColor: "rgba(59, 130, 246, 0.8)",
+                backdropFilter: "blur(4px)",
+                color: "white",
+                transition: "all 0.2s ease",
+              }}
+              onClick={() => setShowPoolsModal(true)}
+              className="hover:bg-blue-600/80"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -239,7 +305,23 @@ const HomePage = ({ user }) => {
               </svg>
             </button>
 
-            <button style={squareButtonStyle} onClick={handleShopClick}>
+            <button
+              style={{
+                width: "60px",
+                height: "60px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "0",
+                borderRadius: "12px",
+                backgroundColor: "rgba(59, 130, 246, 0.8)",
+                backdropFilter: "blur(4px)",
+                color: "white",
+                transition: "all 0.2s ease",
+              }}
+              onClick={handleShopClick}
+              className="hover:bg-blue-600/80"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -256,7 +338,22 @@ const HomePage = ({ user }) => {
               </svg>
             </button>
 
-            <button style={squareButtonStyle}>
+            <button
+              style={{
+                width: "60px",
+                height: "60px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "0",
+                borderRadius: "12px",
+                backgroundColor: "rgba(59, 130, 246, 0.8)",
+                backdropFilter: "blur(4px)",
+                color: "white",
+                transition: "all 0.2s ease",
+              }}
+              className="hover:bg-blue-600/80"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -276,8 +373,8 @@ const HomePage = ({ user }) => {
         </div>
 
         {/* Кнопка майнинга */}
-        <div className="flex justify-center mx-4 mb-4 mt-2">
-          <button className="bg-[#3B82F6]/80 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-bold transition-colors backdrop-blur-sm">
+        <div className="flex justify-center mx-4 mb-4">
+          <button className="bg-[#3B82F6]/80 backdrop-blur-sm hover:bg-blue-600/80 text-white py-3 px-6 rounded-lg font-bold transition-colors">
             Начать майнинг и таймер
           </button>
         </div>
