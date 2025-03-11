@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 
 const HomePage = ({ user }) => {
@@ -15,7 +15,35 @@ const HomePage = ({ user }) => {
     totalMined: 0,
   })
   const navigate = useNavigate()
-  const containerRef = useRef(null)
+
+  // Инициализация Telegram WebApp
+  useEffect(() => {
+    // Проверяем, запущено ли приложение в Telegram WebApp
+    if (window.Telegram && window.Telegram.WebApp) {
+      // Расширяем приложение на весь экран
+      window.Telegram.WebApp.expand()
+
+      // Отключаем стандартный свайп для закрытия
+      window.Telegram.WebApp.enableClosingConfirmation()
+
+      // Устанавливаем цвет фона
+      window.Telegram.WebApp.setBackgroundColor("#000000")
+    }
+
+    // Предотвращаем прокрутку на уровне документа
+    document.body.style.overflow = "hidden"
+    document.body.style.position = "fixed"
+    document.body.style.width = "100%"
+    document.body.style.height = "100%"
+
+    return () => {
+      // Восстанавливаем стандартное поведение при размонтировании
+      document.body.style.overflow = ""
+      document.body.style.position = ""
+      document.body.style.width = ""
+      document.body.style.height = ""
+    }
+  }, [])
 
   // Загрузка данных пользователя
   useEffect(() => {
@@ -24,42 +52,6 @@ const HomePage = ({ user }) => {
       // и обновить состояние minerInfo
     }
   }, [user])
-
-  // Предотвращение прокрутки, но разрешение жеста закрытия
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    // Функция для обработки события wheel (колесико мыши)
-    const preventWheel = (e) => {
-      e.preventDefault()
-    }
-
-    // Функция для обработки события touchmove
-    const handleTouchMove = (e) => {
-      // Получаем направление свайпа
-      const touchY = e.touches[0].clientY
-
-      // Если это не начальное касание и контейнер в верхней позиции,
-      // и свайп идет вниз - не блокируем (это жест закрытия в Телеграме)
-      if (container.scrollTop === 0 && touchY > 0) {
-        return
-      }
-
-      // В остальных случаях блокируем прокрутку
-      e.preventDefault()
-    }
-
-    // Добавляем обработчики событий
-    container.addEventListener("wheel", preventWheel, { passive: false })
-    container.addEventListener("touchmove", handleTouchMove, { passive: false })
-
-    // Удаляем обработчики при размонтировании
-    return () => {
-      container.removeEventListener("wheel", preventWheel)
-      container.removeEventListener("touchmove", handleTouchMove)
-    }
-  }, [])
 
   // Обработчик перехода в магазин
   const handleShopClick = () => {
@@ -82,10 +74,10 @@ const HomePage = ({ user }) => {
   }
 
   return (
-    <div ref={containerRef} className="h-screen overflow-hidden touch-none" style={{ touchAction: "none" }}>
+    <div className="fixed inset-0 overflow-hidden">
       {/* Фоновое изображение */}
       <div
-        className="fixed inset-0 z-0"
+        className="absolute inset-0 z-0"
         style={{
           backgroundImage:
             'url("https://hebbkx1anhila5yf.public.blob.vercel-storage.com/kandinsky-download-1741700347819-wTpegQamRbD36vdjw4hDDi5V3igvXt.png")',
