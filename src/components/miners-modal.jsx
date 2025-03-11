@@ -8,6 +8,7 @@ export function MinersModal({ onClose, user }) {
   const [loading, setLoading] = useState(true)
   const [selectedMiner, setSelectedMiner] = useState(null)
   const [activeMiner, setActiveMiner] = useState(null)
+  const [minerCounts, setMinerCounts] = useState({}) // Добавляем состояние для хранения количества майнеров
 
   // Разрешаем прокрутку в модальном окне
   useEffect(() => {
@@ -75,19 +76,40 @@ export function MinersModal({ onClose, user }) {
 
         console.log("Данные user_miners:", userMiners)
 
-        // Форматируем данные майнеров
-        const formattedMiners = userMiners
-          ? userMiners.map((item) => ({
-              id: item.id,
-              modelId: item.model_id,
-              level: 1, // Default level since the column doesn't exist
-              name: item.miner_models?.display_name || "Майнер",
-              power: calculatePower(item.miner_models?.mining_power || 10, 1), // Using default level 1
-              energy: calculateEnergy(item.miner_models?.energy_consumption || 5, 1), // Using default level 1
-              image: item.miner_models?.image_url || "⚒️",
-              rarity: getRarityFromPower(item.miner_models?.mining_power || 10),
-            }))
-          : []
+        // Подсчитываем количество майнеров каждой модели
+        const counts = {}
+        if (userMiners) {
+          userMiners.forEach((miner) => {
+            const modelId = miner.model_id
+            counts[modelId] = (counts[modelId] || 0) + 1
+          })
+        }
+        setMinerCounts(counts)
+        console.log("Количество майнеров по моделям:", counts)
+
+        // Форматируем данные майнеров и группируем их по моделям
+        const minersByModel = {}
+        if (userMiners) {
+          userMiners.forEach((item) => {
+            const modelId = item.model_id
+            if (!minersByModel[modelId]) {
+              minersByModel[modelId] = {
+                id: item.id, // Используем ID первого майнера этой модели
+                modelId: modelId,
+                level: 1, // Default level since the column doesn't exist
+                name: item.miner_models?.display_name || "Майнер",
+                power: calculatePower(item.miner_models?.mining_power || 10, 1),
+                energy: calculateEnergy(item.miner_models?.energy_consumption || 5, 1),
+                image: item.miner_models?.image_url || "⚒️",
+                rarity: getRarityFromPower(item.miner_models?.mining_power || 10),
+                count: counts[modelId] || 1, // Добавляем количество
+              }
+            }
+          })
+        }
+
+        // Преобразуем объект в массив
+        const formattedMiners = Object.values(minersByModel)
 
         setMiners(formattedMiners)
 
@@ -95,10 +117,14 @@ export function MinersModal({ onClose, user }) {
         if (user.active_miner_id) {
           setActiveMiner(user.active_miner_id)
 
-          // Также устанавливаем выбранный майнер как активный
-          const active = formattedMiners.find((m) => m.id === user.active_miner_id)
-          if (active) {
-            setSelectedMiner(active)
+          // Также устанавливаем выбранный май��ер как активный
+          const activeMinerData = userMiners.find((m) => m.id === user.active_miner_id)
+          if (activeMinerData) {
+            const activeModelId = activeMinerData.model_id
+            const active = formattedMiners.find((m) => m.modelId === activeModelId)
+            if (active) {
+              setSelectedMiner(active)
+            }
           }
         }
 
@@ -116,6 +142,7 @@ export function MinersModal({ onClose, user }) {
             level: 1,
             energy: 5,
             rarity: "common",
+            count: 2, // Тестовое количество
           },
           {
             id: 2,
@@ -125,6 +152,7 @@ export function MinersModal({ onClose, user }) {
             level: 2,
             energy: 12,
             rarity: "rare",
+            count: 1, // Тестовое количество
           },
         ]
 
@@ -314,7 +342,7 @@ export function MinersModal({ onClose, user }) {
               >
                 <div className="flex items-center">
                   <div
-                    className={`w-12 h-12 bg-${getRarityColor(miner.rarity)}-500/20 rounded-lg flex items-center justify-center mr-3`}
+                    className={`w-12 h-12 bg-${getRarityColor(miner.rarity)}-500/20 rounded-lg flex items-center justify-center mr-3 relative`}
                   >
                     {/* Иконка майнера */}
                     {typeof miner.image === "string" && miner.image.startsWith("http") ? (
@@ -326,9 +354,20 @@ export function MinersModal({ onClose, user }) {
                     ) : (
                       <span className="text-2xl">{miner.image || "⚒️"}</span>
                     )}
+
+                    {/* Бейдж с количеством */}
+                    {miner.count > 1 && (
+                      <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {miner.count}
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-white">{miner.name}</h4>
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium text-white">{miner.name}</h4>
+                      {/* Отображаем количество майнеров */}
+                      <span className="text-xs text-blue-400">x{miner.count}</span>
+                    </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-400">
                         Мощность: <span className="text-blue-400">{miner.power} H/s</span>
@@ -356,6 +395,9 @@ export function MinersModal({ onClose, user }) {
                       <p>
                         Стоимость улучшения:{" "}
                         <span className="text-blue-400">{Math.round(100 * Math.pow(1.5, miner.level - 1))} 💎</span>
+                      </p>
+                      <p>
+                        Количество: <span className="text-blue-400">{miner.count} шт.</span>
                       </p>
                     </div>
                     <div className="mt-3 flex space-x-2">
