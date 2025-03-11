@@ -45,10 +45,10 @@ const HomePage = ({ user }) => {
   }
 
   return (
-    <div className="h-screen fixed inset-0 overflow-hidden">
+    <div className="min-h-screen">
       {/* Фоновое изображение */}
       <div
-        className="absolute inset-0 z-0"
+        className="fixed inset-0 z-0"
         style={{
           backgroundImage:
             'url("https://hebbkx1anhila5yf.public.blob.vercel-storage.com/kandinsky-download-1741700347819-wTpegQamRbD36vdjw4hDDi5V3igvXt.png")',
@@ -62,7 +62,7 @@ const HomePage = ({ user }) => {
       </div>
 
       {/* Основной контент */}
-      <div className="relative z-10 h-full flex flex-col">
+      <div className="relative z-10 min-h-screen flex flex-col">
         {/* Верхний блок с балансом */}
         <div className="bg-[#242838]/80 backdrop-blur-sm p-3 rounded-lg mx-2 mt-2">
           <div className="text-center">
@@ -302,6 +302,9 @@ const HomePage = ({ user }) => {
             </div>
           </div>
         </div>
+
+        {/* Пустое пространство для заполнения экрана */}
+        <div className="flex-1"></div>
       </div>
 
       {/* Модальные окна */}
