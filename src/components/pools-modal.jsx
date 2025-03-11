@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabase } from "../supabase"
 
 export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
   const [pools, setPools] = useState([])
@@ -14,31 +13,45 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
       try {
         setLoading(true)
 
-        console.log("Загрузка пулов...")
+        // Временные тестовые данные, пока таблицы не созданы
+        const testPools = [
+          {
+            id: 1,
+            name: "Стандартный пул",
+            description: "Базовый майнинг пул для начинающих",
+            difficulty: 1,
+            reward_multiplier: 1,
+            stability: 100,
+            fee: 0,
+          },
+          {
+            id: 2,
+            name: "Продвинутый пул",
+            description: "Повышенная сложность, высокая награда",
+            difficulty: 2,
+            reward_multiplier: 2.5,
+            stability: 90,
+            fee: 5,
+          },
+          {
+            id: 3,
+            name: "Экспертный пул",
+            description: "Максимальная сложность и награда",
+            difficulty: 3,
+            reward_multiplier: 4,
+            stability: 80,
+            fee: 10,
+          },
+        ]
 
-        // Сначала проверим, какие таблицы доступны
-        const { data: poolsCheck } = await supabase.from("pools").select("*").limit(1)
-
-        console.log("Доступные данные из таблицы pools:", poolsCheck)
-
-        // Получаем доступные пулы
-        const { data, error } = await supabase.from("pools").select("*").order("difficulty", { ascending: true })
-
-        if (error) {
-          console.error("Ошибка при запросе pools:", error)
-          throw error
-        }
-
-        console.log("Данные pools:", data)
-
-        setPools(data || [])
+        setPools(testPools)
 
         // Устанавливаем текущий выбранный пул
         if (currentPool?.id) {
           setSelectedPoolId(currentPool.id)
-        } else if (data && data.length > 0) {
+        } else {
           // Если текущий пул не указан, выбираем первый из списка
-          setSelectedPoolId(data[0].id)
+          setSelectedPoolId(testPools[0].id)
         }
 
         setLoading(false)
@@ -54,19 +67,7 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
   // Функция для выбора пула
   const handleSelectPool = async (pool) => {
     try {
-      console.log("Выбор пула:", pool)
-
-      // Обновляем выбранный пул в базе данных
-      if (user?.id) {
-        const { error } = await supabase.from("users").update({ active_pool_id: pool.id }).eq("id", user.id)
-
-        if (error) {
-          console.error("Ошибка при обновлении active_pool_id:", error)
-          throw error
-        }
-      }
-
-      // Обновляем локальное состояние
+      // В реальном приложении здесь будет обновление в базе данных
       setSelectedPoolId(pool.id)
 
       // Вызываем колбэк для обновления родительского компонента
@@ -90,6 +91,7 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
     return "red"
   }
 
+  // Остальной код компонента остается без изменений
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-[#242838]/95 backdrop-blur-sm p-4 rounded-lg w-[90%] max-w-md border border-blue-500/20">
@@ -124,14 +126,9 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
                   <div
                     className={`w-12 h-12 bg-${getDifficultyColor(pool.difficulty)}-500/20 rounded-lg flex items-center justify-center mr-3`}
                   >
-                    {/* Иконка пула */}
-                    {pool.icon ? (
-                      <img src={pool.icon || "/placeholder.svg"} alt={pool.name} className="w-8 h-8" />
-                    ) : (
-                      <span className="text-2xl">
-                        {pool.difficulty <= 1 ? "🌊" : pool.difficulty <= 2 ? "⛏️" : pool.difficulty <= 3 ? "🔥" : "💀"}
-                      </span>
-                    )}
+                    <span className="text-2xl">
+                      {pool.difficulty <= 1 ? "🌊" : pool.difficulty <= 2 ? "⛏️" : pool.difficulty <= 3 ? "🔥" : "💀"}
+                    </span>
                   </div>
                   <div className="flex-1">
                     <h4 className="font-medium text-white">{pool.name}</h4>

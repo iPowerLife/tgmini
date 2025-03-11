@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabase } from "../supabase"
 
 export function MinersModal({ onClose, user }) {
   const [miners, setMiners] = useState([])
@@ -11,9 +10,6 @@ export function MinersModal({ onClose, user }) {
 
   // Загрузка данных о майнерах пользователя и активном майнере
   useEffect(() => {
-    // Исправляем запрос к базе данных для получения майнеров
-
-    // Заменяем функцию fetchMiners в useEffect на следующую:
     const fetchMiners = async () => {
       try {
         setLoading(true)
@@ -23,47 +19,34 @@ export function MinersModal({ onClose, user }) {
           return
         }
 
-        // Получаем майнеры пользователя - проверяем структуру таблиц
-        console.log("Загрузка майнеров для пользователя:", user.id)
+        // Временные тестовые данные, пока таблицы не созданы
+        const testMiners = [
+          {
+            id: 1,
+            name: "Базовый майнер",
+            power: 10,
+            level: 1,
+            energy: 5,
+            income_per_hour: 1,
+            rarity: "common",
+          },
+          {
+            id: 2,
+            name: "Продвинутый майнер",
+            power: 25,
+            level: 2,
+            energy: 12,
+            income_per_hour: 2.5,
+            rarity: "rare",
+          },
+        ]
 
-        // Сначала проверим, какие таблицы доступны
-        const { data: tables } = await supabase.from("miners").select("*").limit(1)
+        setMiners(testMiners)
 
-        console.log("Доступные данные из таблицы miners:", tables)
-
-        // Пробуем прямой запрос к таблице miners
-        const { data: minersData, error: minersError } = await supabase
-          .from("miners")
-          .select("*")
-          .eq("user_id", user.id)
-
-        if (minersError) {
-          console.error("Ошибка при запросе miners:", minersError)
-        } else {
-          console.log("Данные miners:", minersData)
-        }
-
-        // Форматируем данные майнеров
-        const formattedMiners = minersData
-          ? minersData.map((miner) => ({
-              id: miner.id,
-              name: miner.name || "Майнер",
-              power: miner.power || 0,
-              level: miner.level || 1,
-              energy: miner.energy_usage || 0,
-              income_per_hour: miner.income_per_hour || 0,
-              image: "⚒️",
-            }))
-          : []
-
-        setMiners(formattedMiners)
-
-        // Проверяем, есть ли активный майнер
+        // Если есть активный майнер у пользователя, устанавливаем его
         if (user.active_miner_id) {
           setActiveMiner(user.active_miner_id)
-
-          // Также устанавливаем выбранный майнер как активный
-          const active = formattedMiners.find((m) => m.id === user.active_miner_id)
+          const active = testMiners.find((m) => m.id === user.active_miner_id)
           if (active) {
             setSelectedMiner(active)
           }
@@ -79,16 +62,6 @@ export function MinersModal({ onClose, user }) {
     fetchMiners()
   }, [user])
 
-  // Функция для расчета мощности майнера с учетом уровня
-  const calculatePower = (basePower, level) => {
-    return Math.round(basePower * (1 + (level - 1) * 0.15))
-  }
-
-  // Функция для расчета энергопотребления майнера с учетом уровня
-  const calculateEnergy = (baseEnergy, level) => {
-    return Math.round(baseEnergy * (1 + (level - 1) * 0.1))
-  }
-
   // Функция для выбора майнера
   const handleSelectMiner = (miner) => {
     setSelectedMiner(miner)
@@ -96,22 +69,9 @@ export function MinersModal({ onClose, user }) {
 
   // Функция для активации майнера
   const activateMiner = async (minerId) => {
-    // Также упрощаем функцию активации майнера
     try {
-      console.log("Активация майнера:", minerId)
-
-      // Обновляем активный майнер в базе данных
-      const { error } = await supabase.from("users").update({ active_miner_id: minerId }).eq("id", user.id)
-
-      if (error) {
-        console.error("Ошибка при обновлении active_miner_id:", error)
-        throw error
-      }
-
-      // Обновляем состояние
+      // В реальном приложении здесь будет обновление в базе данных
       setActiveMiner(minerId)
-
-      // Показываем уведомление об успехе
       alert("Майнер успешно активирован!")
     } catch (error) {
       console.error("Ошибка при активации майнера:", error)
@@ -121,46 +81,18 @@ export function MinersModal({ onClose, user }) {
 
   // Функция для улучшения майнера
   const upgradeMiner = async (minerId) => {
-    // Упрощаем функцию улучшения майнера
     try {
-      console.log("Улучшение майнера:", minerId)
-
-      // Получаем текущий уровень майнера
       const miner = miners.find((m) => m.id === minerId)
       if (!miner) return
 
-      // Рассчитываем стоимость улучшения
       const upgradeCost = Math.round(100 * Math.pow(1.5, miner.level - 1))
 
-      // Проверяем, достаточно ли у пользователя средств
       if (user.balance < upgradeCost) {
         alert(`Недостаточно средств! Требуется ${upgradeCost} 💎`)
         return
       }
 
-      // Обновляем уровень майнера
-      const { error: minerError } = await supabase
-        .from("miners")
-        .update({ level: miner.level + 1 })
-        .eq("id", minerId)
-
-      if (minerError) {
-        console.error("Ошибка при обновлении уровня майнера:", minerError)
-        throw minerError
-      }
-
-      // Списываем средства с баланса пользователя
-      const { error: balanceError } = await supabase
-        .from("users")
-        .update({ balance: user.balance - upgradeCost })
-        .eq("id", user.id)
-
-      if (balanceError) {
-        console.error("Ошибка при обновлении баланса:", balanceError)
-        throw balanceError
-      }
-
-      // Обновляем список майнеров
+      // В реальном приложении здесь будет обновление в базе данных
       setMiners(
         miners.map((m) => {
           if (m.id === minerId) {
@@ -175,7 +107,6 @@ export function MinersModal({ onClose, user }) {
         }),
       )
 
-      // Показываем уведомление об успехе
       alert(`Майнер улучшен до уровня ${miner.level + 1}!`)
     } catch (error) {
       console.error("Ошибка при улучшении майнера:", error)
@@ -183,22 +114,7 @@ export function MinersModal({ onClose, user }) {
     }
   }
 
-  // Функция для получения цвета в зависимости от редкости
-  const getRarityColor = (rarity) => {
-    switch (rarity) {
-      case "common":
-        return "blue"
-      case "rare":
-        return "purple"
-      case "epic":
-        return "orange"
-      case "legendary":
-        return "yellow"
-      default:
-        return "blue"
-    }
-  }
-
+  // Остальной код компонента остается без изменений
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-[#242838]/95 backdrop-blur-sm p-4 rounded-lg w-[90%] max-w-md border border-blue-500/20">
@@ -220,7 +136,6 @@ export function MinersModal({ onClose, user }) {
               className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors"
               onClick={() => {
                 onClose()
-                // Перенаправление в магазин
                 window.location.href = "/shop"
               }}
             >
@@ -241,18 +156,9 @@ export function MinersModal({ onClose, user }) {
               >
                 <div className="flex items-center">
                   <div
-                    className={`w-12 h-12 bg-${getRarityColor(miner.rarity)}-500/20 rounded-lg flex items-center justify-center mr-3`}
+                    className={`w-12 h-12 bg-${miner.rarity === "rare" ? "purple" : "blue"}-500/20 rounded-lg flex items-center justify-center mr-3`}
                   >
-                    {/* Иконка майнера */}
-                    {typeof miner.image === "string" && miner.image.startsWith("http") ? (
-                      <img
-                        src={miner.image || "/placeholder.svg"}
-                        alt={miner.name}
-                        className="w-10 h-10 object-contain"
-                      />
-                    ) : (
-                      <span className="text-2xl">{miner.image || "⚒️"}</span>
-                    )}
+                    <span className="text-2xl">⚒️</span>
                   </div>
                   <div className="flex-1">
                     <h4 className="font-medium text-white">{miner.name}</h4>
