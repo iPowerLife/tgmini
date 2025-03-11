@@ -95,7 +95,7 @@ const HomePage = ({ user }) => {
         </div>
 
         {/* Основная область с кнопками и майнером */}
-        <div className="flex-1 grid grid-cols-[60px_1fr_60px] gap-4 px-2">
+        <div className="grid grid-cols-[60px_1fr_60px] gap-4 px-2">
           {/* Левая колонка с кнопками */}
           <div className="flex flex-col items-center pt-8">
             <div className="space-y-6">
@@ -171,66 +171,74 @@ const HomePage = ({ user }) => {
             </div>
           </div>
 
-          {/* Центральная область с анимированным майнером */}
-          <div className="aspect-square flex items-center justify-center bg-[#242838]/60 backdrop-blur-sm rounded-lg border border-blue-500/20 overflow-hidden">
-            <div className="miner-animation">
-              <style jsx>{`
-                .miner-animation {
-                  position: relative;
-                  width: 100%;
-                  height: 100%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                }
-                
-                .miner-animation:before {
-                  content: '';
-                  position: absolute;
-                  width: 80px;
-                  height: 80px;
-                  background: rgba(59, 130, 246, 0.8);
-                  border-radius: 15px;
-                  animation: pulse 2s infinite;
-                }
-                
-                .miner-animation:after {
-                  content: '💎';
-                  position: absolute;
-                  font-size: 32px;
-                  animation: float 3s ease-in-out infinite;
-                }
-                
-                @keyframes pulse {
-                  0% {
-                    transform: scale(0.95);
-                    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+          {/* Центральная область с анимированным майнером и кнопкой майнинга */}
+          <div className="flex flex-col">
+            {/* Майнер */}
+            <div className="aspect-square flex items-center justify-center bg-[#242838]/60 backdrop-blur-sm rounded-lg border border-blue-500/20 overflow-hidden mb-4">
+              <div className="miner-animation">
+                <style jsx>{`
+                  .miner-animation {
+                    position: relative;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                   }
                   
-                  70% {
-                    transform: scale(1);
-                    box-shadow: 0 0 0 15px rgba(59, 130, 246, 0);
+                  .miner-animation:before {
+                    content: '';
+                    position: absolute;
+                    width: 80px;
+                    height: 80px;
+                    background: rgba(59, 130, 246, 0.8);
+                    border-radius: 15px;
+                    animation: pulse 2s infinite;
                   }
                   
-                  100% {
-                    transform: scale(0.95);
-                    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+                  .miner-animation:after {
+                    content: '💎';
+                    position: absolute;
+                    font-size: 32px;
+                    animation: float 3s ease-in-out infinite;
                   }
-                }
-                
-                @keyframes float {
-                  0% {
-                    transform: translateY(0px);
+                  
+                  @keyframes pulse {
+                    0% {
+                      transform: scale(0.95);
+                      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+                    }
+                    
+                    70% {
+                      transform: scale(1);
+                      box-shadow: 0 0 0 15px rgba(59, 130, 246, 0);
+                    }
+                    
+                    100% {
+                      transform: scale(0.95);
+                      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+                    }
                   }
-                  50% {
-                    transform: translateY(-20px);
+                  
+                  @keyframes float {
+                    0% {
+                      transform: translateY(0px);
+                    }
+                    50% {
+                      transform: translateY(-20px);
+                    }
+                    100% {
+                      transform: translateY(0px);
+                    }
                   }
-                  100% {
-                    transform: translateY(0px);
-                  }
-                }
-              `}</style>
+                `}</style>
+              </div>
             </div>
+
+            {/* Кнопка майнинга */}
+            <button className="bg-[#3B82F6]/80 backdrop-blur-sm hover:bg-blue-600/80 text-white py-3 px-6 rounded-lg font-bold transition-colors">
+              Начать майнинг и таймер
+            </button>
           </div>
 
           {/* Правая колонка с кнопками */}
@@ -295,12 +303,8 @@ const HomePage = ({ user }) => {
           </div>
         </div>
 
-        {/* Кнопка майнинга */}
-        <div className="flex justify-center mx-4 mb-4">
-          <button className="bg-[#3B82F6]/80 backdrop-blur-sm hover:bg-blue-600/80 text-white py-3 px-6 rounded-lg font-bold transition-colors">
-            Начать майнинг и таймер
-          </button>
-        </div>
+        {/* Пустое пространство для заполнения экрана */}
+        <div className="flex-1"></div>
       </div>
 
       {/* Модальные окна */}
