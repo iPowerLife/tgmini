@@ -1,141 +1,322 @@
 "use client"
+
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 
 const HomePage = ({ user }) => {
+  const [showMinersModal, setShowMinersModal] = useState(false)
+  const [showBoostsModal, setShowBoostsModal] = useState(false)
+  const [showPoolsModal, setShowPoolsModal] = useState(false)
+  const [minerInfo, setMinerInfo] = useState({
+    pool: "Стандартный",
+    hashrate: 0,
+    energy: 0,
+    hourlyIncome: 0,
+    totalMined: 0,
+  })
   const navigate = useNavigate()
 
+  // Загрузка данных пользователя
+  useEffect(() => {
+    if (user) {
+      // Здесь можно загрузить данные о майнинге пользователя
+      // и обновить состояние minerInfo
+    }
+  }, [user])
+
+  // Обработчик перехода в магазин
+  const handleShopClick = () => {
+    navigate("/shop")
+  }
+
   // Стили для квадратных кнопок
-  const buttonStyle = {
-    width: "56px",
-    height: "56px",
-    backgroundColor: "#3B82F6",
-    borderRadius: "12px",
+  const squareButtonStyle = {
+    width: "60px",
+    height: "60px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    padding: "0",
+    borderRadius: "12px",
+    backgroundColor: "#3B82F6",
+    color: "white",
+    transition: "all 0.2s ease",
   }
 
   return (
-    <div className="min-h-screen bg-[#0F1729] text-white">
-      {/* Верхний блок с информацией */}
-      <div className="p-4 bg-[#1C2538] mx-4 mt-4 rounded-lg">
-        <div className="space-y-2">
-          <div className="text-gray-400">
-            Выбранный пул: <span className="text-white">Стандартный</span>
-          </div>
-          <div className="text-gray-400">
-            Добыто: <span className="text-white">0.00 💎</span>
-          </div>
-          <div className="text-gray-400">
-            Доход в час: <span className="text-white">0.00 💎</span>
-          </div>
-          <div className="flex justify-between text-gray-400">
-            <div>
-              Хешрейт: <span className="text-white">0 H/s</span>
-            </div>
-            <div>
-              Энергия: <span className="text-white">0/100</span>
-            </div>
+    <div className="min-h-screen p-4 bg-[#121212] text-white">
+      {/* Верхний блок с балансом */}
+      <div className="mb-4 bg-[#242838] p-4 rounded-lg">
+        <div className="text-center">
+          <h2 className="font-bold text-blue-400">Баланс: {user?.balance || 0} 💎</h2>
+          <p className="text-gray-300">Miner Pass: {user?.hasMinerPass ? "Активен ✨" : "Не активен"}</p>
+        </div>
+      </div>
+
+      {/* Блок с информацией о майнинге */}
+      <div className="mb-4 bg-[#242838] p-4 rounded-lg">
+        <div className="space-y-2 text-gray-300">
+          <p>
+            Выбранный пул: <span className="text-blue-400">{minerInfo.pool}</span>
+          </p>
+          <p>
+            Добыто: <span className="text-blue-400">{minerInfo.totalMined.toFixed(2)} 💎</span>
+          </p>
+          <p>
+            Доход в час: <span className="text-blue-400">{minerInfo.hourlyIncome.toFixed(2)} 💎</span>
+          </p>
+          <div className="flex justify-between">
+            <p>
+              Хешрейт: <span className="text-blue-400">{minerInfo.hashrate} H/s</span>
+            </p>
+            <p>
+              Энергия: <span className="text-blue-400">{minerInfo.energy}/100</span>
+            </p>
           </div>
         </div>
       </div>
 
       {/* Основной контент */}
-      <div className="grid grid-cols-3 gap-4 px-4 mt-4">
-        {/* Левая колонка */}
-        <div className="space-y-4">
-          <button style={buttonStyle}>
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="4" y="4" width="16" height="16" rx="2" />
-              <circle cx="12" cy="12" r="3" />
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        {/* Левая колонка с кнопками */}
+        <div className="space-y-4 flex flex-col items-center">
+          <button style={squareButtonStyle} onClick={() => setShowMinersModal(true)}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+              <rect x="9" y="9" width="6" height="6"></rect>
+              <line x1="9" y1="2" x2="9" y2="4"></line>
+              <line x1="15" y1="2" x2="15" y2="4"></line>
+              <line x1="9" y1="20" x2="9" y2="22"></line>
+              <line x1="15" y1="20" x2="15" y2="22"></line>
+              <line x1="20" y1="9" x2="22" y2="9"></line>
+              <line x1="20" y1="14" x2="22" y2="14"></line>
+              <line x1="2" y1="9" x2="4" y2="9"></line>
+              <line x1="2" y1="14" x2="4" y2="14"></line>
             </svg>
           </button>
 
-          <button style={buttonStyle}>
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M13 2L3 14h9l-1 8L21 10h-9l1-8z" />
+          <button style={squareButtonStyle} onClick={() => setShowBoostsModal(true)}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
             </svg>
           </button>
 
-          <button style={buttonStyle}>
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="18" x2="21" y2="18" />
+          <button style={squareButtonStyle}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
             </svg>
           </button>
         </div>
 
-        {/* Центральная область */}
-        <div className="aspect-square bg-[#1C2538] rounded-lg flex items-center justify-center">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="#3B82F6">
-            <path d="M12 2L2 20h20L12 2z" />
-          </svg>
+        {/* Центральная область с анимированным майнером */}
+        <div className="aspect-square flex items-center justify-center bg-[#242838] rounded-lg border border-blue-500/20 overflow-hidden">
+          <div className="miner-animation">
+            <style jsx>{`
+              .miner-animation {
+                position: relative;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+              
+              .miner-animation:before {
+                content: '';
+                position: absolute;
+                width: 80px;
+                height: 80px;
+                background: #3B82F6;
+                border-radius: 15px;
+                animation: pulse 2s infinite;
+              }
+              
+              .miner-animation:after {
+                content: '💎';
+                position: absolute;
+                font-size: 32px;
+                animation: float 3s ease-in-out infinite;
+              }
+              
+              @keyframes pulse {
+                0% {
+                  transform: scale(0.95);
+                  box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+                }
+                
+                70% {
+                  transform: scale(1);
+                  box-shadow: 0 0 0 15px rgba(59, 130, 246, 0);
+                }
+                
+                100% {
+                  transform: scale(0.95);
+                  box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+                }
+              }
+              
+              @keyframes float {
+                0% {
+                  transform: translateY(0px);
+                }
+                50% {
+                  transform: translateY(-20px);
+                }
+                100% {
+                  transform: translateY(0px);
+                }
+              }
+            `}</style>
+          </div>
         </div>
 
-        {/* Правая колонка */}
-        <div className="space-y-4">
-          <button style={buttonStyle}>
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+        {/* Правая колонка с кнопками */}
+        <div className="space-y-4 flex flex-col items-center">
+          <button style={squareButtonStyle} onClick={() => setShowPoolsModal(true)}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5"></path>
+              <path d="M2 12l10 5 10-5"></path>
             </svg>
           </button>
 
-          <button style={buttonStyle} onClick={() => navigate("/shop")}>
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          <button style={squareButtonStyle} onClick={handleShopClick}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
             </svg>
           </button>
 
-          <button style={buttonStyle}>
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+          <button style={squareButtonStyle}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
             </svg>
           </button>
         </div>
       </div>
 
       {/* Кнопка майнинга */}
-      <div className="px-4 mt-4">
-        <button className="w-full bg-[#3B82F6] text-white py-4 rounded-lg">Начать майнинг и таймер</button>
-      </div>
+      <button className="w-full bg-[#3B82F6] hover:bg-blue-600 text-white p-4 rounded-lg font-bold transition-colors">
+        Начать майнинг и таймер
+      </button>
 
-      {/* Нижняя навигация */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#1C2538] p-4">
-        <div className="flex justify-between max-w-md mx-auto">
-          <button className="text-[#3B82F6]">
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-            </svg>
-          </button>
-          <button className="text-gray-500">
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <path d="M16 10a4 4 0 01-8 0" />
-            </svg>
-          </button>
-          <button className="text-gray-500">
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 6v6l4 2" />
-            </svg>
-          </button>
-          <button className="text-gray-500">
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 20v-6M6 20V10M18 20V4" />
-            </svg>
-          </button>
-          <button className="text-gray-500">
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <circle cx="12" cy="10" r="3" />
-              <path d="M7 20.662V19c0-2 1-3 2.5-3h5c1.5 0 2.5 1 2.5 3v1.662" />
-            </svg>
-          </button>
+      {/* Модальные окна */}
+      {showMinersModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#242838] p-4 rounded-lg w-[90%] max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-blue-400">Список майнеров</h3>
+              <button className="text-gray-400 hover:text-white" onClick={() => setShowMinersModal(false)}>
+                ✕
+              </button>
+            </div>
+            <div className="py-4 text-gray-300">
+              {/* Здесь будет список майнеров */}
+              <p>Список майнеров будет здесь</p>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {showBoostsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#242838] p-4 rounded-lg w-[90%] max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-blue-400">Бусты</h3>
+              <button className="text-gray-400 hover:text-white" onClick={() => setShowBoostsModal(false)}>
+                ✕
+              </button>
+            </div>
+            <div className="py-4 text-gray-300">
+              {/* Здесь будет список бустов */}
+              <p>Список бустов будет здесь</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPoolsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#242838] p-4 rounded-lg w-[90%] max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-blue-400">Майнинг пулы</h3>
+              <button className="text-gray-400 hover:text-white" onClick={() => setShowPoolsModal(false)}>
+                ✕
+              </button>
+            </div>
+            <div className="py-4 text-gray-300">
+              {/* Здесь будет список пулов */}
+              <p>Список пулов будет здесь</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
