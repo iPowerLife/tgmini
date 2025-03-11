@@ -16,42 +16,61 @@ const HomePage = ({ user }) => {
   })
   const navigate = useNavigate()
 
-  // Инициализация Telegram WebApp
+  // Блокировка всех возможных событий прокрутки
   useEffect(() => {
-    // Проверяем, запущено ли приложение в Telegram WebApp
-    if (window.Telegram && window.Telegram.WebApp) {
-      // Расширяем приложение на весь экран
-      window.Telegram.WebApp.expand()
-
-      // Отключаем стандартный свайп для закрытия
-      window.Telegram.WebApp.enableClosingConfirmation()
-
-      // Устанавливаем цвет фона
-      window.Telegram.WebApp.setBackgroundColor("#000000")
+    // Функция для блокировки всех событий прокрутки
+    const blockScroll = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      return false
     }
 
-    // Предотвращаем прокрутку на уровне документа
+    // Список всех событий, которые могут вызвать прокрутку
+    const events = ["scroll", "mousewheel", "DOMMouseScroll", "wheel", "touchmove", "touchstart", "touchend"]
+
+    // Добавляем обработчики для всех событий
+    events.forEach((event) => {
+      document.addEventListener(event, blockScroll, { passive: false })
+      window.addEventListener(event, blockScroll, { passive: false })
+    })
+
+    // Блокируем стандартное поведение прокрутки
     document.body.style.overflow = "hidden"
     document.body.style.position = "fixed"
     document.body.style.width = "100%"
     document.body.style.height = "100%"
+    document.body.style.top = "0"
+    document.body.style.left = "0"
 
+    // Добавляем CSS для предотвращения прокрутки
+    const style = document.createElement("style")
+    style.innerHTML = `
+      html, body {
+        overflow: hidden !important;
+        position: fixed !important;
+        height: 100% !important;
+        width: 100% !important;
+        touch-action: none !important;
+        overscroll-behavior: none !important;
+      }
+    `
+    document.head.appendChild(style)
+
+    // Удаляем все обработчики при размонтировании
     return () => {
-      // Восстанавливаем стандартное поведение при размонтировании
+      events.forEach((event) => {
+        document.removeEventListener(event, blockScroll)
+        window.removeEventListener(event, blockScroll)
+      })
       document.body.style.overflow = ""
       document.body.style.position = ""
       document.body.style.width = ""
       document.body.style.height = ""
+      document.body.style.top = ""
+      document.body.style.left = ""
+      document.head.removeChild(style)
     }
   }, [])
-
-  // Загрузка данных пользователя
-  useEffect(() => {
-    if (user) {
-      // Здесь можно загрузить данные о майнинге пользователя
-      // и обновить состояние minerInfo
-    }
-  }, [user])
 
   // Обработчик перехода в магазин
   const handleShopClick = () => {
@@ -73,25 +92,60 @@ const HomePage = ({ user }) => {
     transition: "all 0.2s ease",
   }
 
+  // Создаем контейнер с абсолютным позиционированием
   return (
-    <div className="fixed inset-0 overflow-hidden">
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: "hidden",
+        touchAction: "none",
+        overscrollBehavior: "none",
+      }}
+    >
       {/* Фоновое изображение */}
       <div
-        className="absolute inset-0 z-0"
         style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           backgroundImage:
             'url("https://hebbkx1anhila5yf.public.blob.vercel-storage.com/kandinsky-download-1741700347819-wTpegQamRbD36vdjw4hDDi5V3igvXt.png")',
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
+          zIndex: 0,
         }}
       >
         {/* Оверлей для лучшей читаемости */}
-        <div className="absolute inset-0 bg-black/40"></div>
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.4)",
+          }}
+        ></div>
       </div>
 
       {/* Основной контент */}
-      <div className="relative z-10 h-full flex flex-col">
+      <div
+        style={{
+          position: "relative",
+          zIndex: 10,
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
         {/* Верхний блок с балансом */}
         <div className="bg-[#242838]/80 backdrop-blur-sm p-3 rounded-lg mx-2 mt-2">
           <div className="text-center">
