@@ -108,7 +108,7 @@ export function MinersModal({ onClose, user }) {
     fetchMiners()
   }, [user])
 
-  // Функция для определения редкости майнера по его мощности
+  // Функция для определен��я редкости майнера по его мощности
   const getRarityFromPower = (power) => {
     if (power <= 15) return "common"
     if (power <= 30) return "rare"
@@ -225,7 +225,10 @@ export function MinersModal({ onClose, user }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[#242838]/95 backdrop-blur-sm p-4 rounded-lg w-[90%] max-w-md border border-blue-500/20">
+      <div
+        className="bg-[#242838]/95 backdrop-blur-sm p-4 rounded-lg w-[90%] max-w-md border border-blue-500/20"
+        style={{ maxHeight: "80vh", display: "flex", flexDirection: "column" }}
+      >
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-blue-400">Мои майнеры</h3>
           <button className="text-gray-400 hover:text-white transition-colors" onClick={onClose}>
@@ -251,7 +254,10 @@ export function MinersModal({ onClose, user }) {
             </button>
           </div>
         ) : (
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
+          <div
+            className="space-y-3 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar"
+            style={{ overflowY: "auto", maxHeight: "60vh" }}
+          >
             {miners.map((miner) => (
               <div
                 key={miner.id}
@@ -332,19 +338,23 @@ export function MinersModal({ onClose, user }) {
           </div>
         )}
 
-        <style jsx>{`
-          .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-track {
-            background: #1a1d2d;
-            border-radius: 10px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #3b82f6;
-            border-radius: 10px;
-          }
-        `}</style>
+        <style jsx global>{`
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #1a1d2d;
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 10px;
+  }
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #3b82f6 #1a1d2d;
+  }
+`}</style>
       </div>
     </div>
   )
