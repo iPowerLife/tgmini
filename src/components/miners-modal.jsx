@@ -26,18 +26,18 @@ export function MinersModal({ onClose, user }) {
         const { data: userMiners, error: minersError } = await supabase
           .from("user_miners")
           .select(`
-            id,
-            model_id,
-            level,
-            miner_models (
-              id,
-              name,
-              display_name,
-              mining_power,
-              energy_consumption,
-              image_url
-            )
-          `)
+    id,
+    user_id,
+    model_id,
+    miner_models (
+      id,
+      name,
+      display_name,
+      mining_power,
+      energy_consumption,
+      image_url
+    )
+  `)
           .eq("user_id", user.id)
 
         if (minersError) {
@@ -52,10 +52,10 @@ export function MinersModal({ onClose, user }) {
           ? userMiners.map((item) => ({
               id: item.id,
               modelId: item.model_id,
-              level: item.level || 1,
+              level: 1, // Default level since the column doesn't exist
               name: item.miner_models?.display_name || "Майнер",
-              power: calculatePower(item.miner_models?.mining_power || 10, item.level || 1),
-              energy: calculateEnergy(item.miner_models?.energy_consumption || 5, item.level || 1),
+              power: calculatePower(item.miner_models?.mining_power || 10, 1), // Using default level 1
+              energy: calculateEnergy(item.miner_models?.energy_consumption || 5, 1), // Using default level 1
               image: item.miner_models?.image_url || "⚒️",
               rarity: getRarityFromPower(item.miner_models?.mining_power || 10),
             }))
@@ -83,7 +83,7 @@ export function MinersModal({ onClose, user }) {
           {
             id: 1,
             modelId: 1,
-            name: "Базов��й майнер",
+            name: "Базовый майнер",
             power: 10,
             level: 1,
             energy: 5,
@@ -155,12 +155,11 @@ export function MinersModal({ onClose, user }) {
     }
   }
 
-  // Функция для улучшения майнера
   const upgradeMiner = async (minerId) => {
     try {
       console.log("Улучшение майнера:", minerId)
 
-      // Получаем текущий уровень майнера
+      // Получаем текущий майнер
       const miner = miners.find((m) => m.id === minerId)
       if (!miner) return
 
@@ -171,17 +170,6 @@ export function MinersModal({ onClose, user }) {
       if (user.balance < upgradeCost) {
         alert(`Недостаточно средств! Требуется ${upgradeCost} 💎`)
         return
-      }
-
-      // Обновляем уровень майнера
-      const { error: minerError } = await supabase
-        .from("user_miners")
-        .update({ level: miner.level + 1 })
-        .eq("id", minerId)
-
-      if (minerError) {
-        console.error("Ошибка при обновлении уровня майнера:", minerError)
-        throw minerError
       }
 
       // Списываем средства с баланса пользователя
@@ -195,15 +183,16 @@ export function MinersModal({ onClose, user }) {
         throw balanceError
       }
 
-      // Обновляем список майнеров
+      // Обновляем локальное состояние майнера
       setMiners(
         miners.map((m) => {
           if (m.id === minerId) {
+            const newLevel = m.level + 1
             return {
               ...m,
-              level: m.level + 1,
-              power: calculatePower(m.power / calculatePower(1, m.level), m.level + 1),
-              energy: calculateEnergy(m.energy / calculateEnergy(1, m.level), m.level + 1),
+              level: newLevel,
+              power: calculatePower(m.power / calculatePower(1, m.level), newLevel),
+              energy: calculateEnergy(m.energy / calculateEnergy(1, m.level), newLevel),
             }
           }
           return m
