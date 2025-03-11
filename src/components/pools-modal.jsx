@@ -14,10 +14,22 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
       try {
         setLoading(true)
 
-        // Получаем доступные пулы
-        const { data, error } = await supabase.from("mining_pools").select("*").order("difficulty", { ascending: true })
+        console.log("Загрузка пулов...")
 
-        if (error) throw error
+        // Сначала проверим, какие таблицы доступны
+        const { data: poolsCheck } = await supabase.from("pools").select("*").limit(1)
+
+        console.log("Доступные данные из таблицы pools:", poolsCheck)
+
+        // Получаем доступные пулы
+        const { data, error } = await supabase.from("pools").select("*").order("difficulty", { ascending: true })
+
+        if (error) {
+          console.error("Ошибка при запросе pools:", error)
+          throw error
+        }
+
+        console.log("Данные pools:", data)
 
         setPools(data || [])
 
@@ -42,11 +54,16 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
   // Функция для выбора пула
   const handleSelectPool = async (pool) => {
     try {
+      console.log("Выбор пула:", pool)
+
       // Обновляем выбранный пул в базе данных
       if (user?.id) {
         const { error } = await supabase.from("users").update({ active_pool_id: pool.id }).eq("id", user.id)
 
-        if (error) throw error
+        if (error) {
+          console.error("Ошибка при обновлении active_pool_id:", error)
+          throw error
+        }
       }
 
       // Обновляем локальное состояние
