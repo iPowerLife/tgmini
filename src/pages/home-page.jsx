@@ -44,9 +44,9 @@ const HomePage = ({ user }) => {
   }
 
   return (
-    <div className="min-h-screen p-4 bg-[#121212] text-white">
+    <div className="min-h-screen p-0 text-white">
       {/* Верхний блок с балансом */}
-      <div className="mb-4 bg-[#242838] p-4 rounded-lg">
+      <div className="mb-4 bg-[#242838] p-4 rounded-lg mx-4 mt-4">
         <div className="text-center">
           <h2 className="font-bold text-blue-400">Баланс: {user?.balance || 0} 💎</h2>
           <p className="text-gray-300">Miner Pass: {user?.hasMinerPass ? "Активен ✨" : "Не активен"}</p>
@@ -54,7 +54,7 @@ const HomePage = ({ user }) => {
       </div>
 
       {/* Блок с информацией о майнинге */}
-      <div className="mb-4 bg-[#242838] p-4 rounded-lg">
+      <div className="mb-4 bg-[#242838] p-4 rounded-lg mx-4">
         <div className="space-y-2 text-gray-300">
           <p>
             Выбранный пул: <span className="text-blue-400">{minerInfo.pool}</span>
@@ -77,9 +77,9 @@ const HomePage = ({ user }) => {
       </div>
 
       {/* Основной контент */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-[60px_1fr_60px] gap-4 mb-4 px-2">
         {/* Левая колонка с кнопками */}
-        <div className="space-y-4 flex flex-col items-center">
+        <div className="space-y-4 flex flex-col items-start">
           <button style={squareButtonStyle} onClick={() => setShowMinersModal(true)}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -206,7 +206,7 @@ const HomePage = ({ user }) => {
         </div>
 
         {/* Правая колонка с кнопками */}
-        <div className="space-y-4 flex flex-col items-center">
+        <div className="space-y-4 flex flex-col items-end">
           <button style={squareButtonStyle} onClick={() => setShowPoolsModal(true)}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -262,9 +262,11 @@ const HomePage = ({ user }) => {
       </div>
 
       {/* Кнопка майнинга */}
-      <button className="w-full bg-[#3B82F6] hover:bg-blue-600 text-white p-4 rounded-lg font-bold transition-colors">
-        Начать майнинг и таймер
-      </button>
+      <div className="flex justify-center mx-4 mb-4">
+        <button className="bg-[#3B82F6] hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-bold transition-colors">
+          Начать майнинг и таймер
+        </button>
+      </div>
 
       {/* Модальные окна */}
       {showMinersModal && (
