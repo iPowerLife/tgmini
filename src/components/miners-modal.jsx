@@ -163,6 +163,11 @@ export function MinersModal({ onClose, user }) {
     return miner.power * miner.quantity
   }
 
+  // Функция для расчета общего энергопотребления майнера с учетом количества
+  const calculateTotalEnergy = (miner) => {
+    return miner.energy * miner.quantity
+  }
+
   // Функция для расчета дохода в час
   const calculateHourlyIncome = (miner) => {
     const totalPower = calculateTotalPower(miner)
@@ -274,7 +279,7 @@ export function MinersModal({ onClose, user }) {
                         Доход в сутки: <span className="text-blue-400">{calculateDailyIncome(miner)} 💎</span>
                       </p>
                       <p>
-                        Энергопотребление: <span className="text-blue-400">{miner.energy}/kWh</span>
+                        Энергопотребление: <span className="text-blue-400">{calculateTotalEnergy(miner)}/kWh</span>
                       </p>
                       <p>
                         Количество: <span className="text-blue-400">{miner.quantity} шт.</span>
