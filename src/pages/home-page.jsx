@@ -21,8 +21,6 @@ const HomePage = ({ user }) => {
   const [currentPool, setCurrentPool] = useState(null)
   const navigate = useNavigate()
 
-  // Добавляем отладочную информацию и исправляем запрос к базе данных
-
   // Добавляем отладочный вывод в начало компонента
   useEffect(() => {
     console.log("HomePage загружен, пользователь:", user)
@@ -40,60 +38,91 @@ const HomePage = ({ user }) => {
         console.log("Загрузка информации о майнинге для пользователя:", user.id)
 
         // Получаем информацию о текущем пуле
-        const { data: poolData, error: poolError } = await supabase
-          .from("pools")
-          .select("*")
-          .eq("id", user.active_pool_id || 0)
-          .single()
+        let poolData = null
+        if (user.active_pool_id) {
+          const { data, error } = await supabase.from("mining_pools").select("*").eq("id", user.active_pool_id).single()
 
-        if (poolError && poolError.code !== "PGRST116") {
-          console.error("Ошибка при запросе пула:", poolError)
+          if (error && error.code !== "PGRST116") {
+            console.error("Ошибка при запросе пула:", error)
+          } else {
+            poolData = data
+            console.log("Данные пула:", poolData)
+          }
         }
-
-        console.log("Данные пула:", poolData)
 
         // Получаем информацию об активном майнере
-        const { data: minerData, error: minerError } = await supabase
-          .from("miners")
-          .select("*")
-          .eq("id", user.active_miner_id || 0)
-          .single()
+        let minerData = null
+        let minerLevel = 1
+        if (user.active_miner_id) {
+          const { data, error } = await supabase
+            .from("user_miners")
+            .select(`
+              id,
+              level,
+              model_id,
+              miner_models (
+                id,
+                name,
+                display_name,
+                mining_power,
+                energy_consumption
+              )
+            `)
+            .eq("id", user.active_miner_id)
+            .single()
 
-        if (minerError && minerError.code !== "PGRST116") {
-          console.error("Ошибка при запросе майнера:", minerError)
+          if (error && error.code !== "PGRST116") {
+            console.error("Ошибка при запросе майнера:", error)
+          } else {
+            minerData = data
+            minerLevel = minerData?.level || 1
+            console.log("Данные майнера:", minerData)
+          }
         }
 
-        console.log("Данные майнера:", minerData)
+        // Получаем информацию о добытых монетах
+        let totalMined = 0
+        const { data: miningRewards, error: rewardsError } = await supabase
+          .from("mining_rewards")
+          .select("amount")
+          .eq("user_id", user.id)
+          .single()
+
+        if (!rewardsError) {
+          totalMined = miningRewards?.amount || 0
+        }
 
         // Рассчитываем хешрейт и энергопотребление
         let hashrate = 0
         let energy = 0
 
-        if (minerData) {
-          hashrate = minerData.power || 0
-          energy = minerData.energy_usage || 0
+        if (minerData?.miner_models) {
+          const basePower = minerData.miner_models.mining_power || 0
+          const baseEnergy = minerData.miner_models.energy_consumption || 0
+
+          // Расчет с учетом уровня
+          hashrate = Math.round(basePower * (1 + (minerLevel - 1) * 0.15))
+          energy = Math.round(baseEnergy * (1 + (minerLevel - 1) * 0.1))
         }
 
         // Рассчитываем доход в час
         const pool = poolData
-        const hourlyIncome = pool
-          ? (hashrate * 0.1 * (pool.reward_multiplier || 1)) / (pool.difficulty || 1)
-          : hashrate * 0.1
+        const hourlyIncome = pool ? (hashrate * 0.1 * (pool.multiplier || 1)) / (pool.min_miners || 1) : hashrate * 0.1
 
         // Обновляем состояние
         setMinerInfo({
-          pool: pool?.name || "Стандартный",
+          pool: pool?.display_name || pool?.name || "Стандартный",
           hashrate,
           energy,
           hourlyIncome,
-          totalMined: user.total_mined || 0,
+          totalMined,
         })
 
         // Сохраняем информацию о текущем пуле
         if (pool) {
           setCurrentPool({
             id: pool.id,
-            name: pool.name,
+            name: pool.display_name || pool.name,
           })
         }
       } catch (error) {
