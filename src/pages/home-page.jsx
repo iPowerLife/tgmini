@@ -1,126 +1,155 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { supabase } from "../supabase"
-import MiningPoolSelector from "../components/mining-pool-selector"
-import MyMiners from "../components/my-miners"
-import MiningRewards from "../components/mining-rewards"
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 
-const HomePage = ({ user, cachedMiningInfo, onCacheUpdate }) => {
-  const [miningInfo, setMiningInfo] = useState(cachedMiningInfo || null)
-  const [loading, setLoading] = useState(!cachedMiningInfo) // Если есть кэш, не показываем загрузку
-  const [error, setError] = useState(null)
-  const isInitialMount = useRef(true)
-  const dataFetchedRef = useRef(false)
+const HomePage = ({ user }) => {
+  const [showMinersModal, setShowMinersModal] = useState(false)
+  const [showBoostsModal, setShowBoostsModal] = useState(false)
+  const [showPoolsModal, setShowPoolsModal] = useState(false)
+  const [minerInfo, setMinerInfo] = useState({
+    pool: "Стандартный",
+    hashrate: 0,
+    energy: 0,
+    hourlyIncome: 0,
+    totalMined: 0,
+  })
+  const navigate = useNavigate()
 
+  // Загрузка данных пользователя
   useEffect(() => {
-    console.log("HomePage mounted with user:", user?.id)
-    console.log("Using cached mining info:", !!cachedMiningInfo)
-
-    return () => {
-      console.log("HomePage unmounted")
+    if (user) {
+      // Здесь можно загрузить данные о майнинге пользователя
+      // и обновить состояние minerInfo
     }
-  }, [user?.id, cachedMiningInfo])
+  }, [user])
 
-  useEffect(() => {
-    if (!user) return
-
-    // Функция для загрузки данных майнинга
-    const loadMiningInfo = async () => {
-      try {
-        if (!cachedMiningInfo) {
-          setLoading(true)
-        }
-        setError(null)
-
-        // Загружаем данные о майнинге и пулах параллельно
-        const [miningInfoResponse, poolsResponse] = await Promise.all([
-          supabase.rpc("get_mining_info_with_rewards", {
-            user_id_param: user.id,
-          }),
-          supabase.from("mining_pools").select("*").order("min_miners"),
-        ])
-
-        if (miningInfoResponse.error) throw miningInfoResponse.error
-        if (poolsResponse.error) throw poolsResponse.error
-
-        // Объединяем данные
-        const combinedData = {
-          ...miningInfoResponse.data,
-          mining_pools: poolsResponse.data || [],
-        }
-
-        setMiningInfo(combinedData)
-        if (onCacheUpdate) {
-          onCacheUpdate(combinedData)
-        }
-        dataFetchedRef.current = true
-      } catch (err) {
-        console.error("Error loading mining info:", err)
-        setError("Ошибка при загрузке данных майнинга")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    // Загружаем данные только при первом монтировании или если данные еще не загружены
-    if (isInitialMount.current || !dataFetchedRef.current) {
-      loadMiningInfo()
-      isInitialMount.current = false
-    }
-  }, [user, onCacheUpdate, cachedMiningInfo])
-
-  const handlePoolChange = () => {
-    if (!user) return
-
-    // Обновляем данные при смене пула
-    const loadMiningInfo = async () => {
-      try {
-        const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
-          user_id_param: user.id,
-        })
-
-        if (error) throw error
-
-        setMiningInfo(data)
-        if (onCacheUpdate) {
-          onCacheUpdate(data)
-        }
-      } catch (err) {
-        console.error("Error loading mining info:", err)
-        setError("Ошибка при загрузке данных майнинга")
-      }
-    }
-
-    loadMiningInfo()
+  // Обработчик перехода в магазин
+  const handleShopClick = () => {
+    navigate("/shop")
   }
 
-  // Если пользователь не авторизован, не показываем ничего
-  if (!user) {
-    return null
-  }
-
-  // Показываем загрузку для всей страницы, если данные еще не загружены
-  if (loading && !miningInfo) {
-    return (
-      <div className="container mx-auto px-4 py-6 max-w-lg">
-        <div className="flex justify-center items-center h-64">
-          <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+  return (
+    <div className="min-h-screen p-4 bg-[#121212] text-white">
+      {/* Верхний блок с балансом */}
+      <div className="mb-4 bg-yellow-300 text-black p-4 rounded-lg">
+        <div className="text-center">
+          <h2 className="font-bold">Баланс: {user?.balance || 0} 💎</h2>
+          <p>Miner Pass: {user?.hasMinerPass ? "Активен ✨" : "Не активен"}</p>
         </div>
       </div>
-    )
-  }
 
-  // Всегда отображаем компоненты с данными из кэша или загруженными данными
-  return (
-    <div className="container mx-auto px-4 py-6 max-w-lg">
-      <MiningRewards userId={user.id} initialData={miningInfo} />
-      <MyMiners
-        miners={miningInfo?.miners || []}
-        miningStats={miningInfo?.stats || {}}
-        hourlyRate={miningInfo?.rewards?.hourly_rate || 0}
-      />
-      <MiningPoolSelector userId={user.id} onPoolChange={handlePoolChange} initialData={miningInfo} />
+      {/* Блок с информацией о майнинге */}
+      <div className="mb-4 bg-green-500 text-black p-4 rounded-lg">
+        <div className="space-y-2">
+          <p>Выбранный пул: {minerInfo.pool}</p>
+          <p>Добыто: {minerInfo.totalMined.toFixed(2)} 💎</p>
+          <p>Доход в час: {minerInfo.hourlyIncome.toFixed(2)} 💎</p>
+          <div className="flex justify-between">
+            <p>Хешрейт: {minerInfo.hashrate} H/s</p>
+            <p>Энергия: {minerInfo.energy}/100</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Основной контент */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        {/* Левая колонка с кнопками */}
+        <div className="space-y-4">
+          <button
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white p-3 rounded-lg"
+            onClick={() => setShowMinersModal(true)}
+          >
+            Майнеры
+          </button>
+
+          <button
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white p-3 rounded-lg"
+            onClick={() => setShowBoostsModal(true)}
+          >
+            Бусты
+          </button>
+
+          <button className="w-full bg-blue-700 hover:bg-blue-800 text-white p-3 rounded-lg">Ещё</button>
+        </div>
+
+        {/* Центральная область */}
+        <div className="aspect-square flex items-center justify-center bg-pink-500 rounded-lg">
+          <div className="text-center p-4">
+            <p>Здесь будет картинка майнера.</p>
+            <p>можешь сюда пока что</p>
+            <p>что хочешь</p>
+            <p>поставить</p>
+          </div>
+        </div>
+
+        {/* Правая колонка с кнопками */}
+        <div className="space-y-4">
+          <button
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white p-3 rounded-lg"
+            onClick={() => setShowPoolsModal(true)}
+          >
+            Пулы
+          </button>
+
+          <button className="w-full bg-blue-700 hover:bg-blue-800 text-white p-3 rounded-lg" onClick={handleShopClick}>
+            Магазин
+          </button>
+
+          <button className="w-full bg-blue-700 hover:bg-blue-800 text-white p-3 rounded-lg">Настройки</button>
+        </div>
+      </div>
+
+      {/* Кнопка майнинга */}
+      <button className="w-full bg-orange-500 hover:bg-orange-600 text-white p-4 rounded-lg font-bold">
+        Начать майнинг и таймер
+      </button>
+
+      {/* Модальные окна */}
+      {showMinersModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#242838] p-4 rounded-lg w-[90%] max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Список майнеров</h3>
+              <button onClick={() => setShowMinersModal(false)}>✕</button>
+            </div>
+            <div className="py-4">
+              {/* Здесь будет список майнеров */}
+              <p>Список майнеров будет здесь</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBoostsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#242838] p-4 rounded-lg w-[90%] max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Бусты</h3>
+              <button onClick={() => setShowBoostsModal(false)}>✕</button>
+            </div>
+            <div className="py-4">
+              {/* Здесь будет список бустов */}
+              <p>Список бустов будет здесь</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPoolsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#242838] p-4 rounded-lg w-[90%] max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Майнинг пулы</h3>
+              <button onClick={() => setShowPoolsModal(false)}>✕</button>
+            </div>
+            <div className="py-4">
+              {/* Здесь будет список пулов */}
+              <p>Список пулов будет здесь</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
