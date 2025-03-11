@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { MinersModal } from "../components/miners-modal"
 import { BoostsModal } from "../components/boosts-modal"
@@ -20,6 +20,7 @@ const HomePage = ({ user }) => {
   })
   const [currentPool, setCurrentPool] = useState(null)
   const navigate = useNavigate()
+  const modalOpenRef = useRef(false)
 
   // Добавляем отладочный вывод в начало компонента
   useEffect(() => {
@@ -58,7 +59,6 @@ const HomePage = ({ user }) => {
             .from("user_miners")
             .select(`
               id,
-              level,
               model_id,
               miner_models (
                 id,
@@ -75,7 +75,7 @@ const HomePage = ({ user }) => {
             console.error("Ошибка при запросе майнера:", error)
           } else {
             minerData = data
-            minerLevel = minerData?.level || 1
+            minerLevel = 1 // Используем уровень 1 по умолчанию
             console.log("Данные майнера:", minerData)
           }
         }
@@ -137,6 +137,11 @@ const HomePage = ({ user }) => {
   useEffect(() => {
     // Функция для блокировки только событий прокрутки
     const blockScroll = (e) => {
+      // Если открыто модальное окно, не блокируем прокрутку
+      if (modalOpenRef.current) {
+        return true
+      }
+
       // Проверяем, является ли это событием прокрутки
       if (
         e.type === "wheel" ||
@@ -144,6 +149,20 @@ const HomePage = ({ user }) => {
         e.type === "DOMMouseScroll" ||
         (e.type === "touchmove" && e.touches.length > 0)
       ) {
+        // Проверяем, не происходит ли событие внутри модального окна
+        let target = e.target
+        while (target) {
+          if (
+            target.classList &&
+            (target.classList.contains("miners-list") || target.classList.contains("custom-scrollbar"))
+          ) {
+            // Если событие происходит внутри модального окна, разрешаем прокрутку
+            return true
+          }
+          target = target.parentElement
+        }
+
+        // Блокируем прокрутку для основной страницы
         e.preventDefault()
         return false
       }
@@ -173,6 +192,12 @@ const HomePage = ({ user }) => {
         width: 100% !important;
         overscroll-behavior: none !important;
       }
+      
+      /* Разрешаем прокрутку в модальных окнах */
+      .miners-list, .custom-scrollbar {
+        overflow-y: auto !important;
+        overscroll-behavior: contain !important;
+      }
     `
     document.head.appendChild(style)
 
@@ -187,6 +212,11 @@ const HomePage = ({ user }) => {
       document.head.removeChild(style)
     }
   }, [])
+
+  // Обновляем состояние открытия модального окна
+  useEffect(() => {
+    modalOpenRef.current = showMinersModal || showBoostsModal || showPoolsModal
+  }, [showMinersModal, showBoostsModal, showPoolsModal])
 
   // Обработчик перехода в магазин
   const handleShopClick = () => {

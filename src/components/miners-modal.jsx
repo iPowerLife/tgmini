@@ -9,6 +9,34 @@ export function MinersModal({ onClose, user }) {
   const [selectedMiner, setSelectedMiner] = useState(null)
   const [activeMiner, setActiveMiner] = useState(null)
 
+  // Разрешаем прокрутку в модальном окне
+  useEffect(() => {
+    // Сохраняем оригинальные обработчики событий
+    const originalHandlers = {}
+    const events = ["wheel", "mousewheel", "DOMMouseScroll", "touchmove"]
+
+    events.forEach((event) => {
+      const originalHandler = document.addEventListener
+      originalHandlers[event] = originalHandler
+
+      // Переопределяем обработчик событий для модального окна
+      document.addEventListener = (e, handler, options) => {
+        if (e === event) {
+          // Не добавляем обработчик для событий прокрутки
+          return
+        }
+        return originalHandler.call(document, e, handler, options)
+      }
+    })
+
+    // Восстанавливаем оригинальные обработчики при закрытии модального окна
+    return () => {
+      events.forEach((event) => {
+        document.addEventListener = originalHandlers[event]
+      })
+    }
+  }, [])
+
   // Загрузка данных о майнерах пользователя и активном майнере
   useEffect(() => {
     const fetchMiners = async () => {
@@ -20,7 +48,7 @@ export function MinersModal({ onClose, user }) {
           return
         }
 
-        console.log("Загрузка майнеров для пользователя:", user.id)
+        console.log("Загрузка м��йнеров для пользователя:", user.id)
 
         // Получаем майнеры пользователя из таблицы user_miners с информацией из miner_models
         const { data: userMiners, error: minersError } = await supabase
@@ -108,7 +136,7 @@ export function MinersModal({ onClose, user }) {
     fetchMiners()
   }, [user])
 
-  // Функция для определен��я редкости майнера по его мощности
+  // Функция для определения редкости майнера по его мощности
   const getRarityFromPower = (power) => {
     if (power <= 15) return "common"
     if (power <= 30) return "rare"
@@ -223,11 +251,21 @@ export function MinersModal({ onClose, user }) {
     }
   }
 
+  // Обработчик события прокрутки для модального окна
+  const handleModalScroll = (e) => {
+    // Разрешаем прокрутку внутри модального окна
+    e.stopPropagation()
+  }
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={(e) => e.stopPropagation()}
+    >
       <div
-        className="bg-[#242838]/95 backdrop-blur-sm p-4 rounded-lg w-[90%] max-w-md border border-blue-500/20"
-        style={{ maxHeight: "80vh", display: "flex", flexDirection: "column" }}
+        className="bg-[#242838]/95 backdrop-blur-sm p-4 rounded-lg w-[90%] max-w-md border border-blue-500/20 flex flex-col"
+        style={{ maxHeight: "80vh" }}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-blue-400">Мои майнеры</h3>
@@ -255,8 +293,14 @@ export function MinersModal({ onClose, user }) {
           </div>
         ) : (
           <div
-            className="space-y-3 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar"
-            style={{ overflowY: "auto", maxHeight: "60vh" }}
+            className="miners-list space-y-3 overflow-y-auto pr-1 custom-scrollbar"
+            style={{
+              overflowY: "auto",
+              maxHeight: "calc(80vh - 100px)",
+              WebkitOverflowScrolling: "touch",
+            }}
+            onWheel={handleModalScroll}
+            onTouchMove={handleModalScroll}
           >
             {miners.map((miner) => (
               <div
@@ -339,22 +383,31 @@ export function MinersModal({ onClose, user }) {
         )}
 
         <style jsx global>{`
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #1a1d2d;
-    border-radius: 10px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #3b82f6;
-    border-radius: 10px;
-  }
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #3b82f6 #1a1d2d;
-  }
-`}</style>
+          .miners-list {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: thin;
+            scrollbar-color: #3b82f6 #1a1d2d;
+          }
+          
+          .miners-list::-webkit-scrollbar {
+            width: 4px;
+          }
+          
+          .miners-list::-webkit-scrollbar-track {
+            background: #1a1d2d;
+            border-radius: 10px;
+          }
+          
+          .miners-list::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 10px;
+          }
+          
+          /* Отключаем события прокрутки на родительских элементах при прокрутке модального окна */
+          .miners-list {
+            overscroll-behavior: contain;
+          }
+        `}</style>
       </div>
     </div>
   )
