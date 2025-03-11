@@ -48,7 +48,7 @@ export function MinersModal({ onClose, user }) {
           return
         }
 
-        console.log("Загрузка м��йнеров для пользователя:", user.id)
+        console.log("Загрузка майнеров для пользователя:", user.id)
 
         // Получаем майнеры пользователя из таблицы user_miners с информацией из miner_models
         const { data: userMiners, error: minersError } = await supabase
@@ -383,31 +383,18 @@ export function MinersModal({ onClose, user }) {
         )}
 
         <style jsx global>{`
-          .miners-list {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: thin;
-            scrollbar-color: #3b82f6 #1a1d2d;
-          }
-          
-          .miners-list::-webkit-scrollbar {
-            width: 4px;
-          }
-          
-          .miners-list::-webkit-scrollbar-track {
-            background: #1a1d2d;
-            border-radius: 10px;
-          }
-          
-          .miners-list::-webkit-scrollbar-thumb {
-            background: #3b82f6;
-            border-radius: 10px;
-          }
-          
-          /* Отключаем события прокрутки на родительских элементах при прокрутке модального окна */
-          .miners-list {
-            overscroll-behavior: contain;
-          }
-        `}</style>
+  .miners-list {
+    -ms-overflow-style: none;  /* IE и Edge */
+    scrollbar-width: none;     /* Firefox */
+    overscroll-behavior: contain;
+  }
+  
+  .miners-list::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari и Opera */
+    width: 0;
+    height: 0;
+  }
+`}</style>
       </div>
     </div>
   )

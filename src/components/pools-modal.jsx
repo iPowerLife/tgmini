@@ -222,20 +222,16 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
         )}
 
         <style jsx global>{`
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #1a1d2d;
-    border-radius: 10px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #3b82f6;
-    border-radius: 10px;
-  }
   .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #3b82f6 #1a1d2d;
+    -ms-overflow-style: none;  /* IE и Edge */
+    scrollbar-width: none;     /* Firefox */
+    overscroll-behavior: contain;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari и Opera */
+    width: 0;
+    height: 0;
   }
 `}</style>
       </div>
