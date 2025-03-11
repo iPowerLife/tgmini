@@ -8,7 +8,6 @@ export function MinersModal({ onClose, user }) {
   const [loading, setLoading] = useState(true)
   const [selectedMiner, setSelectedMiner] = useState(null)
   const [activeMiner, setActiveMiner] = useState(null)
-  const [debugInfo, setDebugInfo] = useState(null) // Для отладки
 
   // Разрешаем прокрутку в модальном окне
   useEffect(() => {
@@ -52,12 +51,14 @@ export function MinersModal({ onClose, user }) {
         console.log("Загрузка майнеров для пользователя:", user.id)
 
         // Получаем майнеры пользователя из таблицы user_miners с информацией из miner_models
+        // Теперь включаем столбец quantity в запрос
         const { data: userMiners, error: minersError } = await supabase
           .from("user_miners")
           .select(`
     id,
     user_id,
     model_id,
+    quantity,
     miner_models (
       id,
       name,
@@ -74,84 +75,34 @@ export function MinersModal({ onClose, user }) {
           throw minersError
         }
 
-        console.log("Данные user_miners:", userMiners)
+        console.log("Данные user_miners с quantity:", userMiners)
 
-        // Для отладки: выводим все model_id
-        if (userMiners && userMiners.length > 0) {
-          console.log(
-            "Все model_id:",
-            userMiners.map((m) => m.model_id),
-          )
-        }
-
-        // Подсчитываем количество майнеров каждой модели
-        const modelCounts = {}
-        if (userMiners && userMiners.length > 0) {
-          userMiners.forEach((miner) => {
-            const modelId = miner.model_id
-            if (!modelCounts[modelId]) {
-              modelCounts[modelId] = 0
-            }
-            modelCounts[modelId] += 1
-          })
-        }
-
-        console.log("Количество майнеров по моделям:", modelCounts)
-        setDebugInfo(modelCounts) // Сохраняем для отладки
-
-        // Группируем майнеры по моделям для отображения
-        const minersByModel = {}
-        const uniqueMiners = []
-
-        if (userMiners && userMiners.length > 0) {
-          // Сначала группируем майнеры по model_id
-          userMiners.forEach((miner) => {
-            const modelId = miner.model_id
-            if (!minersByModel[modelId]) {
-              minersByModel[modelId] = {
-                miners: [],
-                modelData: miner.miner_models,
-              }
-            }
-            minersByModel[modelId].miners.push(miner)
-          })
-
-          // Затем создаем один элемент для каждой модели с правильным количеством
-          Object.keys(minersByModel).forEach((modelId) => {
-            const modelGroup = minersByModel[modelId]
-            const count = modelGroup.miners.length
-            const firstMiner = modelGroup.miners[0]
-            const modelData = modelGroup.modelData
-
-            uniqueMiners.push({
-              id: firstMiner.id, // Используем ID первого май��ера этой модели
-              modelId: Number.parseInt(modelId),
+        // Форматируем данные майнеров
+        const formattedMiners = userMiners
+          ? userMiners.map((item) => ({
+              id: item.id,
+              modelId: item.model_id,
               level: 1, // Default level since the column doesn't exist
-              name: modelData?.display_name || "Майнер",
-              power: calculatePower(modelData?.mining_power || 10, 1),
-              energy: calculateEnergy(modelData?.energy_consumption || 5, 1),
-              image: modelData?.image_url || "⚒️",
-              rarity: getRarityFromPower(modelData?.mining_power || 10),
-              count: count, // Устанавливаем правильное количество
-            })
-          })
-        }
+              name: item.miner_models?.display_name || "Майнер",
+              power: calculatePower(item.miner_models?.mining_power || 10, 1), // Using default level 1
+              energy: calculateEnergy(item.miner_models?.energy_consumption || 5, 1), // Using default level 1
+              image: item.miner_models?.image_url || "⚒️",
+              rarity: getRarityFromPower(item.miner_models?.mining_power || 10),
+              quantity: item.quantity || 1, // Используем значение из столбца quantity
+            }))
+          : []
 
-        console.log("Уникальные майнеры с количеством:", uniqueMiners)
-        setMiners(uniqueMiners)
+        console.log("Отформатированные майнеры с количеством:", formattedMiners)
+        setMiners(formattedMiners)
 
         // Проверяем, есть ли активный майнер
         if (user.active_miner_id) {
           setActiveMiner(user.active_miner_id)
 
           // Также устанавливаем выбранный майнер как активный
-          const activeMinerData = userMiners.find((m) => m.id === user.active_miner_id)
-          if (activeMinerData) {
-            const activeModelId = activeMinerData.model_id
-            const active = uniqueMiners.find((m) => m.modelId === activeModelId)
-            if (active) {
-              setSelectedMiner(active)
-            }
+          const active = formattedMiners.find((m) => m.id === user.active_miner_id)
+          if (active) {
+            setSelectedMiner(active)
           }
         }
 
@@ -169,7 +120,7 @@ export function MinersModal({ onClose, user }) {
             level: 1,
             energy: 5,
             rarity: "common",
-            count: 2, // Тестовое количество
+            quantity: 2, // Тестовое количество
           },
           {
             id: 2,
@@ -179,7 +130,7 @@ export function MinersModal({ onClose, user }) {
             level: 2,
             energy: 12,
             rarity: "rare",
-            count: 1, // Тестовое количество
+            quantity: 1, // Тестовое количество
           },
         ]
 
@@ -329,14 +280,6 @@ export function MinersModal({ onClose, user }) {
           </button>
         </div>
 
-        {/* Отладочная информация */}
-        {debugInfo && (
-          <div className="mb-2 p-2 bg-gray-800 rounded text-xs text-gray-300">
-            <p>Отладка - количество майнеров по моделям:</p>
-            <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-          </div>
-        )}
-
         {loading ? (
           <div className="flex justify-center items-center py-8">
             <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
@@ -391,15 +334,17 @@ export function MinersModal({ onClose, user }) {
                     )}
 
                     {/* Бейдж с количеством */}
-                    <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                      {miner.count}
-                    </div>
+                    {miner.quantity > 1 && (
+                      <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {miner.quantity}
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-center">
                       <h4 className="font-medium text-white">{miner.name}</h4>
                       {/* Отображаем количество майнеров */}
-                      <span className="text-xs text-blue-400">x{miner.count}</span>
+                      <span className="text-xs text-blue-400">x{miner.quantity}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-400">
@@ -430,7 +375,7 @@ export function MinersModal({ onClose, user }) {
                         <span className="text-blue-400">{Math.round(100 * Math.pow(1.5, miner.level - 1))} 💎</span>
                       </p>
                       <p>
-                        Количество: <span className="text-blue-400">{miner.count} шт.</span>
+                        Количество: <span className="text-blue-400">{miner.quantity} шт.</span>
                       </p>
                     </div>
                     <div className="mt-3 flex space-x-2">
