@@ -108,22 +108,28 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
       console.log("Выбор пула:", pool)
 
       if (user?.id) {
-        const { error } = await supabase.from("users").update({ active_pool_id: pool.id }).eq("id", user.id)
+        // Обновляем mining_pool у пользователя
+        const { error } = await supabase.from("users").update({ mining_pool: pool.id }).eq("id", user.id)
 
         if (error) {
-          console.error("Ошибка при обновлении active_pool_id:", error)
+          console.error("Ошибка при обновлении mining_pool:", error)
           throw error
         }
       }
 
+      // Обновляем локальное состояние
       setSelectedPoolId(pool.id)
+
+      // Вызываем колбэк для обновления родительского компонента
       if (onPoolSelect) {
         onPoolSelect(pool)
       }
+
+      // Закрываем модальное окно
       onClose()
     } catch (error) {
       console.error("Ошибка при выборе пула:", error)
-      alert("Не удалось выбрать пул")
+      alert("Не удалось выбрать пул. Пожалуйста, попробуйте позже.")
     }
   }
 
