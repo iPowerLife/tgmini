@@ -149,7 +149,7 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
         className="bg-[#242838]/95 backdrop-blur-sm p-4 rounded-lg w-[90%] max-w-md border border-blue-500/20"
         style={{ maxHeight: "80vh", display: "flex", flexDirection: "column" }}
       >
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-3">
           <h3 className="text-xl font-bold text-blue-400">Майнинг пулы</h3>
           <button className="text-gray-400 hover:text-white transition-colors" onClick={onClose}>
             ✕
@@ -157,22 +157,19 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-8">
+          <div className="flex justify-center items-center py-6">
             <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
           </div>
         ) : pools.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-6 text-gray-400">
             <p>Пулы недоступны</p>
           </div>
         ) : (
-          <div
-            className="space-y-3 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar"
-            style={{ overflowY: "auto", maxHeight: "60vh" }}
-          >
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
             {pools.map((pool) => (
               <div
                 key={pool.id}
-                className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                className={`p-2.5 rounded-lg border transition-all cursor-pointer ${
                   selectedPoolId === pool.id
                     ? "bg-blue-500/20 border-blue-500"
                     : "bg-[#1a1d2d] border-[#2a2f45] hover:border-blue-500/50"
@@ -181,59 +178,58 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
               >
                 <div className="flex items-center">
                   <div
-                    className={`w-12 h-12 bg-${getDifficultyColor(pool.difficulty)}-500/20 rounded-lg flex items-center justify-center mr-3`}
+                    className={`w-10 h-10 bg-${getDifficultyColor(pool.difficulty)}-500/20 rounded-lg flex items-center justify-center mr-2.5`}
                   >
-                    <span className="text-2xl">
+                    <span className="text-xl">
                       {pool.difficulty <= 1 ? "🌊" : pool.difficulty <= 2 ? "⛏️" : pool.difficulty <= 3 ? "🔥" : "💀"}
                     </span>
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-white">{pool.name}</h4>
-                    <p className="text-sm text-gray-400">{pool.description}</p>
+                    <h4 className="font-medium text-white text-sm">{pool.name}</h4>
+                    <p className="text-xs text-gray-400 line-clamp-1">{pool.description}</p>
                   </div>
+                  {selectedPoolId === pool.id && (
+                    <div className="ml-1 px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs">Активен</div>
+                  )}
                 </div>
 
-                <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                  <div className="text-gray-400">
+                <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+                  <div className="text-gray-400 flex items-center">
+                    <span className="w-3 h-3 inline-block mr-1">⚙️</span>
                     Сложность:{" "}
-                    <span className={`text-${getDifficultyColor(pool.difficulty)}-400`}>{pool.difficulty}x</span>
+                    <span className={`text-${getDifficultyColor(pool.difficulty)}-400 ml-1`}>{pool.difficulty}x</span>
                   </div>
-                  <div className="text-gray-400">
-                    Награда: <span className="text-blue-400">x{pool.reward_multiplier}</span>
+                  <div className="text-gray-400 flex items-center">
+                    <span className="w-3 h-3 inline-block mr-1">💎</span>
+                    Награда: <span className="text-blue-400 ml-1">x{pool.reward_multiplier}</span>
                   </div>
-                  <div className="text-gray-400">
-                    Стабильность: <span className="text-blue-400">{pool.stability}%</span>
+                  <div className="text-gray-400 flex items-center">
+                    <span className="w-3 h-3 inline-block mr-1">🔄</span>
+                    Стабильность: <span className="text-blue-400 ml-1">{pool.stability}%</span>
                   </div>
-                  <div className="text-gray-400">
-                    Комиссия: <span className="text-blue-400">{pool.fee}%</span>
+                  <div className="text-gray-400 flex items-center">
+                    <span className="w-3 h-3 inline-block mr-1">💰</span>
+                    Комиссия: <span className="text-blue-400 ml-1">{pool.fee}%</span>
                   </div>
                 </div>
-
-                {selectedPoolId === pool.id && (
-                  <div className="mt-2 text-center">
-                    <span className="inline-block px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">
-                      Текущий пул
-                    </span>
-                  </div>
-                )}
               </div>
             ))}
           </div>
         )}
 
         <style jsx global>{`
-  .custom-scrollbar {
-    -ms-overflow-style: none;  /* IE и Edge */
-    scrollbar-width: none;     /* Firefox */
-    overscroll-behavior: contain;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari и Opera */
-    width: 0;
-    height: 0;
-  }
-`}</style>
+          .custom-scrollbar {
+            -ms-overflow-style: none;  /* IE и Edge */
+            scrollbar-width: none;     /* Firefox */
+            overscroll-behavior: contain;
+          }
+
+          .custom-scrollbar::-webkit-scrollbar {
+            display: none;  /* Chrome, Safari и Opera */
+            width: 0;
+            height: 0;
+          }
+        `}</style>
       </div>
     </div>
   )
