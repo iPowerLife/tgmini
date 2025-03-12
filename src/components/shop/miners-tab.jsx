@@ -246,9 +246,41 @@ export function MinersTab({ user, onPurchase, categories = [], models = [], hasM
   })
   const [loading, setLoading] = useState(false)
   const [categoryMap, setCategoryMap] = useState({})
+  const [userMinersData, setUserMinersData] = useState({})
 
   // Получаем баланс пользователя
   const balance = user?.balance || 0
+
+  // Загружаем данные о майнерах пользователя из user_miners_optimized
+  useEffect(() => {
+    const fetchUserMinersOptimized = async () => {
+      if (!user?.id) return
+
+      try {
+        // Получаем данные из user_miners_optimized
+        const { data, error } = await supabase.rpc("get_user_miners_with_models", {
+          p_user_id: user.id,
+        })
+
+        if (error) {
+          console.error("Ошибка при загрузке майнеров пользователя:", error)
+          return
+        }
+
+        // Преобразуем данные в удобный формат
+        const minersMap = {}
+        data.forEach((item) => {
+          minersMap[item.model_id] = item.quantity
+        })
+
+        setUserMinersData(minersMap)
+      } catch (err) {
+        console.error("Ошибка при загрузке майнеров пользователя:", err)
+      }
+    }
+
+    fetchUserMinersOptimized()
+  }, [user?.id])
 
   // Обрабатываем данные категорий и моделей при их изменении
   useEffect(() => {
@@ -321,7 +353,7 @@ export function MinersTab({ user, onPurchase, categories = [], models = [], hasM
       setLoading(true)
       console.log("Покупка майнера:", modelId, "цена:", price)
 
-      // Вызываем функцию покупки майнера
+      // Вызываем функцию покупки майнера, которая работает с user_miners_optimized
       const { data, error } = await supabase.rpc("purchase_miner", {
         user_id_param: user.id,
         model_id_param: modelId,
@@ -337,6 +369,17 @@ export function MinersTab({ user, onPurchase, categories = [], models = [], hasM
       console.log("Результат покупки:", data)
 
       if (data.success) {
+        // Обновляем локальные данные о майнерах пользователя
+        setUserMinersData((prev) => {
+          const newData = { ...prev }
+          if (newData[modelId]) {
+            newData[modelId] += 1
+          } else {
+            newData[modelId] = 1
+          }
+          return newData
+        })
+
         onPurchase(data.new_balance)
         alert("Майнер успешно куплен!")
       } else {
@@ -398,12 +441,14 @@ export function MinersTab({ user, onPurchase, categories = [], models = [], hasM
                   .map((cat) => cat.id)
 
                 // Считаем количество майнеров у пользователя в этой категории
-                const userMinersInCategory = userMiners.filter((um) => {
-                  const model = models.find((m) => m.id === um.model_id)
-                  return model && categoryIds.includes(model.category_id)
-                })
+                let totalUserMiners = 0
 
-                const totalUserMiners = userMinersInCategory.reduce((sum, um) => sum + (um.quantity || 0), 0)
+                // Используем данные из user_miners_optimized
+                models.forEach((model) => {
+                  if (categoryIds.includes(model.category_id) && userMinersData[model.id]) {
+                    totalUserMiners += userMinersData[model.id]
+                  }
+                })
 
                 // Находим лимит для этой категории
                 const categoryLimit =
@@ -437,9 +482,8 @@ export function MinersTab({ user, onPurchase, categories = [], models = [], hasM
           ? filteredModels.advanced
           : filteredModels.premium
       )?.map((miner) => {
-        // Находим текущее количество этого майнера у пользователя
-        const userMiner = userMiners.find((um) => um.model_id === miner.id)
-        const currentQuantity = userMiner ? userMiner.quantity : 0
+        // Получаем количество этого майнера у пользователя из user_miners_optimized
+        const currentQuantity = userMinersData[miner.id] || 0
 
         return (
           <MinerCard

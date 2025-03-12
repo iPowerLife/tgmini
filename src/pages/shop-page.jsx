@@ -55,14 +55,29 @@ const ShopPage = ({ user }) => {
         if (modelsError) throw modelsError
         setModels(modelsData || [])
 
-        // Загружаем майнеры пользователя
-        const { data: userMinersData, error: userMinersError } = await supabase
-          .from("user_miners")
-          .select("*")
-          .eq("user_id", user.id)
+        // Загружаем майнеры пользователя из user_miners_optimized
+        const { data: userMinersData, error: userMinersError } = await supabase.rpc("get_user_miners_with_models", {
+          p_user_id: user.id,
+        })
 
-        if (userMinersError) throw userMinersError
-        setUserMiners(userMinersData || [])
+        if (userMinersError) {
+          console.error("Ошибка при загрузке майнеров пользователя:", userMinersError)
+          // Если функция не существует или произошла ошибка, пробуем загрузить из старой таблицы
+          const { data: oldUserMinersData, error: oldUserMinersError } = await supabase
+            .from("user_miners")
+            .select("*")
+            .eq("user_id", user.id)
+
+          if (oldUserMinersError) throw oldUserMinersError
+          setUserMiners(oldUserMinersData || [])
+        } else {
+          // Преобразуем данные в формат, совместимый с компонентами
+          const formattedUserMiners = userMinersData.map((item) => ({
+            model_id: item.model_id,
+            quantity: item.quantity,
+          }))
+          setUserMiners(formattedUserMiners || [])
+        }
 
         // Проверяем наличие Miner Pass
         setHasMinerPass(user.has_miner_pass || false)
@@ -84,15 +99,26 @@ const ShopPage = ({ user }) => {
       user.balance = newBalance
     }
 
-    // Перезагружаем данные о майнерах пользователя
+    // Пере��агружаем данные о майнерах пользователя из user_miners_optimized
     const fetchUserMiners = async () => {
       if (!user?.id) return
 
       try {
-        const { data, error } = await supabase.from("user_miners").select("*").eq("user_id", user.id)
+        const { data, error } = await supabase.rpc("get_user_miners_with_models", {
+          p_user_id: user.id,
+        })
 
-        if (error) throw error
-        setUserMiners(data || [])
+        if (error) {
+          console.error("Ошибка при загрузке майнеров пользователя:", error)
+          return
+        }
+
+        // Преобразуем данные в формат, совместимый с компонентами
+        const formattedUserMiners = data.map((item) => ({
+          model_id: item.model_id,
+          quantity: item.quantity,
+        }))
+        setUserMiners(formattedUserMiners || [])
       } catch (error) {
         console.error("Error reloading user miners:", error)
       }
@@ -148,6 +174,11 @@ const ShopPage = ({ user }) => {
 
       {activeCategory === "special" && (
         <SpecialTab user={user} onPurchase={handlePurchase} hasMinerPass={hasMinerPass} />
+      )}
+
+      {activeCategory === "premium" && <PremiumTab />}
+
+      {  />
       )}
 
       {activeCategory === "premium" && <PremiumTab />}
