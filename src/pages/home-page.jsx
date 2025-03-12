@@ -80,10 +80,25 @@ const HomePage = ({ user: initialUser }) => {
   // Функция для обновления баланса пользователя
   const handleBalanceUpdate = (newBalance) => {
     console.log("Обновление баланса пользователя:", newBalance)
-    setUser((prevUser) => ({
-      ...prevUser,
-      balance: newBalance,
-    }))
+
+    // Проверяем, что newBalance - это число
+    const numericBalance = typeof newBalance === "string" ? Number.parseFloat(newBalance) : newBalance
+
+    if (isNaN(numericBalance)) {
+      console.error("Ошибка: новый баланс не является числом", newBalance)
+      return
+    }
+
+    console.log("Текущий баланс:", user?.balance, "Новый баланс:", numericBalance)
+
+    setUser((prevUser) => {
+      const updatedUser = {
+        ...prevUser,
+        balance: numericBalance,
+      }
+      console.log("Обновленный пользователь:", updatedUser)
+      return updatedUser
+    })
   }
 
   // Блокировка только событий прокрутки, но не кликов
@@ -208,6 +223,11 @@ const HomePage = ({ user: initialUser }) => {
     transition: "all 0.2s ease",
     cursor: "pointer",
   }
+
+  // Добавляем эффект для отслеживания изменений в состоянии пользователя
+  useEffect(() => {
+    console.log("Состояние пользователя изменилось:", user)
+  }, [user])
 
   return (
     <div className="fixed inset-0 overflow-hidden">

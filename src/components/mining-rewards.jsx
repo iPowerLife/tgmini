@@ -128,12 +128,22 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         // Показываем сообщение об успехе
         setSuccess(`Вы успешно собрали ${data.amount} монет!`)
 
+        // Добавляем отладочный вывод
+        console.log("Награда собрана успешно:", data)
+        console.log("Новый баланс:", data.new_balance)
+
         // Обновляем данные после сбора
         setLastUpdate(Date.now())
 
         // Обновляем баланс в родительском компоненте, если передан колбэк
         if (onBalanceUpdate && data.new_balance !== undefined) {
+          console.log("Вызываем onBalanceUpdate с новым балансом:", data.new_balance)
           onBalanceUpdate(data.new_balance)
+        } else {
+          console.warn("onBalanceUpdate не передан или new_balance не определен", {
+            hasCallback: !!onBalanceUpdate,
+            newBalance: data.new_balance,
+          })
         }
 
         // Получаем обновленные данные о майнинге
