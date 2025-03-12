@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom"
 import { MinersModal } from "../components/miners-modal"
 import { BoostsModal } from "../components/boosts-modal"
 import { PoolsModal } from "../components/pools-modal"
-import { RewardsSection } from "../components/rewards-section"
+import { MiningRewards } from "../components/mining-rewards"
 import { supabase } from "../supabase"
 
 const HomePage = ({ user }) => {
@@ -20,116 +20,52 @@ const HomePage = ({ user }) => {
     totalMined: 0,
   })
   const [currentPool, setCurrentPool] = useState(null)
-  const [userState, setUserState] = useState(user)
+  const [miningData, setMiningData] = useState(null)
   const navigate = useNavigate()
   const modalOpenRef = useRef(false)
 
   // Добавляем отладочный вывод в начало компонента
   useEffect(() => {
     console.log("HomePage загружен, пользователь:", user)
-    setUserState(user)
   }, [user])
 
   // Загрузка информации о майнинге
   useEffect(() => {
     const fetchMiningInfo = async () => {
-      if (!userState?.id) {
+      if (!user?.id) {
         console.log("Нет ID пользователя")
         return
       }
 
       try {
-        console.log("Загрузка информации о майнинге для пользователя:", userState.id)
+        console.log("Загрузка информации о майнинге для пользователя:", user.id)
 
-        // Получаем информацию о текущем пуле
-        let poolData = null
-        if (userState.active_pool_id) {
-          const { data, error } = await supabase
-            .from("mining_pools")
-            .select("*")
-            .eq("id", userState.active_pool_id)
-            .single()
-
-          if (error && error.code !== "PGRST116") {
-            console.error("Ошибка при запросе пула:", error)
-          } else {
-            poolData = data
-            console.log("Данные пула:", poolData)
-          }
-        }
-
-        // Получаем информацию об активном майнере
-        let minerData = null
-        let minerLevel = 1
-        if (userState.active_miner_id) {
-          const { data, error } = await supabase
-            .from("user_miners")
-            .select(`
-              id,
-              model_id,
-              miner_models (
-                id,
-                name,
-                display_name,
-                mining_power,
-                energy_consumption
-              )
-            `)
-            .eq("id", userState.active_miner_id)
-            .single()
-
-          if (error && error.code !== "PGRST116") {
-            console.error("Ошибка при запросе майнера:", error)
-          } else {
-            minerData = data
-            minerLevel = 1 // Используем уровень 1 по умолчанию
-            console.log("Данные майнера:", minerData)
-          }
-        }
-
-        // Получаем информацию о добытых монетах
-        let totalMined = 0
-        const { data: miningRewards, error: rewardsError } = await supabase
-          .from("mining_rewards")
-          .select("amount")
-          .eq("user_id", userState.id)
-          .single()
-
-        if (!rewardsError) {
-          totalMined = miningRewards?.amount || 0
-        }
-
-        // Рассчитываем хешрейт и энергопотребление
-        let hashrate = 0
-        let energy = 0
-
-        if (minerData?.miner_models) {
-          const basePower = minerData.miner_models.mining_power || 0
-          const baseEnergy = minerData.miner_models.energy_consumption || 0
-
-          // Расчет с учетом уровня
-          hashrate = Math.round(basePower * (1 + (minerLevel - 1) * 0.15))
-          energy = Math.round(baseEnergy * (1 + (minerLevel - 1) * 0.1))
-        }
-
-        // Рассчитываем доход в час
-        const pool = poolData
-        const hourlyIncome = pool ? (hashrate * 0.1 * (pool.multiplier || 1)) / (pool.min_miners || 1) : hashrate * 0.1
-
-        // Обновляем состояние
-        setMinerInfo({
-          pool: pool?.display_name || pool?.name || "Стандартный",
-          hashrate,
-          energy,
-          hourlyIncome,
-          totalMined,
+        // Получаем информацию о майнинге через RPC
+        const { data: miningInfoData, error: miningInfoError } = await supabase.rpc("get_mining_info_with_rewards", {
+          user_id_param: user.id,
         })
 
-        // Сохраняем информацию о текущем пуле
-        if (pool) {
-          setCurrentPool({
-            id: pool.id,
-            name: pool.display_name || pool.name,
+        if (miningInfoError) {
+          console.error("Ошибка при запросе информации о майнинге:", miningInfoError)
+        } else {
+          console.log("Данные майнинга:", miningInfoData)
+          setMiningData(miningInfoData)
+
+          // Обновляем информацию о пуле
+          if (miningInfoData?.pool) {
+            setCurrentPool({
+              id: miningInfoData.pool.id,
+              name: miningInfoData.pool.display_name || miningInfoData.pool.name,
+            })
+          }
+
+          // Обновляем информацию о майнере
+          setMinerInfo({
+            pool: miningInfoData?.pool?.display_name || miningInfoData?.pool?.name || "Стандартный",
+            hashrate: miningInfoData?.total_hashrate || 0,
+            energy: miningInfoData?.energy || 0,
+            hourlyIncome: miningInfoData?.rewards?.hourly_rate || 0,
+            totalMined: miningInfoData?.rewards?.amount || 0,
           })
         }
       } catch (error) {
@@ -138,7 +74,7 @@ const HomePage = ({ user }) => {
     }
 
     fetchMiningInfo()
-  }, [userState])
+  }, [user])
 
   // Блокировка только событий прокрутки, но не кликов
   useEffect(() => {
@@ -247,18 +183,6 @@ const HomePage = ({ user }) => {
     }
   }
 
-  // Обработчик сбора награды
-  const handleRewardCollected = (newBalance, amount) => {
-    // Обновляем баланс пользователя
-    setUserState((prev) => ({
-      ...prev,
-      balance: newBalance,
-    }))
-
-    // Показываем уведомление
-    alert(`Награда успешно собрана! Получено ${amount} 💎`)
-  }
-
   // Стили для квадратных кнопок
   const squareButtonStyle = {
     width: "60px",
@@ -297,36 +221,15 @@ const HomePage = ({ user }) => {
         {/* Верхний блок с балансом */}
         <div className="bg-[#242838]/80 backdrop-blur-sm p-3 rounded-lg mx-2 mt-2">
           <div className="text-center">
-            <h2 className="font-bold text-blue-400">Баланс: {userState?.balance || 0} 💎</h2>
-            <p className="text-gray-300">Miner Pass: {userState?.hasMinerPass ? "Активен ✨" : "Не активен"}</p>
+            <h2 className="font-bold text-blue-400">Баланс: {user?.balance || 0} 💎</h2>
+            <p className="text-gray-300">Miner Pass: {user?.hasMinerPass ? "Активен ✨" : "Не активен"}</p>
           </div>
         </div>
 
-        {/* Блок с информацией о майнинге */}
-        <div className="bg-[#242838]/80 backdrop-blur-sm p-3 rounded-lg mx-2 mt-2">
-          <div className="space-y-1 text-gray-300">
-            <p>
-              Выбранный пул: <span className="text-blue-400">{minerInfo.pool}</span>
-            </p>
-            <p>
-              Добыто: <span className="text-blue-400">{minerInfo.totalMined.toFixed(2)} 💎</span>
-            </p>
-            <p>
-              Доход в час: <span className="text-blue-400">{minerInfo.hourlyIncome.toFixed(2)} 💎</span>
-            </p>
-            <div className="flex justify-between">
-              <p>
-                Хешрейт: <span className="text-blue-400">{minerInfo.hashrate} H/s</span>
-              </p>
-              <p>
-                Энергия: <span className="text-blue-400">{minerInfo.energy}/100</span>
-              </p>
-            </div>
-          </div>
+        {/* Компонент с информацией о майнинге и наградах */}
+        <div className="mx-2">
+          <MiningRewards userId={user?.id} initialData={miningData} />
         </div>
-
-        {/* Секция с наградами */}
-        <RewardsSection user={userState} onRewardCollected={handleRewardCollected} />
 
         {/* Основная область с кнопками и майнером */}
         <div className="flex-1 grid grid-cols-[60px_1fr_60px] gap-2 px-2 mt-2">
@@ -539,14 +442,14 @@ const HomePage = ({ user }) => {
       </div>
 
       {/* Модальные окна */}
-      {showMinersModal && <MinersModal onClose={() => setShowMinersModal(false)} user={userState} />}
+      {showMinersModal && <MinersModal onClose={() => setShowMinersModal(false)} user={user} />}
 
-      {showBoostsModal && <BoostsModal onClose={() => setShowBoostsModal(false)} user={userState} />}
+      {showBoostsModal && <BoostsModal onClose={() => setShowBoostsModal(false)} user={user} />}
 
       {showPoolsModal && (
         <PoolsModal
           onClose={() => setShowPoolsModal(false)}
-          user={userState}
+          user={user}
           currentPool={currentPool}
           onPoolSelect={handlePoolSelect}
         />
