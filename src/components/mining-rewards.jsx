@@ -28,10 +28,10 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     const baseAmount = miningInfo.rewards.base_amount
 
     // Рассчитываем время с последнего обновления в часах
-    const hoursSinceUpdate = (now - lastUpdate) / (1000 * 3600)
+    const hoursSinceUpdate = Math.max(0, (now - lastUpdate) / (1000 * 3600))
 
-    // Рассчитываем текущую сумму
-    return baseAmount + hourlyRate * hoursSinceUpdate
+    // Рассчитываем текущую сумму и убеждаемся, что она не отрицательная
+    return Math.max(0, baseAmount + hourlyRate * hoursSinceUpdate)
   }, [miningInfo])
 
   // Обновляем текущую сумму каждую секунду
@@ -171,7 +171,9 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
   const formatNumber = (num, decimals = 2) => {
     if (num === undefined || num === null || isNaN(num)) return "0.00"
-    return Number.parseFloat(num).toFixed(decimals)
+    // Убеждаемся, что число не отрицательное
+    const positiveNum = Math.max(0, Number(num))
+    return positiveNum.toFixed(decimals)
   }
 
   const formatTime = (seconds) => {
