@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom"
 import { MinersModal } from "../components/miners-modal"
 import { BoostsModal } from "../components/boosts-modal"
 import { PoolsModal } from "../components/pools-modal"
+import { RewardsSection } from "../components/rewards-section"
 import { supabase } from "../supabase"
 
 const HomePage = ({ user }) => {
@@ -19,29 +20,35 @@ const HomePage = ({ user }) => {
     totalMined: 0,
   })
   const [currentPool, setCurrentPool] = useState(null)
+  const [userState, setUserState] = useState(user)
   const navigate = useNavigate()
   const modalOpenRef = useRef(false)
 
   // Добавляем отладочный вывод в начало компонента
   useEffect(() => {
     console.log("HomePage загружен, пользователь:", user)
+    setUserState(user)
   }, [user])
 
   // Загрузка информации о майнинге
   useEffect(() => {
     const fetchMiningInfo = async () => {
-      if (!user?.id) {
+      if (!userState?.id) {
         console.log("Нет ID пользователя")
         return
       }
 
       try {
-        console.log("Загрузка информации о майнинге для пользователя:", user.id)
+        console.log("Загрузка информации о майнинге для пользователя:", userState.id)
 
         // Получаем информацию о текущем пуле
         let poolData = null
-        if (user.mining_pool) {
-          const { data, error } = await supabase.from("mining_pools").select("*").eq("id", user.mining_pool).single()
+        if (userState.active_pool_id) {
+          const { data, error } = await supabase
+            .from("mining_pools")
+            .select("*")
+            .eq("id", userState.active_pool_id)
+            .single()
 
           if (error && error.code !== "PGRST116") {
             console.error("Ошибка при запросе пула:", error)
@@ -54,7 +61,7 @@ const HomePage = ({ user }) => {
         // Получаем информацию об активном майнере
         let minerData = null
         let minerLevel = 1
-        if (user.active_miner_id) {
+        if (userState.active_miner_id) {
           const { data, error } = await supabase
             .from("user_miners")
             .select(`
@@ -68,7 +75,7 @@ const HomePage = ({ user }) => {
                 energy_consumption
               )
             `)
-            .eq("id", user.active_miner_id)
+            .eq("id", userState.active_miner_id)
             .single()
 
           if (error && error.code !== "PGRST116") {
@@ -85,7 +92,7 @@ const HomePage = ({ user }) => {
         const { data: miningRewards, error: rewardsError } = await supabase
           .from("mining_rewards")
           .select("amount")
-          .eq("user_id", user.id)
+          .eq("user_id", userState.id)
           .single()
 
         if (!rewardsError) {
@@ -131,7 +138,7 @@ const HomePage = ({ user }) => {
     }
 
     fetchMiningInfo()
-  }, [user])
+  }, [userState])
 
   // Блокировка только событий прокрутки, но не кликов
   useEffect(() => {
@@ -240,6 +247,18 @@ const HomePage = ({ user }) => {
     }
   }
 
+  // Обработчик сбора награды
+  const handleRewardCollected = (newBalance, amount) => {
+    // Обновляем баланс пользователя
+    setUserState((prev) => ({
+      ...prev,
+      balance: newBalance,
+    }))
+
+    // Показываем уведомление
+    alert(`Награда успешно собрана! Получено ${amount} 💎`)
+  }
+
   // Стили для квадратных кнопок
   const squareButtonStyle = {
     width: "60px",
@@ -278,8 +297,8 @@ const HomePage = ({ user }) => {
         {/* Верхний блок с балансом */}
         <div className="bg-[#242838]/80 backdrop-blur-sm p-3 rounded-lg mx-2 mt-2">
           <div className="text-center">
-            <h2 className="font-bold text-blue-400">Баланс: {user?.balance || 0} 💎</h2>
-            <p className="text-gray-300">Miner Pass: {user?.hasMinerPass ? "Активен ✨" : "Не активен"}</p>
+            <h2 className="font-bold text-blue-400">Баланс: {userState?.balance || 0} 💎</h2>
+            <p className="text-gray-300">Miner Pass: {userState?.hasMinerPass ? "Активен ✨" : "Не активен"}</p>
           </div>
         </div>
 
@@ -305,6 +324,9 @@ const HomePage = ({ user }) => {
             </div>
           </div>
         </div>
+
+        {/* Секция с наградами */}
+        <RewardsSection user={userState} onRewardCollected={handleRewardCollected} />
 
         {/* Основная область с кнопками и майнером */}
         <div className="flex-1 grid grid-cols-[60px_1fr_60px] gap-2 px-2 mt-2">
@@ -517,14 +539,14 @@ const HomePage = ({ user }) => {
       </div>
 
       {/* Модальные окна */}
-      {showMinersModal && <MinersModal onClose={() => setShowMinersModal(false)} user={user} />}
+      {showMinersModal && <MinersModal onClose={() => setShowMinersModal(false)} user={userState} />}
 
-      {showBoostsModal && <BoostsModal onClose={() => setShowBoostsModal(false)} user={user} />}
+      {showBoostsModal && <BoostsModal onClose={() => setShowBoostsModal(false)} user={userState} />}
 
       {showPoolsModal && (
         <PoolsModal
           onClose={() => setShowPoolsModal(false)}
-          user={user}
+          user={userState}
           currentPool={currentPool}
           onPoolSelect={handlePoolSelect}
         />
