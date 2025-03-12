@@ -22,34 +22,48 @@ export function MinersModal({ onClose, user }) {
 
         console.log("Загрузка майнеров для пользователя:", user.id)
 
-        // Получаем майнеры пользователя из новой оптимизированной таблицы
-        const { data, error } = await supabase.rpc("get_user_miners_with_models", {
-          p_user_id: user.id,
-        })
+        // Получаем майнеры пользователя из таблицы user_miners с информацией из miner_models
+        const { data: userMiners, error: minersError } = await supabase
+          .from("user_miners")
+          .select(`
+  id,
+  user_id,
+  model_id,
+  quantity,
+  miner_models (
+    id,
+    name,
+    display_name,
+    mining_power,
+    energy_consumption,
+    image_url
+  )
+`)
+          .eq("user_id", user.id)
 
-        if (error) {
-          console.error("Ошибка при запросе майнеров:", error)
-          throw error
+        if (minersError) {
+          console.error("Ошибка при запросе user_miners:", minersError)
+          throw minersError
         }
 
-        console.log("Данные майнеров пользователя:", data)
+        console.log("Данные user_miners с quantity:", userMiners)
 
         // Форматируем данные майнеров
-        const formattedMiners = data
-          ? data.map((item) => ({
-              id: item.model_id, // Используем model_id как id
+        const formattedMiners = userMiners
+          ? userMiners.map((item) => ({
+              id: item.id,
               modelId: item.model_id,
-              level: item.level || 1,
-              name: item.display_name || item.name || "Майнер",
-              power: calculatePower(item.mining_power || 10, item.level || 1),
-              energy: calculateEnergy(item.energy_consumption || 5, item.level || 1),
-              image: item.image_url || "⚒️",
-              rarity: getRarityFromPower(item.mining_power || 10),
-              quantity: item.quantity || 1,
+              level: 1, // Default level since the column doesn't exist
+              name: item.miner_models?.display_name || "Майнер",
+              power: calculatePower(item.miner_models?.mining_power || 10, 1), // Using default level 1
+              energy: calculateEnergy(item.miner_models?.energy_consumption || 5, 1), // Using default level 1
+              image: item.miner_models?.image_url || "⚒️",
+              rarity: getRarityFromPower(item.miner_models?.mining_power || 10),
+              quantity: item.quantity || 1, // Используем значение из столбца quantity
             }))
           : []
 
-        console.log("Отформатированные майнеры:", formattedMiners)
+        console.log("Отформатированные майнеры с количеством:", formattedMiners)
         setMiners(formattedMiners)
 
         // Проверяем, есть ли активный майнер
@@ -165,25 +179,6 @@ export function MinersModal({ onClose, user }) {
     return Math.round(calculateHourlyIncome(miner) * 24 * 100) / 100
   }
 
-  // Функция для активации майнера
-  const handleActivateMiner = async (miner) => {
-    try {
-      if (!user?.id) return
-
-      const { error } = await supabase.from("users").update({ active_miner_id: miner.id }).eq("id", user.id)
-
-      if (error) {
-        console.error("Ошибка при активации майнера:", error)
-        return
-      }
-
-      setActiveMiner(miner.id)
-      alert(`Майнер "${miner.name}" успешно активирован!`)
-    } catch (err) {
-      console.error("Ошибка при активации майнера:", err)
-    }
-  }
-
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -290,18 +285,6 @@ export function MinersModal({ onClose, user }) {
                         Количество: <span className="text-blue-400">{miner.quantity} шт.</span>
                       </p>
                     </div>
-
-                    {activeMiner !== miner.id && (
-                      <button
-                        className="mt-3 w-full bg-blue-500 hover:bg-blue-600 text-white py-1.5 px-3 rounded-lg text-sm transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleActivateMiner(miner)
-                        }}
-                      >
-                        Активировать
-                      </button>
-                    )}
                   </div>
                 )}
               </div>
