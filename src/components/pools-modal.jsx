@@ -10,6 +10,7 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
   const [userStats, setUserStats] = useState({
     totalMiners: 0,
     invitedFriends: 0,
+    hasMinerPass: false,
   })
 
   // Загрузка данных о пулах и статистики пользователя
@@ -52,12 +53,37 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
 
             const invitedFriends = friendsError ? 0 : friendsData?.length || 0
 
+            // 3. Проверяем наличие активного Miner Pass
+            let hasMinerPass = user.has_miner_pass || false
+
+            // Дополнительно проверяем в таблице user_passes
+            const { data: passData, error: passError } = await supabase
+              .from("user_passes")
+              .select("*")
+              .eq("user_id", user.id)
+              .eq("pass_type", "miner_pass")
+              .eq("is_active", true)
+              .lte("purchase_date", new Date().toISOString())
+              .gte("expiry_date", new Date().toISOString())
+              .maybeSingle()
+
+            // Если есть активный пропуск в таблице user_passes, устанавливаем hasMinerPass в true
+            if (!passError && passData) {
+              hasMinerPass = true
+
+              // Если в таблице users не установлен флаг has_miner_pass, обновляем его
+              if (!user.has_miner_pass) {
+                await supabase.from("users").update({ has_miner_pass: true }).eq("id", user.id)
+              }
+            }
+
             setUserStats({
               totalMiners,
               invitedFriends,
+              hasMinerPass,
             })
 
-            console.log("Статистика пользователя:", { totalMiners, invitedFriends, hasMinerPass: user.hasMinerPass })
+            console.log("Статистика пользователя:", { totalMiners, invitedFriends, hasMinerPass })
           }
         }
 
@@ -150,14 +176,14 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
   // Функция для проверки доступности пула
   const isPoolAvailable = (pool) => {
     // Проверяем требование Miner Pass
-    if (pool.requiresMinerPass && !user?.hasMinerPass) {
+    if (pool.requiresMinerPass && !userStats.hasMinerPass) {
       return false
     }
 
     // Проверяем требование минимального количества майнеров
     if (pool.minMiners > 0 && userStats.totalMiners < pool.minMiners) {
       // Если есть Miner Pass, то пропускаем это требование для продвинутого пула
-      if (pool.id === 2 && user?.hasMinerPass) {
+      if (pool.id === 2 && userStats.hasMinerPass) {
         return true
       }
 
