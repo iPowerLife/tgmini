@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { supabase } from "../supabase"
 import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Cpu, Zap, Calendar, Wallet } from "lucide-react"
 
@@ -10,9 +10,49 @@ export const MiningRewards = ({ userId, initialData }) => {
   const [miningInfo, setMiningInfo] = useState(initialData || null)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
+  const [currentAmount, setCurrentAmount] = useState(0)
+  const lastUpdateRef = useRef(null)
+  const hourlyRateRef = useRef(0)
+  const baseAmountRef = useRef(0)
   const [lastUpdate, setLastUpdate] = useState(Date.now())
   const intervalRef = useRef(null)
   const isComponentMounted = useRef(true)
+
+  // Функция д��я расчета текущего количества монет
+  const calculateCurrentAmount = useCallback(() => {
+    if (!miningInfo?.rewards) return 0
+
+    const now = Date.now()
+    const lastUpdate = new Date(miningInfo.rewards.last_update).getTime()
+    const hourlyRate = miningInfo.rewards.hourly_rate
+    const baseAmount = miningInfo.rewards.base_amount
+
+    // Рассчитываем время с последнего обновления в часах
+    const hoursSinceUpdate = (now - lastUpdate) / (1000 * 3600)
+
+    // Рассчитываем текущую сумму
+    return baseAmount + hourlyRate * hoursSinceUpdate
+  }, [miningInfo])
+
+  // Обновляем текущую сумму каждую секунду
+  useEffect(() => {
+    if (!miningInfo?.rewards) return
+
+    // Сохраняем значения в refs для доступа в интервале
+    lastUpdateRef.current = new Date(miningInfo.rewards.last_update).getTime()
+    hourlyRateRef.current = miningInfo.rewards.hourly_rate
+    baseAmountRef.current = miningInfo.rewards.base_amount
+
+    // Устанавливаем начальное значение
+    setCurrentAmount(calculateCurrentAmount())
+
+    // Обновляем значение каждую секунду
+    const interval = setInterval(() => {
+      setCurrentAmount(calculateCurrentAmount())
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [miningInfo, calculateCurrentAmount])
 
   // Загрузка данных
   useEffect(() => {
@@ -194,7 +234,7 @@ export const MiningRewards = ({ userId, initialData }) => {
               <span>Всего добыто:</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="font-medium text-white">{formatNumber(rewardAmount)}</span>
+              <span className="font-medium text-white">{formatNumber(currentAmount)}</span>
               <span className="text-blue-400">💎</span>
             </div>
           </div>
