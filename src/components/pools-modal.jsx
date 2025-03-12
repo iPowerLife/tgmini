@@ -7,31 +7,63 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
   const [pools, setPools] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedPoolId, setSelectedPoolId] = useState(null)
+  const [userStats, setUserStats] = useState({
+    totalMiners: 0,
+    invitedFriends: 0,
+  })
 
-  // Загрузка данных о пулах
+  // Загрузка данных о пулах и статистики пользователя
   useEffect(() => {
-    const fetchPools = async () => {
+    const fetchPoolsAndStats = async () => {
       try {
         setLoading(true)
 
-        console.log("Загрузка пулов...")
-
-        // Получаем доступные пулы из таблицы mining_pools
-        const { data, error } = await supabase
+        // Получаем доступные пулы из таблицы mining_pools с условиями доступа
+        const { data: poolsData, error: poolsError } = await supabase
           .from("mining_pools")
-          .select("*")
+          .select("*, requires_miner_pass, min_miners, min_invited_friends")
           .order("fee_percent", { ascending: true })
 
-        if (error) {
-          console.error("Ошибка при запросе mining_pools:", error)
-          throw error
+        if (poolsError) {
+          console.error("Ошибка при запросе mining_pools:", poolsError)
+          throw poolsError
         }
 
-        console.log("Данные mining_pools:", data)
+        console.log("Данные mining_pools с условиями:", poolsData)
+
+        // Получаем статистику пользователя для проверки доступа к пулам
+        if (user?.id) {
+          // 1. Получаем количество майнеров
+          const { data: minersData, error: minersError } = await supabase
+            .from("user_miners")
+            .select("quantity")
+            .eq("user_id", user.id)
+
+          if (minersError) {
+            console.error("Ошибка при запросе user_miners:", minersError)
+          } else {
+            const totalMiners = minersData?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0
+
+            // 2. Получаем количество приглашенных друзей
+            const { data: friendsData, error: friendsError } = await supabase
+              .from("users")
+              .select("id")
+              .eq("invited_by", user.id)
+
+            const invitedFriends = friendsError ? 0 : friendsData?.length || 0
+
+            setUserStats({
+              totalMiners,
+              invitedFriends,
+            })
+
+            console.log("Статистика пользователя:", { totalMiners, invitedFriends, hasMinerPass: user.hasMinerPass })
+          }
+        }
 
         // Форматируем данные пулов
-        const formattedPools = data
-          ? data.map((pool) => ({
+        const formattedPools = poolsData
+          ? poolsData.map((pool) => ({
               id: pool.id,
               name: pool.display_name || pool.name,
               description: pool.description || "Майнинг пул",
@@ -39,6 +71,10 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
               reward_multiplier: pool.multiplier || 1,
               stability: 100 - (pool.fee_percent || 0),
               fee: pool.fee_percent || 0,
+              // Условия доступа
+              requiresMinerPass: pool.requires_miner_pass || false,
+              minMiners: pool.min_miners || 0,
+              minInvitedFriends: pool.min_invited_friends || 0,
             }))
           : []
 
@@ -66,6 +102,9 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
             reward_multiplier: 1.3,
             stability: 99,
             fee: 1,
+            requiresMinerPass: true,
+            minMiners: 0,
+            minInvitedFriends: 0,
           },
           {
             id: 2,
@@ -75,6 +114,9 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
             reward_multiplier: 1.15,
             stability: 97,
             fee: 3,
+            requiresMinerPass: false,
+            minMiners: 10,
+            minInvitedFriends: 20,
           },
           {
             id: 1,
@@ -84,6 +126,9 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
             reward_multiplier: 1,
             stability: 95,
             fee: 5,
+            requiresMinerPass: false,
+            minMiners: 0,
+            minInvitedFriends: 0,
           },
         ]
 
@@ -99,11 +144,66 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
       }
     }
 
-    fetchPools()
-  }, [currentPool])
+    fetchPoolsAndStats()
+  }, [currentPool, user])
+
+  // Функция для проверки доступности пула
+  const isPoolAvailable = (pool) => {
+    // Проверяем требование Miner Pass
+    if (pool.requiresMinerPass && !user?.hasMinerPass) {
+      return false
+    }
+
+    // Проверяем требование минимального количества майнеров
+    if (pool.minMiners > 0 && userStats.totalMiners < pool.minMiners) {
+      // Если есть Miner Pass, то пропускаем это требование для продвинутого пула
+      if (pool.id === 2 && user?.hasMinerPass) {
+        return true
+      }
+
+      // Проверяем требование минимального количества приглашенных друзей
+      if (pool.minInvitedFriends > 0 && userStats.invitedFriends < pool.minInvitedFriends) {
+        return false
+      }
+    }
+
+    return true
+  }
+
+  // Функция для получения требований для разблокировки пула
+  const getPoolRequirements = (pool) => {
+    const requirements = []
+
+    if (pool.requiresMinerPass) {
+      requirements.push("Miner Pass")
+    }
+
+    if (pool.minMiners > 0) {
+      requirements.push(`${pool.minMiners}+ майнеров`)
+    }
+
+    if (pool.minInvitedFriends > 0) {
+      requirements.push(`${pool.minInvitedFriends}+ приглашенных`)
+    }
+
+    if (requirements.length === 0) return null
+
+    // Для продвинутого пула добавляем "или" между требованиями
+    if (pool.id === 2) {
+      return <div className="text-xs text-gray-400 mt-1">Требуется: {requirements.join(" или ")}</div>
+    }
+
+    return <div className="text-xs text-gray-400 mt-1">Требуется: {requirements.join(", ")}</div>
+  }
 
   // Функция для выбора пула
   const handleSelectPool = async (pool) => {
+    // Проверяем доступность пула
+    if (!isPoolAvailable(pool)) {
+      alert("Этот пул недоступен. Выполните необходимые требования для разблокировки.")
+      return
+    }
+
     try {
       console.log("Выбор пула:", pool)
 
@@ -183,21 +283,33 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
           <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
             {pools.map((pool) => {
               const styles = getPoolStyles(pool)
+              const isAvailable = isPoolAvailable(pool)
+
               return (
                 <div
                   key={pool.id}
-                  className={`p-3 rounded-lg border transition-all cursor-pointer ${styles.container}`}
-                  onClick={() => handleSelectPool(pool)}
+                  className={`p-3 rounded-lg border transition-all ${
+                    isAvailable ? "cursor-pointer" : "opacity-70 cursor-not-allowed"
+                  } ${styles.container}`}
+                  onClick={() => isAvailable && handleSelectPool(pool)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center flex-1">
                       <span className="text-2xl mr-2">{styles.icon}</span>
                       <div>
-                        <h4 className={`${styles.title} text-sm`}>{pool.name}</h4>
+                        <div className="flex items-center">
+                          <h4 className={`${styles.title} text-sm`}>{pool.name}</h4>
+                          {!isAvailable && (
+                            <span className="ml-2 text-xs bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded">
+                              🔒 Заблокирован
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-400 line-clamp-1">{pool.description}</p>
+                        {!isAvailable && getPoolRequirements(pool)}
                       </div>
                     </div>
-                    {selectedPoolId === pool.id && (
+                    {selectedPoolId === pool.id && isAvailable && (
                       <div className="ml-2 px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs">Активен</div>
                     )}
                   </div>
