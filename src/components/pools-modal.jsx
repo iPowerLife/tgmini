@@ -34,57 +34,65 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
 
         // Получаем статистику пользователя для проверки доступа к пулам
         if (user?.id) {
-          // 1. Получаем количество майнеров
-          const { data: minersData, error: minersError } = await supabase
+          // 1. Получаем количество майнеров из поля total_miners
+          const { data: minerStats, error: minerStatsError } = await supabase
             .from("user_miners")
-            .select("quantity")
+            .select("total_miners")
             .eq("user_id", user.id)
+            .single()
 
-          if (minersError) {
-            console.error("Ошибка при запросе user_miners:", minersError)
+          let totalMiners = 0
+          if (minerStatsError) {
+            console.error("Ошибка при запросе total_miners:", minerStatsError)
           } else {
-            const totalMiners = minersData?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0
-
-            // 2. Получаем количество приглашенных друзей
-            const { data: friendsData, error: friendsError } = await supabase
-              .from("users")
-              .select("id")
-              .eq("invited_by", user.id)
-
-            const invitedFriends = friendsError ? 0 : friendsData?.length || 0
-
-            // 3. Проверяем наличие активного Miner Pass
-            let hasMinerPass = user.has_miner_pass || false
-
-            // Дополнительно проверяем в таблице user_passes
-            const { data: passData, error: passError } = await supabase
-              .from("user_passes")
-              .select("*")
-              .eq("user_id", user.id)
-              .eq("pass_type", "miner_pass")
-              .eq("is_active", true)
-              .lte("purchase_date", new Date().toISOString())
-              .gte("expiry_date", new Date().toISOString())
-              .maybeSingle()
-
-            // Если есть активный пропуск в таблице user_passes, устанавливаем hasMinerPass в true
-            if (!passError && passData) {
-              hasMinerPass = true
-
-              // Если в таблице users не установлен флаг has_miner_pass, обновляем его
-              if (!user.has_miner_pass) {
-                await supabase.from("users").update({ has_miner_pass: true }).eq("id", user.id)
-              }
-            }
-
-            setUserStats({
-              totalMiners,
-              invitedFriends,
-              hasMinerPass,
-            })
-
-            console.log("Статистика пользователя:", { totalMiners, invitedFriends, hasMinerPass })
+            totalMiners = minerStats?.total_miners || 0
           }
+
+          // 2. Получаем количество приглашенных друзей из поля referral_count
+          const { data: userData, error: userError } = await supabase
+            .from("users")
+            .select("referral_count")
+            .eq("id", user.id)
+            .single()
+
+          let invitedFriends = 0
+          if (userError) {
+            console.error("Ошибка при запросе referral_count:", userError)
+          } else {
+            invitedFriends = userData?.referral_count || 0
+          }
+
+          // 3. Проверяем наличие активного Miner Pass
+          let hasMinerPass = user.has_miner_pass || false
+
+          // Дополнительно проверяем в таблице user_passes
+          const { data: passData, error: passError } = await supabase
+            .from("user_passes")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("pass_type", "miner_pass")
+            .eq("is_active", true)
+            .lte("purchase_date", new Date().toISOString())
+            .gte("expiry_date", new Date().toISOString())
+            .maybeSingle()
+
+          // Если есть активный пропуск в таблице user_passes, устанавливаем hasMinerPass в true
+          if (!passError && passData) {
+            hasMinerPass = true
+
+            // Если в таблице users не установлен флаг has_miner_pass, обновляем его
+            if (!user.has_miner_pass) {
+              await supabase.from("users").update({ has_miner_pass: true }).eq("id", user.id)
+            }
+          }
+
+          setUserStats({
+            totalMiners,
+            invitedFriends,
+            hasMinerPass,
+          })
+
+          console.log("Статистика пользователя:", { totalMiners, invitedFriends, hasMinerPass })
         }
 
         // Форматируем данные пулов
