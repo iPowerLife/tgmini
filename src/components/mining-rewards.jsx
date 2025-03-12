@@ -25,13 +25,14 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     const now = Date.now()
     const lastUpdate = new Date(miningInfo.rewards.last_update).getTime()
     const hourlyRate = miningInfo.rewards.hourly_rate
-    const baseAmount = miningInfo.rewards.base_amount
+    const baseAmount = miningInfo.rewards.base_amount || 0 // Добавляем значение по умолчанию
 
     // Рассчитываем время с последнего обновления в часах
     const hoursSinceUpdate = Math.max(0, (now - lastUpdate) / (1000 * 3600))
 
     // Рассчитываем текущую сумму и убеждаемся, что она не отрицательная
-    return Math.max(0, baseAmount + hourlyRate * hoursSinceUpdate)
+    const amount = baseAmount + hourlyRate * hoursSinceUpdate
+    return Math.max(0, amount)
   }, [miningInfo])
 
   // Обновляем текущую сумму каждую секунду
@@ -125,25 +126,19 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       if (error) throw error
 
       if (data.success) {
-        // Показываем сообщение об успехе
-        setSuccess(`Вы успешно собрали ${data.amount} монет!`)
+        // Показываем сообщение об успехе с округлением до 2 знаков
+        const formattedAmount = Number(data.amount).toFixed(2)
+        setSuccess(`Вы успешно собрали ${formattedAmount} монет!`)
 
-        // Добавляем отладочный вывод
-        console.log("Награда собрана успешно:", data)
-        console.log("Новый баланс:", data.new_balance)
+        // Сразу устанавливаем currentAmount в 0, чтобы избежать отрицательных значений
+        setCurrentAmount(0)
 
         // Обновляем данные после сбора
         setLastUpdate(Date.now())
 
-        // Обновляем баланс в родительском компоненте, если передан колбэк
+        // Обновляем баланс в родительском компоненте
         if (onBalanceUpdate && data.new_balance !== undefined) {
-          console.log("Вызываем onBalanceUpdate с новым балансом:", data.new_balance)
           onBalanceUpdate(data.new_balance)
-        } else {
-          console.warn("onBalanceUpdate не передан или new_balance не определен", {
-            hasCallback: !!onBalanceUpdate,
-            newBalance: data.new_balance,
-          })
         }
 
         // Получаем обновленные данные о майнинге
@@ -152,7 +147,15 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         })
 
         if (updatedData) {
-          setMiningInfo(updatedData)
+          // Устанавливаем новые данные с обнуленным начальным значением
+          setMiningInfo({
+            ...updatedData,
+            rewards: {
+              ...updatedData.rewards,
+              amount: 0,
+              base_amount: 0,
+            },
+          })
         }
       } else {
         setError(data.error || "Не удалось собрать награды")
