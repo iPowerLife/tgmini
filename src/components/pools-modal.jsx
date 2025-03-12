@@ -143,6 +143,22 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
     return "red"
   }
 
+  // Добавим функцию для определения градиента фона в зависимости от типа пула
+  // Добавьте эту функцию после функции getDifficultyColor
+
+  const getPoolGradient = (difficulty) => {
+    if (difficulty <= 1) {
+      // Стандартный пул - сине-голубой градиент
+      return "linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(59, 130, 246, 0.15) 50%, rgba(96, 165, 250, 0.1) 100%)"
+    } else if (difficulty <= 2) {
+      // Продвинутый пул - фиолетовый градиент
+      return "linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(167, 139, 250, 0.1) 100%)"
+    } else {
+      // Премиум пул - золотой градиент
+      return "linear-gradient(135deg, rgba(234, 179, 8, 0.1) 0%, rgba(253, 224, 71, 0.15) 50%, rgba(250, 204, 21, 0.1) 100%)"
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div
@@ -170,10 +186,14 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
               <div
                 key={pool.id}
                 className={`p-2.5 rounded-lg border transition-all cursor-pointer ${
-                  selectedPoolId === pool.id
-                    ? "bg-blue-500/20 border-blue-500"
-                    : "bg-[#1a1d2d] border-[#2a2f45] hover:border-blue-500/50"
+                  selectedPoolId === pool.id ? "border-blue-500" : "border-[#2a2f45] hover:border-blue-500/50"
                 }`}
+                style={{
+                  background:
+                    selectedPoolId === pool.id
+                      ? "linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.25) 100%)"
+                      : getPoolGradient(pool.difficulty),
+                }}
                 onClick={() => handleSelectPool(pool)}
               >
                 <div className="flex items-center">
