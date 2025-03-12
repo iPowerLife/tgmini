@@ -141,7 +141,7 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
             stability: 97,
             fee: 3,
             requiresMinerPass: false,
-            minMiners: 10,
+            minMiners: 15,
             minInvitedFriends: 20,
           },
           {
@@ -175,51 +175,43 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
 
   // Функция для проверки доступности пула
   const isPoolAvailable = (pool) => {
-    // Проверяем требование Miner Pass
-    if (pool.requiresMinerPass && !userStats.hasMinerPass) {
-      return false
+    // Премиум пул (id=3): требуется только Miner Pass
+    if (pool.id === 3) {
+      return userStats.hasMinerPass
     }
 
-    // Проверяем требование минимального количества майнеров
-    if (pool.minMiners > 0 && userStats.totalMiners < pool.minMiners) {
-      // Если есть Miner Pass, то пропускаем это требование для продвинутого пула
-      if (pool.id === 2 && userStats.hasMinerPass) {
+    // Продвинутый пул (id=2):
+    // 1. Если есть Miner Pass - доступен всегда
+    // 2. Иначе - нужно иметь 15+ майнеров И 20+ приглашенных друзей
+    if (pool.id === 2) {
+      if (userStats.hasMinerPass) {
         return true
       }
 
-      // Проверяем требование минимального количества приглашенных друзей
-      if (pool.minInvitedFriends > 0 && userStats.invitedFriends < pool.minInvitedFriends) {
-        return false
-      }
+      return userStats.totalMiners >= pool.minMiners && userStats.invitedFriends >= pool.minInvitedFriends
     }
 
+    // Стандартный пул (id=1): доступен всем
     return true
   }
 
   // Функция для получения требований для разблокировки пула
   const getPoolRequirements = (pool) => {
-    const requirements = []
-
-    if (pool.requiresMinerPass) {
-      requirements.push("Miner Pass")
+    // Премиум пул
+    if (pool.id === 3) {
+      return <div className="text-xs text-gray-400 mt-1">Требуется: Miner Pass</div>
     }
 
-    if (pool.minMiners > 0) {
-      requirements.push(`${pool.minMiners}+ майнеров`)
-    }
-
-    if (pool.minInvitedFriends > 0) {
-      requirements.push(`${pool.minInvitedFriends}+ приглашенных`)
-    }
-
-    if (requirements.length === 0) return null
-
-    // Для продвинутого пула добавляем "или" между требованиями
+    // Продвинутый пул
     if (pool.id === 2) {
-      return <div className="text-xs text-gray-400 mt-1">Требуется: {requirements.join(" или ")}</div>
+      return (
+        <div className="text-xs text-gray-400 mt-1">
+          Требуется: Miner Pass или ({pool.minMiners}+ майнеров и {pool.minInvitedFriends}+ приглашенных)
+        </div>
+      )
     }
 
-    return <div className="text-xs text-gray-400 mt-1">Требуется: {requirements.join(", ")}</div>
+    return null
   }
 
   // Функция для выбора пула
