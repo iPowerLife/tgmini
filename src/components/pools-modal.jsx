@@ -59,41 +59,39 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
         // Если произошла ошибка, используем тестовые данные
         const testPools = [
           {
-            id: 1,
-            name: "Стандартный пул",
-            description: "Базовый майнинг пул для начинающих",
-            difficulty: 1,
-            reward_multiplier: 1,
-            stability: 100,
-            fee: 0,
+            id: 3,
+            name: "Премиум пул",
+            description: "Элитный пул с максимальной эффективностью",
+            difficulty: 5,
+            reward_multiplier: 1.3,
+            stability: 99,
+            fee: 1,
           },
           {
             id: 2,
             name: "Продвинутый пул",
-            description: "Повышенная сложность, высокая награда",
-            difficulty: 2,
-            reward_multiplier: 2.5,
-            stability: 90,
-            fee: 5,
+            description: "Пул с улучшенной эффективностью",
+            difficulty: 3,
+            reward_multiplier: 1.15,
+            stability: 97,
+            fee: 3,
           },
           {
-            id: 3,
-            name: "Экспертный пул",
-            description: "Максимальная сложность и награда",
-            difficulty: 3,
-            reward_multiplier: 4,
-            stability: 80,
-            fee: 10,
+            id: 1,
+            name: "Стандартный пул",
+            description: "Базовый пул для всех майнеров",
+            difficulty: 1,
+            reward_multiplier: 1,
+            stability: 95,
+            fee: 5,
           },
         ]
 
         setPools(testPools)
 
-        // Устанавливаем текущий выбранный пул
         if (currentPool?.id) {
           setSelectedPoolId(currentPool.id)
         } else {
-          // Если текущий пул не указан, выбираем первый из списка
           setSelectedPoolId(testPools[0].id)
         }
 
@@ -109,7 +107,6 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
     try {
       console.log("Выбор пула:", pool)
 
-      // Обновляем выбранный пул в базе данных
       if (user?.id) {
         const { error } = await supabase.from("users").update({ active_pool_id: pool.id }).eq("id", user.id)
 
@@ -119,15 +116,10 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
         }
       }
 
-      // Обновляем локальное состояние
       setSelectedPoolId(pool.id)
-
-      // Вызываем колбэк для обновления родительского компонента
       if (onPoolSelect) {
         onPoolSelect(pool)
       }
-
-      // Закрываем модальное окно
       onClose()
     } catch (error) {
       console.error("Ошибка при выборе пула:", error)
@@ -135,36 +127,37 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
     }
   }
 
-  // Функция для получения цвета в зависимости от сложности пула
-  const getDifficultyColor = (difficulty) => {
-    if (difficulty <= 1) return "green"
-    if (difficulty <= 2) return "blue"
-    if (difficulty <= 3) return "purple"
-    return "red"
-  }
-
-  // Добавим функцию для определения градиента фона в зависимости от типа пула
-  // Добавьте эту функцию после функции getDifficultyColor
-
-  const getPoolGradient = (difficulty) => {
-    if (difficulty <= 1) {
-      // Стандартный пул - сине-голубой градиент
-      return "linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(59, 130, 246, 0.15) 50%, rgba(96, 165, 250, 0.1) 100%)"
-    } else if (difficulty <= 2) {
-      // Продвинутый пул - фиолетовый градиент
-      return "linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(167, 139, 250, 0.1) 100%)"
-    } else {
-      // Премиум пул - золотой градиент
-      return "linear-gradient(135deg, rgba(234, 179, 8, 0.1) 0%, rgba(253, 224, 71, 0.15) 50%, rgba(250, 204, 21, 0.1) 100%)"
+  // Функция для получения стилей пула в зависимости от типа
+  const getPoolStyles = (pool) => {
+    const styles = {
+      container: "",
+      title: "",
+      icon: "",
     }
+
+    if (pool.difficulty >= 5) {
+      // Премиум пул
+      styles.container = "bg-gradient-to-br from-yellow-900/30 to-yellow-600/20 border-yellow-600/30"
+      styles.title = "text-yellow-400 font-semibold"
+      styles.icon = "💀"
+    } else if (pool.difficulty >= 3) {
+      // Продвинутый пул
+      styles.container = "bg-gradient-to-br from-purple-900/30 to-purple-600/20 border-purple-600/30"
+      styles.title = "text-purple-400"
+      styles.icon = "🔥"
+    } else {
+      // Стандартный пул
+      styles.container = "bg-gradient-to-br from-blue-900/30 to-blue-600/20 border-blue-600/30"
+      styles.title = "text-blue-400"
+      styles.icon = "🌊"
+    }
+
+    return styles
   }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div
-        className="bg-[#242838]/95 backdrop-blur-sm p-4 rounded-lg w-[90%] max-w-md border border-blue-500/20"
-        style={{ maxHeight: "80vh", display: "flex", flexDirection: "column" }}
-      >
+      <div className="bg-[#1a1d2d] p-4 rounded-lg w-[90%] max-w-md">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-xl font-bold text-blue-400">Майнинг пулы</h3>
           <button className="text-gray-400 hover:text-white transition-colors" onClick={onClose}>
@@ -182,72 +175,60 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
           </div>
         ) : (
           <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
-            {pools.map((pool) => (
-              <div
-                key={pool.id}
-                className={`p-2.5 rounded-lg border transition-all cursor-pointer ${
-                  selectedPoolId === pool.id ? "border-blue-500" : "border-[#2a2f45] hover:border-blue-500/50"
-                }`}
-                style={{
-                  background:
-                    selectedPoolId === pool.id
-                      ? "linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.25) 100%)"
-                      : getPoolGradient(pool.difficulty),
-                }}
-                onClick={() => handleSelectPool(pool)}
-              >
-                <div className="flex items-center">
-                  <div
-                    className={`w-10 h-10 bg-${getDifficultyColor(pool.difficulty)}-500/20 rounded-lg flex items-center justify-center mr-2.5`}
-                  >
-                    <span className="text-xl">
-                      {pool.difficulty <= 1 ? "🌊" : pool.difficulty <= 2 ? "⛏️" : pool.difficulty <= 3 ? "🔥" : "💀"}
-                    </span>
+            {pools.map((pool) => {
+              const styles = getPoolStyles(pool)
+              return (
+                <div
+                  key={pool.id}
+                  className={`p-3 rounded-lg border transition-all cursor-pointer ${styles.container}`}
+                  onClick={() => handleSelectPool(pool)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center flex-1">
+                      <span className="text-2xl mr-2">{styles.icon}</span>
+                      <div>
+                        <h4 className={`${styles.title} text-sm`}>{pool.name}</h4>
+                        <p className="text-xs text-gray-400 line-clamp-1">{pool.description}</p>
+                      </div>
+                    </div>
+                    {selectedPoolId === pool.id && (
+                      <div className="ml-2 px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs">Активен</div>
+                    )}
                   </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium text-white text-sm">{pool.name}</h4>
-                    <p className="text-xs text-gray-400 line-clamp-1">{pool.description}</p>
-                  </div>
-                  {selectedPoolId === pool.id && (
-                    <div className="ml-1 px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs">Активен</div>
-                  )}
-                </div>
 
-                <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
-                  <div className="text-gray-400 flex items-center">
-                    <span className="w-3 h-3 inline-block mr-1">⚙️</span>
-                    Сложность:{" "}
-                    <span className={`text-${getDifficultyColor(pool.difficulty)}-400 ml-1`}>{pool.difficulty}x</span>
-                  </div>
-                  <div className="text-gray-400 flex items-center">
-                    <span className="w-3 h-3 inline-block mr-1">💎</span>
-                    Награда: <span className="text-blue-400 ml-1">x{pool.reward_multiplier}</span>
-                  </div>
-                  <div className="text-gray-400 flex items-center">
-                    <span className="w-3 h-3 inline-block mr-1">🔄</span>
-                    Стабильность: <span className="text-blue-400 ml-1">{pool.stability}%</span>
-                  </div>
-                  <div className="text-gray-400 flex items-center">
-                    <span className="w-3 h-3 inline-block mr-1">💰</span>
-                    Комиссия: <span className="text-blue-400 ml-1">{pool.fee}%</span>
+                  <div className="mt-2 grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+                    <div className="text-gray-400 flex items-center">
+                      <span className="w-3 h-3 inline-block mr-1">⚙️</span>
+                      Сложность: <span className={`${styles.title} ml-1`}>{pool.difficulty}x</span>
+                    </div>
+                    <div className="text-gray-400 flex items-center">
+                      <span className="w-3 h-3 inline-block mr-1">💎</span>
+                      Награда: <span className={`${styles.title} ml-1`}>x{pool.reward_multiplier}</span>
+                    </div>
+                    <div className="text-gray-400 flex items-center">
+                      <span className="w-3 h-3 inline-block mr-1">🔄</span>
+                      Стабильность: <span className={`${styles.title} ml-1`}>{pool.stability}%</span>
+                    </div>
+                    <div className="text-gray-400 flex items-center">
+                      <span className="w-3 h-3 inline-block mr-1">💰</span>
+                      Комиссия: <span className={`${styles.title} ml-1`}>{pool.fee}%</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
         <style jsx global>{`
           .custom-scrollbar {
-            -ms-overflow-style: none;  /* IE и Edge */
-            scrollbar-width: none;     /* Firefox */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
             overscroll-behavior: contain;
           }
 
           .custom-scrollbar::-webkit-scrollbar {
-            display: none;  /* Chrome, Safari и Opera */
-            width: 0;
-            height: 0;
+            display: none;
           }
         `}</style>
       </div>
