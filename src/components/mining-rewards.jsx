@@ -4,11 +4,8 @@ import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
 import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Cpu, Zap, Calendar, Wallet } from "lucide-react"
 
-// Обновляем компонент MiningRewards для использования initialData
-
-// Добавляем initialData в параметры компонента
 export const MiningRewards = ({ userId, initialData }) => {
-  const [loading, setLoading] = useState(!initialData) // Если есть initialData, не показываем загрузку
+  const [loading, setLoading] = useState(!initialData)
   const [collecting, setCollecting] = useState(false)
   const [miningInfo, setMiningInfo] = useState(initialData || null)
   const [error, setError] = useState(null)
@@ -24,7 +21,6 @@ export const MiningRewards = ({ userId, initialData }) => {
     isComponentMounted.current = true
 
     const loadData = async () => {
-      // Если у нас уже есть initialData, не показываем состояние загрузки
       if (!initialData) {
         setLoading(true)
       }
@@ -40,6 +36,7 @@ export const MiningRewards = ({ userId, initialData }) => {
 
         if (error) throw error
 
+        console.log("Mining info data:", data)
         setMiningInfo(data)
       } catch (err) {
         console.error("Error loading mining info:", err)
@@ -55,6 +52,7 @@ export const MiningRewards = ({ userId, initialData }) => {
 
     loadData()
 
+    // Обновляем данные каждые 30 секунд
     intervalRef.current = setInterval(() => {
       if (isComponentMounted.current) {
         setLastUpdate(Date.now())
@@ -88,7 +86,7 @@ export const MiningRewards = ({ userId, initialData }) => {
 
       if (data.success) {
         setSuccess(`Вы успешно собрали ${data.amount} монет!`)
-        setLastUpdate(Date.now())
+        setLastUpdate(Date.now()) // Обновляем данные после сбора
       } else {
         setError(data.error || "Не удалось собрать награды")
       }
@@ -134,12 +132,14 @@ export const MiningRewards = ({ userId, initialData }) => {
     )
   }
 
-  const { rewards, total_hashrate, pool } = miningInfo
+  const { rewards, total_hashrate, pool, config } = miningInfo
   const canCollect = rewards?.can_collect || false
   const rewardAmount = Number.parseFloat(rewards?.amount || 0)
   const hourlyRate = Number.parseFloat(rewards?.hourly_rate || 0)
   const timeUntilCollection = Number.parseInt(rewards?.time_until_collection || 0)
   const collectionProgress = Number.parseFloat(rewards?.collection_progress || 0)
+  const collectionIntervalHours = rewards?.collection_interval_hours || config?.collection_interval_hours || 1
+  const allowAnytimeCollection = rewards?.allow_anytime_collection || config?.allow_anytime_collection || false
 
   // Рассчитываем средний доход в день
   const dailyIncome = hourlyRate * 24
@@ -241,7 +241,13 @@ export const MiningRewards = ({ userId, initialData }) => {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1 text-sm text-gray-400">
                 <Clock size={14} />
-                <span>{canCollect ? "Можно собрать сейчас" : `До сбора: ${formatTime(timeUntilCollection)}`}</span>
+                <span>
+                  {allowAnytimeCollection
+                    ? "Сбор доступен в любое время"
+                    : canCollect
+                      ? "Можно собрать сейчас"
+                      : `До сбора: ${formatTime(timeUntilCollection)}`}
+                </span>
               </div>
               <div className="text-sm text-gray-400">{formatNumber(collectionProgress)}%</div>
             </div>
@@ -262,13 +268,13 @@ export const MiningRewards = ({ userId, initialData }) => {
               onClick={collectRewards}
               disabled={!canCollect || collecting || rewardAmount <= 0}
               className={`
-                w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
-                ${
-                  canCollect && rewardAmount > 0 && !collecting
-                    ? "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
-                    : "bg-gray-800 text-gray-400 cursor-not-allowed"
-                }
-              `}
+              w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
+              ${
+                canCollect && rewardAmount > 0 && !collecting
+                  ? "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
+                  : "bg-gray-800 text-gray-400 cursor-not-allowed"
+              }
+            `}
             >
               {collecting ? (
                 <>
