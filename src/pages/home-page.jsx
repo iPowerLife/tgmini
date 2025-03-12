@@ -40,8 +40,8 @@ const HomePage = ({ user }) => {
 
         // Получаем информацию о текущем пуле
         let poolData = null
-        if (user.active_pool_id) {
-          const { data, error } = await supabase.from("mining_pools").select("*").eq("id", user.active_pool_id).single()
+        if (user.mining_pool) {
+          const { data, error } = await supabase.from("mining_pools").select("*").eq("id", user.mining_pool).single()
 
           if (error && error.code !== "PGRST116") {
             console.error("Ошибка при запросе пула:", error)
