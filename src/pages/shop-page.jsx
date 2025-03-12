@@ -55,7 +55,7 @@ const ShopPage = ({ user }) => {
         if (modelsError) throw modelsError
         setModels(modelsData || [])
 
-        // Загружаем майнеры пользователя из user_miners_optimized
+        // Загружаем майнеры пользователя из user_miners
         const { data: userMinersData, error: userMinersError } = await supabase.rpc("get_user_miners_with_models", {
           p_user_id: user.id,
         })
@@ -99,7 +99,7 @@ const ShopPage = ({ user }) => {
       user.balance = newBalance
     }
 
-    // Пере��агружаем данные о майнерах пользователя из user_miners_optimized
+    // Перезагружаем данные о майнерах пользователя из user_miners
     const fetchUserMiners = async () => {
       if (!user?.id) return
 
@@ -174,11 +174,6 @@ const ShopPage = ({ user }) => {
 
       {activeCategory === "special" && (
         <SpecialTab user={user} onPurchase={handlePurchase} hasMinerPass={hasMinerPass} />
-      )}
-
-      {activeCategory === "premium" && <PremiumTab />}
-
-      {  />
       )}
 
       {activeCategory === "premium" && <PremiumTab />}
