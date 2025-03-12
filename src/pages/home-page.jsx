@@ -8,7 +8,8 @@ import { PoolsModal } from "../components/pools-modal"
 import { MiningRewards } from "../components/mining-rewards"
 import { supabase } from "../supabase"
 
-const HomePage = ({ user }) => {
+const HomePage = ({ user: initialUser }) => {
+  const [user, setUser] = useState(initialUser)
   const [showMinersModal, setShowMinersModal] = useState(false)
   const [showBoostsModal, setShowBoostsModal] = useState(false)
   const [showPoolsModal, setShowPoolsModal] = useState(false)
@@ -76,6 +77,15 @@ const HomePage = ({ user }) => {
     fetchMiningInfo()
   }, [user])
 
+  // Функция для обновления баланса пользователя
+  const handleBalanceUpdate = (newBalance) => {
+    console.log("Обновление баланса пользователя:", newBalance)
+    setUser((prevUser) => ({
+      ...prevUser,
+      balance: newBalance,
+    }))
+  }
+
   // Блокировка только событий прокрутки, но не кликов
   useEffect(() => {
     // Функция для блокировки только событий прокрутки
@@ -129,19 +139,19 @@ const HomePage = ({ user }) => {
     // Добавляем CSS для предотвращения прокрутки, но разрешаем клики
     const style = document.createElement("style")
     style.innerHTML = `
-      html, body {
-        overflow: hidden !important;
-        height: 100% !important;
-        width: 100% !important;
-        overscroll-behavior: none !important;
-      }
-      
-      /* Разрешаем прокрутку в модальных окнах */
-      .miners-list, .custom-scrollbar {
-        overflow-y: auto !important;
-        overscroll-behavior: contain !important;
-      }
-    `
+    html, body {
+      overflow: hidden !important;
+      height: 100% !important;
+      width: 100% !important;
+      overscroll-behavior: none !important;
+    }
+    
+    /* Разрешаем прокрутку в модальных окнах */
+    .miners-list, .custom-scrollbar {
+      overflow-y: auto !important;
+      overscroll-behavior: contain !important;
+    }
+  `
     document.head.appendChild(style)
 
     // Удаляем все обработчики при размонтировании
@@ -228,7 +238,7 @@ const HomePage = ({ user }) => {
 
         {/* Компонент с информацией о майнинге и наградах */}
         <div className="mx-2">
-          <MiningRewards userId={user?.id} initialData={miningData} />
+          <MiningRewards userId={user?.id} initialData={miningData} onBalanceUpdate={handleBalanceUpdate} />
         </div>
 
         {/* Основная область с кнопками и майнером */}
@@ -314,61 +324,61 @@ const HomePage = ({ user }) => {
             <div className="aspect-square flex items-center justify-center bg-[#242838]/60 backdrop-blur-sm rounded-lg border border-blue-500/20 overflow-hidden mb-2">
               <div className="miner-animation">
                 <style jsx>{`
-                  .miner-animation {
-                    position: relative;
-                    width: 100%;
-                    height: 100%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
+                .miner-animation {
+                  position: relative;
+                  width: 100%;
+                  height: 100%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+                
+                .miner-animation:before {
+                  content: '';
+                  position: absolute;
+                  width: 80px;
+                  height: 80px;
+                  background: rgba(59, 130, 246, 0.8);
+                  border-radius: 15px;
+                  animation: pulse 2s infinite;
+                }
+                
+                .miner-animation:after {
+                  content: '💎';
+                  position: absolute;
+                  font-size: 32px;
+                  animation: float 3s ease-in-out infinite;
+                }
+                
+                @keyframes pulse {
+                  0% {
+                    transform: scale(0.95);
+                    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
                   }
                   
-                  .miner-animation:before {
-                    content: '';
-                    position: absolute;
-                    width: 80px;
-                    height: 80px;
-                    background: rgba(59, 130, 246, 0.8);
-                    border-radius: 15px;
-                    animation: pulse 2s infinite;
+                  70% {
+                    transform: scale(1);
+                    box-shadow: 0 0 0 15px rgba(59, 130, 246, 0);
                   }
                   
-                  .miner-animation:after {
-                    content: '💎';
-                    position: absolute;
-                    font-size: 32px;
-                    animation: float 3s ease-in-out infinite;
+                  100% {
+                    transform: scale(0.95);
+                    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
                   }
-                  
-                  @keyframes pulse {
-                    0% {
-                      transform: scale(0.95);
-                      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
-                    }
-                    
-                    70% {
-                      transform: scale(1);
-                      box-shadow: 0 0 0 15px rgba(59, 130, 246, 0);
-                    }
-                    
-                    100% {
-                      transform: scale(0.95);
-                      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
-                    }
+                }
+                
+                @keyframes float {
+                  0% {
+                    transform: translateY(0px);
                   }
-                  
-                  @keyframes float {
-                    0% {
-                      transform: translateY(0px);
-                    }
-                    50% {
-                      transform: translateY(-20px);
-                    }
-                    100% {
-                      transform: translateY(0px);
-                    }
+                  50% {
+                    transform: translateY(-20px);
                   }
-                `}</style>
+                  100% {
+                    transform: translateY(0px);
+                  }
+                }
+              `}</style>
               </div>
             </div>
 

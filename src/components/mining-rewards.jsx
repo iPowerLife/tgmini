@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { supabase } from "../supabase"
 import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Cpu, Zap, Calendar, Wallet } from "lucide-react"
 
-export const MiningRewards = ({ userId, initialData }) => {
+export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   const [loading, setLoading] = useState(!initialData)
   const [collecting, setCollecting] = useState(false)
   const [miningInfo, setMiningInfo] = useState(initialData || null)
@@ -18,7 +18,7 @@ export const MiningRewards = ({ userId, initialData }) => {
   const intervalRef = useRef(null)
   const isComponentMounted = useRef(true)
 
-  // Функция д��я расчета текущего количества монет
+  // Функция для расчета текущего количества монет
   const calculateCurrentAmount = useCallback(() => {
     if (!miningInfo?.rewards) return 0
 
@@ -125,8 +125,25 @@ export const MiningRewards = ({ userId, initialData }) => {
       if (error) throw error
 
       if (data.success) {
+        // Показываем сообщение об успехе
         setSuccess(`Вы успешно собрали ${data.amount} монет!`)
-        setLastUpdate(Date.now()) // Обновляем данные после сбора
+
+        // Обновляем данные после сбора
+        setLastUpdate(Date.now())
+
+        // Обновляем баланс в родительском компоненте, если передан колбэк
+        if (onBalanceUpdate && data.new_balance !== undefined) {
+          onBalanceUpdate(data.new_balance)
+        }
+
+        // Получаем обновленные данные о майнинге
+        const { data: updatedData } = await supabase.rpc("get_mining_info_with_rewards", {
+          user_id_param: userId,
+        })
+
+        if (updatedData) {
+          setMiningInfo(updatedData)
+        }
       } else {
         setError(data.error || "Не удалось собрать награды")
       }
@@ -308,13 +325,13 @@ export const MiningRewards = ({ userId, initialData }) => {
               onClick={collectRewards}
               disabled={!canCollect || collecting || rewardAmount <= 0}
               className={`
-              w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
-              ${
-                canCollect && rewardAmount > 0 && !collecting
-                  ? "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
-                  : "bg-gray-800 text-gray-400 cursor-not-allowed"
-              }
-            `}
+            w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
+            ${
+              canCollect && rewardAmount > 0 && !collecting
+                ? "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
+                : "bg-gray-800 text-gray-400 cursor-not-allowed"
+            }
+          `}
             >
               {collecting ? (
                 <>
