@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
-import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Cpu, Zap, Calendar, Wallet, Play } from "lucide-react"
+import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Cpu, Zap, Wallet, Play } from "lucide-react"
 
 export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   // Основные состояния
@@ -333,17 +333,6 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
             <div className="flex items-center gap-1">
               <span className="font-medium text-white">{formatNumber(hashrate)}</span>
               <span className="text-blue-400">H/s</span>
-            </div>
-          </div>
-
-          {/* Дней в майнинге */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-gray-400">
-              <Calendar size={16} className="text-blue-400" />
-              <span>Дней в майнинге:</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="font-medium text-white">1</span>
             </div>
           </div>
 
