@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
-import { Coins, Clock, ArrowDown, AlertCircle, Cpu, Zap, Wallet, Play, ShoppingCart } from "lucide-react"
+import { Coins, Clock, ArrowDown, AlertCircle, Cpu, Zap, Wallet, Play, ShoppingCart, Info } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 export const MiningRewards = ({ userId, onBalanceUpdate }) => {
@@ -10,6 +10,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [hasMiner, setHasMiner] = useState(false)
+  const [debugInfo, setDebugInfo] = useState(null)
 
   // Состояния майнинга с безопасными значениями по умолчанию
   const [miningState, setMiningState] = useState({
@@ -48,7 +49,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     const minutes = Math.floor((seconds % 3600) / 60)
     const secs = Math.floor(seconds % 60)
 
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
   // Обновляем функцию fetchMiningData с дополнительным логированием
@@ -73,6 +74,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
       }
 
       console.log("Полученные данные майнинга:", data)
+      setDebugInfo(data) // Сохраняем данные для отладки
 
       if (!mountedRef.current) return
 
@@ -327,6 +329,40 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     )
   }
 
+  // Отладочная информация
+  const renderDebugInfo = () => {
+    if (!debugInfo) return null
+
+    return (
+      <div className="bg-gray-900 p-3 rounded-lg mb-3 text-xs font-mono overflow-auto">
+        <div className="flex items-center gap-2 mb-2">
+          <Info size={14} className="text-yellow-500" />
+          <span className="text-yellow-500 font-medium">Отладочная информация</span>
+        </div>
+        <div>
+          <div>
+            <span className="text-green-400">user_has_miners:</span> {JSON.stringify(debugInfo.user_has_miners)}
+          </div>
+          <div>
+            <span className="text-green-400">total_hashrate:</span> {JSON.stringify(debugInfo.total_hashrate)}
+          </div>
+          <div>
+            <span className="text-green-400">mining_state:</span> {JSON.stringify(debugInfo.mining_state)}
+          </div>
+          <div>
+            <span className="text-green-400">pool:</span> {JSON.stringify(debugInfo.pool)}
+          </div>
+          <div>
+            <span className="text-green-400">rewards:</span> {JSON.stringify(debugInfo.rewards)}
+          </div>
+          <div>
+            <span className="text-green-400">config:</span> {JSON.stringify(debugInfo.config)}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Если у пользователя нет майнеров
   if (!hasMiner) {
     return (
@@ -337,6 +373,19 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
             <span className="font-medium">Майнинг</span>
           </div>
         </div>
+
+        {/* Сообщения об ошибках */}
+        {error && (
+          <div className="bg-red-950/30 border border-red-500/20 rounded-lg p-3 mb-3">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
+              <div className="text-sm text-red-500/90">{error}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Отладочная информация */}
+        {renderDebugInfo()}
 
         <div className="bg-[#1A2234] rounded-xl overflow-hidden mb-3">
           <div className="p-6 flex flex-col items-center justify-center text-center">
@@ -386,6 +435,9 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
           </div>
         </div>
       )}
+
+      {/* Отладочная информация */}
+      {renderDebugInfo()}
 
       {/* Основная информация */}
       <div className="bg-[#1A2234] rounded-xl overflow-hidden mb-3">
