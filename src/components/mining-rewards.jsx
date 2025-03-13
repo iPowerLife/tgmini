@@ -24,6 +24,11 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   const timerIntervalRef = useRef(null)
   const isComponentMounted = useRef(true)
 
+  // Добавляем состояние для отслеживания времени до следующего сбора
+  const [timeUntilNextCollection, setTimeUntilNextCollection] = useState(0)
+  const [canCollect, setCanCollect] = useState(false)
+  const [showError, setShowError] = useState(false)
+
   // Функция для расчета текущего количества монет
   const calculateCurrentAmount = useCallback(() => {
     if (!miningInfo?.rewards) return 0
@@ -61,7 +66,20 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     return () => clearInterval(interval)
   }, [miningInfo, calculateCurrentAmount])
 
-  // Загрузка данных и проверка состояния майнинга
+  // Функция для проверки возможности сбора наград
+  const checkCollectionAvailability = useCallback(() => {
+    if (!miningInfo?.rewards) return false
+
+    const timeUntil = miningInfo.rewards.time_until_collection || 0
+    const allowAnytime = miningInfo.rewards.allow_anytime_collection || false
+
+    setTimeUntilNextCollection(timeUntil)
+    setCanCollect(timeUntil <= 0 || allowAnytime)
+
+    return timeUntil <= 0 || allowAnytime
+  }, [miningInfo])
+
+  // Обновляем useEffect для загрузки данных
   useEffect(() => {
     if (!userId) return
 
@@ -74,8 +92,8 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
       try {
         setError(null)
+        setShowError(false)
 
-        // Получаем информацию о майнинге
         const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
           user_id_param: userId,
         })
@@ -87,9 +105,15 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         console.log("Mining info data:", data)
         setMiningInfo(data)
 
+        // Проверяем доступность сбора наград
+        if (data?.rewards) {
+          const timeUntil = data.rewards.time_until_collection || 0
+          setTimeUntilNextCollection(timeUntil)
+          setCanCollect(timeUntil <= 0 || data.rewards.allow_anytime_collection)
+        }
+
         // Получаем интервал сбора из конфигурации
         if (data?.config?.collection_interval_hours) {
-          // Преобразуем часы в секунды
           const intervalInSeconds = data.config.collection_interval_hours * 3600
           setMiningDuration(intervalInSeconds)
         }
@@ -161,15 +185,20 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
     loadData()
 
-    // Обновляем данные каждые 30 секунд
-    intervalRef.current = setInterval(() => {
-      if (isComponentMounted.current) {
-        setLastUpdate(Date.now())
-      }
-    }, 30000)
+    // Запускаем интервал для обновления таймера
+    const timerInterval = setInterval(() => {
+      setTimeUntilNextCollection((prev) => {
+        if (prev <= 1) {
+          setCanCollect(true)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
 
     return () => {
       isComponentMounted.current = false
+      clearInterval(timerInterval)
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
@@ -177,7 +206,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         clearInterval(timerIntervalRef.current)
       }
     }
-  }, [userId, lastUpdate, initialData])
+  }, [userId, initialData])
 
   // Функция для запуска таймера майнинга с указанным временем
   const startMiningTimerWithTime = (timeSeconds) => {
@@ -242,19 +271,20 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     }
   }
 
-  // Сбор наград и перезапуск майнинга
+  // Обновляем handleMiningAction
   const handleMiningAction = async () => {
-    // Если майнинг активен или идет сбор наград, ничего не делаем
-    if (isMining || collecting) return
-
-    // Если майнинг остановлен и есть награды для сбора
-    if (!isMining && currentAmount > 0) {
-      await collectRewards()
+    if (!canCollect) {
+      setShowError(true)
+      setTimeout(() => setShowError(false), 3000)
+      return
     }
-    // Если майнинг остановлен и нет наград или награды уже собраны
-    else if (!isMining) {
-      // Запускаем майнинг снова
-      await startMining()
+
+    if (collecting) return
+
+    try {
+      await collectRewards()
+    } catch (err) {
+      console.error("Error in handleMiningAction:", err)
     }
   }
 
@@ -329,6 +359,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     return positiveNum.toFixed(decimals)
   }
 
+  // Обновляем форматирование времени
   const formatTime = (seconds) => {
     if (!seconds || seconds <= 0) return "00:00:00"
 
@@ -352,7 +383,6 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   }
 
   const { rewards, total_hashrate, pool, config } = miningInfo
-  const canCollect = rewards?.can_collect || false
   const rewardAmount = Number.parseFloat(rewards?.amount || 0)
   const hourlyRate = Number.parseFloat(rewards?.hourly_rate || 0)
   const timeUntilCollection = Number.parseInt(rewards?.time_until_collection || 0)
@@ -433,6 +463,16 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         </div>
       )}
 
+      {/* Показываем сообщение об ошибке, если слишком рано для сбора */}
+      {showError && !canCollect && (
+        <div className="bg-red-950/30 border border-red-500/20 rounded-lg p-3 mb-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
+            <div className="text-sm text-red-500/90">Слишком рано для сбора наград</div>
+          </div>
+        </div>
+      )}
+
       {/* Основная информация */}
       <div className="bg-[#1A2234] rounded-xl overflow-hidden mb-3">
         {/* Статистика майнинга */}
@@ -488,11 +528,11 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-gray-400">
               <Clock size={16} className="text-orange-400" />
-              <span>Время майнинга:</span>
+              <span>Время до сбора:</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className={`font-medium ${isMining ? "text-green-400" : "text-white"}`}>
-                {formatTime(miningTimeLeft)}
+              <span className={`font-medium ${canCollect ? "text-green-400" : "text-white"}`}>
+                {formatTime(timeUntilNextCollection)}
               </span>
             </div>
           </div>
@@ -504,12 +544,10 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1 text-sm text-gray-400">
                 <Clock size={14} />
-                <span>
-                  {miningTimeLeft === 0 ? "Майнинг остановлен" : isMining ? "Майнинг активен" : "Майнинг не запущен"}
-                </span>
+                <span>{canCollect ? "Можно собрать награды" : `До сбора: ${formatTime(timeUntilNextCollection)}`}</span>
               </div>
               <div className="text-sm text-gray-400">
-                {isMining ? `${Math.floor((miningTimeLeft / miningDuration) * 100)}%` : "0%"}
+                {Math.min(100, Math.max(0, 100 - (timeUntilNextCollection / miningDuration) * 100))}%
               </div>
             </div>
 
@@ -517,7 +555,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
               <div
                 className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 relative"
                 style={{
-                  width: `${isMining ? Math.floor((miningTimeLeft / miningDuration) * 100) : 0}%`,
+                  width: `${Math.min(100, Math.max(0, 100 - (timeUntilNextCollection / miningDuration) * 100))}%`,
                   transition: "width 1s linear",
                 }}
               >
@@ -525,17 +563,30 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
               </div>
             </div>
 
-            {/* Кнопка сбора наград / запуска майнинга */}
+            {/* Кнопка сбора наград */}
             <button
               onClick={handleMiningAction}
-              disabled={isButtonDisabled}
+              disabled={!canCollect || collecting}
               className={`
-              w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
-              ${isButtonDisabled ? "bg-gray-800 text-gray-400 cursor-not-allowed" : buttonClass}
-            `}
+                w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
+                ${
+                  !canCollect || collecting
+                    ? "bg-gray-800 text-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
+                }
+              `}
             >
-              {buttonIcon}
-              <span>{buttonText}</span>
+              {collecting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Сбор наград...</span>
+                </>
+              ) : (
+                <>
+                  <ArrowDown size={18} />
+                  <span>Собрать награды</span>
+                </>
+              )}
             </button>
           </div>
         </div>
