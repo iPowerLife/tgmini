@@ -2,14 +2,13 @@
 
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
-import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Cpu, Zap, Wallet, Play } from "lucide-react"
+import { Coins, Clock, ArrowDown, AlertCircle, Cpu, Zap, Wallet, Play } from "lucide-react"
 
 export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   // Основные состояния
   const [loading, setLoading] = useState(true)
   const [collecting, setCollecting] = useState(false)
   const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
 
   // Состояния майнинга
   const [isMining, setIsMining] = useState(false)
@@ -19,13 +18,14 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   const [miningDuration, setMiningDuration] = useState(60)
   const [hashrate, setHashrate] = useState(0)
   const [hourlyRate, setHourlyRate] = useState(0)
-  const [finalAmount, setFinalAmount] = useState(null)
 
   // Refs для интервалов и проверки монтирования
   const timerIntervalRef = useRef(null)
   const updateIntervalRef = useRef(null)
   const isMountedRef = useRef(true)
   const timerEndedRef = useRef(false)
+  const finalAmountRef = useRef(null)
+  const lastStateUpdateRef = useRef(Date.now())
 
   // Загрузка данных с сервера
   const fetchMiningData = async () => {
@@ -44,25 +44,65 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
       if (!isMountedRef.current) return
 
+      // Проверяем, не было ли недавнего локального обновления состояния
+      const now = Date.now()
+      const timeSinceLastUpdate = now - lastStateUpdateRef.current
+
+      // Если таймер закончился локально и прошло менее 5 секунд с момента обновления
+      if (timerEndedRef.current && timeSinceLastUpdate < 5000) {
+        console.log("Игнорируем обновление с сервера, так как недавно было локальное обновление")
+
+        // Обновляем только те данные, которые не связаны с состоянием майнинга
+        if (data.config) {
+          setMiningDuration(data.config.mining_duration_seconds || 60)
+        }
+
+        if (data.total_hashrate) {
+          setHashrate(data.total_hashrate)
+        }
+
+        if (data.rewards && !isMining) {
+          setHourlyRate(data.rewards.hourly_rate || 0)
+        }
+
+        setLoading(false)
+        return
+      }
+
       // Обновляем состояния из полученных данных
       if (data.mining_state) {
         const isCurrentlyMining = data.mining_state.is_mining
-        setIsMining(isCurrentlyMining)
 
         // Если таймер закончился локально, но сервер еще не обновился
         if (timerEndedRef.current && isCurrentlyMining) {
           console.log("Таймер закончился локально, но сервер еще не обновился")
-          // Не обновляем состояние майнинга с сервера
-        } else {
-          // Обычное обновление
-          setMiningAmount(isCurrentlyMining ? data.mining_state.current_amount : data.mining_state.frozen_amount)
-          setRemainingTime(data.mining_state.remaining_seconds || 0)
-          setCanCollect(!isCurrentlyMining && data.mining_state.frozen_amount > 0)
 
-          // Сбрасываем флаг окончания таймера, если сервер уже обновился
+          // Не обновляем состояние майнинга с сервера, используем локальные данные
+          setIsMining(false)
+          setCanCollect(true)
+
+          // Используем сохраненную сумму
+          if (finalAmountRef.current !== null) {
+            setMiningAmount(finalAmountRef.current)
+          }
+        } else {
+          // Обычное обновление с сервера
+          setIsMining(isCurrentlyMining)
+
+          // Если майнинг не активен, обновляем сумму и состояние сбора
           if (!isCurrentlyMining) {
+            const frozenAmount = data.mining_state.frozen_amount || 0
+            setMiningAmount(frozenAmount)
+            setCanCollect(frozenAmount > 0)
+
+            // Сбрасываем флаги и ссылки
             timerEndedRef.current = false
-            setFinalAmount(null)
+            finalAmountRef.current = null
+          } else {
+            // Если майнинг активен, обновляем текущую сумму и время
+            setMiningAmount(data.mining_state.current_amount || 0)
+            setRemainingTime(data.mining_state.remaining_seconds || 0)
+            setCanCollect(false)
           }
         }
       }
@@ -94,7 +134,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     try {
       setLoading(true)
       timerEndedRef.current = false
-      setFinalAmount(null)
+      finalAmountRef.current = null
 
       const { data, error } = await supabase.rpc("start_mining", {
         user_id_param: userId,
@@ -109,6 +149,9 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       setMiningAmount(0)
       setRemainingTime(data.duration_seconds || miningDuration)
       setCanCollect(false)
+
+      // Запоминаем время обновления
+      lastStateUpdateRef.current = Date.now()
 
       // Запускаем таймер
       startTimer()
@@ -139,9 +182,6 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       console.log("Награды собраны:", data)
 
       if (data.success) {
-        // Показываем сообщение об успехе
-        setSuccess(`Вы успешно собрали ${Number(data.amount).toFixed(2)} монет!`)
-
         // Обновляем баланс в родительском компоненте
         if (onBalanceUpdate && typeof onBalanceUpdate === "function") {
           onBalanceUpdate(data.new_balance)
@@ -151,7 +191,10 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         setMiningAmount(0)
         setCanCollect(false)
         timerEndedRef.current = false
-        setFinalAmount(null)
+        finalAmountRef.current = null
+
+        // Запоминаем время обновления
+        lastStateUpdateRef.current = Date.now()
 
         // Запускаем майнинг снова
         await startMining()
@@ -169,14 +212,22 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   // Функция для остановки майнинга локально
   const stopMiningLocally = () => {
     console.log("Останавливаем майнинг локально")
+
     // Сохраняем финальную сумму
-    setFinalAmount(miningAmount)
+    finalAmountRef.current = miningAmount
+
     // Устанавливаем флаг окончания таймера
     timerEndedRef.current = true
+
     // Останавливаем майнинг
     setIsMining(false)
+
     // Разрешаем сбор наград
     setCanCollect(true)
+
+    // Запоминаем время обновления
+    lastStateUpdateRef.current = Date.now()
+
     // Останавливаем таймер
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current)
@@ -218,6 +269,8 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   useEffect(() => {
     isMountedRef.current = true
     timerEndedRef.current = false
+    finalAmountRef.current = null
+    lastStateUpdateRef.current = Date.now()
 
     // Загружаем начальные данные
     fetchMiningData()
@@ -280,7 +333,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   }
 
   // Определяем отображаемую сумму
-  const displayAmount = finalAmount !== null ? finalAmount : miningAmount
+  const displayAmount = finalAmountRef.current !== null ? finalAmountRef.current : miningAmount
 
   // Если данные загружаются
   if (loading && !hashrate) {
@@ -314,21 +367,12 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         </div>
       </div>
 
-      {/* Сообщения об ошибках и успехе */}
+      {/* Сообщения об ошибках */}
       {error && (
         <div className="bg-red-950/30 border border-red-500/20 rounded-lg p-3 mb-3">
           <div className="flex items-start gap-2">
             <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
             <div className="text-sm text-red-500/90">{error}</div>
-          </div>
-        </div>
-      )}
-
-      {success && (
-        <div className="bg-green-950/30 border border-green-500/20 rounded-lg p-3 mb-3">
-          <div className="flex items-start gap-2">
-            <CheckCircle2 className="text-green-500 shrink-0 mt-0.5" size={16} />
-            <div className="text-sm text-green-500/90">{success}</div>
           </div>
         </div>
       )}
@@ -435,15 +479,15 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
                   <Play size={18} className="animate-pulse" />
                   <span>Майнинг</span>
                 </>
-              ) : displayAmount <= 0 || !canCollect ? (
-                <>
-                  <Play size={18} />
-                  <span>Запуск майнинга</span>
-                </>
-              ) : (
+              ) : canCollect ? (
                 <>
                   <ArrowDown size={18} />
                   <span>Собрать награды</span>
+                </>
+              ) : (
+                <>
+                  <Play size={18} />
+                  <span>Запуск майнинга</span>
                 </>
               )}
             </button>
