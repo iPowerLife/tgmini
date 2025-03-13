@@ -11,7 +11,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   const [error, setError] = useState(null)
   const [hasMiner, setHasMiner] = useState(false)
 
-  // Состояния майнинга
+  // Состояния майнинга с безопасными значениями по умолчанию
   const [miningState, setMiningState] = useState({
     isMining: false,
     amount: 0,
@@ -51,9 +51,13 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  // Функция для получения данных о майнинге
+  // Обновляем функцию fetchMiningData с дополнительной обработкой ошибок
   const fetchMiningData = async () => {
-    if (!userId) return
+    if (!userId) {
+      setError("ID пользователя не указан")
+      setLoading(false)
+      return
+    }
 
     try {
       console.log("Загрузка данных майнинга...")
@@ -68,33 +72,57 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
 
       if (!mountedRef.current) return
 
-      // Проверяем, есть ли у пользователя майнеры
-      setHasMiner(data.user_has_miners)
+      // Проверяем наличие необходимых данных
+      if (!data || typeof data !== "object") {
+        throw new Error("Некорректный формат данных")
+      }
 
-      // Обновляем состояние из полученных данных
+      // Безопасное извлечение данных с значениями по умолчанию
+      const mining_state = data.mining_state || {}
+      const rewards = data.rewards || {}
+      const pool = data.pool || {}
+
+      // Обновляем состояние с проверкой на undefined
+      setHasMiner(!!data.user_has_miners)
       setMiningState({
-        isMining: data.mining_state.is_mining,
-        amount: data.mining_state.is_mining ? data.mining_state.current_amount : data.mining_state.frozen_amount,
-        remainingSeconds: data.mining_state.remaining_seconds || 0,
-        canCollect: !data.mining_state.is_mining && data.mining_state.frozen_amount > 0,
-        hashrate: data.total_hashrate || 0,
-        hourlyRate: data.rewards.hourly_rate || 0,
-        poolName: data.pool.display_name || data.pool.name,
-        poolMultiplier: data.pool.multiplier,
-        poolFee: data.pool.fee_percent,
+        isMining: !!mining_state.is_mining,
+        amount: mining_state.is_mining
+          ? Number(mining_state.current_amount || 0)
+          : Number(mining_state.frozen_amount || 0),
+        remainingSeconds: Number(mining_state.remaining_seconds || 0),
+        canCollect: !mining_state.is_mining && Number(mining_state.frozen_amount || 0) > 0,
+        hashrate: Number(data.total_hashrate || 0),
+        hourlyRate: Number(rewards.hourly_rate || 0),
+        poolName: pool.display_name || pool.name || "Стандартный",
+        poolMultiplier: Number(pool.multiplier || 1),
+        poolFee: Number(pool.fee_percent || 0),
       })
 
       // Если майнинг активен, запускаем таймер
-      if (data.mining_state.is_mining) {
-        startLocalTimer(data.mining_state.remaining_seconds, data.rewards.hourly_rate)
+      if (mining_state.is_mining) {
+        startLocalTimer(Number(mining_state.remaining_seconds || 0), Number(rewards.hourly_rate || 0))
       }
 
       setLoading(false)
+      setError(null)
     } catch (err) {
       console.error("Ошибка при загрузке данных майнинга:", err)
       if (mountedRef.current) {
-        setError("Не удалось загрузить данные майнинга")
+        setError(err.message || "Не удалось загрузить данные майнинга")
         setLoading(false)
+
+        // Устанавливаем безопасные значения по умолчанию
+        setMiningState({
+          isMining: false,
+          amount: 0,
+          remainingSeconds: 0,
+          canCollect: false,
+          hashrate: 0,
+          hourlyRate: 0,
+          poolName: "Стандартный",
+          poolMultiplier: 1,
+          poolFee: 0,
+        })
       }
     }
   }
