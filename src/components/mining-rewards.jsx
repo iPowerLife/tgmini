@@ -44,20 +44,31 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   }
 
   // Функция для остановки майнинга
-  const stopMining = () => {
+  const stopMining = async () => {
     console.log("Остановка майнинга")
 
-    // Сбрасываем время начала
-    setStartTime(null)
+    try {
+      // Обновляем состояние в базе данных
+      const { error } = await supabase
+        .from("user_mining_state")
+        .update({
+          is_mining: false,
+          frozen_amount: currentAmount,
+          end_time: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
 
-    // Сбрасываем флаг майнинга
-    setIsMining(false)
+      if (error) throw error
 
-    // Разрешаем сбор наград
-    setCanCollect(true)
-
-    // Устанавливаем таймер в 0
-    setTimeUntilCollection(0)
+      // Обновляем локальное состояние
+      setStartTime(null)
+      setIsMining(false)
+      setCanCollect(true)
+      setTimeUntilCollection(0)
+    } catch (err) {
+      console.error("Error stopping mining:", err)
+      setError("Ошибка при остановке майнинга")
+    }
   }
 
   // Загрузка данных
@@ -85,6 +96,28 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
         console.log("Mining info data:", data)
         setMiningInfo(data)
+
+        // Устанавливаем начальные значения с учетом состояния майнинга
+        if (data?.mining_state && data?.rewards) {
+          const { is_mining, frozen_amount } = data.mining_state
+
+          // Если майнинг остановлен, используем замороженную сумму
+          if (!is_mining) {
+            setCurrentAmount(frozen_amount || 0)
+            setCanCollect(true)
+            setIsMining(false)
+            setStartTime(null)
+          } else {
+            // Если майнинг активен, используем текущую сумму
+            setCurrentAmount(data.rewards.amount || 0)
+            setCanCollect(false)
+            setIsMining(true)
+            // Восстанавливаем время начала майнинга
+            if (data.mining_state.start_time) {
+              setStartTime(new Date(data.mining_state.start_time).getTime())
+            }
+          }
+        }
 
         // Устанавливаем начальные значения
         if (data?.rewards) {
