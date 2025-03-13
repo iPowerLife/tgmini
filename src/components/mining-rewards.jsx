@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
-import { Coins, Clock, ArrowDown, AlertCircle, Cpu, Zap, Wallet, Play } from "lucide-react"
+import { Coins, Clock, ArrowDown, AlertCircle, Cpu, Zap, Wallet, Play, ShoppingCart } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
-export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
+export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   // Основные состояния
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [hasMiner, setHasMiner] = useState(false)
 
-  // Упрощенные состояния майнинга
+  // Состояния майнинга
   const [miningState, setMiningState] = useState({
     isMining: false,
     amount: 0,
@@ -17,14 +19,20 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     canCollect: false,
     hashrate: 0,
     hourlyRate: 0,
+    poolName: "Стандартный",
+    poolMultiplier: 1,
+    poolFee: 0,
   })
 
-  // Состояние для кнопки сбора
+  // Состояние для кнопок
   const [collecting, setCollecting] = useState(false)
+  const [starting, setStarting] = useState(false)
 
-  // Ref для таймера
+  // Ref для таймера и проверки монтирования
   const timerRef = useRef(null)
+  const updateTimerRef = useRef(null)
   const mountedRef = useRef(true)
+  const navigate = useNavigate()
 
   // Функция для форматирования чисел
   const formatNumber = (num, decimals = 2) => {
@@ -50,7 +58,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     try {
       console.log("Загрузка данных майнинга...")
 
-      const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
+      const { data, error } = await supabase.rpc("get_mining_info", {
         user_id_param: userId,
       })
 
@@ -60,6 +68,9 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
       if (!mountedRef.current) return
 
+      // Проверяем, есть ли у пользователя майнеры
+      setHasMiner(data.user_has_miners)
+
       // Обновляем состояние из полученных данных
       setMiningState({
         isMining: data.mining_state.is_mining,
@@ -68,6 +79,9 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         canCollect: !data.mining_state.is_mining && data.mining_state.frozen_amount > 0,
         hashrate: data.total_hashrate || 0,
         hourlyRate: data.rewards.hourly_rate || 0,
+        poolName: data.pool.display_name || data.pool.name,
+        poolMultiplier: data.pool.multiplier,
+        poolFee: data.pool.fee_percent,
       })
 
       // Если майнинг активен, запускаем таймер
@@ -101,8 +115,8 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         if (prev.remainingSeconds <= 1) {
           clearInterval(timerRef.current)
 
-          // Проверяем состояние майнинга на сервере
-          fetchMiningData()
+          // Обновляем состояние на сервере
+          updateMiningState()
 
           return {
             ...prev,
@@ -122,10 +136,29 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     }, 1000)
   }
 
+  // Функция для обновления состояния майнинга на сервере
+  const updateMiningState = async () => {
+    try {
+      const { data, error } = await supabase.rpc("update_mining_state", {
+        user_id_param: userId,
+      })
+
+      if (error) throw error
+
+      console.log("Состояние майнинга обновлено:", data)
+
+      // Обновляем локальное состояние
+      fetchMiningData()
+    } catch (err) {
+      console.error("Ошибка при обновлении состояния майнинга:", err)
+    }
+  }
+
   // Функция для запуска майнинга
   const startMining = async () => {
     try {
-      setLoading(true)
+      setStarting(true)
+      setError(null)
 
       const { data, error } = await supabase.rpc("start_mining", {
         user_id_param: userId,
@@ -133,14 +166,21 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
       if (error) throw error
 
+      if (!data.success) {
+        setError(data.error)
+        setStarting(false)
+        return
+      }
+
       console.log("Майнинг запущен:", data)
 
       // Обновляем данные с сервера
       await fetchMiningData()
+      setStarting(false)
     } catch (err) {
       console.error("Ошибка при запуске майнинга:", err)
       setError("Не удалось запустить майнинг")
-      setLoading(false)
+      setStarting(false)
     }
   }
 
@@ -150,6 +190,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
     try {
       setCollecting(true)
+      setError(null)
 
       const { data, error } = await supabase.rpc("collect_mining_rewards", {
         user_id_param: userId,
@@ -157,25 +198,36 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
       if (error) throw error
 
+      if (!data.success) {
+        setError(data.error)
+        setCollecting(false)
+        return
+      }
+
       console.log("Награды собраны:", data)
 
-      if (data.success) {
-        // Обновляем баланс в родительском компоненте
-        if (onBalanceUpdate && typeof onBalanceUpdate === "function") {
-          onBalanceUpdate(data.new_balance)
-        }
-
-        // Автоматически запускаем майнинг снова
-        await startMining()
-      } else {
-        setError(data.error || "Не удалось собрать награды")
-        setCollecting(false)
+      // Обновляем баланс в родительском компоненте
+      if (onBalanceUpdate && typeof onBalanceUpdate === "function") {
+        onBalanceUpdate(data.new_balance)
       }
+
+      // Показываем уведомление о собранной награде
+      const rewardAmount = data.amount
+      alert(`Вы получили ${formatNumber(rewardAmount)} 💎!`)
+
+      // Автоматически запускаем майнинг снова
+      await startMining()
+      setCollecting(false)
     } catch (err) {
       console.error("Ошибка при сборе наград:", err)
       setError("Ошибка при сборе наград")
       setCollecting(false)
     }
+  }
+
+  // Функция для перехода в магазин
+  const goToShop = () => {
+    navigate("/shop")
   }
 
   // Инициализация при монтировании
@@ -186,18 +238,18 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     fetchMiningData()
 
     // Настраиваем интервал для периодического обновления данных с сервера
-    const updateInterval = setInterval(() => {
-      if (mountedRef.current && !miningState.isMining) {
-        fetchMiningData()
+    updateTimerRef.current = setInterval(() => {
+      if (mountedRef.current) {
+        updateMiningState()
       }
-    }, 15000) // Обновляем каждые 15 секунд, но только если майнинг не активен
+    }, 30000) // Обновляем каждые 30 секунд
 
     return () => {
       mountedRef.current = false
 
       // Очищаем интервалы при размонтировании
       if (timerRef.current) clearInterval(timerRef.current)
-      clearInterval(updateInterval)
+      if (updateTimerRef.current) clearInterval(updateTimerRef.current)
     }
   }, [userId])
 
@@ -208,8 +260,8 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     if (!isMining) return canCollect ? 100 : 0
 
     // Получаем продолжительность майнинга из конфигурации
-    // Предполагаем, что это 3600 секунд (1 час) по умолчанию
-    const duration = 3600
+    // Предполагаем, что это 60 секунд (1 минута) по умолчанию
+    const duration = 60
 
     return Math.floor((1 - remainingSeconds / duration) * 100)
   }
@@ -220,7 +272,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   }
 
   // Если данные загружаются
-  if (loading && !miningState.hashrate) {
+  if (loading) {
     return (
       <div className="bg-[#151B26] p-4 rounded-xl mb-4">
         <div className="flex items-center gap-2 mb-3">
@@ -229,6 +281,39 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         </div>
         <div className="bg-[#1A2234] rounded-lg p-4 flex justify-center">
           <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+        </div>
+      </div>
+    )
+  }
+
+  // Если у пользователя нет майнеров
+  if (!hasMiner) {
+    return (
+      <div className="bg-[#151B26] p-4 rounded-xl mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Cpu className="text-blue-500" size={18} />
+            <span className="font-medium">Майнинг</span>
+          </div>
+        </div>
+
+        <div className="bg-[#1A2234] rounded-xl overflow-hidden mb-3">
+          <div className="p-6 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4">
+              <ShoppingCart className="text-blue-400" size={24} />
+            </div>
+            <h3 className="text-lg font-medium mb-2">У вас нет майнеров</h3>
+            <p className="text-gray-400 mb-4">
+              Для начала майнинга вам необходимо приобрести хотя бы один майнер в магазине.
+            </p>
+            <button
+              onClick={goToShop}
+              className="bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition-all shadow-lg shadow-blue-500/20"
+            >
+              <ShoppingCart size={18} />
+              <span>Перейти в магазин</span>
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -243,10 +328,10 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
           <span className="font-medium">Майнинг</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-gray-400">Пул: Стандартный</span>
+          <span className="text-gray-400">Пул: {miningState.poolName}</span>
           <div className="flex items-center gap-1">
-            <span className="text-blue-400">1x</span>
-            <span className="text-gray-400">5%</span>
+            <span className="text-blue-400">{miningState.poolMultiplier}x</span>
+            <span className="text-gray-400">{miningState.poolFee}%</span>
           </div>
         </div>
       </div>
@@ -347,11 +432,11 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
             {/* Кнопка сбора наград или запуска майнинга */}
             <button
               onClick={miningState.canCollect ? collectRewards : startMining}
-              disabled={miningState.isMining || collecting}
+              disabled={miningState.isMining || collecting || starting}
               className={`
                 w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
                 ${
-                  miningState.isMining || collecting
+                  miningState.isMining || collecting || starting
                     ? "bg-gray-800 text-gray-400 cursor-not-allowed"
                     : "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
                 }
@@ -361,6 +446,11 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   <span>Сбор наград...</span>
+                </>
+              ) : starting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Запуск майнинга...</span>
                 </>
               ) : miningState.isMining ? (
                 <>
