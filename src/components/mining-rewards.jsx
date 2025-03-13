@@ -11,9 +11,11 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [currentAmount, setCurrentAmount] = useState(0)
-  const [isMining, setIsMining] = useState(true) // По умолчанию майнинг активен
+  const [isMining, setIsMining] = useState(false) // По умолчанию майнинг не активен
   const [miningTimeLeft, setMiningTimeLeft] = useState(0)
   const [miningDuration, setMiningDuration] = useState(60) // 1 минута в секундах для тестирования
+  const [startTime, setStartTime] = useState(null)
+  const [endTime, setEndTime] = useState(null)
   const lastUpdateRef = useRef(null)
   const hourlyRateRef = useRef(0)
   const baseAmountRef = useRef(0)
@@ -59,7 +61,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     return () => clearInterval(interval)
   }, [miningInfo, calculateCurrentAmount])
 
-  // Загрузка данных
+  // Загрузка данных и проверка состояния майнинга
   useEffect(() => {
     if (!userId) return
 
@@ -73,6 +75,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       try {
         setError(null)
 
+        // Получаем информацию о майнинге
         const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
           user_id_param: userId,
         })
@@ -89,11 +92,60 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
           // Преобразуем часы в секунды
           const intervalInSeconds = data.config.collection_interval_hours * 3600
           setMiningDuration(intervalInSeconds)
-          // Запускаем таймер майнинга при загрузке данных
-          startMiningTimer(intervalInSeconds)
+        }
+
+        // Получаем состояние майнинга пользователя
+        const { data: miningState, error: miningStateError } = await supabase
+          .from("user_mining_state")
+          .select("*")
+          .eq("user_id", userId)
+          .single()
+
+        if (miningStateError && miningStateError.code !== "PGRST116") {
+          // PGRST116 - запись не найдена
+          console.error("Error fetching mining state:", miningStateError)
+        }
+
+        if (miningState) {
+          console.log("Mining state:", miningState)
+
+          // Проверяем, активен ли майнинг
+          if (miningState.is_mining) {
+            const startTimeDate = new Date(miningState.start_time)
+            const endTimeDate = new Date(miningState.end_time)
+            const now = new Date()
+
+            setStartTime(startTimeDate)
+            setEndTime(endTimeDate)
+
+            // Если время окончания майнинга еще не наступило
+            if (endTimeDate > now) {
+              // Рассчитываем оставшееся время в секундах
+              const timeLeftMs = endTimeDate.getTime() - now.getTime()
+              const timeLeftSeconds = Math.floor(timeLeftMs / 1000)
+
+              // Запускаем таймер с оставшимся временем
+              setIsMining(true)
+              setMiningTimeLeft(timeLeftSeconds)
+              startMiningTimerWithTime(timeLeftSeconds)
+            } else {
+              // Время майнинга истекло, но пользователь еще не собрал награды
+              setIsMining(false)
+              setMiningTimeLeft(0)
+            }
+          } else {
+            // Майнинг не активен
+            setIsMining(false)
+            setMiningTimeLeft(0)
+          }
         } else {
-          // Если нет данных, используем значение по умолчанию (1 минута для тестирования)
-          startMiningTimer(60)
+          // Если запись о состоянии майнинга не найдена, создаем ее
+          await supabase.from("user_mining_state").insert({
+            user_id: userId,
+            is_mining: false,
+            start_time: null,
+            end_time: null,
+          })
         }
       } catch (err) {
         console.error("Error loading mining info:", err)
@@ -127,15 +179,15 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     }
   }, [userId, lastUpdate, initialData])
 
-  // Функция для запуска таймера майнинга
-  const startMiningTimer = (duration) => {
+  // Функция для запуска таймера майнинга с указанным временем
+  const startMiningTimerWithTime = (timeSeconds) => {
     // Очищаем предыдущий таймер, если он был
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current)
     }
 
     setIsMining(true)
-    setMiningTimeLeft(duration)
+    setMiningTimeLeft(timeSeconds)
 
     // Запускаем таймер
     timerIntervalRef.current = setInterval(() => {
@@ -144,11 +196,50 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
           // Останавливаем майнинг, когда время истекло
           clearInterval(timerIntervalRef.current)
           setIsMining(false)
+
+          // Обновляем состояние майнинга в базе данных
+          updateMiningState(false, null, null)
+
           return 0
         }
         return prev - 1
       })
     }, 1000)
+  }
+
+  // Функция для запуска майнинга
+  const startMining = async () => {
+    if (isMining) return
+
+    const now = new Date()
+    const endTimeDate = new Date(now.getTime() + miningDuration * 1000)
+
+    setStartTime(now)
+    setEndTime(endTimeDate)
+
+    // Обновляем состояние майнинга в базе данных
+    await updateMiningState(true, now, endTimeDate)
+
+    // Запускаем таймер
+    startMiningTimerWithTime(miningDuration)
+  }
+
+  // Функция для обновления состояния майнинга в базе данных
+  const updateMiningState = async (isMining, startTime, endTime) => {
+    try {
+      const { error } = await supabase.from("user_mining_state").upsert({
+        user_id: userId,
+        is_mining: isMining,
+        start_time: startTime,
+        end_time: endTime,
+      })
+
+      if (error) {
+        console.error("Error updating mining state:", error)
+      }
+    } catch (err) {
+      console.error("Error in updateMiningState:", err)
+    }
   }
 
   // Сбор наград и перезапуск майнинга
@@ -163,7 +254,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     // Если майнинг остановлен и нет наград или награды уже собраны
     else if (!isMining) {
       // Запускаем майнинг снова
-      startMiningTimer(miningDuration)
+      await startMining()
     }
   }
 
