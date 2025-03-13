@@ -131,15 +131,14 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       }
 
       // Получаем интервал сбора из конфигурации
-      if (data?.config?.collection_interval_hours) {
-        const intervalInSeconds = data.config.collection_interval_hours * 3600
-        setMiningDuration(intervalInSeconds)
+      if (data?.config?.mining_duration_seconds) {
+        setMiningDuration(data.config.mining_duration_seconds)
       }
 
       setLoading(false)
     } catch (err) {
       console.error("Error loading mining info:", err)
-      setError("Ошибка п��и загрузке данных майнинга")
+      setError("Ошибка при загрузке данных майнинга")
       setLoading(false)
     }
   }
