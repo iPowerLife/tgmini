@@ -22,164 +22,133 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   const mainIntervalRef = useRef(null)
   const isComponentMounted = useRef(true)
 
-  // Функция для сохранения состояния майнинга
-  const saveMiningState = async (isMining, amount) => {
-    try {
-      console.log("Сохранение состояния майнинга:", { isMining, amount })
-
-      const { data, error } = await supabase.rpc("save_mining_state", {
-        user_id_param: userId,
-        is_mining_param: isMining,
-        frozen_amount_param: amount,
-      })
-
-      if (error) {
-        console.error("Ошибка при сохранении состояния майнинга:", error)
-        throw error
-      }
-
-      console.log("Состояние майнинга сохранено:", data)
-      return data
-    } catch (err) {
-      console.error("Ошибка в saveMiningState:", err)
-      return null
-    }
-  }
-
-  // Функция для получения состояния майнинга
-  const getMiningState = async () => {
-    try {
-      const { data, error } = await supabase.rpc("get_mining_state", {
-        user_id_param: userId,
-      })
-
-      if (error) {
-        console.error("Ошибка при получении состояния майнинга:", error)
-        throw error
-      }
-
-      console.log("Получено состояние майнинга:", data)
-      return data
-    } catch (err) {
-      console.error("Ошибка в getMiningState:", err)
-      return null
-    }
-  }
-
   // Функция для запуска майнинга
   const startMining = async () => {
-    console.log("Запуск майнинга")
+    try {
+      console.log("Запуск майнинга")
+      setLoading(true)
 
-    // Сбрасываем счетчики
-    setCurrentAmount(0)
-    setFrozenAmount(null)
-    setCanCollect(false)
+      // Вызываем функцию start_mining
+      const { data, error } = await supabase.rpc("start_mining", {
+        user_id_param: userId,
+        duration_seconds: miningDuration,
+      })
 
-    // Устанавливаем флаг майнинга
-    setIsMining(true)
+      if (error) throw error
 
-    // Устанавливаем таймер
-    setTimeUntilCollection(miningDuration)
+      console.log("Майнинг запущен:", data)
 
-    // Сохраняем состояние в базе данных
-    await saveMiningState(true, 0)
+      // Обновляем состояние
+      setIsMining(true)
+      setCanCollect(false)
+      setFrozenAmount(null)
+      setCurrentAmount(0)
+      setTimeUntilCollection(miningDuration)
+
+      // Обновляем данные
+      await loadData()
+    } catch (err) {
+      console.error("Ошибка при запуске майнинга:", err)
+      setError("Не удалось запустить майнинг")
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Функция для остановки майнинга
   const stopMining = async () => {
-    console.log("Остановка майнинга")
+    try {
+      console.log("Остановка майнинга")
+      setLoading(true)
 
-    // Фиксируем сумму
-    const finalAmount = currentAmount
-    setFrozenAmount(finalAmount)
+      // Обновляем состояние в базе данных
+      const { data, error } = await supabase
+        .from("mining_state")
+        .update({
+          is_mining: false,
+          frozen_amount: currentAmount,
+          last_updated: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
 
-    // Сбрасываем флаг майнинга
-    setIsMining(false)
+      if (error) throw error
 
-    // Разрешаем сбор наград
-    setCanCollect(true)
+      console.log("Майнинг остановлен")
 
-    // Устанавливаем таймер в 0
-    setTimeUntilCollection(0)
+      // Обновляем состояние
+      setIsMining(false)
+      setCanCollect(true)
+      setFrozenAmount(currentAmount)
+      setTimeUntilCollection(0)
 
-    // Сохраняем состояние в базе данных
-    await saveMiningState(false, finalAmount)
+      // Обновляем данные
+      await loadData()
+    } catch (err) {
+      console.error("Ошибка при остановке майнинга:", err)
+      setError("Не удалось остановить майнинг")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Загрузка данных
+  // Функция загрузки данных
+  const loadData = async () => {
+    if (!userId) return
+
+    try {
+      setLoading(true)
+      setError(null)
+      setShowError(false)
+
+      // Получаем информацию о майнинге
+      const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
+        user_id_param: userId,
+      })
+
+      if (error) throw error
+
+      console.log("Mining info data:", data)
+      setMiningInfo(data)
+
+      // Устанавливаем состояние на основе данных
+      if (data?.mining_state) {
+        const { is_mining, current_amount, frozen_amount, remaining_seconds } = data.mining_state
+
+        setIsMining(is_mining)
+        setCanCollect(!is_mining)
+
+        if (is_mining) {
+          // Если майнинг активен
+          setCurrentAmount(current_amount || 0)
+          setFrozenAmount(null)
+          setTimeUntilCollection(remaining_seconds || 0)
+        } else {
+          // Если майнинг остановлен
+          setCurrentAmount(frozen_amount || 0)
+          setFrozenAmount(frozen_amount || 0)
+          setTimeUntilCollection(0)
+        }
+      }
+
+      // Получаем интервал сбора из конфигурации
+      if (data?.config?.collection_interval_hours) {
+        const intervalInSeconds = data.config.collection_interval_hours * 3600
+        setMiningDuration(intervalInSeconds)
+      }
+
+      setLoading(false)
+    } catch (err) {
+      console.error("Error loading mining info:", err)
+      setError("Ошибка при загрузке данных майнинга")
+      setLoading(false)
+    }
+  }
+
+  // Загрузка данных при монтировании
   useEffect(() => {
     if (!userId) return
 
     isComponentMounted.current = true
-
-    // Изменяем функцию loadData в useEffect
-    const loadData = async () => {
-      if (!initialData) {
-        setLoading(true)
-      }
-
-      try {
-        setError(null)
-        setShowError(false)
-
-        // Получаем состояние майнинга
-        const { data: miningState, error: stateError } = await supabase
-          .from("mining_state")
-          .select("*")
-          .eq("user_id", userId)
-          .single()
-
-        if (stateError && stateError.code !== "PGRST116") {
-          throw stateError
-        }
-
-        // Получаем информацию о майнинге
-        const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
-          user_id_param: userId,
-        })
-
-        if (!isComponentMounted.current) return
-
-        if (error) throw error
-
-        console.log("Mining info data:", data)
-        setMiningInfo(data)
-
-        // Устанавливаем состояние на основе данных
-        if (data?.mining_state) {
-          const { is_mining, frozen_amount } = data.mining_state
-
-          setIsMining(is_mining)
-          setCanCollect(!is_mining)
-
-          if (!is_mining) {
-            setCurrentAmount(frozen_amount || 0)
-            setFrozenAmount(frozen_amount || 0)
-            setTimeUntilCollection(0)
-          } else {
-            setCurrentAmount(data.rewards?.amount || 0)
-            setFrozenAmount(null)
-            setTimeUntilCollection(miningDuration)
-          }
-        }
-
-        // Получаем интервал сбора из конфигурации
-        if (data?.config?.collection_interval_hours) {
-          const intervalInSeconds = data.config.collection_interval_hours * 3600
-          setMiningDuration(intervalInSeconds)
-        }
-      } catch (err) {
-        console.error("Error loading mining info:", err)
-        if (isComponentMounted.current) {
-          setError("Ошибка при загрузке данных майнинга")
-        }
-      } finally {
-        if (isComponentMounted.current) {
-          setLoading(false)
-        }
-      }
-    }
-
     loadData()
 
     return () => {
@@ -188,7 +157,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         clearInterval(mainIntervalRef.current)
       }
     }
-  }, [userId, initialData, miningDuration])
+  }, [userId, initialData])
 
   // Основной интервал для всех расчетов
   useEffect(() => {
@@ -247,8 +216,6 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         user_id_param: userId,
       })
 
-      if (!isComponentMounted.current) return
-
       if (error) throw error
 
       if (data.success) {
@@ -263,27 +230,14 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         if (onBalanceUpdate && data.new_balance !== undefined) {
           onBalanceUpdate(data.new_balance)
         }
-
-        // Обновляем данные
-        const { data: updatedData } = await supabase.rpc("get_mining_info_with_rewards", {
-          user_id_param: userId,
-        })
-
-        if (updatedData) {
-          setMiningInfo(updatedData)
-        }
       } else {
         setError(data.error || "Не удалось собрать награды")
       }
     } catch (err) {
       console.error("Error collecting rewards:", err)
-      if (isComponentMounted.current) {
-        setError("Ошибка при сборе наград")
-      }
+      setError("Ошибка при сборе наград")
     } finally {
-      if (isComponentMounted.current) {
-        setCollecting(false)
-      }
+      setCollecting(false)
     }
   }
 
@@ -473,7 +427,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
                 className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 relative"
                 style={{
                   width: `${
-                    isMining ? Math.floor((timeUntilCollection / miningDuration) * 100) : canCollect ? 100 : 0
+                    isMining ? Math.floor((1 - timeUntilCollection / miningDuration) * 100) : canCollect ? 100 : 0
                   }%`,
                   transition: "width 1s linear",
                 }}
