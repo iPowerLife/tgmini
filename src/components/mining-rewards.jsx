@@ -48,42 +48,55 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     const minutes = Math.floor((seconds % 3600) / 60)
     const secs = Math.floor(seconds % 60)
 
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  // Обновляем функцию fetchMiningData с дополнительной обработкой ошибок
+  // Обновляем функцию fetchMiningData с дополнительным логированием
   const fetchMiningData = async () => {
     if (!userId) {
+      console.error("ID пользователя не указан")
       setError("ID пользователя не указан")
       setLoading(false)
       return
     }
 
     try {
-      console.log("Загрузка данных майнинга...")
+      console.log("Загрузка данных майнинга для пользователя:", userId)
 
       const { data, error } = await supabase.rpc("get_mining_info", {
         user_id_param: userId,
       })
 
-      if (error) throw error
+      if (error) {
+        console.error("Ошибка при получении данных:", error)
+        throw error
+      }
 
-      console.log("Данные майнинга получены:", data)
+      console.log("Полученные данные майнинга:", data)
 
       if (!mountedRef.current) return
 
       // Проверяем наличие необходимых данных
       if (!data || typeof data !== "object") {
+        console.error("Некорректный формат данных:", data)
         throw new Error("Некорректный формат данных")
       }
+
+      // Проверяем наличие майнеров
+      const hasMiners = data.user_has_miners
+      console.log("Наличие майнеров:", hasMiners, "Общий хешрейт:", data.total_hashrate)
 
       // Безопасное извлечение данных с значениями по умолчанию
       const mining_state = data.mining_state || {}
       const rewards = data.rewards || {}
       const pool = data.pool || {}
 
+      console.log("Состояние майнинга:", mining_state)
+      console.log("Награды:", rewards)
+      console.log("Данные пула:", pool)
+
       // Обновляем состояние с проверкой на undefined
-      setHasMiner(!!data.user_has_miners)
+      setHasMiner(hasMiners)
       setMiningState({
         isMining: !!mining_state.is_mining,
         amount: mining_state.is_mining
