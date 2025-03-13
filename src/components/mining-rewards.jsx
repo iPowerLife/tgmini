@@ -16,59 +16,94 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   const [canCollect, setCanCollect] = useState(false)
   const [showError, setShowError] = useState(false)
   const [miningDuration, setMiningDuration] = useState(60) // 1 минута для тестирования
-
-  // Новое состояние для отслеживания времени начала майнинга
-  const [startTime, setStartTime] = useState(null)
+  const [frozenAmount, setFrozenAmount] = useState(null)
 
   // Один интервал для всех операций
   const mainIntervalRef = useRef(null)
   const isComponentMounted = useRef(true)
 
+  // Функция для сохранения состояния майнинга
+  const saveMiningState = async (isMining, amount) => {
+    try {
+      console.log("Сохранение состояния майнинга:", { isMining, amount })
+
+      const { data, error } = await supabase.rpc("save_mining_state", {
+        user_id_param: userId,
+        is_mining_param: isMining,
+        frozen_amount_param: amount,
+      })
+
+      if (error) {
+        console.error("Ошибка при сохранении состояния майнинга:", error)
+        throw error
+      }
+
+      console.log("Состояние майнинга сохранено:", data)
+      return data
+    } catch (err) {
+      console.error("Ошибка в saveMiningState:", err)
+      return null
+    }
+  }
+
+  // Функция для получения состояния майнинга
+  const getMiningState = async () => {
+    try {
+      const { data, error } = await supabase.rpc("get_mining_state", {
+        user_id_param: userId,
+      })
+
+      if (error) {
+        console.error("Ошибка при получении состояния майнинга:", error)
+        throw error
+      }
+
+      console.log("Получено состояние майнинга:", data)
+      return data
+    } catch (err) {
+      console.error("Ошибка в getMiningState:", err)
+      return null
+    }
+  }
+
   // Функция для запуска майнинга
-  const startMining = () => {
+  const startMining = async () => {
     console.log("Запуск майнинга")
 
-    // Устанавливаем время начала
-    const now = Date.now()
-    setStartTime(now)
+    // Сбрасываем счетчики
+    setCurrentAmount(0)
+    setFrozenAmount(null)
+    setCanCollect(false)
 
     // Устанавливаем флаг майнинга
     setIsMining(true)
 
-    // Сбрасываем счетчики
-    setCurrentAmount(0)
-    setCanCollect(false)
-
     // Устанавливаем таймер
     setTimeUntilCollection(miningDuration)
+
+    // Сохраняем состояние в базе данных
+    await saveMiningState(true, 0)
   }
 
   // Функция для остановки майнинга
   const stopMining = async () => {
     console.log("Остановка майнинга")
 
-    try {
-      // Обновляем состояние в базе данных
-      const { error } = await supabase
-        .from("user_mining_state")
-        .update({
-          is_mining: false,
-          frozen_amount: currentAmount,
-          end_time: new Date().toISOString(),
-        })
-        .eq("user_id", userId)
+    // Фиксируем сумму
+    const finalAmount = currentAmount
+    setFrozenAmount(finalAmount)
 
-      if (error) throw error
+    // Сбрасываем флаг майнинга
+    setIsMining(false)
 
-      // Обновляем локальное состояние
-      setStartTime(null)
-      setIsMining(false)
-      setCanCollect(true)
-      setTimeUntilCollection(0)
-    } catch (err) {
-      console.error("Error stopping mining:", err)
-      setError("Ошибка при остановке майнинга")
-    }
+    // Разрешаем сбор наград
+    setCanCollect(true)
+
+    // Устанавливаем таймер в 0
+    setTimeUntilCollection(0)
+
+    // Сохраняем состояние в базе данных
+    await saveMiningState(false, finalAmount)
   }
 
   // Загрузка данных
@@ -86,6 +121,10 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         setError(null)
         setShowError(false)
 
+        // Получаем состояние майнинга из базы данных
+        const miningState = await getMiningState()
+
+        // Получаем информацию о майнинге
         const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
           user_id_param: userId,
         })
@@ -97,46 +136,52 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         console.log("Mining info data:", data)
         setMiningInfo(data)
 
-        // Устанавливаем начальные значения с учетом состояния майнинга
-        if (data?.mining_state && data?.rewards) {
-          const { is_mining, frozen_amount } = data.mining_state
-
-          // Если майнинг остановлен, используем замороженную сумму
-          if (!is_mining) {
-            setCurrentAmount(frozen_amount || 0)
-            setCanCollect(true)
-            setIsMining(false)
-            setStartTime(null)
-          } else {
-            // Если майнинг активен, используем текущую сумму
-            setCurrentAmount(data.rewards.amount || 0)
+        // Устанавливаем состояние на основе данных из базы
+        if (miningState) {
+          if (miningState.is_mining) {
+            // Если майнинг активен
+            setIsMining(true)
             setCanCollect(false)
-            setIsMining(true)
-            // Восстанавливаем время начала майнинга
-            if (data.mining_state.start_time) {
-              setStartTime(new Date(data.mining_state.start_time).getTime())
+            setFrozenAmount(null)
+
+            // Устанавливаем начальную сумму
+            if (data?.rewards?.amount) {
+              setCurrentAmount(data.rewards.amount)
             }
-          }
-        }
 
-        // Устанавливаем начальные значения
-        if (data?.rewards) {
-          setCurrentAmount(data.rewards.amount || 0)
-
-          const timeUntil = data.rewards.time_until_collection || 0
-          setTimeUntilCollection(timeUntil)
-
-          // Можно собрать, если время вышло или разрешен сбор в любое время
-          const canCollectNow = timeUntil <= 0 || data.rewards.allow_anytime_collection
-          setCanCollect(canCollectNow)
-
-          // Майнинг активен, если нельзя собрать награды
-          if (!canCollectNow) {
-            setIsMining(true)
-            setStartTime(Date.now() - (miningDuration - timeUntil) * 1000)
+            // Устанавливаем таймер
+            if (data?.rewards?.time_until_collection) {
+              setTimeUntilCollection(data.rewards.time_until_collection)
+            } else {
+              setTimeUntilCollection(miningDuration)
+            }
           } else {
+            // Если майнинг остановлен
             setIsMining(false)
-            setStartTime(null)
+            setCanCollect(true)
+            setFrozenAmount(miningState.frozen_amount)
+            setCurrentAmount(miningState.frozen_amount)
+            setTimeUntilCollection(0)
+          }
+        } else {
+          // Если нет данных о состоянии, используем данные из API
+          if (data?.rewards) {
+            setCurrentAmount(data.rewards.amount || 0)
+
+            const timeUntil = data.rewards.time_until_collection || 0
+            setTimeUntilCollection(timeUntil)
+
+            // Можно собрать, если время вышло или разрешен сбор в любое время
+            const canCollectNow = timeUntil <= 0 || data.rewards.allow_anytime_collection
+            setCanCollect(canCollectNow)
+
+            // Майнинг активен, если нельзя собрать награды
+            setIsMining(!canCollectNow)
+
+            // Если майнинг остановлен, фиксируем сумму
+            if (canCollectNow) {
+              setFrozenAmount(data.rewards.amount || 0)
+            }
           }
         }
 
@@ -176,32 +221,29 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
     // Запускаем новый интервал
     mainIntervalRef.current = setInterval(() => {
-      // Если майнинг не активен, ничего не делаем
-      if (!isMining || !startTime || !miningInfo?.rewards?.hourly_rate) {
-        return
-      }
-
-      const now = Date.now()
-      const elapsedSeconds = (now - startTime) / 1000
-
-      // Если время майнинга истекло
-      if (elapsedSeconds >= miningDuration) {
-        console.log("Время майнинга истекло")
-        stopMining()
+      // Если майнинг не активен или сумма заморожена, ничего не делаем
+      if (!isMining || frozenAmount !== null) {
         return
       }
 
       // Обновляем таймер
-      const remainingSeconds = miningDuration - elapsedSeconds
-      setTimeUntilCollection(remainingSeconds)
+      setTimeUntilCollection((prev) => {
+        if (prev <= 1) {
+          // Когда таймер достигает нуля, останавливаем майнинг
+          stopMining()
+          return 0
+        }
+        return prev - 1
+      })
 
-      // Рассчитываем текущую сумму
-      const hourlyRate = miningInfo.rewards.hourly_rate
-      const secondRate = hourlyRate / 3600
-      const amount = secondRate * elapsedSeconds
-
-      // Обновляем сумму
-      setCurrentAmount(amount)
+      // Обновляем сумму только если майнинг активен
+      if (isMining && miningInfo?.rewards?.hourly_rate) {
+        setCurrentAmount((prev) => {
+          // Рассчитываем прирост за 1 секунду (часовая ставка / 3600)
+          const increment = miningInfo.rewards.hourly_rate / 3600
+          return prev + increment
+        })
+      }
     }, 1000)
 
     return () => {
@@ -209,7 +251,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         clearInterval(mainIntervalRef.current)
       }
     }
-  }, [isMining, startTime, miningInfo?.rewards?.hourly_rate, miningDuration])
+  }, [isMining, frozenAmount, miningInfo?.rewards?.hourly_rate])
 
   // Сбор наград
   const collectRewards = async () => {
@@ -219,6 +261,9 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       setCollecting(true)
       setError(null)
       setSuccess(null)
+
+      // Используем замороженную сумму, если она есть
+      const amountToCollect = frozenAmount !== null ? frozenAmount : currentAmount
 
       const { data, error } = await supabase.rpc("collect_mining_rewards", {
         user_id_param: userId,
@@ -230,11 +275,11 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
       if (data.success) {
         // Показываем сообщение об успехе
-        const formattedAmount = Number(currentAmount).toFixed(2)
+        const formattedAmount = Number(amountToCollect).toFixed(2)
         setSuccess(`Вы успешно собрали ${formattedAmount} монет!`)
 
         // Запускаем майнинг заново
-        startMining()
+        await startMining()
 
         // Обновляем баланс в родительском компоненте
         if (onBalanceUpdate && data.new_balance !== undefined) {
@@ -298,6 +343,9 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
+
+  // Определяем отображаемую сумму
+  const displayAmount = frozenAmount !== null ? frozenAmount : currentAmount
 
   if (!miningInfo) {
     return (
@@ -373,7 +421,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
               <span>Всего добыто:</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="font-medium text-white">{formatNumber(currentAmount)}</span>
+              <span className="font-medium text-white">{formatNumber(displayAmount)}</span>
               <span className="text-blue-400">💎</span>
             </div>
           </div>
