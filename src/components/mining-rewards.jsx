@@ -2,19 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { supabase } from "../supabase"
-import {
-  Coins,
-  Clock,
-  ArrowDown,
-  AlertCircle,
-  CheckCircle2,
-  Cpu,
-  Zap,
-  Calendar,
-  Wallet,
-  Play,
-  Pause,
-} from "lucide-react"
+import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Cpu, Zap, Calendar, Wallet, Play } from "lucide-react"
 
 export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   const [loading, setLoading] = useState(!initialData)
@@ -23,9 +11,9 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [currentAmount, setCurrentAmount] = useState(0)
-  const [isMining, setIsMining] = useState(false)
+  const [isMining, setIsMining] = useState(true) // По умолчанию майнинг активен
   const [miningTimeLeft, setMiningTimeLeft] = useState(0)
-  const [miningDuration, setMiningDuration] = useState(3600) // 1 час в секундах по умолчанию
+  const [miningDuration, setMiningDuration] = useState(60) // 1 минута в секундах для тестирования
   const lastUpdateRef = useRef(null)
   const hourlyRateRef = useRef(0)
   const baseAmountRef = useRef(0)
@@ -95,6 +83,18 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
         console.log("Mining info data:", data)
         setMiningInfo(data)
+
+        // Получаем интервал сбора из конфигурации
+        if (data?.config?.collection_interval_hours) {
+          // Преобразуем часы в секунды
+          const intervalInSeconds = data.config.collection_interval_hours * 3600
+          setMiningDuration(intervalInSeconds)
+          // Запускаем таймер майнинга при загрузке данных
+          startMiningTimer(intervalInSeconds)
+        } else {
+          // Если нет данных, используем значение по умолчанию (1 минута для тестирования)
+          startMiningTimer(60)
+        }
       } catch (err) {
         console.error("Error loading mining info:", err)
         if (isComponentMounted.current) {
@@ -127,12 +127,15 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     }
   }, [userId, lastUpdate, initialData])
 
-  // Функция для запуска майнинга
-  const startMining = () => {
-    if (isMining) return
+  // Функция для запуска таймера майнинга
+  const startMiningTimer = (duration) => {
+    // Очищаем предыдущий таймер, если он был
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current)
+    }
 
     setIsMining(true)
-    setMiningTimeLeft(miningDuration)
+    setMiningTimeLeft(duration)
 
     // Запускаем таймер
     timerIntervalRef.current = setInterval(() => {
@@ -148,13 +151,19 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     }, 1000)
   }
 
-  // Функция для остановки майнинга
-  const stopMining = () => {
-    if (!isMining) return
+  // Сбор наград и перезапуск майнинга
+  const handleMiningAction = async () => {
+    // Если майнинг активен или идет сбор наград, ничего не делаем
+    if (isMining || collecting) return
 
-    setIsMining(false)
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current)
+    // Если майнинг остановлен и есть награды для сбора
+    if (!isMining && currentAmount > 0) {
+      await collectRewards()
+    }
+    // Если майнинг остановлен и нет наград или награды уже собраны
+    else if (!isMining) {
+      // Запускаем майнинг снова
+      startMiningTimer(miningDuration)
     }
   }
 
@@ -239,19 +248,6 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  const formatCollectionTime = (seconds) => {
-    if (!seconds || seconds <= 0) return "Доступно сейчас"
-
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-
-    if (hours > 0) {
-      return `${hours} ч ${minutes} мин`
-    } else {
-      return `${minutes} мин`
-    }
-  }
-
   if (!miningInfo) {
     return (
       <div className="bg-[#0F1729]/90 p-4 rounded-xl mb-4">
@@ -282,6 +278,33 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   // Определяем, можно ли собрать награды
   // Теперь можно собрать награды, если майнинг остановлен (время истекло) или если разрешен сбор в любое время
   const canCollectNow = (miningTimeLeft === 0 || allowAnytimeCollection) && rewardAmount > 0
+
+  // Определяем текст и стиль кнопки в зависимости от состояния
+  let buttonText = "Собрать награды"
+  let buttonIcon = <ArrowDown size={18} />
+  let buttonClass =
+    "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
+  let isButtonDisabled = false
+
+  if (collecting) {
+    buttonText = "Сбор наград..."
+    buttonIcon = <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+    isButtonDisabled = true
+  } else if (isMining) {
+    buttonText = "Майнинг активен"
+    buttonClass = "bg-gray-800 text-gray-400 cursor-not-allowed"
+    isButtonDisabled = true
+  } else if (miningTimeLeft === 0 && currentAmount <= 0) {
+    buttonText = "Запустить майнинг"
+    buttonIcon = <Play size={18} />
+    buttonClass =
+      "bg-gradient-to-r from-green-500 to-green-400 hover:from-green-400 hover:to-green-300 text-white shadow-lg shadow-green-500/20"
+  } else if (miningTimeLeft === 0 && currentAmount > 0) {
+    buttonText = "Собрать награды"
+    buttonIcon = <ArrowDown size={18} />
+  } else {
+    isButtonDisabled = true
+  }
 
   return (
     <div className="bg-[#151B26] p-4 rounded-xl mb-4">
@@ -411,65 +434,17 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
               </div>
             </div>
 
-            {/* Кнопки управления майнингом */}
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <button
-                onClick={startMining}
-                disabled={isMining || miningTimeLeft > 0}
-                className={`
-                py-2 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
-                ${
-                  !isMining && miningTimeLeft === 0
-                    ? "bg-gradient-to-r from-green-500 to-green-400 hover:from-green-400 hover:to-green-300 text-white shadow-lg shadow-green-500/20"
-                    : "bg-gray-800 text-gray-400 cursor-not-allowed"
-                }
-              `}
-              >
-                <Play size={18} />
-                <span>Запустить майнинг</span>
-              </button>
-
-              <button
-                onClick={stopMining}
-                disabled={!isMining}
-                className={`
-                py-2 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
-                ${
-                  isMining
-                    ? "bg-gradient-to-r from-red-500 to-red-400 hover:from-red-400 hover:to-red-300 text-white shadow-lg shadow-red-500/20"
-                    : "bg-gray-800 text-gray-400 cursor-not-allowed"
-                }
-              `}
-              >
-                <Pause size={18} />
-                <span>Остановить майнинг</span>
-              </button>
-            </div>
-
-            {/* Кнопка сбора наград */}
+            {/* Кнопка сбора наград / запуска майнинга */}
             <button
-              onClick={collectRewards}
-              disabled={!canCollectNow || collecting}
+              onClick={handleMiningAction}
+              disabled={isButtonDisabled}
               className={`
               w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
-              ${
-                canCollectNow && !collecting
-                  ? "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
-                  : "bg-gray-800 text-gray-400 cursor-not-allowed"
-              }
+              ${isButtonDisabled ? "bg-gray-800 text-gray-400 cursor-not-allowed" : buttonClass}
             `}
             >
-              {collecting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Сбор наград...</span>
-                </>
-              ) : (
-                <>
-                  <ArrowDown size={18} />
-                  <span>Собрать награды</span>
-                </>
-              )}
+              {buttonIcon}
+              <span>{buttonText}</span>
             </button>
           </div>
         </div>
