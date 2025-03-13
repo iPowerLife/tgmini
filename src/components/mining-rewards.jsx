@@ -21,6 +21,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   // Один интервал для всех операций
   const mainIntervalRef = useRef(null)
   const isComponentMounted = useRef(true)
+  const lastUpdateRef = useRef(null)
 
   // Функция для запуска майнинга
   const startMining = async () => {
@@ -44,6 +45,9 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       setFrozenAmount(null)
       setCurrentAmount(0)
       setTimeUntilCollection(miningDuration)
+
+      // Сбрасываем время последнего обновления
+      lastUpdateRef.current = null
 
       // Обновляем данные
       await loadData()
@@ -96,7 +100,6 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     if (!userId) return
 
     try {
-      setLoading(true)
       setError(null)
       setShowError(false)
 
@@ -108,38 +111,41 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       if (error) throw error
 
       console.log("Mining info data:", data)
-      setMiningInfo(data)
 
-      // Устанавливаем состояние на основе данных
-      if (data?.mining_state) {
-        const { is_mining, current_amount, frozen_amount, remaining_seconds } = data.mining_state
+      // Обновляем состояние только если компонент все еще смонтирован
+      if (isComponentMounted.current) {
+        setMiningInfo(data)
 
-        setIsMining(is_mining)
-        setCanCollect(!is_mining)
+        // Устанавливаем состояние на основе данных
+        if (data?.mining_state) {
+          const { is_mining, current_amount, frozen_amount, remaining_seconds } = data.mining_state
 
-        if (is_mining) {
-          // Если майнинг активен
-          setCurrentAmount(current_amount || 0)
-          setFrozenAmount(null)
-          setTimeUntilCollection(remaining_seconds || 0)
-        } else {
-          // Если майнинг остановлен
-          setCurrentAmount(frozen_amount || 0)
-          setFrozenAmount(frozen_amount || 0)
-          setTimeUntilCollection(0)
+          setIsMining(is_mining)
+          setCanCollect(!is_mining)
+
+          if (is_mining) {
+            // Если майнинг активен
+            setCurrentAmount(current_amount || 0)
+            setFrozenAmount(null)
+            setTimeUntilCollection(remaining_seconds || 0)
+          } else {
+            // Если майнинг остановлен
+            setCurrentAmount(frozen_amount || 0)
+            setFrozenAmount(frozen_amount || 0)
+            setTimeUntilCollection(0)
+          }
+        }
+
+        // Получаем интервал сбора из конфигурации
+        if (data?.config?.mining_duration_seconds) {
+          setMiningDuration(data.config.mining_duration_seconds)
         }
       }
-
-      // Получаем интервал сбора из конфигурации
-      if (data?.config?.mining_duration_seconds) {
-        setMiningDuration(data.config.mining_duration_seconds)
-      }
-
-      setLoading(false)
     } catch (err) {
       console.error("Error loading mining info:", err)
-      setError("Ошибка при загрузке данных майнинга")
-      setLoading(false)
+      if (isComponentMounted.current) {
+        setError("Ошибка при загрузке данных майнинга")
+      }
     }
   }
 
@@ -166,7 +172,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     }
 
     // Запускаем новый интервал
-    mainIntervalRef.current = setInterval(() => {
+    mainIntervalRef.current = setInterval(async () => {
       // Если майнинг не активен или сумма заморожена, ничего не делаем
       if (!isMining || frozenAmount !== null) {
         return
@@ -174,12 +180,13 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
       // Обновляем таймер
       setTimeUntilCollection((prev) => {
-        if (prev <= 1) {
+        const newTime = prev - 1
+        if (newTime <= 0) {
           // Когда таймер достигает нуля, останавливаем майнинг
           stopMining()
           return 0
         }
-        return prev - 1
+        return newTime
       })
 
       // Обновляем сумму только если майнинг активен
@@ -187,8 +194,26 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         setCurrentAmount((prev) => {
           // Рассчитываем прирост за 1 секунду (часовая ставка / 3600)
           const increment = miningInfo.rewards.hourly_rate / 3600
-          return prev + increment
+          const newAmount = prev + increment
+
+          // Обновляем отображаемую сумму
+          setMiningInfo((prevInfo) => ({
+            ...prevInfo,
+            rewards: {
+              ...prevInfo.rewards,
+              amount: newAmount,
+            },
+          }))
+
+          return newAmount
         })
+      }
+
+      // Обновляем данные с сервера каждые 5 секунд
+      const now = Date.now()
+      if (!lastUpdateRef.current || now - lastUpdateRef.current >= 5000) {
+        await loadData()
+        lastUpdateRef.current = now
       }
     }, 1000)
 
