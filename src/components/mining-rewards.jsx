@@ -29,22 +29,28 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   const [canCollect, setCanCollect] = useState(false)
   const [showError, setShowError] = useState(false)
 
-  // Функция для расчета текущего количества монет
+  // Добавляем состояние для отслеживания последней добытой суммы
+  const [frozenAmount, setFrozenAmount] = useState(0)
+
+  // Обновляем функцию расчета текущего количества монет
   const calculateCurrentAmount = useCallback(() => {
-    if (!miningInfo?.rewards) return 0
+    if (!miningInfo?.rewards || !isMining) {
+      // Если майнинг остановлен, возвращаем замороженную сумму
+      return frozenAmount
+    }
 
     const now = Date.now()
     const lastUpdate = new Date(miningInfo.rewards.last_update).getTime()
     const hourlyRate = miningInfo.rewards.hourly_rate
-    const baseAmount = miningInfo.rewards.base_amount || 0 // Добавляем значение по умолчанию
+    const baseAmount = miningInfo.rewards.base_amount || 0
 
     // Рассчитываем время с последнего обновления в часах
     const hoursSinceUpdate = Math.max(0, (now - lastUpdate) / (1000 * 3600))
 
-    // Рассчитываем текущую сумму и убеждаемся, что она не отрицательная
+    // Рассчитываем текущую сумму
     const amount = baseAmount + hourlyRate * hoursSinceUpdate
     return Math.max(0, amount)
-  }, [miningInfo])
+  }, [miningInfo, isMining, frozenAmount])
 
   // Обновляем текущую сумму каждую секунду
   useEffect(() => {
@@ -55,16 +61,26 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     hourlyRateRef.current = miningInfo.rewards.hourly_rate
     baseAmountRef.current = miningInfo.rewards.base_amount
 
-    // Устанавливаем начальное значение
-    setCurrentAmount(calculateCurrentAmount())
-
-    // Обновляем значение каждую секунду
-    const interval = setInterval(() => {
+    // Обновляем useEffect для обработки остановки майнинга
+    // Если майнинг активен, обновляем сумму каждую секунду
+    let interval
+    if (isMining) {
       setCurrentAmount(calculateCurrentAmount())
-    }, 1000)
+      interval = setInterval(() => {
+        const amount = calculateCurrentAmount()
+        setCurrentAmount(amount)
+      }, 1000)
+    } else {
+      // Если майнинг остановлен, замораживаем текущую сумму
+      setFrozenAmount(currentAmount)
+    }
 
-    return () => clearInterval(interval)
-  }, [miningInfo, calculateCurrentAmount])
+    return () => {
+      if (interval) {
+        clearInterval(interval)
+      }
+    }
+  }, [miningInfo, calculateCurrentAmount, isMining, currentAmount])
 
   // Функция для проверки возможности сбора наград
   const checkCollectionAvailability = useCallback(() => {
@@ -208,27 +224,23 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     }
   }, [userId, initialData])
 
-  // Функция для запуска таймера майнинга с указанным временем
+  // Обновляем функцию startMiningTimerWithTime
   const startMiningTimerWithTime = (timeSeconds) => {
-    // Очищаем предыдущий таймер, если он был
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current)
     }
 
     setIsMining(true)
     setMiningTimeLeft(timeSeconds)
+    setFrozenAmount(0) // Сбрасываем замороженную сумму при старте майнинга
 
-    // Запускаем таймер
     timerIntervalRef.current = setInterval(() => {
       setMiningTimeLeft((prev) => {
         if (prev <= 1) {
-          // Останавливаем майнинг, когда время истекло
           clearInterval(timerIntervalRef.current)
-          setIsMining(false)
-
-          // Обновляем состояние майнинга в базе данных
+          setIsMining(false) // Останавливаем майнинг
+          setFrozenAmount(currentAmount) // Замораживаем текущую сумму
           updateMiningState(false, null, null)
-
           return 0
         }
         return prev - 1
@@ -288,7 +300,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     }
   }
 
-  // Сбор наград
+  // Обновляем функцию collectRewards
   const collectRewards = async () => {
     if (!userId || collecting) return
 
@@ -306,28 +318,27 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       if (error) throw error
 
       if (data.success) {
-        // Показываем сообщение об успехе с округлением до 2 знаков
         const formattedAmount = Number(data.amount).toFixed(2)
         setSuccess(`Вы успешно собрали ${formattedAmount} монет!`)
 
-        // Сразу устанавливаем currentAmount в 0, чтобы избежать отрицательных значений
+        // Сбрасываем все счетчики
         setCurrentAmount(0)
+        setFrozenAmount(0)
+        setIsMining(false)
+        setMiningTimeLeft(0)
 
         // Обновляем данные после сбора
         setLastUpdate(Date.now())
 
-        // Обновляем баланс в родительском компоненте
         if (onBalanceUpdate && data.new_balance !== undefined) {
           onBalanceUpdate(data.new_balance)
         }
 
-        // Получаем обновленные данные о майнинге
         const { data: updatedData } = await supabase.rpc("get_mining_info_with_rewards", {
           user_id_param: userId,
         })
 
         if (updatedData) {
-          // Устанавливаем новые данные с обнуленным начальным значением
           setMiningInfo({
             ...updatedData,
             rewards: {
@@ -427,6 +438,9 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     isButtonDisabled = true
   }
 
+  // В JSX используем замороженную сумму, если майнинг остановлен
+  const displayAmount = isMining ? currentAmount : frozenAmount
+
   return (
     <div className="bg-[#151B26] p-4 rounded-xl mb-4">
       {/* Заголовок с информацией о пуле */}
@@ -484,7 +498,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
               <span>Всего добыто:</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="font-medium text-white">{formatNumber(currentAmount)}</span>
+              <span className="font-medium text-white">{formatNumber(displayAmount)}</span>
               <span className="text-blue-400">💎</span>
             </div>
           </div>
