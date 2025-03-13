@@ -404,6 +404,11 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   <span>Сбор наград...</span>
                 </>
+              ) : isMining ? (
+                <>
+                  <Play size={18} className="animate-pulse" />
+                  <span>Майнинг</span>
+                </>
               ) : miningAmount <= 0 || !canCollect ? (
                 <>
                   <Play size={18} />
