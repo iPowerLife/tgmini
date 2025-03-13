@@ -112,6 +112,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
     isComponentMounted.current = true
 
+    // Изменяем функцию loadData в useEffect
     const loadData = async () => {
       if (!initialData) {
         setLoading(true)
@@ -121,8 +122,16 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         setError(null)
         setShowError(false)
 
-        // Получаем состояние майнинга из базы данных
-        const miningState = await getMiningState()
+        // Получаем состояние майнинга
+        const { data: miningState, error: stateError } = await supabase
+          .from("mining_state")
+          .select("*")
+          .eq("user_id", userId)
+          .single()
+
+        if (stateError && stateError.code !== "PGRST116") {
+          throw stateError
+        }
 
         // Получаем информацию о майнинге
         const { data, error } = await supabase.rpc("get_mining_info_with_rewards", {
@@ -136,52 +145,21 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
         console.log("Mining info data:", data)
         setMiningInfo(data)
 
-        // Устанавливаем состояние на основе данных из базы
-        if (miningState) {
-          if (miningState.is_mining) {
-            // Если майнинг активен
-            setIsMining(true)
-            setCanCollect(false)
-            setFrozenAmount(null)
+        // Устанавливаем состояние на основе данных
+        if (data?.mining_state) {
+          const { is_mining, frozen_amount } = data.mining_state
 
-            // Устанавливаем начальную сумму
-            if (data?.rewards?.amount) {
-              setCurrentAmount(data.rewards.amount)
-            }
+          setIsMining(is_mining)
+          setCanCollect(!is_mining)
 
-            // Устанавливаем таймер
-            if (data?.rewards?.time_until_collection) {
-              setTimeUntilCollection(data.rewards.time_until_collection)
-            } else {
-              setTimeUntilCollection(miningDuration)
-            }
-          } else {
-            // Если майнинг остановлен
-            setIsMining(false)
-            setCanCollect(true)
-            setFrozenAmount(miningState.frozen_amount)
-            setCurrentAmount(miningState.frozen_amount)
+          if (!is_mining) {
+            setCurrentAmount(frozen_amount || 0)
+            setFrozenAmount(frozen_amount || 0)
             setTimeUntilCollection(0)
-          }
-        } else {
-          // Если нет данных о состоянии, используем данные из API
-          if (data?.rewards) {
-            setCurrentAmount(data.rewards.amount || 0)
-
-            const timeUntil = data.rewards.time_until_collection || 0
-            setTimeUntilCollection(timeUntil)
-
-            // Можно собрать, если время вышло или разрешен сбор в любое время
-            const canCollectNow = timeUntil <= 0 || data.rewards.allow_anytime_collection
-            setCanCollect(canCollectNow)
-
-            // Майнинг активен, если нельзя собрать награды
-            setIsMining(!canCollectNow)
-
-            // Если майнинг остановлен, фиксируем сумму
-            if (canCollectNow) {
-              setFrozenAmount(data.rewards.amount || 0)
-            }
+          } else {
+            setCurrentAmount(data.rewards?.amount || 0)
+            setFrozenAmount(null)
+            setTimeUntilCollection(miningDuration)
           }
         }
 
