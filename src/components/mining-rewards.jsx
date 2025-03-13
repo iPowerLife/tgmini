@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
-import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Cpu, Zap, Calendar, Wallet } from "lucide-react"
+import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Cpu, Zap, Calendar, Wallet, Play } from "lucide-react"
 
 export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   const [loading, setLoading] = useState(!initialData)
@@ -139,7 +139,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       setLoading(false)
     } catch (err) {
       console.error("Error loading mining info:", err)
-      setError("Ошибка при загрузке данных майнинга")
+      setError("Ошибка п��и загрузке данных майнинга")
       setLoading(false)
     }
   }
@@ -436,14 +436,14 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
               </div>
             </div>
 
-            {/* Кнопка сбора наград */}
+            {/* Кнопка сбора наград или запуска майнинга */}
             <button
-              onClick={handleMiningAction}
-              disabled={!canCollect || collecting}
+              onClick={displayAmount <= 0 ? startMining : handleMiningAction}
+              disabled={(!canCollect && displayAmount > 0) || collecting}
               className={`
                 w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
                 ${
-                  !canCollect || collecting
+                  (!canCollect && displayAmount > 0) || collecting
                     ? "bg-gray-800 text-gray-400 cursor-not-allowed"
                     : "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
                 }
@@ -453,6 +453,11 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   <span>Сбор наград...</span>
+                </>
+              ) : displayAmount <= 0 ? (
+                <>
+                  <Play size={18} />
+                  <span>Запуск майнинга</span>
                 </>
               ) : (
                 <>
