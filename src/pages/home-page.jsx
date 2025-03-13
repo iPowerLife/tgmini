@@ -401,11 +401,6 @@ const HomePage = ({ user: initialUser }) => {
               `}</style>
               </div>
             </div>
-
-            {/* Кнопка майнинга */}
-            <button className="bg-[#3B82F6]/80 backdrop-blur-sm hover:bg-blue-600/80 text-white py-2 px-4 rounded-lg font-bold transition-colors cursor-pointer">
-              Начать майнинг и таймер
-            </button>
           </div>
 
           {/* Правая колонка с кнопками */}

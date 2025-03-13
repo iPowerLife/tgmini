@@ -2,7 +2,19 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { supabase } from "../supabase"
-import { Coins, Clock, ArrowDown, AlertCircle, CheckCircle2, Cpu, Zap, Calendar, Wallet } from "lucide-react"
+import {
+  Coins,
+  Clock,
+  ArrowDown,
+  AlertCircle,
+  CheckCircle2,
+  Cpu,
+  Zap,
+  Calendar,
+  Wallet,
+  Play,
+  Pause,
+} from "lucide-react"
 
 export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   const [loading, setLoading] = useState(!initialData)
@@ -11,11 +23,15 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [currentAmount, setCurrentAmount] = useState(0)
+  const [isMining, setIsMining] = useState(false)
+  const [miningTimeLeft, setMiningTimeLeft] = useState(0)
+  const [miningDuration, setMiningDuration] = useState(3600) // 1 час в секундах по умолчанию
   const lastUpdateRef = useRef(null)
   const hourlyRateRef = useRef(0)
   const baseAmountRef = useRef(0)
   const [lastUpdate, setLastUpdate] = useState(Date.now())
   const intervalRef = useRef(null)
+  const timerIntervalRef = useRef(null)
   const isComponentMounted = useRef(true)
 
   // Функция для расчета текущего количества монет
@@ -105,8 +121,42 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current)
+      }
     }
   }, [userId, lastUpdate, initialData])
+
+  // Функция для запуска майнинга
+  const startMining = () => {
+    if (isMining) return
+
+    setIsMining(true)
+    setMiningTimeLeft(miningDuration)
+
+    // Запускаем таймер
+    timerIntervalRef.current = setInterval(() => {
+      setMiningTimeLeft((prev) => {
+        if (prev <= 1) {
+          // Останавливаем майнинг, когда время истекло
+          clearInterval(timerIntervalRef.current)
+          setIsMining(false)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  // Функция для остановки майнинга
+  const stopMining = () => {
+    if (!isMining) return
+
+    setIsMining(false)
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current)
+    }
+  }
 
   // Сбор наград
   const collectRewards = async () => {
@@ -180,6 +230,16 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   }
 
   const formatTime = (seconds) => {
+    if (!seconds || seconds <= 0) return "00:00:00"
+
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
+
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  }
+
+  const formatCollectionTime = (seconds) => {
     if (!seconds || seconds <= 0) return "Доступно сейчас"
 
     const hours = Math.floor(seconds / 3600)
@@ -218,6 +278,10 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
 
   // Получаем количество дней в майнинге (пока заглушка)
   const daysInMining = 1
+
+  // Определяем, можно ли собрать награды
+  // Теперь можно собрать награды, если майнинг остановлен (время истекло) или если разрешен сбор в любое время
+  const canCollectNow = (miningTimeLeft === 0 || allowAnytimeCollection) && rewardAmount > 0
 
   return (
     <div className="bg-[#151B26] p-4 rounded-xl mb-4">
@@ -305,6 +369,19 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
               <span className="font-medium text-white">{daysInMining}</span>
             </div>
           </div>
+
+          {/* Таймер майнинга */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-gray-400">
+              <Clock size={16} className="text-orange-400" />
+              <span>Время майнинга:</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className={`font-medium ${isMining ? "text-green-400" : "text-white"}`}>
+                {formatTime(miningTimeLeft)}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Прогресс и кнопка сбора */}
@@ -314,39 +391,73 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
               <div className="flex items-center gap-1 text-sm text-gray-400">
                 <Clock size={14} />
                 <span>
-                  {allowAnytimeCollection
-                    ? "Сбор доступен в любое время"
-                    : canCollect
-                      ? "Можно собрать сейчас"
-                      : `До сбора: ${formatTime(timeUntilCollection)}`}
+                  {miningTimeLeft === 0 ? "Майнинг остановлен" : isMining ? "Майнинг активен" : "Майнинг не запущен"}
                 </span>
               </div>
-              <div className="text-sm text-gray-400">{formatNumber(collectionProgress)}%</div>
+              <div className="text-sm text-gray-400">
+                {isMining ? `${Math.floor((miningTimeLeft / miningDuration) * 100)}%` : "0%"}
+              </div>
             </div>
 
             <div className="w-full bg-gray-800 rounded-full h-1.5 mb-3 overflow-hidden">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 relative"
                 style={{
-                  width: `${Math.min(100, collectionProgress)}%`,
-                  transition: "width 0.3s ease-in-out",
+                  width: `${isMining ? Math.floor((miningTimeLeft / miningDuration) * 100) : 0}%`,
+                  transition: "width 1s linear",
                 }}
               >
                 <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
               </div>
             </div>
 
+            {/* Кнопки управления майнингом */}
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <button
+                onClick={startMining}
+                disabled={isMining || miningTimeLeft > 0}
+                className={`
+                py-2 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
+                ${
+                  !isMining && miningTimeLeft === 0
+                    ? "bg-gradient-to-r from-green-500 to-green-400 hover:from-green-400 hover:to-green-300 text-white shadow-lg shadow-green-500/20"
+                    : "bg-gray-800 text-gray-400 cursor-not-allowed"
+                }
+              `}
+              >
+                <Play size={18} />
+                <span>Запустить майнинг</span>
+              </button>
+
+              <button
+                onClick={stopMining}
+                disabled={!isMining}
+                className={`
+                py-2 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
+                ${
+                  isMining
+                    ? "bg-gradient-to-r from-red-500 to-red-400 hover:from-red-400 hover:to-red-300 text-white shadow-lg shadow-red-500/20"
+                    : "bg-gray-800 text-gray-400 cursor-not-allowed"
+                }
+              `}
+              >
+                <Pause size={18} />
+                <span>Остановить майнинг</span>
+              </button>
+            </div>
+
+            {/* Кнопка сбора наград */}
             <button
               onClick={collectRewards}
-              disabled={!canCollect || collecting || rewardAmount <= 0}
+              disabled={!canCollectNow || collecting}
               className={`
-            w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
-            ${
-              canCollect && rewardAmount > 0 && !collecting
-                ? "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
-                : "bg-gray-800 text-gray-400 cursor-not-allowed"
-            }
-          `}
+              w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
+              ${
+                canCollectNow && !collecting
+                  ? "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
+                  : "bg-gray-800 text-gray-400 cursor-not-allowed"
+              }
+            `}
             >
               {collecting ? (
                 <>
