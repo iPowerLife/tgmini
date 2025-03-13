@@ -17,6 +17,9 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
   const [showError, setShowError] = useState(false)
   const [miningDuration, setMiningDuration] = useState(60) // 1 минута для тестирования
 
+  // Добавляем состояние для отслеживания замороженной суммы
+  const [frozenAmount, setFrozenAmount] = useState(null)
+
   const intervalRef = useRef(null)
   const timerIntervalRef = useRef(null)
   const isComponentMounted = useRef(true)
@@ -58,6 +61,13 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
           const canCollectNow = timeUntil <= 0 || data.rewards.allow_anytime_collection
           setCanCollect(canCollectNow)
 
+          // Если можно собрать, замораживаем сумму
+          if (canCollectNow) {
+            setFrozenAmount(data.rewards.amount || 0)
+          } else {
+            setFrozenAmount(null)
+          }
+
           // Майнинг активен, если нельзя собрать награды
           setIsMining(!canCollectNow)
         }
@@ -88,22 +98,14 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
           // Когда таймер достигает нуля, останавливаем майнинг и разрешаем сбор
           setIsMining(false)
           setCanCollect(true)
+
+          // Замораживаем текущую сумму
+          setFrozenAmount(currentAmount)
+
           return 0
         }
         return prev - 1
       })
-    }, 1000)
-
-    // Запускаем интервал для обновления суммы, только если майнинг активен
-    intervalRef.current = setInterval(() => {
-      if (isMining && miningInfo?.rewards?.hourly_rate) {
-        // Увеличиваем сумму только если майнинг активен
-        setCurrentAmount((prev) => {
-          // Рассчитываем прирост за 1 секунду (часовая ставка / 3600)
-          const increment = miningInfo.rewards.hourly_rate / 3600
-          return prev + increment
-        })
-      }
     }, 1000)
 
     return () => {
@@ -111,7 +113,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [userId, initialData, miningInfo?.rewards?.hourly_rate])
+  }, [userId, initialData, currentAmount])
 
   // Обновляем интервал для расчета суммы при изменении статуса майнинга
   useEffect(() => {
@@ -120,8 +122,8 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       clearInterval(intervalRef.current)
     }
 
-    // Запускаем новый интервал только если майнинг активен
-    if (isMining && miningInfo?.rewards?.hourly_rate) {
+    // Запускаем новый интервал только если майнинг активен и сумма не заморожена
+    if (isMining && frozenAmount === null && miningInfo?.rewards?.hourly_rate) {
       intervalRef.current = setInterval(() => {
         setCurrentAmount((prev) => {
           // Рассчитываем прирост за 1 секунду (часовая ставка / 3600)
@@ -134,11 +136,11 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [isMining, miningInfo?.rewards?.hourly_rate])
+  }, [isMining, frozenAmount, miningInfo?.rewards?.hourly_rate])
 
   // Сбор наград
   const collectRewards = async () => {
-    if (!userId || collecting) return
+    if (collecting || !canCollect) return
 
     try {
       setCollecting(true)
@@ -154,12 +156,13 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
       if (error) throw error
 
       if (data.success) {
-        // Показываем сообщение об успехе
-        const formattedAmount = Number(data.amount).toFixed(2)
+        // Показываем сообщение об успехе с замороженной суммой
+        const formattedAmount = Number(frozenAmount || 0).toFixed(2)
         setSuccess(`Вы успешно собрали ${formattedAmount} монет!`)
 
         // Сбрасываем счетчики
         setCurrentAmount(0)
+        setFrozenAmount(null)
         setCanCollect(false)
 
         // Запускаем таймер заново
@@ -218,15 +221,19 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
     return positiveNum.toFixed(decimals)
   }
 
+  // Обновленная функция форматирования времени (без миллисекунд)
   const formatTime = (seconds) => {
     if (!seconds || seconds <= 0) return "00:00:00"
 
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
+    const secs = Math.floor(seconds % 60)
 
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
+
+  // Определяем отображаемую сумму
+  const displayAmount = frozenAmount !== null ? frozenAmount : currentAmount
 
   if (!miningInfo) {
     return (
@@ -302,7 +309,7 @@ export const MiningRewards = ({ userId, initialData, onBalanceUpdate }) => {
               <span>Всего добыто:</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="font-medium text-white">{formatNumber(currentAmount)}</span>
+              <span className="font-medium text-white">{formatNumber(displayAmount)}</span>
               <span className="text-blue-400">💎</span>
             </div>
           </div>
