@@ -1,112 +1,73 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { supabase } from "../supabase"
 
-export default function LoadingScreen({ isLoading, loadingSteps, progress, onAnimationComplete }) {
-  const [fadeOut, setFadeOut] = useState(false)
-
-  useEffect(() => {
-    // Когда прогресс достигает 100%, начинаем анимацию исчезновения
-    if (progress >= 100) {
-      const timer = setTimeout(() => {
-        setFadeOut(true)
-      }, 500)
-
-      return () => clearTimeout(timer)
-    }
-  }, [progress])
+export function LoadingScreen() {
+  const [loadingText, setLoadingText] = useState("Подключение к серверу")
+  const [progress, setProgress] = useState(0)
 
   useEffect(() => {
-    // Когда анимация исчезновения завершена, вызываем колбэк
-    if (fadeOut) {
-      const timer = setTimeout(() => {
-        if (onAnimationComplete) {
-          onAnimationComplete()
+    let mounted = true
+    let progressInterval
+
+    const checkConnection = async () => {
+      try {
+        // Проверяем соединение с Supabase
+        const { error } = await supabase.from("users").select("id").limit(1)
+
+        if (mounted) {
+          if (error) {
+            setLoadingText("Ошибка подключения к серверу")
+          } else {
+            setLoadingText("Загрузка данных")
+            setProgress(30)
+
+            // Имитируем загрузку данных
+            progressInterval = setInterval(() => {
+              setProgress((prev) => {
+                const newProgress = prev + Math.floor(Math.random() * 10)
+                if (newProgress >= 100) {
+                  clearInterval(progressInterval)
+                  return 100
+                }
+                return newProgress
+              })
+            }, 300)
+          }
         }
-      }, 500) // Время анимации fadeOut
-
-      return () => clearTimeout(timer)
+      } catch (error) {
+        console.error("Ошибка при проверке соединения:", error)
+        if (mounted) {
+          setLoadingText("Ошибка подключения к серверу")
+        }
+      }
     }
-  }, [fadeOut, onAnimationComplete])
 
-  // Функция для получения статуса шага загрузки
-  const getStepStatus = (step) => {
-    const status = loadingSteps[step]
-    if (status === "complete") return "✓"
-    if (status === "loading") return "⟳"
-    if (status === "error") return "✗"
-    return "•"
-  }
+    checkConnection()
 
-  // Функция для получения класса статуса шага загрузки
-  const getStepStatusClass = (step) => {
-    const status = loadingSteps[step]
-    if (status === "complete") return "text-green-500"
-    if (status === "loading") return "text-blue-500 animate-spin"
-    if (status === "error") return "text-red-500"
-    return "text-gray-400"
-  }
+    return () => {
+      mounted = false
+      if (progressInterval) clearInterval(progressInterval)
+    }
+  }, [])
 
   return (
-    <div
-      className={`fixed inset-0 bg-[#1A1F2E] flex flex-col items-center justify-center z-50 transition-opacity duration-500 ${
-        fadeOut ? "opacity-0" : "opacity-100"
-      }`}
-    >
-      <div className="w-full max-w-md px-4">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Загрузка</h1>
-          <p className="text-gray-400">Подготавливаем приложение...</p>
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#1A1F2E] z-50">
+      <div className="text-center px-4 max-w-md">
+        <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-6 mx-auto"></div>
+
+        <h2 className="text-xl font-semibold text-white mb-2">Загрузка игры</h2>
+        <p className="text-gray-400 mb-4">{loadingText}...</p>
+
+        <div className="w-full bg-gray-700 rounded-full h-2.5 mb-2">
+          <div
+            className="bg-blue-500 h-2.5 rounded-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          ></div>
         </div>
 
-        <div className="mb-6">
-          <div className="h-2 w-full bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-500 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-          <div className="text-right mt-1 text-gray-400 text-sm">{Math.round(progress)}%</div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("database")}`}>
-              {getStepStatus("database")}
-            </span>
-            <span className="ml-2 text-white">Подключение к базе данных</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("user")}`}>
-              {getStepStatus("user")}
-            </span>
-            <span className="ml-2 text-white">Загрузка данных пользователя</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("miners")}`}>
-              {getStepStatus("miners")}
-            </span>
-            <span className="ml-2 text-white">Загрузка майнеров</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("tasks")}`}>
-              {getStepStatus("tasks")}
-            </span>
-            <span className="ml-2 text-white">Загрузка заданий</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("mining")}`}>
-              {getStepStatus("mining")}
-            </span>
-            <span className="ml-2 text-white">Загрузка данных майнинга</span>
-          </div>
-          <div className="flex items-center">
-            <span className={`w-6 h-6 flex items-center justify-center ${getStepStatusClass("images")}`}>
-              {getStepStatus("images")}
-            </span>
-            <span className="ml-2 text-white">Загрузка изображений</span>
-          </div>
-        </div>
+        <p className="text-xs text-gray-500">{progress}%</p>
       </div>
     </div>
   )
