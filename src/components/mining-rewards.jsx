@@ -338,22 +338,19 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     // Устанавливаем флаг ожидания обновления пула
     setPoolUpdatePending(true)
 
-    // Временно обновляем UI для мгновенной обратной связи
+    // Немедленно обновляем UI с новыми данными пула
     setMiningState((prev) => ({
       ...prev,
-      poolName: poolData.name,
-      poolMultiplier: poolData.reward_multiplier || poolData.multiplier,
-      poolFee: poolData.fee || poolData.fee_percent,
+      poolName: poolData.display_name || poolData.name,
+      poolMultiplier: Number(poolData.multiplier || 1),
+      poolFee: Number(poolData.fee_percent || 0),
     }))
 
     // Обновляем текущий пул
-    setCurrentPool({
-      id: poolData.id,
-      name: poolData.name,
-      display_name: poolData.display_name || poolData.name,
-      multiplier: poolData.reward_multiplier || poolData.multiplier,
-      fee_percent: poolData.fee || poolData.fee_percent,
-    })
+    setCurrentPool(poolData)
+
+    // Закрываем модальное окно, если оно открыто
+    setPoolsModalOpen(false)
 
     // Принудительно обновляем данные майнинга с сервера с небольшой задержкой
     // чтобы дать время базе данных обновиться

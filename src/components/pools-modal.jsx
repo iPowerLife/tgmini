@@ -105,6 +105,14 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
               reward_multiplier: pool.multiplier || 1,
               stability: 100 - (pool.fee_percent || 0),
               fee: pool.fee_percent || 0,
+              // Оригинальные данные для передачи в родительский компонент
+              original: {
+                id: pool.id,
+                name: pool.name,
+                display_name: pool.display_name,
+                multiplier: pool.multiplier,
+                fee_percent: pool.fee_percent,
+              },
               // Условия доступа
               requiresMinerPass: pool.requires_miner_pass || false,
               minMiners: pool.min_miners || 0,
@@ -136,6 +144,13 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
             reward_multiplier: 1.3,
             stability: 99,
             fee: 1,
+            original: {
+              id: 3,
+              name: "premium",
+              display_name: "Премиум пул",
+              multiplier: 1.3,
+              fee_percent: 1,
+            },
             requiresMinerPass: true,
             minMiners: 0,
             minInvitedFriends: 0,
@@ -148,6 +163,13 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
             reward_multiplier: 1.15,
             stability: 97,
             fee: 3,
+            original: {
+              id: 2,
+              name: "advanced",
+              display_name: "Продвинутый пул",
+              multiplier: 1.15,
+              fee_percent: 3,
+            },
             requiresMinerPass: false,
             minMiners: 15,
             minInvitedFriends: 20,
@@ -160,6 +182,13 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
             reward_multiplier: 1,
             stability: 95,
             fee: 5,
+            original: {
+              id: 1,
+              name: "standard",
+              display_name: "Стандартный пул",
+              multiplier: 1,
+              fee_percent: 5,
+            },
             requiresMinerPass: false,
             minMiners: 0,
             minInvitedFriends: 0,
@@ -233,6 +262,18 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
     try {
       console.log("Выбор пула:", pool)
 
+      // Вызываем колбэк для обновления родительского компонента ПЕРЕД запросом к серверу
+      // Это обеспечит мгновенное обновление UI
+      if (onPoolSelect) {
+        onPoolSelect({
+          id: pool.id,
+          name: pool.name || pool.original.name,
+          display_name: pool.display_name || pool.original.display_name || pool.name,
+          multiplier: pool.reward_multiplier || pool.original.multiplier,
+          fee_percent: pool.fee || pool.original.fee_percent,
+        })
+      }
+
       if (user?.id) {
         // Вызываем функцию select_mining_pool для обновления пула
         const { data, error } = await supabase.rpc("select_mining_pool", {
@@ -254,11 +295,6 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
 
       // Обновляем локальное состояние
       setSelectedPoolId(pool.id)
-
-      // Вызываем колбэк для обновления родительского компонента
-      if (onPoolSelect) {
-        onPoolSelect(pool)
-      }
 
       // Закрываем модальное окно
       onClose()
@@ -319,13 +355,14 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
             {pools.map((pool) => {
               const styles = getPoolStyles(pool)
               const isAvailable = isPoolAvailable(pool)
+              const isSelected = selectedPoolId === pool.id
 
               return (
                 <div
                   key={pool.id}
                   className={`p-3 rounded-lg border transition-all ${
                     isAvailable ? "cursor-pointer" : "opacity-70 cursor-not-allowed"
-                  } ${styles.container}`}
+                  } ${isSelected ? "border-blue-500" : "border-transparent"} ${styles.container}`}
                   onClick={() => isAvailable && handleSelectPool(pool)}
                 >
                   <div className="flex items-center justify-between">
@@ -344,7 +381,7 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
                         {!isAvailable && getPoolRequirements(pool)}
                       </div>
                     </div>
-                    {selectedPoolId === pool.id && isAvailable && (
+                    {isSelected && isAvailable && (
                       <div className="ml-2 px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs">Активен</div>
                     )}
                   </div>
@@ -374,16 +411,16 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
         )}
 
         <style jsx global>{`
-      .custom-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-        overscroll-behavior: contain;
-      }
+    .custom-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      overscroll-behavior: contain;
+    }
 
-      .custom-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-    `}</style>
+    .custom-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+  `}</style>
       </div>
     </div>
   )
