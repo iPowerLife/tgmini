@@ -2,12 +2,9 @@
 
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
-import { Coins, Clock, ArrowDown, AlertCircle, Cpu, Zap, Wallet, Play, ShoppingCart, Info } from "lucide-react"
+import { Coins, Clock, ArrowDown, AlertCircle, Cpu, Zap, Wallet, Play, ShoppingCart, Info } from 'lucide-react'
 import { useNavigate } from "react-router-dom"
 import { PoolsModal } from "./pools-modal"
-
-// Включаем режим отладки
-const DEBUG_MODE = process.env.NEXT_PUBLIC_DEBUG_MODE === "true"
 
 export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   // Основные состояния
@@ -37,6 +34,12 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   const [poolsModalOpen, setPoolsModalOpen] = useState(false)
   const [currentPool, setCurrentPool] = useState(null)
 
+  // Состояние для отладочной информации
+  const [directMinersData, setDirectMinersData] = useState(null)
+  
+  // Состояние для отслеживания обновления пула
+  const [poolUpdatePending, setPoolUpdatePending] = useState(false)
+
   // Ref для таймера и проверки монтирования
   const timerRef = useRef(null)
   const updateTimerRef = useRef(null)
@@ -62,27 +65,49 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
 
   // Функция для прямого запроса данных о майнерах
   const fetchMinersData = async () => {
-    if (!userId) return null
-
+    if (!userId) return null;
+    
     try {
       const { data, error } = await supabase
-        .from("user_miners")
-        .select("total_power, total_miners")
-        .eq("user_id", userId)
-        .single()
-
-      if (error) throw error
-
-      console.log("Прямой запрос данных майнеров:", data)
-      return data
+        .from('user_miners')
+        .select('total_power, total_miners, pool_id')
+        .eq('user_id', userId)
+        .single();
+        
+      if (error) throw error;
+      
+      console.log("Прямой запрос данных майнеров:", data);
+      setDirectMinersData(data); // Сохраняем для отладки
+      return data;
     } catch (err) {
-      console.error("Ошибка при прямом запросе данных майнеров:", err)
-      return null
+      console.error("Ошибка при прямом запросе данных майнеров:", err);
+      return null;
     }
-  }
+  };
+
+  // Функция для получения информации о пуле по ID
+  const fetchPoolInfo = async (poolId) => {
+    if (!poolId) return null;
+    
+    try {
+      const { data, error } = await supabase
+        .from('mining_pools')
+        .select('*')
+        .eq('id', poolId)
+        .single();
+        
+      if (error) throw error;
+      
+      console.log("Информация о пуле:", data);
+      return data;
+    } catch (err) {
+      console.error("Ошибка при получении информации о пуле:", err);
+      return null;
+    }
+  };
 
   // Обновляем функцию fetchMiningData с дополнительным логированием
-  const fetchMiningData = async () => {
+  const fetchMiningData = async (forceRefresh = false) => {
     if (!userId) {
       console.error("ID пользователя не указан")
       setError("ID пользователя не указан")
@@ -91,17 +116,30 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     }
 
     try {
-      console.log("Загрузка данных майнинга для пользователя:", userId)
+      console.log("Загрузка данных майнинга для пользователя:", userId, forceRefresh ? "(принудительное обновление)" : "")
+      setLoading(true)
 
       // Сначала получаем данные напрямую из таблицы для сравнения
-      const directMinersData = await fetchMinersData()
-
-      if (directMinersData) {
-        console.log("Данные майнеров напрямую из таблицы:", directMinersData)
+      const directData = await fetchMinersData();
+      
+      if (directData) {
+        console.log("Данные майнеров напрямую из таблицы:", directData);
+        
+        // Если у нас есть pool_id из прямого запроса, получаем информацию о пуле
+        if (directData.pool_id) {
+          const poolInfo = await fetchPoolInfo(directData.pool_id);
+          if (poolInfo) {
+            setCurrentPool(poolInfo);
+          }
+        }
       }
 
+      // Добавляем случайный параметр для обхода кэширования
+      const nocache = forceRefresh ? Date.now() : undefined;
+      
       const { data, error } = await supabase.rpc("get_mining_info", {
         user_id_param: userId,
+        _nocache: nocache
       })
 
       if (error) {
@@ -142,12 +180,11 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
       setCurrentPool(pool)
 
       // Используем хешрейт из прямого запроса, если он доступен и больше 0
-      const hashrate =
-        directMinersData && directMinersData.total_power > 0
-          ? directMinersData.total_power
-          : Number(data.total_hashrate || 0)
-
-      console.log("Итоговый используемый хешрейт:", hashrate)
+      const hashrate = directData && directData.total_power > 0 
+        ? directData.total_power 
+        : Number(data.total_hashrate || 0);
+        
+      console.log("Итоговый используемый хешрейт:", hashrate);
 
       // Обновляем состояние с проверкой на undefined
       setHasMiner(hasMiners)
@@ -172,11 +209,13 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
 
       setLoading(false)
       setError(null)
+      setPoolUpdatePending(false)
     } catch (err) {
       console.error("Ошибка при загрузке данных майнинга:", err)
       if (mountedRef.current) {
         setError(err.message || "Не удалось загрузить данные майнинга")
         setLoading(false)
+        setPoolUpdatePending(false)
 
         // Устанавливаем безопасные значения по умолчанию
         setMiningState({
@@ -270,7 +309,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
       console.log("Майнинг запущен:", data)
 
       // Обновляем данные с сервера
-      await fetchMiningData()
+      await fetchMiningData(true)
       setStarting(false)
     } catch (err) {
       console.error("Ошибка при запуске майнинга:", err)
@@ -367,23 +406,91 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   }
 
   // Обработчик выбора пула
-  const handlePoolSelect = (poolData) => {
+  const handlePoolSelect = async (poolData) => {
     console.log("Выбран новый пул:", poolData)
-
-    // Обновляем состояние майнинга с новым пулом
+    
+    // Устанавливаем флаг ожидания обновления пула
+    setPoolUpdatePending(true)
+    
+    // Временно обновляем UI для мгновенной обратной связи
     setMiningState((prev) => ({
       ...prev,
       poolName: poolData.name,
-      poolMultiplier: poolData.reward_multiplier,
-      poolFee: poolData.fee,
+      poolMultiplier: poolData.reward_multiplier || poolData.multiplier,
+      poolFee: poolData.fee || poolData.fee_percent,
     }))
+    
+    // Обновляем текущий пул
+    setCurrentPool({
+      id: poolData.id,
+      name: poolData.name,
+      display_name: poolData.display_name || poolData.name,
+      multiplier: poolData.reward_multiplier || poolData.multiplier,
+      fee_percent: poolData.fee || poolData.fee_percent
+    })
 
-    // Принудительно обновляем данные майнинга с сервера
-    fetchMiningData()
+    // Принудительно обновляем данные майнинга с сервера с небольшой задержкой
+    // чтобы дать время базе данных обновиться
+    setTimeout(() => {
+      fetchMiningData(true)
+    }, 500)
+  }
+
+  // Отладочная информация - всегда отображаем для отладки
+  const renderDebugInfo = () => {
+    return (
+      <div className="bg-gray-900 p-3 rounded-lg mb-3 text-xs font-mono overflow-auto">
+        <div className="flex items-center gap-2 mb-2">
+          <Info size={14} className="text-yellow-500" />
+          <span className="text-yellow-500 font-medium">Отладочная информация</span>
+        </div>
+        
+        {/* Данные из прямого запроса */}
+        <div className="mb-2 border-b border-gray-700 pb-2">
+          <div className="text-yellow-400 font-medium mb-1">Данные из прямого запроса:</div>
+          {directMinersData ? (
+            <>
+              <div><span className="text-green-400">total_power:</span> {JSON.stringify(directMinersData.total_power)}</div>
+              <div><span className="text-green-400">total_miners:</span> {JSON.stringify(directMinersData.total_miners)}</div>
+              <div><span className="text-green-400">pool_id:</span> {JSON.stringify(directMinersData.pool_id)}</div>
+            </>
+          ) : (
+            <div className="text-red-400">Нет данных из прямого запроса</div>
+          )}
+        </div>
+        
+        {/* Данные из функции get_mining_info */}
+        <div className="mb-2 border-b border-gray-700 pb-2">
+          <div className="text-yellow-400 font-medium mb-1">Данные из функции get_mining_info:</div>
+          {debugInfo ? (
+            <>
+              <div><span className="text-green-400">user_has_miners:</span> {JSON.stringify(debugInfo.user_has_miners)}</div>
+              <div><span className="text-green-400">total_hashrate:</span> {JSON.stringify(debugInfo.total_hashrate)}</div>
+              <div><span className="text-green-400">pool:</span> {JSON.stringify(debugInfo.pool)}</div>
+              <div><span className="text-green-400">debug:</span> {JSON.stringify(debugInfo.debug)}</div>
+            </>
+          ) : (
+            <div className="text-red-400">Нет данных из функции get_mining_info</div>
+          )}
+        </div>
+        
+        {/* Текущее состояние компонента */}
+        <div>
+          <div className="text-yellow-400 font-medium mb-1">Текущее состояние компонента:</div>
+          <div><span className="text-green-400">hashrate:</span> {JSON.stringify(miningState.hashrate)}</div>
+          <div><span className="text-green-400">hourlyRate:</span> {JSON.stringify(miningState.hourlyRate)}</div>
+          <div><span className="text-green-400">poolName:</span> {JSON.stringify(miningState.poolName)}</div>
+          <div><span className="text-green-400">poolMultiplier:</span> {JSON.stringify(miningState.poolMultiplier)}</div>
+          <div><span className="text-green-400">poolFee:</span> {JSON.stringify(miningState.poolFee)}</div>
+          <div><span className="text-green-400">currentPool:</span> {JSON.stringify(currentPool)}</div>
+          <div><span className="text-green-400">poolUpdatePending:</span> {JSON.stringify(poolUpdatePending)}</div>
+        </div>
+      </div>
+    )
   }
 
   // Если данные загружаются
-  if (loading) {
+  if (loading && !poolUpdatePending) {
     return (
       <div className="bg-[#151B26] p-4 rounded-xl mb-4">
         <div className="flex items-center gap-2 mb-3">
@@ -392,46 +499,6 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
         </div>
         <div className="bg-[#1A2234] rounded-lg p-4 flex justify-center">
           <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-        </div>
-      </div>
-    )
-  }
-
-  // Отладочная информация
-  const renderDebugInfo = () => {
-    if (!debugInfo || !DEBUG_MODE) return null
-
-    return (
-      <div className="bg-gray-900 p-3 rounded-lg mb-3 text-xs font-mono overflow-auto">
-        <div className="flex items-center gap-2 mb-2">
-          <Info size={14} className="text-yellow-500" />
-          <span className="text-yellow-500 font-medium">Отладочная информация</span>
-        </div>
-        <div>
-          <div>
-            <span className="text-green-400">user_has_miners:</span> {JSON.stringify(debugInfo.user_has_miners)}
-          </div>
-          <div>
-            <span className="text-green-400">total_hashrate:</span> {JSON.stringify(debugInfo.total_hashrate)}
-          </div>
-          <div>
-            <span className="text-green-400">mining_state:</span> {JSON.stringify(debugInfo.mining_state)}
-          </div>
-          <div>
-            <span className="text-green-400">pool:</span> {JSON.stringify(debugInfo.pool)}
-          </div>
-          <div>
-            <span className="text-green-400">rewards:</span> {JSON.stringify(debugInfo.rewards)}
-          </div>
-          <div>
-            <span className="text-green-400">config:</span> {JSON.stringify(debugInfo.config)}
-          </div>
-          <div>
-            <span className="text-green-400">debug:</span> {JSON.stringify(debugInfo.debug)}
-          </div>
-          <div>
-            <span className="text-green-400">current_hashrate:</span> {JSON.stringify(miningState.hashrate)}
-          </div>
         </div>
       </div>
     )
@@ -458,7 +525,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
           </div>
         )}
 
-        {/* Отладочная информация */}
+        {/* Отладочная информация - всегда показываем */}
         {renderDebugInfo()}
 
         <div className="bg-[#1A2234] rounded-xl overflow-hidden mb-3">
@@ -513,7 +580,17 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
         </div>
       )}
 
-      {/* Отладочная информация */}
+      {/* Индикатор обновления пула */}
+      {poolUpdatePending && (
+        <div className="bg-blue-950/30 border border-blue-500/20 rounded-lg p-3 mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+            <div className="text-sm text-blue-400">Обновление пула...</div>
+          </div>
+        </div>
+      )}
+
+      {/* Отладочная информация - всегда показываем */}
       {renderDebugInfo()}
 
       {/* Основная информация */}
@@ -602,58 +679,11 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
             {/* Кнопка сбора наград или запуска майнинга */}
             <button
               onClick={miningState.canCollect ? collectRewards : startMining}
-              disabled={miningState.isMining || collecting || starting}
+              disabled={miningState.isMining || collecting || starting || poolUpdatePending}
               className={`
             w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
             ${
-              miningState.isMining || collecting || starting
+              miningState.isMining || collecting || starting || poolUpdatePending
                 ? "bg-gray-800 text-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
-            }
-          `}
-            >
-              {collecting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Сбор наград...</span>
-                </>
-              ) : starting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Запуск майнинга...</span>
-                </>
-              ) : miningState.isMining ? (
-                <>
-                  <Play size={18} className="animate-pulse" />
-                  <span>Майнинг</span>
-                </>
-              ) : miningState.canCollect ? (
-                <>
-                  <ArrowDown size={18} />
-                  <span>Собрать награды</span>
-                </>
-              ) : (
-                <>
-                  <Play size={18} />
-                  <span>Запуск майнинга</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-      {/* Модальное окно выбора пула */}
-      {poolsModalOpen && (
-        <PoolsModal
-          onClose={() => setPoolsModalOpen(false)}
-          user={userId ? { id: userId } : null}
-          currentPool={currentPool}
-          onPoolSelect={handlePoolSelect}
-        />
-      )}
-    </div>
-  )
-}
-
-export default MiningRewards
+                : "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shado
 
