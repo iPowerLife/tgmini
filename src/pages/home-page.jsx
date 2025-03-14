@@ -5,22 +5,13 @@ import { useNavigate } from "react-router-dom"
 import { MinersModal } from "../components/miners-modal"
 import { BoostsModal } from "../components/boosts-modal"
 import { PoolsModal } from "../components/pools-modal"
-import { supabase } from "../supabase"
 
 const HomePage = ({ user: initialUser }) => {
   const [user, setUser] = useState(initialUser)
   const [showMinersModal, setShowMinersModal] = useState(false)
   const [showBoostsModal, setShowBoostsModal] = useState(false)
   const [showPoolsModal, setShowPoolsModal] = useState(false)
-  const [minerInfo, setMinerInfo] = useState({
-    pool: "Стандартный",
-    hashrate: 0,
-    energy: 0,
-    hourlyIncome: 0,
-    totalMined: 0,
-  })
   const [currentPool, setCurrentPool] = useState(null)
-  const [miningData, setMiningData] = useState(null)
   const navigate = useNavigate()
   const modalOpenRef = useRef(false)
 
@@ -28,81 +19,6 @@ const HomePage = ({ user: initialUser }) => {
   useEffect(() => {
     console.log("HomePage загружен, пользователь:", user)
   }, [user])
-
-  // Загрузка информации о майнинге
-  useEffect(() => {
-    const fetchMiningInfo = async () => {
-      if (!user?.id) {
-        console.log("Нет ID пользователя")
-        return
-      }
-
-      try {
-        console.log("Загрузка информации о майнинге для пользователя:", user.id)
-
-        // Получаем информацию о майнинге через RPC
-        const { data: miningInfoData, error: miningInfoError } = await supabase
-          .from("user_miners")
-          .select(`
-    *,
-    model:miner_models(*)
-  `)
-          .eq("user_id", user.id)
-
-        if (miningInfoError) {
-          console.error("Ошибка при запросе информации о майнинге:", miningInfoError)
-        } else {
-          console.log("Данные майнинга:", miningInfoData)
-          setMiningData(miningInfoData)
-
-          // Обновляем информацию о пуле
-          if (miningInfoData?.pool) {
-            setCurrentPool({
-              id: miningInfoData.pool.id,
-              name: miningInfoData.pool.display_name || miningInfoData.pool.name,
-            })
-          }
-
-          // Обновляем информацию о майнере
-          setMinerInfo({
-            pool: miningInfoData?.pool?.display_name || miningInfoData?.pool?.name || "Стандартный",
-            hashrate: miningInfoData?.total_hashrate || 0,
-            energy: miningInfoData?.energy || 0,
-            hourlyIncome: miningInfoData?.rewards?.hourly_rate || 0,
-            totalMined: miningInfoData?.rewards?.amount || 0,
-          })
-        }
-      } catch (error) {
-        console.error("Ошибка при загрузке информации о майнинге:", error)
-      }
-    }
-
-    fetchMiningInfo()
-  }, [user])
-
-  // Функция для обновления баланса пользователя
-  const handleBalanceUpdate = (newBalance) => {
-    console.log("Обновление баланса пользователя:", newBalance)
-
-    // Проверяем, что newBalance - это число
-    const numericBalance = typeof newBalance === "string" ? Number.parseFloat(newBalance) : newBalance
-
-    if (isNaN(numericBalance)) {
-      console.error("Ошибка: новый баланс не является числом", newBalance)
-      return
-    }
-
-    console.log("Текущий баланс:", user?.balance, "Новый баланс:", numericBalance)
-
-    setUser((prevUser) => {
-      const updatedUser = {
-        ...prevUser,
-        balance: numericBalance,
-      }
-      console.log("Обновленный пользователь:", updatedUser)
-      return updatedUser
-    })
-  }
 
   // Блокировка только событий прокрутки, но не кликов
   useEffect(() => {
@@ -172,7 +88,7 @@ const HomePage = ({ user: initialUser }) => {
   `
     document.head.appendChild(style)
 
-    // Удаляем все обработчики при размонтировании
+    // Удаляем все обработчики при ��азмонтировании
     return () => {
       scrollEvents.forEach((event) => {
         document.removeEventListener(event, blockScroll)
@@ -197,18 +113,6 @@ const HomePage = ({ user: initialUser }) => {
   // Обработчик выбора пула
   const handlePoolSelect = (pool) => {
     setCurrentPool(pool)
-    setMinerInfo((prev) => ({
-      ...prev,
-      pool: pool.name,
-    }))
-
-    // Обновляем расчет дохода в час с учетом нового пула
-    if (pool.reward_multiplier && pool.difficulty) {
-      setMinerInfo((prev) => ({
-        ...prev,
-        hourlyIncome: (prev.hashrate * 0.1 * pool.reward_multiplier) / pool.difficulty,
-      }))
-    }
   }
 
   // Стили для квадратных кнопок
