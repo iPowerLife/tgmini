@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom"
 import { MinersModal } from "../components/miners-modal"
 import { BoostsModal } from "../components/boosts-modal"
 import { PoolsModal } from "../components/pools-modal"
-import { MiningRewards } from "../components/mining-rewards"
 import { supabase } from "../supabase"
 
 const HomePage = ({ user: initialUser }) => {
@@ -257,9 +256,7 @@ const HomePage = ({ user: initialUser }) => {
         </div>
 
         {/* Компонент с информацией о майнинге и наградах */}
-        <div className="mx-2">
-          <MiningRewards userId={user?.id} initialData={miningData} onBalanceUpdate={handleBalanceUpdate} />
-        </div>
+        <div className="mx-2"></div>
 
         {/* Основная область с кнопками и майнером */}
         <div className="flex-1 grid grid-cols-[60px_1fr_60px] gap-2 px-2 mt-2">
