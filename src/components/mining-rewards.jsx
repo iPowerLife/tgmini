@@ -67,18 +67,30 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     }
 
     try {
-      console.log("Загрузка данных майнинга для пользователя:", userId)
+      console.log("Загрузка данных майнинга для пользователя:", userId, "forceRefresh:", forceRefresh)
 
-      // Добавляем опцию для принудительного обновления кэша
-      const options = forceRefresh ? { cache: "reload" } : undefined
+      // Опции для принудительного обновления кэша
+      const options = forceRefresh
+        ? {
+            cache: "no-store",
+            headers: {
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              Pragma: "no-cache",
+              Expires: "0",
+            },
+          }
+        : undefined
 
-      const { data, error } = await supabase.rpc(
-        "get_mining_info",
-        {
-          user_id_param: userId,
-        },
-        options,
-      )
+      // Добавляем случайный параметр для обхода кэша
+      const params = {
+        user_id_param: userId,
+      }
+
+      if (forceRefresh) {
+        params._nocache = Date.now()
+      }
+
+      const { data, error } = await supabase.rpc("get_mining_info", params, options)
 
       if (error) {
         console.error("Ошибка при получении данных:", error)
@@ -333,7 +345,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   const handlePoolSelect = (poolData) => {
     console.log("Выбран новый пул:", poolData)
 
-    // Сохраняем информацию о текущем пуле
+    // Немедленно обновляем UI с новыми данными о пуле
     setCurrentPool({
       id: poolData.id,
       name: poolData.name,
@@ -350,7 +362,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
       poolFee: poolData.fee,
     }))
 
-    // Принудительно обновляем данные майнинга с сервера
+    // Принудительно ��бновляем данные майнинга с сервера
     if (poolData.forceRefresh) {
       // Очищаем таймер, чтобы избежать конфликтов
       if (timerRef.current) {
@@ -358,11 +370,39 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
         timerRef.current = null
       }
 
-      // Добавляем небольшую задержку для завершения обновления в базе данных
-      setTimeout(() => {
-        fetchMiningData()
-      }, 300)
+      // Устанавливаем временный индикатор загрузки
+      setLoading(true)
+
+      // Немедленно запрашиваем обновленные данные
+      setTimeout(async () => {
+        try {
+          // Принудительно обновляем данные с сервера, игнорируя кэш
+          await fetchMiningData(true)
+        } catch (err) {
+          console.error("Ошибка при обновлении данных после смены пула:", err)
+        } finally {
+          setLoading(false)
+        }
+      }, 500) // Небольшая задержка для завершения транзакции в базе данных
     }
+  }
+
+  // Add this new function:
+
+  const startPollingForUpdates = (duration = 5000, interval = 1000) => {
+    let elapsed = 0
+
+    const pollInterval = setInterval(() => {
+      if (elapsed >= duration) {
+        clearInterval(pollInterval)
+        return
+      }
+
+      fetchMiningData(true)
+      elapsed += interval
+    }, interval)
+
+    return pollInterval
   }
 
   // Если данные загружаются

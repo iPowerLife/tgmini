@@ -232,7 +232,25 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
 
     try {
       console.log("Выбор пула:", pool)
-      setSelectedPoolId(pool.id) // Обновляем UI немедленно
+
+      // Немедленно обновляем UI
+      setSelectedPoolId(pool.id)
+
+      // Создаем полные данные о пуле для передачи родительскому компоненту
+      const fullPoolData = {
+        id: pool.id,
+        name: pool.name,
+        display_name: pool.name,
+        reward_multiplier: pool.reward_multiplier,
+        fee: pool.fee,
+        forceRefresh: true,
+      }
+
+      // Вызываем колбэк для обновления родительского компонента ПЕРЕД запросом к базе данных
+      // Это обеспечит немедленное обновление UI
+      if (onPoolSelect) {
+        onPoolSelect(fullPoolData)
+      }
 
       if (user?.id) {
         // Вызываем функцию select_mining_pool для обновления пула
@@ -252,26 +270,26 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
           throw new Error(data.error || "Не удалось выбрать пул")
         }
 
-        // Принудительно обновляем кэш данных
+        // Принудительно очищаем кэш для get_mining_info
         await supabase.rpc(
           "get_mining_info",
           {
             user_id_param: user.id,
           },
-          { cache: "reload" },
+          {
+            cache: "no-store",
+            headers: { "Cache-Control": "no-cache" },
+          },
         )
-      }
 
-      // Вызываем колбэк для обновления родительского компонента
-      // с полными данными о пуле
-      if (onPoolSelect) {
-        onPoolSelect({
-          id: pool.id,
-          name: pool.name,
-          reward_multiplier: pool.reward_multiplier,
-          fee: pool.fee,
-          forceRefresh: true, // Добавляем флаг для принудительного обновления
-        })
+        // Вызываем колбэк еще раз с обновленными данными из базы
+        if (onPoolSelect && data.pool) {
+          onPoolSelect({
+            ...fullPoolData,
+            ...data.pool,
+            forceRefresh: true,
+          })
+        }
       }
 
       // Закрываем модальное окно
