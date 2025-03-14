@@ -81,6 +81,11 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
       console.log("Полученные данные майнинга:", data)
       setDebugInfo(data) // Сохраняем данные для отладки
 
+      // В функции fetchMiningData после получения данных добавляем отладочный вывод
+      console.log("Debug - Полные данные:", data)
+      console.log("Debug - Хешрейт:", data.total_hashrate)
+      console.log("Debug - Отладочная информация:", data.debug)
+
       if (!mountedRef.current) return
 
       // Проверяем наличие необходимых данных
@@ -107,7 +112,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
 
       // Обновляем состояние с проверкой на undefined
       setHasMiner(hasMiners)
-      setMiningState({
+      setMiningState((prev) => ({
         isMining: !!mining_state.is_mining,
         amount: mining_state.is_mining
           ? Number(mining_state.current_amount || 0)
@@ -119,7 +124,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
         poolName: pool.display_name || pool.name || "Стандартный",
         poolMultiplier: Number(pool.multiplier || 1),
         poolFee: Number(pool.fee_percent || 0),
-      })
+      }))
 
       // Если майнинг активен, запускаем таймер
       if (mining_state.is_mining) {
