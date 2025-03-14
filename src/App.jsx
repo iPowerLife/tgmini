@@ -11,46 +11,79 @@ import ProfilePage from "./pages/profile-page"
 import { BottomMenu } from "./components/bottom-menu"
 import { LoadingScreen } from "./components/loading-screen"
 
-// Получаем доступ к Telegram WebApp
-const tg = window.Telegram?.WebApp
-
 function App() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(null)
-  const [webAppReady, setWebAppReady] = useState(false)
+  const [tg, setTg] = useState(null)
 
   // Инициализация Telegram WebApp
   useEffect(() => {
-    if (tg) {
-      // Сообщаем Telegram, что приложение готово
-      tg.ready()
-      // Расширяем приложение на весь экран
-      tg.expand()
-      // Устанавливаем основной цвет
-      tg.setBackgroundColor("#1A1F2E")
-      setWebAppReady(true)
+    const initTelegramApp = () => {
+      if (window.Telegram?.WebApp) {
+        const webApp = window.Telegram.WebApp
+        setTg(webApp)
+
+        // Подписываемся на событие готовности WebApp
+        webApp.onEvent("viewportChanged", () => {
+          console.log("Viewport changed")
+        })
+
+        webApp.onEvent("themeChanged", () => {
+          console.log("Theme changed")
+        })
+
+        // Инициализируем WebApp
+        try {
+          webApp.ready()
+          webApp.expand()
+          webApp.setBackgroundColor("#1A1F2E")
+        } catch (error) {
+          console.error("Error initializing Telegram WebApp:", error)
+        }
+      } else {
+        console.log("Telegram WebApp not available")
+      }
+    }
+
+    // Пытаемся инициализировать сразу
+    initTelegramApp()
+
+    // И также подписываемся на событие загрузки окна
+    window.addEventListener("load", initTelegramApp)
+
+    return () => {
+      window.removeEventListener("load", initTelegramApp)
     }
   }, [])
 
   useEffect(() => {
-    // Получаем текущую сессию
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session?.user) {
-        fetchUserData(session.user.id)
-      } else {
+    const initializeApp = async () => {
+      try {
+        // Получаем текущую сессию
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+        setSession(session)
+
+        if (session?.user) {
+          await fetchUserData(session.user.id)
+        }
+      } catch (error) {
+        console.error("Error initializing app:", error)
+      } finally {
         setLoading(false)
       }
-    })
+    }
 
-    // Подписываемся на изменения авторизации
+    initializeApp()
+
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
       if (session?.user) {
-        fetchUserData(session.user.id)
+        await fetchUserData(session.user.id)
       } else {
         setUser(null)
         setLoading(false)
@@ -73,13 +106,11 @@ function App() {
       }
     } catch (error) {
       console.error("Error fetching user data:", error)
-    } finally {
-      setLoading(false)
     }
   }
 
   // Показываем загрузочный экран
-  if (loading || !webAppReady) {
+  if (loading) {
     return <LoadingScreen />
   }
 
