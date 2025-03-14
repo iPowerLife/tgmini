@@ -42,7 +42,7 @@ const HomePage = ({ user: initialUser }) => {
 
         // Получаем информацию о майнинге через RPC
         const { data: miningInfoData, error: miningInfoError } = await supabase
-          .from("miners")
+          .from("user_miners")
           .select(`
     *,
     model:miner_models(*)
