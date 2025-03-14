@@ -117,6 +117,34 @@ function App() {
     }
   }, [])
 
+  // Сбрасываем флаги при обновлении страницы и возвращаемся на главную
+  useEffect(() => {
+    const handlePageRefresh = () => {
+      setActiveTab("home")
+      // Используем sessionStorage для отслеживания обновления страницы
+      if (!sessionStorage.getItem("app_initialized")) {
+        sessionStorage.setItem("app_initialized", "true")
+      } else {
+        // Если приложение уже было инициализировано, значит это обновление страницы
+        window.location.href = "/"
+      }
+    }
+
+    // Вызываем при первой загрузке
+    handlePageRefresh()
+
+    // Добавляем обработчик события beforeunload для отслеживания обновления страницы
+    window.addEventListener("beforeunload", () => {
+      sessionStorage.removeItem("app_initialized")
+    })
+
+    return () => {
+      window.removeEventListener("beforeunload", () => {
+        sessionStorage.removeItem("app_initialized")
+      })
+    }
+  }, [])
+
   // Обработчик обновления баланса пользователя
   const handleBalanceUpdate = (newBalance, updateMinerPass = false) => {
     setUser((prev) => ({

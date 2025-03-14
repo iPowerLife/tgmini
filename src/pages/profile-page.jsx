@@ -288,11 +288,6 @@ const ProfilePage = ({ user, onLogout }) => {
             </p>
           </div>
         </div>
-
-        {/* Кнопка выхода */}
-        <button className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full" onClick={handleLogout}>
-          Выйти
-        </button>
       </div>
     </div>
   )
