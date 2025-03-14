@@ -60,7 +60,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  // Обновляем функцию fetchMiningData с дополнительным логированием
+  // Обновляем функцию fetchMiningData для более надежной работы
   const fetchMiningData = async (skipLoading = false) => {
     if (!userId) {
       console.error("ID пользователя не указан")
@@ -76,8 +76,12 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
         setLoading(true)
       }
 
+      // Добавляем случайный параметр для обхода кэширования
+      const nocache = Date.now()
+
       const { data, error } = await supabase.rpc("get_mining_info", {
         user_id_param: userId,
+        _nocache: nocache,
       })
 
       if (error) {
@@ -109,24 +113,40 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
       console.log("Награды:", rewards)
       console.log("Данные пула:", pool)
 
-      // Сохраняем информацию о текущем пуле
-      setCurrentPool(pool)
+      // Сохраняем информацию о текущем пуле, но только если не в процессе обновления пула
+      if (!poolUpdatePending) {
+        setCurrentPool(pool)
 
-      // Обновляем состояние с проверкой на undefined
-      setHasMiner(hasMiners)
-      setMiningState({
-        isMining: !!mining_state.is_mining,
-        amount: mining_state.is_mining
-          ? Number(mining_state.current_amount || 0)
-          : Number(mining_state.frozen_amount || 0),
-        remainingSeconds: Number(mining_state.remaining_seconds || 0),
-        canCollect: !mining_state.is_mining && Number(mining_state.frozen_amount || 0) > 0,
-        hashrate: Number(data.total_hashrate || 0),
-        hourlyRate: Number(rewards.hourly_rate || 0),
-        poolName: pool.display_name || pool.name || "Стандартный",
-        poolMultiplier: Number(pool.multiplier || 1),
-        poolFee: Number(pool.fee_percent || 0),
-      })
+        // Обновляем состояние с проверкой на undefined
+        setHasMiner(hasMiners)
+        setMiningState({
+          isMining: !!mining_state.is_mining,
+          amount: mining_state.is_mining
+            ? Number(mining_state.current_amount || 0)
+            : Number(mining_state.frozen_amount || 0),
+          remainingSeconds: Number(mining_state.remaining_seconds || 0),
+          canCollect: !mining_state.is_mining && Number(mining_state.frozen_amount || 0) > 0,
+          hashrate: Number(data.total_hashrate || 0),
+          hourlyRate: Number(rewards.hourly_rate || 0),
+          poolName: pool.display_name || pool.name || "Стандартный",
+          poolMultiplier: Number(pool.multiplier || 1),
+          poolFee: Number(pool.fee_percent || 0),
+        })
+      } else {
+        // Если в процессе обновления пула, обновляем только некоторые поля
+        setHasMiner(hasMiners)
+        setMiningState((prev) => ({
+          ...prev,
+          isMining: !!mining_state.is_mining,
+          amount: mining_state.is_mining
+            ? Number(mining_state.current_amount || 0)
+            : Number(mining_state.frozen_amount || 0),
+          remainingSeconds: Number(mining_state.remaining_seconds || 0),
+          canCollect: !mining_state.is_mining && Number(mining_state.frozen_amount || 0) > 0,
+          hashrate: Number(data.total_hashrate || 0),
+          hourlyRate: Number(rewards.hourly_rate || 0),
+        }))
+      }
 
       // Если майнинг активен, запускаем таймер
       if (mining_state.is_mining) {
@@ -135,26 +155,26 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
 
       setLoading(false)
       setError(null)
-      setPoolUpdatePending(false)
     } catch (err) {
       console.error("Ошибка при загрузке данных майнинга:", err)
       if (mountedRef.current) {
         setError(err.message || "Не удалось загрузить данные майнинга")
         setLoading(false)
-        setPoolUpdatePending(false)
 
-        // Устанавливаем безопасные значения по умолчанию
-        setMiningState({
-          isMining: false,
-          amount: 0,
-          remainingSeconds: 0,
-          canCollect: false,
-          hashrate: 0,
-          hourlyRate: 0,
-          poolName: "Стандартный",
-          poolMultiplier: 1,
-          poolFee: 0,
-        })
+        // Устанавливаем безопасные значения по умолчанию только если нет данных
+        if (!miningState.poolName) {
+          setMiningState({
+            isMining: false,
+            amount: 0,
+            remainingSeconds: 0,
+            canCollect: false,
+            hashrate: 0,
+            hourlyRate: 0,
+            poolName: "Стандартный",
+            poolMultiplier: 1,
+            poolFee: 0,
+          })
+        }
       }
     }
   }
@@ -335,10 +355,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   const handlePoolSelect = async (poolData) => {
     console.log("Выбран новый пул:", poolData)
 
-    // Устанавливаем флаг ожидания обновления пула
-    setPoolUpdatePending(true)
-
-    // ВАЖНО: Немедленно обновляем UI с новыми данными пула
+    // Немедленно обновляем UI с новыми данными пула
     // Это ключевой момент для мгновенного обновления интерфейса
     setMiningState((prev) => ({
       ...prev,
@@ -350,11 +367,16 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     // Обновляем текущий пул
     setCurrentPool(poolData)
 
-    // Принудительно обновляем данные майнинга с сервера с небольшой задержкой
-    // чтобы дать время базе данных обновиться
+    // Устанавливаем флаг ожидания обновления пула
+    setPoolUpdatePending(true)
+
+    // Запускаем фоновое обновление данных с сервера
     setTimeout(() => {
-      fetchMiningData(true)
-    }, 500)
+      fetchMiningData(true).finally(() => {
+        // Снимаем флаг ожидания независимо от результата
+        setPoolUpdatePending(false)
+      })
+    }, 1000)
   }
 
   // Если данные загружаются

@@ -251,6 +251,9 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
     return null
   }
 
+  // Изменяем функцию handleSelectPool для мгновенного закрытия модального окна
+  // и обновления UI без ожидания ответа сервера
+
   // Функция для выбора пула
   const handleSelectPool = async (pool) => {
     // Проверяем доступность пула
@@ -273,35 +276,36 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
 
       console.log("Передаем данные пула в родительский компонент:", poolData)
 
-      // Вызываем колбэк для обновления родительского компонента ПЕРЕД запросом к серверу
+      // Обновляем локальное состояние
+      setSelectedPoolId(pool.id)
+
+      // Закрываем модальное окно НЕМЕДЛЕННО
+      onClose()
+
+      // Вызываем колбэк для обновления родительского компонента
       if (onPoolSelect) {
         onPoolSelect(poolData)
       }
 
-      // Закрываем модальное окно сразу после выбора
-      onClose()
-
+      // Запускаем обновление на сервере в фоновом режиме
       if (user?.id) {
-        // Вызываем функцию select_mining_pool для обновления пула
-        const { data, error } = await supabase.rpc("select_mining_pool", {
-          user_id_param: user.id,
-          pool_id_param: pool.id,
-        })
+        setTimeout(async () => {
+          try {
+            const { data, error } = await supabase.rpc("select_mining_pool", {
+              user_id_param: user.id,
+              pool_id_param: pool.id,
+            })
 
-        if (error) {
-          console.error("Ошибка при вызове select_mining_pool:", error)
-          throw error
-        }
-
-        console.log("Результат select_mining_pool:", data)
-
-        if (!data.success) {
-          throw new Error(data.error || "Не удалось выбрать пул")
-        }
+            if (error) {
+              console.error("Ошибка при вызове select_mining_pool:", error)
+            } else {
+              console.log("Результат select_mining_pool:", data)
+            }
+          } catch (err) {
+            console.error("Ошибка при обновлении пула на сервере:", err)
+          }
+        }, 100)
       }
-
-      // Обновляем локальное состояние
-      setSelectedPoolId(pool.id)
     } catch (error) {
       console.error("Ошибка при выборе пула:", error)
       alert("Не удалось выбрать пул. Пожалуйста, попробуйте позже.")
