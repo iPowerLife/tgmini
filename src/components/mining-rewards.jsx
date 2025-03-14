@@ -260,7 +260,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
       console.log("Майнинг запущен:", data)
 
       // Обновляем данные с сервера
-      await fetchMiningData()
+      await fetchMiningData(true)
       setStarting(false)
     } catch (err) {
       console.error("Ошибка при запуске майнинга:", err)
@@ -616,13 +616,13 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
               onClick={miningState.canCollect ? collectRewards : startMining}
               disabled={miningState.isMining || collecting || starting || poolUpdatePending}
               className={`
-            w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
-            ${
-              miningState.isMining || collecting || starting || poolUpdatePending
-                ? "bg-gray-800 text-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
-            }
-          `}
+          w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
+          ${
+            miningState.isMining || collecting || starting || poolUpdatePending
+              ? "bg-gray-800 text-gray-400 cursor-not-allowed"
+              : "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
+          }
+        `}
             >
               {collecting ? (
                 <>
