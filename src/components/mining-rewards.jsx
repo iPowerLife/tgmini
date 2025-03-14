@@ -338,7 +338,8 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     // Устанавливаем флаг ожидания обновления пула
     setPoolUpdatePending(true)
 
-    // Немедленно обновляем UI с новыми данными пула
+    // ВАЖНО: Немедленно обновляем UI с новыми данными пула
+    // Это ключевой момент для мгновенного обновления интерфейса
     setMiningState((prev) => ({
       ...prev,
       poolName: poolData.display_name || poolData.name,
@@ -348,9 +349,6 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
 
     // Обновляем текущий пул
     setCurrentPool(poolData)
-
-    // Закрываем модальное окно, если оно открыто
-    setPoolsModalOpen(false)
 
     // Принудительно обновляем данные майнинга с сервера с небольшой задержкой
     // чтобы дать время базе данных обновиться
@@ -402,6 +400,12 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
           </div>
           <div>
             <span className="text-green-400">config:</span> {JSON.stringify(debugInfo.config)}
+          </div>
+          <div>
+            <span className="text-green-400">current_pool:</span> {JSON.stringify(currentPool)}
+          </div>
+          <div>
+            <span className="text-green-400">mining_state:</span> {JSON.stringify(miningState)}
           </div>
         </div>
       </div>

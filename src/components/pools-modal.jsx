@@ -262,17 +262,24 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
     try {
       console.log("Выбор пула:", pool)
 
-      // Вызываем колбэк для обновления родительского компонента ПЕРЕД запросом к серверу
-      // Это обеспечит мгновенное обновление UI
-      if (onPoolSelect) {
-        onPoolSelect({
-          id: pool.id,
-          name: pool.name || pool.original.name,
-          display_name: pool.display_name || pool.original.display_name || pool.name,
-          multiplier: pool.reward_multiplier || pool.original.multiplier,
-          fee_percent: pool.fee || pool.original.fee_percent,
-        })
+      // Создаем объект с данными пула для передачи в родительский компонент
+      const poolData = {
+        id: pool.id,
+        name: pool.original.name,
+        display_name: pool.name, // Используем отображаемое имя из UI
+        multiplier: pool.reward_multiplier,
+        fee_percent: pool.fee,
       }
+
+      console.log("Передаем данные пула в родительский компонент:", poolData)
+
+      // Вызываем колбэк для обновления родительского компонента ПЕРЕД запросом к серверу
+      if (onPoolSelect) {
+        onPoolSelect(poolData)
+      }
+
+      // Закрываем модальное окно сразу после выбора
+      onClose()
 
       if (user?.id) {
         // Вызываем функцию select_mining_pool для обновления пула
@@ -295,9 +302,6 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
 
       // Обновляем локальное состояние
       setSelectedPoolId(pool.id)
-
-      // Закрываем модальное окно
-      onClose()
     } catch (error) {
       console.error("Ошибка при выборе пула:", error)
       alert("Не удалось выбрать пул. Пожалуйста, попробуйте позже.")
