@@ -117,30 +117,17 @@ function App() {
     }
   }, [])
 
-  // Сбрасываем флаги при обновлении страницы и возвращаемся на главную
+  // Заменим весь useEffect для обработки обновления страницы на более простой и надежный:
+
+  // И заменить его на этот более простой:
   useEffect(() => {
-    const handlePageRefresh = () => {
-      setActiveTab("home")
-      // Используем sessionStorage для отслеживания обновления страницы
-      if (!sessionStorage.getItem("app_initialized")) {
-        sessionStorage.setItem("app_initialized", "true")
-      } else {
-        // Если приложение уже было инициализировано, значит это обновление страницы
-        window.location.href = "/"
-      }
-    }
+    // Просто устанавливаем активную вкладку на "home" при монтировании компонента
+    setActiveTab("home")
 
-    // Вызываем при первой загрузке
-    handlePageRefresh()
-
-    // Добавляем обработчик события beforeunload для отслеживания обновления страницы
-    window.addEventListener("beforeunload", () => {
-      sessionStorage.removeItem("app_initialized")
-    })
-
-    return () => {
-      window.removeEventListener("beforeunload", () => {
-        sessionStorage.removeItem("app_initialized")
+    // Добавляем обработчик для Telegram WebApp, чтобы сбрасывать на главную при обновлении
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.onEvent("viewportChanged", () => {
+        setActiveTab("home")
       })
     }
   }, [])
