@@ -76,12 +76,9 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
         setLoading(true)
       }
 
-      // Добавляем случайный параметр для обхода кэширования
-      const nocache = Date.now()
-
+      // Убираем параметр _nocache, так как функция его не поддерживает
       const { data, error } = await supabase.rpc("get_mining_info", {
         user_id_param: userId,
-        _nocache: nocache,
       })
 
       if (error) {
