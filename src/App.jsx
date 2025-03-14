@@ -2,12 +2,19 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "./supabase"
+import { CategoryNavigation } from "./components/shop/category-navigation"
+import { MinersTab } from "./components/shop/miners-tab"
+import { BoostsTab } from "./components/shop/boosts-tab"
+import { SpecialTab } from "./components/shop/special-tab"
+import { PremiumTab } from "./components/shop/premium-tab"
+import { WarningMessage } from "./components/shop/warning-message"
 
 function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState("home")
   const [user, setUser] = useState(null)
+  const [shopCategory, setShopCategory] = useState("miners")
 
   // Проверка соединения с Supabase и загрузка данных пользователя
   useEffect(() => {
@@ -55,6 +62,15 @@ function App() {
       }
     }
   }, [])
+
+  // Обработчик обновления баланса пользователя
+  const handleBalanceUpdate = (newBalance, updateMinerPass = false) => {
+    setUser((prev) => ({
+      ...prev,
+      balance: newBalance,
+      hasMinerPass: updateMinerPass ? true : prev.hasMinerPass,
+    }))
+  }
 
   if (loading) {
     return (
@@ -105,20 +121,20 @@ function App() {
 
       case "shop":
         return (
-          <div className="text-center">
+          <div>
             <h2 className="text-xl font-semibold mb-4">Магазин</h2>
-            <p className="text-gray-400 mb-4">Здесь вы можете приобрести майнеры и улучшения</p>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[#242838]/80 p-3 rounded-lg">
-                <div className="text-blue-400 text-xl mb-2">🖥️</div>
-                <p className="font-semibold">Майнеры</p>
-              </div>
-              <div className="bg-[#242838]/80 p-3 rounded-lg">
-                <div className="text-yellow-400 text-xl mb-2">⚡</div>
-                <p className="font-semibold">Бусты</p>
-              </div>
-            </div>
+            <WarningMessage message="Все покупки совершаются за игровую валюту и не требуют реальных денег." />
+
+            <CategoryNavigation activeCategory={shopCategory} onCategoryChange={setShopCategory} />
+
+            {shopCategory === "miners" && <MinersTab user={user} onPurchase={handleBalanceUpdate} />}
+
+            {shopCategory === "boosts" && <BoostsTab user={user} onPurchase={handleBalanceUpdate} />}
+
+            {shopCategory === "special" && <SpecialTab user={user} onPurchase={handleBalanceUpdate} />}
+
+            {shopCategory === "premium" && <PremiumTab user={user} onPurchase={handleBalanceUpdate} />}
           </div>
         )
 

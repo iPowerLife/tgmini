@@ -1,108 +1,124 @@
 "use client"
 
 import { useState } from "react"
-import { Crown, Shield, Zap, Gem, Coins, ShoppingCart, Sparkles } from "lucide-react"
 import { supabase } from "../../supabase"
 
-export function SpecialTab({ user, onPurchase, hasMinerPass = false }) {
+export function SpecialTab({ user, onPurchase }) {
+  const [specialItems, setSpecialItems] = useState([
+    {
+      id: 1,
+      name: "Энергетический блок",
+      description: "Дает дополнительные 100 единиц энергии",
+      price: 50,
+      item_type: "energy",
+      value: 100,
+      image_url: "https://cdn-icons-png.flaticon.com/512/2991/2991148.png",
+    },
+    {
+      id: 2,
+      name: "Набор инструментов",
+      description: "Повышает эффективность всех майнеров на 10% навсегда",
+      price: 500,
+      item_type: "tool",
+      value: 10,
+      image_url: "https://cdn-icons-png.flaticon.com/512/2991/2991102.png",
+    },
+    {
+      id: 3,
+      name: "Мгновенная награда",
+      description: "Мгновенно получите 200 криптовалюты",
+      price: 180,
+      item_type: "instant_reward",
+      value: 200,
+      image_url: "https://cdn-icons-png.flaticon.com/512/2991/2991103.png",
+    },
+  ])
   const [loading, setLoading] = useState(false)
-  const balance = user?.balance || 0
+  const [selectedItem, setSelectedItem] = useState(null)
 
-  // Обработчик покупки специального предмета
-  const handleBuySpecialItem = async (itemName, price) => {
+  const handlePurchase = async (item) => {
+    if (!user || user.balance < item.price) return
+
+    setLoading(true)
+    setSelectedItem(item.id)
+
     try {
-      setLoading(true)
-      console.log("Покупка предмета:", itemName, "цена:", price)
-
-      if (!user?.id) {
-        throw new Error("Пользователь не авторизован")
-      }
-
-      // Вызываем функцию покупки специального предмета
+      // Вызываем RPC функцию для покупки особого предмета
       const { data, error } = await supabase.rpc("purchase_special_item", {
         user_id_param: user.id,
-        item_name_param: itemName,
-        price_param: price,
+        item_id_param: item.id,
+        item_type_param: "special",
       })
 
-      if (error) {
-        console.error("Ошибка при вызове purchase_special_item:", error)
-        throw error
-      }
+      if (error) throw error
 
-      console.log("Результат покупки:", data)
+      if (data && data.success) {
+        // Обновляем баланс пользователя
+        if (onPurchase) {
+          onPurchase(data.new_balance)
+        }
 
-      if (data.success) {
-        onPurchase(data.new_balance)
-        alert("Предмет успешно куплен!")
+        alert(`Вы успешно приобрели ${item.name}!`)
       } else {
-        alert(data.error || "Ошибка при покупке")
+        alert("Не удалось совершить покупку. Попробуйте позже.")
       }
     } catch (error) {
-      console.error("Error purchasing special item:", error)
-      alert("Ошибка при покупке предмета: " + (error.message || error))
+      console.error("Ошибка при покупке предмета:", error)
+      alert(`Ошибка: ${error.message || "Не удалось совершить покупку"}`)
     } finally {
       setLoading(false)
+      setSelectedItem(null)
     }
   }
 
   return (
-    <>
-      <div className="flex items-center gap-1.5 mb-0.5">
-        <Sparkles size={16} className="text-yellow-400" />
-        <h2 className="text-white text-sm font-medium">Специальные предметы</h2>
-      </div>
-      <p className="text-gray-400 text-xs mb-3">Уникальные предметы и улучшения для вашего майнинга</p>
-
-      {/* Плашка со спецпредметами */}
-      <div className="bg-[#151B26] rounded-xl p-3 mb-3 shadow-md relative overflow-hidden">
-        {/* Декоративный элемент */}
-        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-yellow-500/10 to-transparent rounded-bl-full" />
-
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 rounded-lg flex items-center justify-center">
-            <Crown className="text-yellow-400" size={24} />
-          </div>
-          <div>
-            <h3 className="font-medium text-base mb-0.5">Miner Pass</h3>
-            <p className="text-xs text-gray-400">Премиальный статус с особыми привилегиями</p>
-          </div>
-        </div>
-
-        <div className="bg-[#0F1520] rounded-lg p-3 mb-3">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-1.5">
-              <Shield size={14} className="text-yellow-400" />
-              <span className="text-xs text-gray-400">Снятие лимитов на майнеры</span>
+    <div className="space-y-4">
+      {specialItems.map((item) => (
+        <div key={item.id} className="bg-[#242838] rounded-lg p-4">
+          <div className="flex items-center mb-3">
+            <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mr-3">
+              <img src={item.image_url || "/placeholder.svg"} alt={item.name} className="w-8 h-8" />
             </div>
-            <div className="flex items-center gap-1.5">
-              <Zap size={14} className="text-blue-400" />
-              <span className="text-xs text-gray-400">Бонус +10% к хешрейту</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Gem size={14} className="text-green-400" />
-              <span className="text-xs text-gray-400">Ежедневные бонусы</span>
+            <div>
+              <h3 className="font-semibold">{item.name}</h3>
+              <p className="text-sm text-gray-400">{item.description}</p>
             </div>
           </div>
 
-          <div className="flex items-center justify-between mt-3">
-            <div className="flex items-center gap-1.5">
-              <Coins size={14} className="text-yellow-400" />
-              <span className="text-sm font-medium text-yellow-400">2500</span>
+          <div className="bg-[#1A1F2E] p-2 rounded mb-3">
+            <div className="text-xs text-gray-400">Эффект:</div>
+            <div className="font-semibold">
+              {item.item_type === "energy" && `+${item.value} энергии`}
+              {item.item_type === "tool" && `+${item.value}% эффективности`}
+              {item.item_type === "instant_reward" && `+${item.value} криптовалюты`}
             </div>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <div className="font-bold text-blue-400">{item.price} 💎</div>
             <button
-              className="px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5
-              transition-all duration-200 shadow-sm bg-gradient-to-r from-yellow-500 to-amber-500 text-black hover:shadow-md hover:translate-y-[-1px]"
-              onClick={() => handleBuySpecialItem("miner_pass", 2500)}
-              disabled={loading || balance < 2500 || hasMinerPass}
+              onClick={() => handlePurchase(item)}
+              disabled={loading || !user || user.balance < item.price}
+              className={`px-4 py-2 rounded ${
+                loading && selectedItem === item.id
+                  ? "bg-gray-600 cursor-wait"
+                  : user && user.balance >= item.price
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-gray-600 cursor-not-allowed"
+              }`}
             >
-              <ShoppingCart size={12} />
-              <span>Купить</span>
+              {loading && selectedItem === item.id ? (
+                <span>Покупка...</span>
+              ) : user && user.balance < item.price ? (
+                <span>Недостаточно средств</span>
+              ) : (
+                <span>Купить</span>
+              )}
             </button>
           </div>
         </div>
-      </div>
-    </>
+      ))}
+    </div>
   )
 }
 
