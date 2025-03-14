@@ -34,6 +34,9 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   const [poolsModalOpen, setPoolsModalOpen] = useState(false)
   const [currentPool, setCurrentPool] = useState(null)
 
+  // Состояние для отслеживания обновления пула
+  const [poolUpdatePending, setPoolUpdatePending] = useState(false)
+
   // Ref для таймера и проверки монтирования
   const timerRef = useRef(null)
   const updateTimerRef = useRef(null)
@@ -58,7 +61,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   }
 
   // Обновляем функцию fetchMiningData с дополнительным логированием
-  const fetchMiningData = async () => {
+  const fetchMiningData = async (skipLoading = false) => {
     if (!userId) {
       console.error("ID пользователя не указан")
       setError("ID пользователя не указан")
@@ -68,6 +71,10 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
 
     try {
       console.log("Загрузка данных майнинга для пользователя:", userId)
+
+      if (!skipLoading) {
+        setLoading(true)
+      }
 
       const { data, error } = await supabase.rpc("get_mining_info", {
         user_id_param: userId,
@@ -128,11 +135,13 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
 
       setLoading(false)
       setError(null)
+      setPoolUpdatePending(false)
     } catch (err) {
       console.error("Ошибка при загрузке данных майнинга:", err)
       if (mountedRef.current) {
         setError(err.message || "Не удалось загрузить данные майнинга")
         setLoading(false)
+        setPoolUpdatePending(false)
 
         // Устанавливаем безопасные значения по умолчанию
         setMiningState({
@@ -323,23 +332,38 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   }
 
   // Обработчик выбора пула
-  const handlePoolSelect = (poolData) => {
+  const handlePoolSelect = async (poolData) => {
     console.log("Выбран новый пул:", poolData)
 
-    // Обновляем состояние майнинга с новым пулом
+    // Устанавливаем флаг ожидания обновления пула
+    setPoolUpdatePending(true)
+
+    // Временно обновляем UI для мгновенной обратной связи
     setMiningState((prev) => ({
       ...prev,
       poolName: poolData.name,
-      poolMultiplier: poolData.reward_multiplier,
-      poolFee: poolData.fee,
+      poolMultiplier: poolData.reward_multiplier || poolData.multiplier,
+      poolFee: poolData.fee || poolData.fee_percent,
     }))
 
-    // Принудительно обновляем данные майнинга с сервера
-    fetchMiningData()
+    // Обновляем текущий пул
+    setCurrentPool({
+      id: poolData.id,
+      name: poolData.name,
+      display_name: poolData.display_name || poolData.name,
+      multiplier: poolData.reward_multiplier || poolData.multiplier,
+      fee_percent: poolData.fee || poolData.fee_percent,
+    })
+
+    // Принудительно обновляем данные майнинга с сервера с небольшой задержкой
+    // чтобы дать время базе данных обновиться
+    setTimeout(() => {
+      fetchMiningData(true)
+    }, 500)
   }
 
   // Если данные загружаются
-  if (loading) {
+  if (loading && !poolUpdatePending) {
     return (
       <div className="bg-[#151B26] p-4 rounded-xl mb-4">
         <div className="flex items-center gap-2 mb-3">
@@ -463,6 +487,16 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
         </div>
       )}
 
+      {/* Индикатор обновления пула */}
+      {poolUpdatePending && (
+        <div className="bg-blue-950/30 border border-blue-500/20 rounded-lg p-3 mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+            <div className="text-sm text-blue-400">Обновление пула...</div>
+          </div>
+        </div>
+      )}
+
       {/* Отладочная информация */}
       {renderDebugInfo()}
 
@@ -552,11 +586,11 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
             {/* Кнопка сбора наград или запуска майнинга */}
             <button
               onClick={miningState.canCollect ? collectRewards : startMining}
-              disabled={miningState.isMining || collecting || starting}
+              disabled={miningState.isMining || collecting || starting || poolUpdatePending}
               className={`
             w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
             ${
-              miningState.isMining || collecting || starting
+              miningState.isMining || collecting || starting || poolUpdatePending
                 ? "bg-gray-800 text-gray-400 cursor-not-allowed"
                 : "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
             }
@@ -571,6 +605,11 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   <span>Запуск майнинга...</span>
+                </>
+              ) : poolUpdatePending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Обновление пула...</span>
                 </>
               ) : miningState.isMining ? (
                 <>
