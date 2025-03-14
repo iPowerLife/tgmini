@@ -6,6 +6,9 @@ import { Coins, Clock, ArrowDown, AlertCircle, Cpu, Zap, Wallet, Play, ShoppingC
 import { useNavigate } from "react-router-dom"
 import { PoolsModal } from "./pools-modal"
 
+// Включаем режим отладки
+const DEBUG_MODE = process.env.NEXT_PUBLIC_DEBUG_MODE === "true"
+
 export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   // Основные состояния
   const [loading, setLoading] = useState(true)
@@ -57,6 +60,27 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
+  // Функция для прямого запроса данных о майнерах
+  const fetchMinersData = async () => {
+    if (!userId) return null
+
+    try {
+      const { data, error } = await supabase
+        .from("user_miners")
+        .select("total_power, total_miners")
+        .eq("user_id", userId)
+        .single()
+
+      if (error) throw error
+
+      console.log("Прямой запрос данных майнеров:", data)
+      return data
+    } catch (err) {
+      console.error("Ошибка при прямом запросе данных майнеров:", err)
+      return null
+    }
+  }
+
   // Обновляем функцию fetchMiningData с дополнительным логированием
   const fetchMiningData = async () => {
     if (!userId) {
@@ -68,6 +92,13 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
 
     try {
       console.log("Загрузка данных майнинга для пользователя:", userId)
+
+      // Сначала получаем данные напрямую из таблицы для сравнения
+      const directMinersData = await fetchMinersData()
+
+      if (directMinersData) {
+        console.log("Данные майнеров напрямую из таблицы:", directMinersData)
+      }
 
       const { data, error } = await supabase.rpc("get_mining_info", {
         user_id_param: userId,
@@ -83,7 +114,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
 
       // В функции fetchMiningData после получения данных добавляем отладочный вывод
       console.log("Debug - Полные данные:", data)
-      console.log("Debug - Хешрейт:", data.total_hashrate)
+      console.log("Debug - Хешрейт из функции:", data.total_hashrate)
       console.log("Debug - Отладочная информация:", data.debug)
 
       if (!mountedRef.current) return
@@ -110,6 +141,14 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
       // Сохраняем информацию о текущем пуле
       setCurrentPool(pool)
 
+      // Используем хешрейт из прямого запроса, если он доступен и больше 0
+      const hashrate =
+        directMinersData && directMinersData.total_power > 0
+          ? directMinersData.total_power
+          : Number(data.total_hashrate || 0)
+
+      console.log("Итоговый используемый хешрейт:", hashrate)
+
       // Обновляем состояние с проверкой на undefined
       setHasMiner(hasMiners)
       setMiningState((prev) => ({
@@ -119,7 +158,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
           : Number(mining_state.frozen_amount || 0),
         remainingSeconds: Number(mining_state.remaining_seconds || 0),
         canCollect: !mining_state.is_mining && Number(mining_state.frozen_amount || 0) > 0,
-        hashrate: Number(data.total_hashrate || 0),
+        hashrate: hashrate,
         hourlyRate: Number(rewards.hourly_rate || 0),
         poolName: pool.display_name || pool.name || "Стандартный",
         poolMultiplier: Number(pool.multiplier || 1),
@@ -360,7 +399,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
 
   // Отладочная информация
   const renderDebugInfo = () => {
-    if (!debugInfo) return null
+    if (!debugInfo || !DEBUG_MODE) return null
 
     return (
       <div className="bg-gray-900 p-3 rounded-lg mb-3 text-xs font-mono overflow-auto">
@@ -386,6 +425,12 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
           </div>
           <div>
             <span className="text-green-400">config:</span> {JSON.stringify(debugInfo.config)}
+          </div>
+          <div>
+            <span className="text-green-400">debug:</span> {JSON.stringify(debugInfo.debug)}
+          </div>
+          <div>
+            <span className="text-green-400">current_hashrate:</span> {JSON.stringify(miningState.hashrate)}
           </div>
         </div>
       </div>
