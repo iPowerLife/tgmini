@@ -5,15 +5,19 @@ import { useNavigate } from "react-router-dom"
 import { MinersModal } from "../components/miners-modal"
 import { BoostsModal } from "../components/boosts-modal"
 import { PoolsModal } from "../components/pools-modal"
+import { supabase } from "../supabase"
 
 const HomePage = ({ user: initialUser }) => {
   const [user, setUser] = useState(initialUser)
   const [showMinersModal, setShowMinersModal] = useState(false)
-  const [showBoostsModal, setShowBoostsModal] = useState(false)
-  const [showPoolsModal, setShowPoolsModal] = useState(false)
+  const [showBoostsModal, setShowBoostsModal = useState(false)
+  const [showPoolsModal, setShowPoolsModal = useState(false)
   const [currentPool, setCurrentPool] = useState(null)
   const navigate = useNavigate()
   const modalOpenRef = useRef(false)
+  const [miningInfo, setMiningInfo] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   // Добавляем отладочный вывод в начало компонента
   useEffect(() => {
@@ -88,7 +92,7 @@ const HomePage = ({ user: initialUser }) => {
   `
     document.head.appendChild(style)
 
-    // Удаляем все обработчики при ��азмонтировании
+    // Удаляем все обработчики при размонтировании
     return () => {
       scrollEvents.forEach((event) => {
         document.removeEventListener(event, blockScroll)
@@ -136,6 +140,36 @@ const HomePage = ({ user: initialUser }) => {
     console.log("Состояние пользователя изменилось:", user)
   }, [user])
 
+  // Загружаем информацию о майнинге пользователя
+  useEffect(() => {
+    const fetchMiningInfo = async () => {
+      if (!user || !user.id) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        // Получаем информацию о майнинге пользователя
+        const { data, error } = await supabase.rpc('get_mining_info_with_rewards', {
+          user_id_param: user.id
+        })
+
+        if (error) throw error
+
+        if (data) {
+          setMiningInfo(data)
+        }
+      } catch (err) {
+        console.error('Ошибка при загрузке информации о майнинге:', err)
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchMiningInfo()
+  }, [user])
+
   return (
     <div className="fixed inset-0 overflow-hidden">
       {/* Фоновое изображение */}
@@ -164,7 +198,70 @@ const HomePage = ({ user: initialUser }) => {
         </div>
 
         {/* Компонент с информацией о майнинге и наградах */}
-        <div className="mx-2"></div>
+        <div className="mx-2">
+          <div className="text-center">
+            <div className="w-24 h-24 bg-blue-500/80 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">💎</span>
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Майнинг</h2>
+            <p className="text-gray-400 mb-4">Добывайте криптовалюту и получайте награды</p>
+
+            {user && (
+              <div className="bg-[#242838]/80 p-3 rounded-lg mb-4">
+                <p className="font-bold text-blue-400">Баланс: {user.balance || 0} 💎</p>
+                <p className="text-sm text-gray-400">Miner Pass: {user.hasMinerPass ? "Активен ✨" : "Не активен"}</p>
+              </div>
+            )}
+
+            {loading ? (
+              <div className="flex justify-center items-center py-4">
+                <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+              </div>
+            ) : error ? (
+              <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4">
+                <p className="text-white">Ошибка загрузки данных: {error}</p>
+              </div>
+            ) : miningInfo ? (
+              <div className="bg-[#242838]/80 p-3 rounded-lg">
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="bg-[#1A1F2E] p-2 rounded text-center">
+                    <div className="text-xs text-gray-400">Общая мощность</div>
+                    <div className="font-semibold">{miningInfo.total_mining_power || 0} h/s</div>
+                  </div>
+                  <div className="bg-[#1A1F2E] p-2 rounded text-center">
+                    <div className="text-xs text-gray-400">Добыто сегодня</div>
+                    <div className="font-semibold">{miningInfo.today_mined?.toFixed(2) || 0} 💎</div>
+                  </div>
+                </div>
+
+                <div className="bg-[#1A1F2E] p-3 rounded mb-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Доступно для сбора:</span>
+                    <span className="font-bold text-blue-400">{miningInfo.available_rewards?.toFixed(2) || 0} 💎</span>
+                  </div>
+                </div>
+
+                <button
+                  className={`w-full py-2 rounded ${
+                    miningInfo.available_rewards > 0
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : 'bg-gray-600 cursor-not-allowed'
+                  }`}
+                  disabled={miningInfo.available_rewards <= 0}
+                >
+                  Собрать награду
+                </button>
+              </div>
+            ) : (
+              <div className="bg-[#242838]/80 p-3 rounded-lg">
+                <p className="text-gray-400">У вас пока нет майнеров. Посетите магазин, чтобы приобрести майнеры и начать добычу.</p>
+                <button className="mt-3 w-full py-2 rounded bg-blue-600 hover:bg-blue-700">
+                  Перейти в магазин
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Основная область с кнопками и майнером */}
         <div className="flex-1 grid grid-cols-[60px_1fr_60px] gap-2 px-2 mt-2">
