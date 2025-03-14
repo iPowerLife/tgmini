@@ -1,7 +1,5 @@
 "use client"
 
-// Заменяем весь компонент на версию с загрузкой данных из Supabase
-
 import { useState, useEffect } from "react"
 import { supabase } from "../../supabase"
 import { createMockMiners } from "../../utils/mock-data"
@@ -12,6 +10,7 @@ export function MinersTab({ user, onPurchase }) {
   const [error, setError] = useState(null)
   const [selectedMiner, setSelectedMiner] = useState(null)
   const [purchaseLoading, setPurchaseLoading] = useState(false)
+  const [activeCategory, setActiveCategory] = useState("basic")
 
   // Загружаем данные майнеров из базы данных
   useEffect(() => {
@@ -78,6 +77,37 @@ export function MinersTab({ user, onPurchase }) {
     }
   }
 
+  // Фильтруем майнеры по категории
+  const filteredMiners = miners.filter((miner) => {
+    if (!miner.category) return activeCategory === "basic" // По умолчанию базовая категория
+
+    if (activeCategory === "basic") return miner.category === "basic" || miner.category === "базовый"
+    if (activeCategory === "advanced") return miner.category === "advanced" || miner.category === "продвинутый"
+    if (activeCategory === "premium") return miner.category === "premium" || miner.category === "премиум"
+
+    return true
+  })
+
+  // Получаем цвет фона в зависимости от категории
+  const getCategoryColor = (miner) => {
+    if (!miner.category) return "bg-blue-500/20" // По умолчанию синий
+
+    const category = miner.category.toLowerCase()
+    if (category === "advanced" || category === "продвинутый") return "bg-purple-500/20"
+    if (category === "premium" || category === "премиум") return "bg-yellow-500/20"
+    return "bg-blue-500/20"
+  }
+
+  // Получаем цвет карточки в зависимости от категории
+  const getCardColor = (miner) => {
+    if (!miner.category) return "bg-[#242838]" // По умолчанию стандартный
+
+    const category = miner.category.toLowerCase()
+    if (category === "advanced" || category === "продвинутый") return "bg-[#2A2442]"
+    if (category === "premium" || category === "премиум") return "bg-[#2A2824]"
+    return "bg-[#242838]"
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -101,64 +131,111 @@ export function MinersTab({ user, onPurchase }) {
   }
 
   return (
-    <div className="space-y-4">
-      {miners.length === 0 ? (
-        <div className="bg-[#242838] rounded-lg p-4 text-center">
-          <p className="text-gray-400">Майнеры временно недоступны</p>
+    <div>
+      {/* Баланс пользователя */}
+      <div className="bg-[#1A1F2E] p-3 rounded-lg mb-4 text-center">
+        <p className="font-bold text-blue-400">Баланс: {user?.balance || 0} 💎</p>
+      </div>
+
+      {/* Категории майнеров */}
+      <div className="flex overflow-x-auto py-2 mb-4 no-scrollbar">
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setActiveCategory("basic")}
+            className={`px-4 py-2 rounded-lg whitespace-nowrap ${
+              activeCategory === "basic" ? "bg-blue-600 text-white" : "bg-[#242838] text-gray-300 hover:bg-[#2A3142]"
+            }`}
+          >
+            <span className="mr-2">🖥️</span>
+            Базовые
+          </button>
+          <button
+            onClick={() => setActiveCategory("advanced")}
+            className={`px-4 py-2 rounded-lg whitespace-nowrap ${
+              activeCategory === "advanced"
+                ? "bg-purple-600 text-white"
+                : "bg-[#242838] text-gray-300 hover:bg-[#2A3142]"
+            }`}
+          >
+            <span className="mr-2">⚡</span>
+            Продвинутые
+          </button>
+          <button
+            onClick={() => setActiveCategory("premium")}
+            className={`px-4 py-2 rounded-lg whitespace-nowrap ${
+              activeCategory === "premium"
+                ? "bg-yellow-600 text-white"
+                : "bg-[#242838] text-gray-300 hover:bg-[#2A3142]"
+            }`}
+          >
+            <span className="mr-2">✨</span>
+            Премиум
+          </button>
         </div>
-      ) : (
-        miners.map((miner) => (
-          <div key={miner.id} className="bg-[#242838] rounded-lg p-4">
-            <div className="flex items-center mb-3">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mr-3">
-                <img
-                  src={miner.image_url || "https://cdn-icons-png.flaticon.com/512/2991/2991109.png"}
-                  alt={miner.display_name || miner.name}
-                  className="w-8 h-8"
-                />
-              </div>
-              <div>
-                <h3 className="font-semibold">{miner.display_name || miner.name}</h3>
-                <p className="text-sm text-gray-400">{miner.description || "Майнер для добычи криптовалюты"}</p>
-              </div>
-            </div>
+      </div>
 
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <div className="bg-[#1A1F2E] p-2 rounded">
-                <div className="text-xs text-gray-400">Мощность:</div>
-                <div className="font-semibold">{miner.mining_power} h/s</div>
-              </div>
-              <div className="bg-[#1A1F2E] p-2 rounded">
-                <div className="text-xs text-gray-400">Энергия:</div>
-                <div className="font-semibold">{miner.energy_consumption} ⚡</div>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <div className="font-bold text-blue-400">{miner.price} 💎</div>
-              <button
-                onClick={() => handlePurchase(miner)}
-                disabled={purchaseLoading || !user || user.balance < miner.price}
-                className={`px-4 py-2 rounded ${
-                  purchaseLoading && selectedMiner === miner.id
-                    ? "bg-gray-600 cursor-wait"
-                    : user && user.balance >= miner.price
-                      ? "bg-blue-600 hover:bg-blue-700"
-                      : "bg-gray-600 cursor-not-allowed"
-                }`}
-              >
-                {purchaseLoading && selectedMiner === miner.id ? (
-                  <span>Покупка...</span>
-                ) : user && user.balance < miner.price ? (
-                  <span>Недостаточно средств</span>
-                ) : (
-                  <span>Купить</span>
-                )}
-              </button>
-            </div>
+      {/* Список майнеров */}
+      <div className="space-y-4">
+        {filteredMiners.length === 0 ? (
+          <div className="bg-[#242838] rounded-lg p-4 text-center">
+            <p className="text-gray-400">Майнеры этой категории временно недоступны</p>
           </div>
-        ))
-      )}
+        ) : (
+          filteredMiners.map((miner) => (
+            <div key={miner.id} className={`${getCardColor(miner)} rounded-lg p-4`}>
+              <div className="flex items-center mb-3">
+                <div
+                  className={`w-16 h-16 ${getCategoryColor(miner)} rounded-lg flex items-center justify-center mr-3`}
+                >
+                  <img
+                    src={miner.image_url || "https://cdn-icons-png.flaticon.com/512/2991/2991109.png"}
+                    alt={miner.display_name || miner.name}
+                    className="w-12 h-12"
+                  />
+                </div>
+                <div>
+                  <h3 className="font-semibold">{miner.display_name || miner.name}</h3>
+                  <p className="text-sm text-gray-400">{miner.description || "Майнер для добычи криптовалюты"}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="bg-[#1A1F2E] p-2 rounded">
+                  <div className="text-xs text-gray-400">Мощность:</div>
+                  <div className="font-semibold">{miner.mining_power} h/s</div>
+                </div>
+                <div className="bg-[#1A1F2E] p-2 rounded">
+                  <div className="text-xs text-gray-400">Энергия:</div>
+                  <div className="font-semibold">{miner.energy_consumption} ⚡</div>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <div className="font-bold text-blue-400">{miner.price} 💎</div>
+                <button
+                  onClick={() => handlePurchase(miner)}
+                  disabled={purchaseLoading || !user || user.balance < miner.price}
+                  className={`px-4 py-2 rounded ${
+                    purchaseLoading && selectedMiner === miner.id
+                      ? "bg-gray-600 cursor-wait"
+                      : user && user.balance >= miner.price
+                        ? "bg-blue-600 hover:bg-blue-700"
+                        : "bg-gray-600 cursor-not-allowed"
+                  }`}
+                >
+                  {purchaseLoading && selectedMiner === miner.id ? (
+                    <span>Покупка...</span>
+                  ) : user && user.balance < miner.price ? (
+                    <span>Недостаточно средств</span>
+                  ) : (
+                    <span>Купить</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   )
 }

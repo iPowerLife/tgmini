@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom"
 import { supabase } from "./supabase"
 import { CategoryNavigation } from "./components/shop/category-navigation"
 import { MinersTab } from "./components/shop/miners-tab"
@@ -8,13 +9,99 @@ import { BoostsTab } from "./components/shop/boosts-tab"
 import { SpecialTab } from "./components/shop/special-tab"
 import { PremiumTab } from "./components/shop/premium-tab"
 import { WarningMessage } from "./components/shop/warning-message"
+import HomePage from "./pages/home-page"
+import ProfilePage from "./pages/profile-page"
+import RatingPage from "./pages/rating-page"
 
+// Компонент для отображения магазина
+const ShopPage = ({ user, onBalanceUpdate }) => {
+  const [shopCategory, setShopCategory] = useState("miners")
+
+  return (
+    <div>
+      <h2 className="text-xl font-semibold mb-4">Магазин</h2>
+
+      <WarningMessage message="Все покупки совершаются за игровую валюту и не требуют реальных денег." />
+
+      {/* Баланс пользователя */}
+      <div className="bg-[#1A1F2E] p-3 rounded-lg mb-4 text-center">
+        <p className="font-bold text-blue-400">Баланс: {user?.balance || 0} 💎</p>
+      </div>
+
+      <CategoryNavigation activeCategory={shopCategory} onCategoryChange={setShopCategory} />
+
+      {shopCategory === "miners" && <MinersTab user={user} onPurchase={onBalanceUpdate} />}
+
+      {shopCategory === "boosts" && <BoostsTab user={user} onPurchase={onBalanceUpdate} />}
+
+      {shopCategory === "special" && <SpecialTab user={user} onPurchase={onBalanceUpdate} />}
+
+      {shopCategory === "premium" && <PremiumTab user={user} onPurchase={onBalanceUpdate} />}
+    </div>
+  )
+}
+
+// Компонент для навигации
+const Navigation = ({ activeTab, onTabChange }) => {
+  const navigate = useNavigate()
+
+  const handleTabChange = (tab) => {
+    onTabChange(tab)
+
+    switch (tab) {
+      case "home":
+        navigate("/")
+        break
+      case "shop":
+        navigate("/shop")
+        break
+      case "rating":
+        navigate("/rating")
+        break
+      case "profile":
+        navigate("/profile")
+        break
+      default:
+        navigate("/")
+    }
+  }
+
+  return (
+    <div className="bg-[#242838]/80 p-3 flex justify-around">
+      <button
+        className={`p-2 rounded-lg ${activeTab === "home" ? "bg-blue-500/50" : ""}`}
+        onClick={() => handleTabChange("home")}
+      >
+        🏠
+      </button>
+      <button
+        className={`p-2 rounded-lg ${activeTab === "shop" ? "bg-blue-500/50" : ""}`}
+        onClick={() => handleTabChange("shop")}
+      >
+        🛒
+      </button>
+      <button
+        className={`p-2 rounded-lg ${activeTab === "rating" ? "bg-blue-500/50" : ""}`}
+        onClick={() => handleTabChange("rating")}
+      >
+        🏆
+      </button>
+      <button
+        className={`p-2 rounded-lg ${activeTab === "profile" ? "bg-blue-500/50" : ""}`}
+        onClick={() => handleTabChange("profile")}
+      >
+        👤
+      </button>
+    </div>
+  )
+}
+
+// Основной компонент приложения
 function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState("home")
   const [user, setUser] = useState(null)
-  const [shopCategory, setShopCategory] = useState("miners")
 
   // Проверка соединения с Supabase и загрузка данных пользователя
   useEffect(() => {
@@ -72,6 +159,11 @@ function App() {
     }))
   }
 
+  // Обработчик выхода из аккаунта
+  const handleLogout = () => {
+    setUser(null)
+  }
+
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-[#1A1F2E] text-white">
@@ -98,137 +190,29 @@ function App() {
     )
   }
 
-  // Рендерим контент в зависимости от активной вкладки
-  const renderContent = () => {
-    switch (activeTab) {
-      case "home":
-        return (
-          <div className="text-center">
-            <div className="w-24 h-24 bg-blue-500/80 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">💎</span>
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Майнинг</h2>
-            <p className="text-gray-400 mb-4">Добывайте криптовалюту и получайте награды</p>
-
-            {user && (
-              <div className="bg-[#242838]/80 p-3 rounded-lg">
-                <p className="font-bold text-blue-400">Баланс: {user.balance || 0} 💎</p>
-                <p className="text-sm text-gray-400">Miner Pass: {user.hasMinerPass ? "Активен ✨" : "Не активен"}</p>
-              </div>
-            )}
-          </div>
-        )
-
-      case "shop":
-        return (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Магазин</h2>
-
-            <WarningMessage message="Все покупки совершаются за игровую валюту и не требуют реальных денег." />
-
-            <CategoryNavigation activeCategory={shopCategory} onCategoryChange={setShopCategory} />
-
-            {shopCategory === "miners" && <MinersTab user={user} onPurchase={handleBalanceUpdate} />}
-
-            {shopCategory === "boosts" && <BoostsTab user={user} onPurchase={handleBalanceUpdate} />}
-
-            {shopCategory === "special" && <SpecialTab user={user} onPurchase={handleBalanceUpdate} />}
-
-            {shopCategory === "premium" && <PremiumTab user={user} onPurchase={handleBalanceUpdate} />}
-          </div>
-        )
-
-      case "tasks":
-        return (
-          <div className="text-center">
-            <h2 className="text-xl font-semibold mb-4">Задания</h2>
-            <p className="text-gray-400 mb-4">Выполняйте задания и получайте награды</p>
-
-            <div className="space-y-3">
-              <div className="bg-[#242838]/80 p-3 rounded-lg text-left">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold">Ежедневный бонус</h3>
-                    <p className="text-sm text-gray-400">Получите бонус за вход в игру</p>
-                  </div>
-                  <div className="text-blue-400">+50 💎</div>
-                </div>
-              </div>
-
-              <div className="bg-[#242838]/80 p-3 rounded-lg text-left">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold">Пригласить друга</h3>
-                    <p className="text-sm text-gray-400">Пригласите друга и получите бонус</p>
-                  </div>
-                  <div className="text-blue-400">+100 💎</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-
-      case "profile":
-        return (
-          <div className="text-center">
-            <div className="w-20 h-20 bg-blue-500/50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">👤</span>
-            </div>
-            <h2 className="text-xl font-semibold mb-2">{user?.display_name || "Пользователь"}</h2>
-            <p className="text-gray-400 mb-4">ID: {user?.id?.substring(0, 8) || "Не авторизован"}</p>
-
-            <div className="bg-[#242838]/80 p-3 rounded-lg mb-3">
-              <p className="font-bold text-blue-400">Баланс: {user?.balance || 0} 💎</p>
-              <p className="text-sm text-gray-400">Miner Pass: {user?.hasMinerPass ? "Активен ✨" : "Не активен"}</p>
-            </div>
-
-            <button className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full">Выйти</button>
-          </div>
-        )
-
-      default:
-        return <div>Страница не найдена</div>
-    }
-  }
-
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#1A1F2E] text-white">
-      {/* Верхний блок с заголовком */}
-      <div className="bg-[#242838]/80 p-3 text-center">
-        <h1 className="font-bold text-xl">Майнинг Игра</h1>
-      </div>
+    <Router>
+      <div className="fixed inset-0 flex flex-col bg-[#1A1F2E] text-white">
+        {/* Верхний блок с заголовком */}
+        <div className="bg-[#242838]/80 p-3 text-center">
+          <h1 className="font-bold text-xl">Майнинг Игра</h1>
+        </div>
 
-      {/* Основной контент */}
-      <div className="flex-1 overflow-auto p-4">{renderContent()}</div>
+        {/* Основной контент */}
+        <div className="flex-1 overflow-auto p-4">
+          <Routes>
+            <Route path="/" element={<HomePage user={user} />} />
+            <Route path="/shop" element={<ShopPage user={user} onBalanceUpdate={handleBalanceUpdate} />} />
+            <Route path="/rating" element={<RatingPage user={user} />} />
+            <Route path="/profile" element={<ProfilePage user={user} onLogout={handleLogout} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
 
-      {/* Нижнее меню */}
-      <div className="bg-[#242838]/80 p-3 flex justify-around">
-        <button
-          className={`p-2 rounded-lg ${activeTab === "home" ? "bg-blue-500/50" : ""}`}
-          onClick={() => setActiveTab("home")}
-        >
-          🏠
-        </button>
-        <button
-          className={`p-2 rounded-lg ${activeTab === "shop" ? "bg-blue-500/50" : ""}`}
-          onClick={() => setActiveTab("shop")}
-        >
-          🛒
-        </button>
-        <button
-          className={`p-2 rounded-lg ${activeTab === "tasks" ? "bg-blue-500/50" : ""}`}
-          onClick={() => setActiveTab("tasks")}
-        >
-          📋
-        </button>
-        <button
-          className={`p-2 rounded-lg ${activeTab === "profile" ? "bg-blue-500/50" : ""}`}
-          onClick={() => setActiveTab("profile")}
-        >
-          👤
-        </button>
+        {/* Нижнее меню */}
+        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
-    </div>
+    </Router>
   )
 }
 
