@@ -234,12 +234,21 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
       console.log("Выбор пула:", pool)
 
       if (user?.id) {
-        // Обновляем mining_pool у пользователя
-        const { error } = await supabase.from("users").update({ mining_pool: pool.id }).eq("id", user.id)
+        // Вызываем функцию select_mining_pool для обновления пула
+        const { data, error } = await supabase.rpc("select_mining_pool", {
+          user_id_param: user.id,
+          pool_id_param: pool.id,
+        })
 
         if (error) {
-          console.error("Ошибка при обновлении mining_pool:", error)
+          console.error("Ошибка при вызове select_mining_pool:", error)
           throw error
+        }
+
+        console.log("Результат select_mining_pool:", data)
+
+        if (!data.success) {
+          throw new Error(data.error || "Не удалось выбрать пул")
         }
       }
 
@@ -365,16 +374,16 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
         )}
 
         <style jsx global>{`
-          .custom-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-            overscroll-behavior: contain;
-          }
+        .custom-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+          overscroll-behavior: contain;
+        }
 
-          .custom-scrollbar::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
+        .custom-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
       </div>
     </div>
   )

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { supabase } from "../supabase"
 import { Coins, Clock, ArrowDown, AlertCircle, Cpu, Zap, Wallet, Play, ShoppingCart, Info } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { PoolsModal } from "./pools-modal"
 
 export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   // Основные состояния
@@ -28,6 +29,10 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   // Состояние для кнопок
   const [collecting, setCollecting] = useState(false)
   const [starting, setStarting] = useState(false)
+
+  // Состояние для модального окна пулов
+  const [poolsModalOpen, setPoolsModalOpen] = useState(false)
+  const [currentPool, setCurrentPool] = useState(null)
 
   // Ref для таймера и проверки монтирования
   const timerRef = useRef(null)
@@ -69,7 +74,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
       })
 
       if (error) {
-        console.error("Ошибка при получении данных:", error)
+        console.error("Ошибка при получении данн��х:", error)
         throw error
       }
 
@@ -96,6 +101,9 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
       console.log("Состояние майнинга:", mining_state)
       console.log("Награды:", rewards)
       console.log("Данные пула:", pool)
+
+      // Сохраняем информацию о текущем пуле
+      setCurrentPool(pool)
 
       // Обновляем состояние с проверкой на undefined
       setHasMiner(hasMiners)
@@ -314,6 +322,22 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     return miningState.hourlyRate * 24
   }
 
+  // Обработчик выбора пула
+  const handlePoolSelect = (poolData) => {
+    console.log("Выбран новый пул:", poolData)
+
+    // Обновляем состояние майнинга с новым пулом
+    setMiningState((prev) => ({
+      ...prev,
+      poolName: poolData.name,
+      poolMultiplier: poolData.reward_multiplier,
+      poolFee: poolData.fee,
+    }))
+
+    // Принудительно обновляем данные майнинга с сервера
+    fetchMiningData()
+  }
+
   // Если данные загружаются
   if (loading) {
     return (
@@ -417,7 +441,10 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
           <Cpu className="text-blue-500" size={18} />
           <span className="font-medium">Майнинг</span>
         </div>
-        <div className="flex items-center gap-2 text-sm">
+        <div
+          className="flex items-center gap-2 text-sm cursor-pointer hover:text-blue-400 transition-colors"
+          onClick={() => setPoolsModalOpen(true)}
+        >
           <span className="text-gray-400">Пул: {miningState.poolName}</span>
           <div className="flex items-center gap-1">
             <span className="text-blue-400">{miningState.poolMultiplier}x</span>
@@ -527,13 +554,13 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
               onClick={miningState.canCollect ? collectRewards : startMining}
               disabled={miningState.isMining || collecting || starting}
               className={`
-                w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
-                ${
-                  miningState.isMining || collecting || starting
-                    ? "bg-gray-800 text-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
-                }
-              `}
+              w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-all
+              ${
+                miningState.isMining || collecting || starting
+                  ? "bg-gray-800 text-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/20"
+              }
+            `}
             >
               {collecting ? (
                 <>
@@ -565,6 +592,15 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
           </div>
         </div>
       </div>
+      {/* Модальное окно выбора пула */}
+      {poolsModalOpen && (
+        <PoolsModal
+          onClose={() => setPoolsModalOpen(false)}
+          user={userId ? { id: userId } : null}
+          currentPool={currentPool}
+          onPoolSelect={handlePoolSelect}
+        />
+      )}
     </div>
   )
 }
