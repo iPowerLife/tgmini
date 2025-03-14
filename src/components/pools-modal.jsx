@@ -232,6 +232,7 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
 
     try {
       console.log("Выбор пула:", pool)
+      setSelectedPoolId(pool.id) // Обновляем UI немедленно
 
       if (user?.id) {
         // Вызываем функцию select_mining_pool для обновления пула
@@ -250,14 +251,27 @@ export function PoolsModal({ onClose, user, currentPool, onPoolSelect }) {
         if (!data.success) {
           throw new Error(data.error || "Не удалось выбрать пул")
         }
+
+        // Принудительно обновляем кэш данных
+        await supabase.rpc(
+          "get_mining_info",
+          {
+            user_id_param: user.id,
+          },
+          { cache: "reload" },
+        )
       }
 
-      // Обновляем локальное состояние
-      setSelectedPoolId(pool.id)
-
       // Вызываем колбэк для обновления родительского компонента
+      // с полными данными о пуле
       if (onPoolSelect) {
-        onPoolSelect(pool)
+        onPoolSelect({
+          id: pool.id,
+          name: pool.name,
+          reward_multiplier: pool.reward_multiplier,
+          fee: pool.fee,
+          forceRefresh: true, // Добавляем флаг для принудительного обновления
+        })
       }
 
       // Закрываем модальное окно

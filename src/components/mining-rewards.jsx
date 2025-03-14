@@ -58,7 +58,7 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   }
 
   // Обновляем функцию fetchMiningData с дополнительным логированием
-  const fetchMiningData = async () => {
+  const fetchMiningData = async (forceRefresh = false) => {
     if (!userId) {
       console.error("ID пользователя не указан")
       setError("ID пользователя не указан")
@@ -69,12 +69,19 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     try {
       console.log("Загрузка данных майнинга для пользователя:", userId)
 
-      const { data, error } = await supabase.rpc("get_mining_info", {
-        user_id_param: userId,
-      })
+      // Добавляем опцию для принудительного обновления кэша
+      const options = forceRefresh ? { cache: "reload" } : undefined
+
+      const { data, error } = await supabase.rpc(
+        "get_mining_info",
+        {
+          user_id_param: userId,
+        },
+        options,
+      )
 
       if (error) {
-        console.error("Ошибка при получении данн��х:", error)
+        console.error("Ошибка при получении данных:", error)
         throw error
       }
 
@@ -285,8 +292,8 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   useEffect(() => {
     mountedRef.current = true
 
-    // Загружаем начальные данные
-    fetchMiningData()
+    // Загружаем начальные данные с принудительным обновлением
+    fetchMiningData(true)
 
     // Настраиваем интервал для периодического обновления данных с сервера
     updateTimerRef.current = setInterval(() => {
@@ -326,6 +333,15 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
   const handlePoolSelect = (poolData) => {
     console.log("Выбран новый пул:", poolData)
 
+    // Сохраняем информацию о текущем пуле
+    setCurrentPool({
+      id: poolData.id,
+      name: poolData.name,
+      display_name: poolData.name,
+      multiplier: poolData.reward_multiplier,
+      fee_percent: poolData.fee,
+    })
+
     // Обновляем состояние майнинга с новым пулом
     setMiningState((prev) => ({
       ...prev,
@@ -335,7 +351,18 @@ export const MiningRewards = ({ userId, onBalanceUpdate }) => {
     }))
 
     // Принудительно обновляем данные майнинга с сервера
-    fetchMiningData()
+    if (poolData.forceRefresh) {
+      // Очищаем таймер, чтобы избежать конфликтов
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+
+      // Добавляем небольшую задержку для завершения обновления в базе данных
+      setTimeout(() => {
+        fetchMiningData()
+      }, 300)
+    }
   }
 
   // Если данные загружаются
