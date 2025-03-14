@@ -41,9 +41,13 @@ const HomePage = ({ user: initialUser }) => {
         console.log("Загрузка информации о майнинге для пользователя:", user.id)
 
         // Получаем информацию о майнинге через RPC
-        const { data: miningInfoData, error: miningInfoError } = await supabase.rpc("get_mining_info_with_rewards", {
-          user_id_param: user.id,
-        })
+        const { data: miningInfoData, error: miningInfoError } = await supabase
+          .from("miners")
+          .select(`
+    *,
+    model:miner_models(*)
+  `)
+          .eq("user_id", user.id)
 
         if (miningInfoError) {
           console.error("Ошибка при запросе информации о майнинге:", miningInfoError)
