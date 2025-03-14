@@ -1,139 +1,83 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { supabase } from "./supabase"
-import HomePage from "./pages/home-page"
-import ShopPage from "./pages/shop-page"
-import TasksPage from "./pages/tasks"
-import RatingPage from "./pages/rating-page"
-import ProfilePage from "./pages/profile-page"
-import { BottomMenu } from "./components/bottom-menu"
-import { LoadingScreen } from "./components/loading-screen"
 
 function App() {
-  const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState(null)
-  const [tg, setTg] = useState(null)
-
-  // Инициализация Telegram WebApp
-  useEffect(() => {
-    const initTelegramApp = () => {
-      if (window.Telegram?.WebApp) {
-        const webApp = window.Telegram.WebApp
-        setTg(webApp)
-
-        // Подписываемся на событие готовности WebApp
-        webApp.onEvent("viewportChanged", () => {
-          console.log("Viewport changed")
-        })
-
-        webApp.onEvent("themeChanged", () => {
-          console.log("Theme changed")
-        })
-
-        // Инициализируем WebApp
-        try {
-          webApp.ready()
-          webApp.expand()
-          webApp.setBackgroundColor("#1A1F2E")
-        } catch (error) {
-          console.error("Error initializing Telegram WebApp:", error)
-        }
-      } else {
-        console.log("Telegram WebApp not available")
-      }
-    }
-
-    // Пытаемся инициализировать сразу
-    initTelegramApp()
-
-    // И также подписываемся на событие загрузки окна
-    window.addEventListener("load", initTelegramApp)
-
-    return () => {
-      window.removeEventListener("load", initTelegramApp)
-    }
-  }, [])
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    const initializeApp = async () => {
+    // Простая проверка соединения с Supabase
+    const checkConnection = async () => {
       try {
-        // Получаем текущую сессию
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-        setSession(session)
+        const { error } = await supabase.from("users").select("id").limit(1)
 
-        if (session?.user) {
-          await fetchUserData(session.user.id)
+        if (error) {
+          setError(`Ошибка подключения к базе данных: ${error.message}`)
         }
-      } catch (error) {
-        console.error("Error initializing app:", error)
+      } catch (err) {
+        setError(`Непредвиденная ошибка: ${err.message}`)
       } finally {
         setLoading(false)
       }
     }
 
-    initializeApp()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
-      if (session?.user) {
-        await fetchUserData(session.user.id)
-      } else {
-        setUser(null)
-        setLoading(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
+    checkConnection()
   }, [])
 
-  const fetchUserData = async (userId) => {
-    try {
-      const { data, error } = await supabase.from("users").select("*").eq("id", userId).single()
-
-      if (error) {
-        throw error
-      }
-
-      if (data) {
-        setUser(data)
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error)
-    }
-  }
-
-  // Показываем загрузочный экран
   if (loading) {
-    return <LoadingScreen />
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-[#1A1F2E] text-white">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+          <p>Загрузка...</p>
+        </div>
+      </div>
+    )
   }
 
-  // Если нет сессии, редиректим на страницу входа
-  if (!session) {
-    window.location.href = "/auth"
-    return null
+  if (error) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-[#1A1F2E] text-white">
+        <div className="text-center max-w-md p-4">
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <h1 className="text-xl font-bold mb-2">Ошибка</h1>
+          <p className="text-gray-300 mb-4">{error}</p>
+          <button className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded" onClick={() => window.location.reload()}>
+            Попробовать снова
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <Router>
-      <div className="h-screen flex flex-col bg-[#1A1F2E] text-white overflow-hidden">
-        <Routes>
-          <Route path="/" element={<HomePage user={user} />} />
-          <Route path="/shop" element={<ShopPage user={user} />} />
-          <Route path="/tasks" element={<TasksPage user={user} />} />
-          <Route path="/rating" element={<RatingPage />} />
-          <Route path="/profile" element={<ProfilePage user={user} />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-        <BottomMenu />
+    <div className="fixed inset-0 flex flex-col bg-[#1A1F2E] text-white">
+      {/* Верхний блок с заголовком */}
+      <div className="bg-[#242838]/80 p-3 text-center">
+        <h1 className="font-bold text-xl">Майнинг Игра</h1>
       </div>
-    </Router>
+
+      {/* Основной контент */}
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="w-24 h-24 bg-blue-500/80 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <span className="text-4xl">💎</span>
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Приложение работает!</h2>
+          <p className="text-gray-400">Базовый контент отображается корректно.</p>
+        </div>
+      </div>
+
+      {/* Нижнее меню */}
+      <div className="bg-[#242838]/80 p-3 flex justify-around">
+        <button className="p-2">🏠</button>
+        <button className="p-2">🛒</button>
+        <button className="p-2">📋</button>
+        <button className="p-2">👤</button>
+      </div>
+    </div>
   )
 }
 
