@@ -1,178 +1,168 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Trophy, Users } from "lucide-react"
 import { supabase } from "../supabase"
-import { createMockRating } from "../utils/mock-data"
 
 const RatingPage = ({ user }) => {
-  const [ratingData, setRatingData] = useState([])
+  const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [activeTab, setActiveTab] = useState("mining")
+  const [activeTab, setActiveTab] = useState("balance")
 
-  // Загружаем данные рейтинга из базы данных
+  // Загрузка данных пользователей
   useEffect(() => {
-    const fetchRating = async () => {
+    const fetchUsers = async () => {
       try {
-        // Получаем данные рейтинга
-        const { data, error } = await supabase
+        setLoading(true)
+        console.log("Fetching users data...")
+
+        const { data, error: supabaseError } = await supabase
           .from("users")
-          .select("id, display_name, balance, mining_power, level")
-          .order("mining_power", { ascending: false })
-          .limit(50)
+          .select(`
+            id,
+            telegram_id,
+            first_name,
+            photo_url,
+            balance,
+            level,
+            referral_count
+          `)
+          .order(activeTab === "balance" ? "balance" : "referral_count", { ascending: false })
+          .limit(100)
 
-        if (error) throw error
+        if (supabaseError) throw supabaseError
 
-        if (data && data.length > 0) {
-          setRatingData(data)
-        } else {
-          // Если данных нет, используем моковые данные
-          setRatingData(createMockRating())
-        }
+        if (!data) throw new Error("Нет данных")
+
+        const processedData = data.map((user) => ({
+          id: user.telegram_id || user.id,
+          name: user.first_name || "Пользователь",
+          photo_url: user.photo_url,
+          balance: Number(user.balance || 0),
+          referral_count: Number(user.referral_count || 0),
+          level: Number(user.level || 1),
+        }))
+
+        setUsers(processedData)
+        setLoading(false)
       } catch (err) {
-        console.error("Ошибка при загрузке рейтинга:", err)
-        setError(err.message)
-        // Используем моковые данные при ошибке
-        setRatingData(createMockRating())
-      } finally {
+        console.error("Ошибка при загрузке данных:", err)
+        setError("Не удалось загрузить данные рейтинга")
         setLoading(false)
       }
     }
 
-    fetchRating()
-  }, [])
-
-  // Фильтруем данные рейтинга в зависимости от активной вкладки
-  const filteredRating = ratingData.sort((a, b) => {
-    if (activeTab === "mining") return b.mining_power - a.mining_power
-    if (activeTab === "balance") return b.balance - a.balance
-    if (activeTab === "level") return b.level - a.level
-    return 0
-  })
-
-  // Находим позицию текущего пользователя в рейтинге
-  const getUserPosition = () => {
-    if (!user || !user.id) return null
-
-    const position = filteredRating.findIndex((item) => item.id === user.id)
-    if (position === -1) return null
-
-    return {
-      position: position + 1,
-      total: filteredRating.length,
-    }
-  }
-
-  const userPosition = getUserPosition()
+    fetchUsers()
+  }, [activeTab])
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+      <div className="min-h-screen p-4">
+        <div className="flex justify-center items-center h-[200px]">
+          <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+        </div>
       </div>
     )
   }
 
-  if (error && ratingData.length === 0) {
+  if (error) {
     return (
-      <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4 text-center">
-        <p className="text-white">Ошибка загрузки данных: {error}</p>
-        <button
-          className="mt-2 bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded text-sm"
-          onClick={() => window.location.reload()}
-        >
-          Попробовать снова
-        </button>
+      <div className="min-h-screen p-4">
+        <div className="text-center text-gray-400 py-8">{error}</div>
       </div>
     )
   }
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">Рейтинг игроков</h2>
-
-      {/* Вкладки рейтинга */}
-      <div className="flex overflow-x-auto py-2 mb-4 no-scrollbar">
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setActiveTab("mining")}
-            className={`px-4 py-2 rounded-lg whitespace-nowrap ${
-              activeTab === "mining" ? "bg-blue-600 text-white" : "bg-[#242838] text-gray-300 hover:bg-[#2A3142]"
-            }`}
-          >
-            <span className="mr-2">⚡</span>
-            По мощности
-          </button>
-          <button
-            onClick={() => setActiveTab("balance")}
-            className={`px-4 py-2 rounded-lg whitespace-nowrap ${
-              activeTab === "balance" ? "bg-blue-600 text-white" : "bg-[#242838] text-gray-300 hover:bg-[#2A3142]"
-            }`}
-          >
-            <span className="mr-2">💎</span>
-            По балансу
-          </button>
-          <button
-            onClick={() => setActiveTab("level")}
-            className={`px-4 py-2 rounded-lg whitespace-nowrap ${
-              activeTab === "level" ? "bg-blue-600 text-white" : "bg-[#242838] text-gray-300 hover:bg-[#2A3142]"
-            }`}
-          >
-            <span className="mr-2">🏆</span>
-            По уровню
-          </button>
-        </div>
+    <div className="min-h-screen p-4">
+      {/* Заголовок */}
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold text-white mb-2">Рейтинг игроков</h1>
+        <p className="text-gray-400 text-sm">Соревнуйтесь с другими игроками и поднимайтесь в рейтинге</p>
       </div>
 
-      {/* Позиция пользователя */}
-      {userPosition && (
-        <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3 mb-4">
-          <p className="text-center">
-            Ваша позиция: <span className="font-bold">{userPosition.position}</span> из {userPosition.total}
-          </p>
-        </div>
-      )}
+      {/* Вкладки */}
+      <div className="flex mb-6 bg-[#242838] rounded-lg p-1">
+        <button
+          onClick={() => setActiveTab("balance")}
+          className={`flex items-center justify-center gap-2 flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all
+            ${activeTab === "balance" ? "bg-[#3B82F6] text-white" : "text-gray-400 hover:text-gray-300"}`}
+        >
+          <Trophy size={16} />
+          <span>По балансу</span>
+        </button>
+        <button
+          onClick={() => setActiveTab("referrals")}
+          className={`flex items-center justify-center gap-2 flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all
+            ${activeTab === "referrals" ? "bg-[#3B82F6] text-white" : "text-gray-400 hover:text-gray-300"}`}
+        >
+          <Users size={16} />
+          <span>По рефералам</span>
+        </button>
+      </div>
 
-      {/* Таблица рейтинга */}
-      <div className="bg-[#1A1F2E] rounded-lg overflow-hidden">
-        <div className="grid grid-cols-12 gap-2 p-3 border-b border-gray-700 bg-[#242838]">
-          <div className="col-span-1 font-semibold text-gray-400">#</div>
-          <div className="col-span-5 font-semibold text-gray-400">Игрок</div>
-          <div className="col-span-3 font-semibold text-gray-400 text-right">
-            {activeTab === "mining" && "Мощность"}
-            {activeTab === "balance" && "Баланс"}
-            {activeTab === "level" && "Уровень"}
-          </div>
-          <div className="col-span-3 font-semibold text-gray-400 text-right">Статус</div>
-        </div>
+      {/* Список пользователей */}
+      <div className="space-y-2">
+        {users.map((user, index) => {
+          const isCurrentUser = user && String(user.id) === String(user?.id)
 
-        {filteredRating.map((item, index) => (
-          <div
-            key={item.id}
-            className={`grid grid-cols-12 gap-2 p-3 border-b border-gray-700 ${
-              user && item.id === user.id ? "bg-blue-500/10" : index % 2 === 0 ? "bg-[#1E2334]" : ""
-            }`}
-          >
-            <div className="col-span-1 font-semibold">{index + 1}</div>
-            <div className="col-span-5 truncate">{item.display_name || `Игрок ${index + 1}`}</div>
-            <div className="col-span-3 text-right">
-              {activeTab === "mining" && <span>{item.mining_power} h/s</span>}
-              {activeTab === "balance" && <span>{item.balance} 💎</span>}
-              {activeTab === "level" && <span>Уровень {item.level}</span>}
+          return (
+            <div
+              key={user.id}
+              className={`flex items-center p-2 rounded-lg ${
+                isCurrentUser
+                  ? "bg-blue-500/10 border-l-2 border-blue-500"
+                  : index === 0
+                    ? "bg-gradient-to-r from-yellow-600/20 to-amber-500/20 border border-yellow-500/30"
+                    : index === 1
+                      ? "bg-gradient-to-r from-purple-600/20 to-purple-500/20 border border-purple-500/30"
+                      : index === 2
+                        ? "bg-gradient-to-r from-cyan-600/20 to-blue-500/20 border border-blue-500/30"
+                        : "bg-[#242838]"
+              }`}
+            >
+              {/* Position indicator with matching colors */}
+              <div
+                className={`w-6 h-6 flex items-center justify-center rounded-full mr-2 text-sm ${
+                  index === 0
+                    ? "bg-gradient-to-r from-yellow-600 to-amber-500 text-white"
+                    : index === 1
+                      ? "bg-gradient-to-r from-purple-600 to-purple-500 text-white"
+                      : index === 2
+                        ? "bg-gradient-to-r from-cyan-600 to-blue-500 text-white"
+                        : "bg-gray-800 text-gray-400"
+                }`}
+              >
+                {index === 0 ? (
+                  <span>👑</span>
+                ) : index === 1 ? (
+                  <span>2</span>
+                ) : index === 2 ? (
+                  <span>3</span>
+                ) : (
+                  <span>{index + 1}</span>
+                )}
+              </div>
+
+              {/* Information */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-white text-sm font-medium truncate">{user.name}</div>
+                    <div className="text-gray-400 text-xs">Уровень {user.level}</div>
+                  </div>
+                  <div className="flex items-center text-blue-400 text-sm">
+                    <span className="font-medium">
+                      {activeTab === "balance" ? user.balance.toFixed(2) : user.referral_count}
+                    </span>
+                    <span className="ml-1">{activeTab === "balance" ? "💎" : "👥"}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="col-span-3 text-right">
-              {index < 3 ? (
-                <span className="text-yellow-400">
-                  {index === 0 && "🥇 Лидер"}
-                  {index === 1 && "🥈 Топ 2"}
-                  {index === 2 && "🥉 Топ 3"}
-                </span>
-              ) : (
-                <span className="text-gray-400">Игрок</span>
-              )}
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
