@@ -11,10 +11,27 @@ import ProfilePage from "./pages/profile-page"
 import { BottomMenu } from "./components/bottom-menu"
 import { LoadingScreen } from "./components/loading-screen"
 
+// Получаем доступ к Telegram WebApp
+const tg = window.Telegram?.WebApp
+
 function App() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(null)
+  const [webAppReady, setWebAppReady] = useState(false)
+
+  // Инициализация Telegram WebApp
+  useEffect(() => {
+    if (tg) {
+      // Сообщаем Telegram, что приложение готово
+      tg.ready()
+      // Расширяем приложение на весь экран
+      tg.expand()
+      // Устанавливаем основной цвет
+      tg.setBackgroundColor("#1A1F2E")
+      setWebAppReady(true)
+    }
+  }, [])
 
   useEffect(() => {
     // Получаем текущую сессию
@@ -62,7 +79,7 @@ function App() {
   }
 
   // Показываем загрузочный экран
-  if (loading) {
+  if (loading || !webAppReady) {
     return <LoadingScreen />
   }
 
