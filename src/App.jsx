@@ -9,7 +9,7 @@ import TasksPage from "./pages/tasks"
 import RatingPage from "./pages/rating-page"
 import ProfilePage from "./pages/profile-page"
 import { BottomMenu } from "./components/bottom-menu"
-import LoadingScreen from "./components/loading-screen"
+import { LoadingScreen } from "./components/loading-screen"
 
 function App() {
   const [session, setSession] = useState(null)
