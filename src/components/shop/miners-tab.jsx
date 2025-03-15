@@ -269,7 +269,7 @@ export function MinersTab({ user, onPurchase }) {
           }
         }
 
-        // Загружаем категории майнер��в
+        // Загружаем категории майнеров
         const { data: categoriesData, error: categoriesError } = await supabase
           .from("miner_categories")
           .select("*")
@@ -470,7 +470,7 @@ export function MinersTab({ user, onPurchase }) {
 
       console.log("Результат покупки:", data)
 
-      if (data.success) {
+      if (data && data.success) {
         // Обновляем локальные данные о майнерах пользователя
         setUserMinersData((prev) => {
           const newData = { ...prev }
@@ -482,10 +482,14 @@ export function MinersTab({ user, onPurchase }) {
           return newData
         })
 
-        onPurchase(data.new_balance)
+        // Вызываем колбэк для обновления баланса в родительском компоненте
+        if (onPurchase && typeof onPurchase === "function") {
+          onPurchase(data.new_balance)
+        }
+
         alert("Майнер успешно куплен!")
       } else {
-        alert(data.error || "Ошибка при покупке")
+        alert(data?.error || "Ошибка при покупке. Недостаточно средств или достигнут лимит.")
       }
     } catch (error) {
       console.error("Error purchasing miner:", error)
